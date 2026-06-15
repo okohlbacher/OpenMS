@@ -1494,7 +1494,7 @@ namespace OpenMS
       }
       break;
 
-      case FileTypes::MZML: 
+      case FileTypes::MZML:
       {
         MzMLFile f;
         f.getOptions() = options_;
@@ -1511,6 +1511,11 @@ namespace OpenMS
         throw Exception::InvalidFileType(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename,
           "imzML is a mass spectrometry imaging format; store it via ImzMLFile from an MSImagingExperiment");
       }
+      case FileTypes::MZPEAK:
+      {
+        MzPeakFile().store(filename, exp);
+      }
+      break;
 
       default:
       {
