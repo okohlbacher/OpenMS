@@ -2576,8 +2576,14 @@ namespace OpenMS
 
       float frag_tol = fragment_mz_tolerance_unit_ppm_ ? Math::ppmToMass(fragment_mz_tolerance_, adjusted_mass) : fragment_mz_tolerance_;
 
-      auto left_it = std::lower_bound(bucket_min_mz_.begin(), bucket_min_mz_.end(), adjusted_mass - frag_tol);
-      auto right_it = std::upper_bound(bucket_min_mz_.begin(), bucket_min_mz_.end(), adjusted_mass + frag_tol);
+      // The fragments are matched against the same bounds that select the buckets: a test written
+      // differently (adjusted_mass - frag_tol <= fragment_mz_ is not the same in float arithmetic as
+      // adjusted_mass >= fragment_mz_ - frag_tol) would let a fragment within an ulp of a bound count
+      // only if its bucket happens to be visited, i.e. depend on the bucket layout.
+      const float mz_lo = adjusted_mass - frag_tol;
+      const float mz_hi = adjusted_mass + frag_tol;
+      auto left_it = std::lower_bound(bucket_min_mz_.begin(), bucket_min_mz_.end(), mz_lo);
+      auto right_it = std::upper_bound(bucket_min_mz_.begin(), bucket_min_mz_.end(), mz_hi);
 
       if (left_it != bucket_min_mz_.begin()) --left_it;
 
@@ -2603,7 +2609,7 @@ namespace OpenMS
           // peptide_idx_range is half-open [first, second) — stop BEFORE index second.
           if (left_iter->peptide_idx_ >= peptide_idx_range.second) break;
 
-          if ((adjusted_mass >= left_iter->fragment_mz_ - frag_tol ) && adjusted_mass <= (left_iter->fragment_mz_+ frag_tol))
+          if (left_iter->fragment_mz_ >= mz_lo && left_iter->fragment_mz_ <= mz_hi)
           {
 
             hits.emplace_back(left_iter->peptide_idx_, left_iter->fragment_mz_);
@@ -2706,14 +2712,15 @@ namespace OpenMS
       std::vector<UInt32>& touched = touched_ids;
 
       // A bucket visit: the bucket, where in it the candidate ranges are expected to start,
-      // and the peak its fragments are matched against.
+      // and the m/z window of the peak its fragments are matched against (the bounds that
+      // selected the bucket).
       struct Visit
       {
         const Fragment* begin;
         const Fragment* guess;
         const Fragment* end;
-        float adjusted_mass;
-        float frag_tol;
+        float mz_lo;
+        float mz_hi;
       };
 
       // Tolerance window and half-open peptide-range test are identical to
@@ -2741,7 +2748,7 @@ namespace OpenMS
             // candidate ranges are half-open [first, second) — stop BEFORE index second.
             for (; it != v.end && it->peptide_idx_ < block.second; ++it)
             {
-              if ((v.adjusted_mass >= it->fragment_mz_ - v.frag_tol ) && v.adjusted_mass <= (it->fragment_mz_+ v.frag_tol))
+              if (it->fragment_mz_ >= v.mz_lo && it->fragment_mz_ <= v.mz_hi)
               {
                 uint32_t& count = block_counts[it->peptide_idx_ - block.first];
                 if (count == 0) touched.push_back(static_cast<UInt32>(&count - counts));
@@ -2765,8 +2772,10 @@ namespace OpenMS
       auto count_matches = [&](const std::vector<Fragment>& fragments, const std::vector<float>& bucket_min_mz,
                                const std::vector<UInt32>& skip, float adjusted_mass, float frag_tol)
       {
-          auto left_it = std::lower_bound(bucket_min_mz.begin(), bucket_min_mz.end(), adjusted_mass - frag_tol);
-          auto right_it = std::upper_bound(bucket_min_mz.begin(), bucket_min_mz.end(), adjusted_mass + frag_tol);
+          const float mz_lo = adjusted_mass - frag_tol;
+          const float mz_hi = adjusted_mass + frag_tol;
+          auto left_it = std::lower_bound(bucket_min_mz.begin(), bucket_min_mz.end(), mz_lo);
+          auto right_it = std::upper_bound(bucket_min_mz.begin(), bucket_min_mz.end(), mz_hi);
 
           if (left_it != bucket_min_mz.begin()) --left_it;
 
@@ -2807,7 +2816,7 @@ namespace OpenMS
             prefetchForRead(guess, 96);
 
             if (num_queued - num_scanned == pipeline_depth) scan(pipeline[num_scanned++ % pipeline_depth]);
-            pipeline[num_queued++ % pipeline_depth] = Visit{slice_begin, guess, slice_end, adjusted_mass, frag_tol};
+            pipeline[num_queued++ % pipeline_depth] = Visit{slice_begin, guess, slice_end, mz_lo, mz_hi};
           }
       };
 
@@ -3116,8 +3125,11 @@ init_hits.hits_.erase(it_zero, init_hits.hits_.end());
       sigma_union.insert(sigma_union.end(), snes_sigma_delta_set_with_prot_cterm_.begin(), snes_sigma_delta_set_with_prot_cterm_.end());
 
       auto mark_bucket_range = [&](float target, float tol_lo, float tol_hi) {
-        auto lb = std::lower_bound(bucket_min_mz_.begin(), bucket_min_mz_.end(), target + tol_lo);
-        auto rb = std::upper_bound(bucket_min_mz_.begin(), bucket_min_mz_.end(), target + tol_hi);
+        // same bounds for the bucket selection and the fragment test (see query())
+        const float mz_lo = target + tol_lo;
+        const float mz_hi = target + tol_hi;
+        auto lb = std::lower_bound(bucket_min_mz_.begin(), bucket_min_mz_.end(), mz_lo);
+        auto rb = std::upper_bound(bucket_min_mz_.begin(), bucket_min_mz_.end(), mz_hi);
         if (lb != bucket_min_mz_.begin()) --lb;
         const size_t jb = std::distance(bucket_min_mz_.begin(), lb);
         const size_t je = std::distance(bucket_min_mz_.begin(), rb);
@@ -3128,8 +3140,7 @@ init_hits.hits_.erase(it_zero, init_hits.hits_.end());
             ? fi_fragments_.end() : (fi_fragments_.begin() + ((j + 1) * bucketsize_));
           for (auto it = sb; it != se; ++it)
           {
-            const float d = it->fragment_mz_ - target;
-            if (d >= tol_lo && d <= tol_hi) viable_set(it->peptide_idx_);
+            if (it->fragment_mz_ >= mz_lo && it->fragment_mz_ <= mz_hi) viable_set(it->peptide_idx_);
           }
         }
       };
@@ -3176,11 +3187,12 @@ init_hits.hits_.erase(it_zero, init_hits.hits_.end());
 
         // Bucket-range lookup mirrors query(): bucket_min_mz_ holds the smallest
         // fragment_mz of each bucket, so a peak with mz ∈ [bucket_min, next_bucket_min)
-        // falls inside the bucket starting at bucket_min.
-        auto left_it = std::lower_bound(bucket_min_mz_.begin(), bucket_min_mz_.end(),
-                                        adjusted_mass - frag_tol);
-        auto right_it = std::upper_bound(bucket_min_mz_.begin(), bucket_min_mz_.end(),
-                                         adjusted_mass + frag_tol);
+        // falls inside the bucket starting at bucket_min. The fragments are matched
+        // against the same bounds.
+        const float mz_lo = adjusted_mass - frag_tol;
+        const float mz_hi = adjusted_mass + frag_tol;
+        auto left_it = std::lower_bound(bucket_min_mz_.begin(), bucket_min_mz_.end(), mz_lo);
+        auto right_it = std::upper_bound(bucket_min_mz_.begin(), bucket_min_mz_.end(), mz_hi);
         if (left_it != bucket_min_mz_.begin()) --left_it;
 
         const size_t bucket_begin = std::distance(bucket_min_mz_.begin(), left_it);
@@ -3198,8 +3210,7 @@ init_hits.hits_.erase(it_zero, init_hits.hits_.end());
           // downstream via the fragment-bin-as-precursor trick.
           for (auto it = slice_begin; it != slice_end; ++it)
           {
-            if (adjusted_mass >= it->fragment_mz_ - frag_tol
-                && adjusted_mass <= it->fragment_mz_ + frag_tol)
+            if (it->fragment_mz_ >= mz_lo && it->fragment_mz_ <= mz_hi)
             {
               const UInt32 id = it->peptide_idx_;
               if (!viable_test(id)) continue;   // precursor-prefilter: skip the non-viable mothers
@@ -3236,7 +3247,8 @@ init_hits.hits_.erase(it_zero, init_hits.hits_.end());
     };
 
     // Asymmetric tolerance: tol_lo <= 0 (low-side magnitude, sign-flipped),
-    // tol_hi >= 0. A match requires (fragment_mz - target_mz) ∈ [tol_lo, tol_hi].
+    // tol_hi >= 0. A match requires fragment_mz ∈ [target_mz + tol_lo, target_mz + tol_hi],
+    // the bounds that also select the buckets.
     // Preserves calibrated windows like [100 ppm, 5 ppm] where the symmetric
     // max-collapse over-admitted ~20× on the tighter side.
     auto collect_candidates =
@@ -3244,10 +3256,10 @@ init_hits.hits_.erase(it_zero, init_hits.hits_.end());
           int16_t iso_err, uint16_t charge,
           SnesAnchor require_anchor, float sigma_tag)
     {
-      auto left_it = std::lower_bound(bucket_min_mz_.begin(), bucket_min_mz_.end(),
-                                      target_mz + tol_lo);
-      auto right_it = std::upper_bound(bucket_min_mz_.begin(), bucket_min_mz_.end(),
-                                       target_mz + tol_hi);
+      const float mz_lo = target_mz + tol_lo;
+      const float mz_hi = target_mz + tol_hi;
+      auto left_it = std::lower_bound(bucket_min_mz_.begin(), bucket_min_mz_.end(), mz_lo);
+      auto right_it = std::upper_bound(bucket_min_mz_.begin(), bucket_min_mz_.end(), mz_hi);
       if (left_it != bucket_min_mz_.begin()) --left_it;
 
       const size_t bucket_begin = std::distance(bucket_min_mz_.begin(), left_it);
@@ -3262,8 +3274,7 @@ init_hits.hits_.erase(it_zero, init_hits.hits_.end());
 
         for (auto it = slice_begin; it != slice_end; ++it)
         {
-          const float delta = it->fragment_mz_ - target_mz;
-          if (delta < tol_lo || delta > tol_hi) continue;
+          if (it->fragment_mz_ < mz_lo || it->fragment_mz_ > mz_hi) continue;
 
           const UInt32 id = it->peptide_idx_;
           if (emitted[id]) continue;
