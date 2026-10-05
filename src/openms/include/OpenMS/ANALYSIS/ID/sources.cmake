@@ -35,6 +35,7 @@ IonIdentityMolecularNetworking.h
 MetaboliteSpectralMatching.h
 ProSEAlgorithm.h
 MorpheusScore.h
+OMPExceptionGuard.h
 OpenSearchModificationAnalysis.h
 PeptideIndexing.h
 PeptideProteinResolution.h

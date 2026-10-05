@@ -3945,6 +3945,69 @@ START_SECTION(([EXTRA] scoring:method=mass_accuracy agrees with HyperScore for e
 }
 END_SECTION
 
+START_SECTION(([EXTRA] an exception thrown inside the parallel scoring and calibration loops reaches the caller of search()))
+{
+  // Timo Sachsenberg's B4 recipe (#10403 review): scoring:method=mass_accuracy, fragment:mass_tolerance=0, no local
+  // fragment evidence, no deisotoping, no calibration; search theoretical PEPTIDER spectra.
+  // HyperScore::computeMassAccuracy() throws InvalidParameter for the tolerance inside the OpenMP scoring loop.
+  // Without the exception guard of the loop the process called std::terminate(); now search() throws.
+  // One spectrum, so only one thread constructs the exception (concurrent construction of OpenMS exceptions is
+  // not thread-safe, see OMPExceptionGuard).
+  const AASequence peptide = AASequence::fromString("PEPTIDER");
+  const vector<FASTAFile::FASTAEntry> db = {{"P01", "", "PEPTIDER"}, {"P02", "", "VLVLDTDYK"}};
+  PeakMap spectra;
+  {
+    MSSpectrum spectrum;
+    TheoreticalSpectrumGenerator().getSpectrum(spectrum, peptide, 1, 1);
+    spectrum.setMSLevel(2);
+    spectrum.setNativeID("scan=1");
+    Precursor precursor;
+    precursor.setMZ(peptide.getMZ(2));
+    precursor.setCharge(2);
+    spectrum.setPrecursors({precursor});
+    spectra.addSpectrum(spectrum);
+  }
+
+  ProSEAlgorithm algo;
+  Param p = algo.getParameters();
+  p.setValue("scoring:method", "mass_accuracy");
+  p.setValue("fragment:mass_tolerance", 0.0);
+  p.setValue("annotate:local_fragment_evidence", "false");
+  p.setValue("fragment:deisotope", "false");
+  p.setValue("calibration:enabled", "false");
+  algo.setParameters(p); // accepted: the tolerance is checked only for local fragment evidence
+  {
+    PeakMap input = spectra;
+    vector<ProteinIdentification> proteins;
+    PeptideIdentificationList peptides;
+    TEST_EXCEPTION(Exception::InvalidParameter, algo.search(input, db, proteins, peptides))
+  }
+
+  // the calibration pass scores its subset in a parallel loop of its own
+  p.setValue("calibration:enabled", "true");
+  algo.setParameters(p);
+  {
+    PeakMap input = spectra;
+    vector<ProteinIdentification> proteins;
+    PeptideIdentificationList peptides;
+    TEST_EXCEPTION(Exception::InvalidParameter, algo.search(input, db, proteins, peptides))
+  }
+
+  // the same configuration with a positive tolerance searches normally
+  p.setValue("calibration:enabled", "false");
+  p.setValue("fragment:mass_tolerance", 20.0);
+  algo.setParameters(p);
+  {
+    PeakMap input = spectra;
+    vector<ProteinIdentification> proteins;
+    PeptideIdentificationList peptides;
+    algo.search(input, db, proteins, peptides);
+    ABORT_IF(peptides.size() != 1)
+    TEST_EQUAL(peptides[0].getHits()[0].getSequence(), peptide)
+  }
+}
+END_SECTION
+
 START_SECTION(([EXTRA] self-trained ion priors annotate every hit without changing the native search))
 {
   std::vector<FASTAFile::FASTAEntry> fasta_db;

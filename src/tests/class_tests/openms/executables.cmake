@@ -623,6 +623,7 @@ set(analysis_executables_list
   FragmentIndex_test
   FragmentIonLikelihoodModel_test
   HyperScore_test
+  OMPExceptionGuard_test
   MorpheusScore_test
   OpenPepXLAlgorithm_test
   OPXLHelper_test

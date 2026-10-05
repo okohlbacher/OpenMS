@@ -57,6 +57,10 @@ OpenMS Library:
     sits on that residue (e.g. Carbamidomethyl (C) fixed and Glutathione (C) or Carbamidomethyl (C)
     variable), as ModifiedPeptideGenerator does. The indexed masses held both deltas, while the reported
     sequence held only the variable one. ProSE warns about every such variable modification.
+  - FIX: ProSEAlgorithm and FragmentIndex pass an exception raised inside a parallel (OpenMP) region
+    on to the caller after the region (OMPExceptionGuard); it used to call std::terminate() and
+    abort the process. Concurrent construction of OpenMS exceptions in several threads (possible in
+    the parallel FASTA reader with malformed records) is not covered and remains a known issue.
   - PERF: IdXMLFile::store formats the PeptideIdentifications in parallel (at most 16 threads) and
     writes them in input order, so the output is unchanged; 12% less wall time for ProSE's 20
     benchmark searches of #10364 at 4 threads, 26% less for one search at 16 threads.
