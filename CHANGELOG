@@ -61,6 +61,10 @@ OpenMS Library:
     on to the caller after the region (OMPExceptionGuard); it used to call std::terminate() and
     abort the process. Concurrent construction of OpenMS exceptions in several threads (possible in
     the parallel FASTA reader with malformed records) is not covered and remains a known issue.
+  - FIX: ProSE rejects a fragment:mass_tolerance that is not finite and positive in every
+    configuration (ProSEAlgorithm::setParameters throws InvalidParameter; the tool exits with an
+    illegal-parameters error). With annotate:local_fragment_evidence off such a value was accepted
+    and either aborted the search (mass_accuracy scoring) or matched nothing.
   - PERF: IdXMLFile::store formats the PeptideIdentifications in parallel (at most 16 threads) and
     writes them in input order, so the output is unchanged; 12% less wall time for ProSE's 20
     benchmark searches of #10364 at 4 threads, 26% less for one search at 16 threads.

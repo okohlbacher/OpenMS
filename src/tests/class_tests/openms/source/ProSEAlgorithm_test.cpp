@@ -3945,14 +3945,13 @@ START_SECTION(([EXTRA] scoring:method=mass_accuracy agrees with HyperScore for e
 }
 END_SECTION
 
-START_SECTION(([EXTRA] an exception thrown inside the parallel scoring and calibration loops reaches the caller of search()))
+START_SECTION(([EXTRA] fragment:mass_tolerance must be finite and positive for every scoring method and unit))
 {
   // Timo Sachsenberg's B4 recipe (#10403 review): scoring:method=mass_accuracy, fragment:mass_tolerance=0, no local
   // fragment evidence, no deisotoping, no calibration; search theoretical PEPTIDER spectra.
-  // HyperScore::computeMassAccuracy() throws InvalidParameter for the tolerance inside the OpenMP scoring loop.
-  // Without the exception guard of the loop the process called std::terminate(); now search() throws.
-  // One spectrum, so only one thread constructs the exception (concurrent construction of OpenMS exceptions is
-  // not thread-safe, see OMPExceptionGuard).
+  // The tolerance used to be checked only for local fragment evidence; HyperScore::computeMassAccuracy() then threw
+  // InvalidParameter inside the OpenMP scoring and calibration loops (std::terminate() before the exception guard
+  // of those loops, an exception from search() after it). It is now rejected by setParameters().
   const AASequence peptide = AASequence::fromString("PEPTIDER");
   const vector<FASTAFile::FASTAEntry> db = {{"P01", "", "PEPTIDER"}, {"P02", "", "VLVLDTDYK"}};
   PeakMap spectra;
@@ -3968,42 +3967,57 @@ START_SECTION(([EXTRA] an exception thrown inside the parallel scoring and calib
     spectra.addSpectrum(spectrum);
   }
 
-  ProSEAlgorithm algo;
-  Param p = algo.getParameters();
-  p.setValue("scoring:method", "mass_accuracy");
-  p.setValue("fragment:mass_tolerance", 0.0);
-  p.setValue("annotate:local_fragment_evidence", "false");
-  p.setValue("fragment:deisotope", "false");
-  p.setValue("calibration:enabled", "false");
-  algo.setParameters(p); // accepted: the tolerance is checked only for local fragment evidence
+  for (const std::string calibration : {"false", "true"})
   {
-    PeakMap input = spectra;
-    vector<ProteinIdentification> proteins;
-    PeptideIdentificationList peptides;
-    TEST_EXCEPTION(Exception::InvalidParameter, algo.search(input, db, proteins, peptides))
-  }
+    ProSEAlgorithm algo;
+    Param p = algo.getParameters();
+    p.setValue("scoring:method", "mass_accuracy");
+    p.setValue("fragment:mass_tolerance", 0.0);
+    p.setValue("annotate:local_fragment_evidence", "false");
+    p.setValue("fragment:deisotope", "false");
+    p.setValue("calibration:enabled", calibration);
+    TEST_EXCEPTION(Exception::InvalidParameter, algo.setParameters(p))
 
-  // the calibration pass scores its subset in a parallel loop of its own
-  p.setValue("calibration:enabled", "true");
-  algo.setParameters(p);
-  {
-    PeakMap input = spectra;
-    vector<ProteinIdentification> proteins;
-    PeptideIdentificationList peptides;
-    TEST_EXCEPTION(Exception::InvalidParameter, algo.search(input, db, proteins, peptides))
-  }
-
-  // the same configuration with a positive tolerance searches normally
-  p.setValue("calibration:enabled", "false");
-  p.setValue("fragment:mass_tolerance", 20.0);
-  algo.setParameters(p);
-  {
+    // the same configuration with a positive tolerance searches normally
+    p.setValue("fragment:mass_tolerance", 20.0);
+    algo.setParameters(p);
     PeakMap input = spectra;
     vector<ProteinIdentification> proteins;
     PeptideIdentificationList peptides;
     algo.search(input, db, proteins, peptides);
     ABORT_IF(peptides.size() != 1)
     TEST_EQUAL(peptides[0].getHits()[0].getSequence(), peptide)
+  }
+
+  // the full matrix: every scoring method and unit, with and without local fragment evidence
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  for (const std::string method : {"auto", "mass_accuracy", "hyperscore"})
+  {
+    for (const std::string unit : {"Da", "ppm"})
+    {
+      for (const std::string evidence : {"false", "true"})
+      {
+        for (const double tolerance : {0.0, -5.0, nan})
+        {
+          ProSEAlgorithm algo;
+          Param p = algo.getParameters();
+          p.setValue("scoring:method", method);
+          p.setValue("fragment:mass_tolerance_unit", unit);
+          p.setValue("annotate:local_fragment_evidence", evidence);
+          p.setValue("fragment:mass_tolerance", tolerance);
+          TEST_EXCEPTION(Exception::InvalidParameter, algo.setParameters(p))
+        }
+        // a valid tolerance in the same configuration is accepted
+        ProSEAlgorithm algo;
+        Param p = algo.getParameters();
+        p.setValue("scoring:method", method);
+        p.setValue("fragment:mass_tolerance_unit", unit);
+        p.setValue("annotate:local_fragment_evidence", evidence);
+        p.setValue("fragment:mass_tolerance", unit == "Da" ? 0.02 : 20.0);
+        algo.setParameters(p);
+        TEST_REAL_SIMILAR(static_cast<double>(algo.getParameters().getValue("fragment:mass_tolerance")), unit == "Da" ? 0.02 : 20.0)
+      }
+    }
   }
 }
 END_SECTION

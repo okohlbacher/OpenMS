@@ -446,10 +446,13 @@ namespace OpenMS
     peaks_window_type_ = param_.getValue("peaks:window_type").toString();
 
     fragment_mass_tolerance_ = param_.getValue("fragment:mass_tolerance");
-    if (param_.getValue("annotate:local_fragment_evidence").toBool() && (! std::isfinite(fragment_mass_tolerance_) || fragment_mass_tolerance_ <= 0.0))
+    // Checked for every configuration: fragment matching, the mass-accuracy score (HyperScore::computeMassAccuracy
+    // throws for a tolerance <= 0 inside the parallel scoring loop), calibration and local fragment evidence all
+    // need it. A tolerance of 0 or below matches nothing at best.
+    if (! std::isfinite(fragment_mass_tolerance_) || fragment_mass_tolerance_ <= 0.0)
     {
       throw Exception::InvalidParameter(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION,
-        "Local fragment evidence requires a finite, positive fragment:mass_tolerance.");
+        "fragment:mass_tolerance must be finite and positive (got " + std::to_string(fragment_mass_tolerance_) + ").");
     }
 
     fragment_mass_tolerance_unit_ = param_.getValue("fragment:mass_tolerance_unit").toString();
