@@ -2415,6 +2415,256 @@ START_SECTION((SNES query returns candidate with subset_bitmask for variable-mod
 }
 END_SECTION
 
+START_SECTION(([EXTRA] SNES Σ sets report nonempty modification sets that sum to zero))
+{
+  // Deamidated (+0.984016 Da) and Amidated (-0.984016 Da) cancel. With two
+  // variable modifications per peptide, the Σ = 0 entry then also stands for
+  // the nonempty set {Deamidated, Amidated}; with one it does not.
+  struct ZeroSumProbe : public FragmentIndex
+  {
+    std::vector<double> sigmaSet(bool prot_nterm, bool prot_cterm, bool& zero_sum) const
+    {
+      return computeSnesSigmaDeltaSet_(prot_nterm, prot_cterm, &zero_sum);
+    }
+  };
+  auto configure = [](ZeroSumProbe& fi, const std::vector<std::string>& variable, int max_mods)
+  {
+    auto p = fi.getParameters();
+    p.setValue("peptide:enzyme_specificity", "none");
+    p.setValue("modifications:variable", variable);
+    p.setValue("modifications:variable_max_per_peptide", max_mods);
+    p.setValue("modifications:fixed", std::vector<std::string>{});
+    p.setValue("snes_enabled", "true");
+    fi.setParameters(p);
+  };
+
+  {
+    ZeroSumProbe fi;
+    configure(fi, {"Deamidated (N)", "Amidated (C-term)"}, 2);
+    for (const auto& [nterm, cterm] : std::vector<std::pair<bool, bool>>{{false, false}, {true, false}, {false, true}})
+    {
+      bool zero_sum = false;
+      const auto sigma = fi.sigmaSet(nterm, cterm, zero_sum);
+      TEST_EQUAL(zero_sum, true)
+      TEST_EQUAL(sigma.size(), 5u)
+      ABORT_IF(sigma.size() != 5u)
+      TEST_REAL_SIMILAR(sigma[0], -1.968032)
+      TEST_REAL_SIMILAR(sigma[1], -0.984016)
+      TEST_EQUAL(sigma[2], 0.0) // the cancelling pair merges into the exact 0 entry
+      TEST_REAL_SIMILAR(sigma[3], 0.984016)
+      TEST_REAL_SIMILAR(sigma[4], 1.968032)
+    }
+  }
+  {
+    // One modification per peptide: no nonempty set sums to zero.
+    ZeroSumProbe fi;
+    configure(fi, {"Deamidated (N)", "Amidated (C-term)"}, 1);
+    bool zero_sum = true;
+    const auto sigma = fi.sigmaSet(false, false, zero_sum);
+    TEST_EQUAL(zero_sum, false)
+    TEST_EQUAL(sigma.size(), 3u)
+  }
+  {
+    // Negative control: Oxidation (M) alone never sums to zero.
+    ZeroSumProbe fi;
+    configure(fi, {"Oxidation (M)"}, 2);
+    for (const auto& [nterm, cterm] : std::vector<std::pair<bool, bool>>{{false, false}, {true, false}, {false, true}})
+    {
+      bool zero_sum = true;
+      const auto sigma = fi.sigmaSet(nterm, cterm, zero_sum);
+      TEST_EQUAL(zero_sum, false)
+      TEST_EQUAL(sigma.size(), 3u)
+      ABORT_IF(sigma.size() != 3u)
+      TEST_EQUAL(sigma[0], 0.0)
+      TEST_REAL_SIMILAR(sigma[1], 15.994915)
+      TEST_REAL_SIMILAR(sigma[2], 31.989830)
+    }
+  }
+  {
+    // A protein-terminal partner counts only in the Σ set of its terminus.
+    ZeroSumProbe fi;
+    configure(fi, {"Deamidated (N)", "Amidated (Protein C-term)"}, 2);
+    bool zero_base = true, zero_nterm = true, zero_cterm = false;
+    fi.sigmaSet(false, false, zero_base);
+    fi.sigmaSet(true, false, zero_nterm);
+    fi.sigmaSet(false, true, zero_cterm);
+    TEST_EQUAL(zero_base, false)
+    TEST_EQUAL(zero_nterm, false)
+    TEST_EQUAL(zero_cterm, true)
+  }
+}
+END_SECTION
+
+START_SECTION(([EXTRA] SNES finds a nonempty modification set with zero total mass shift (Deamidated (N) + Amidated (C-term))))
+{
+  // Reproducer from the #10403 review (B3): the spectrum of
+  // AN(Deamidated)PEPTIDER.(Amidated), generated independently with
+  // TheoreticalSpectrumGenerator, queried against AKANPEPTIDERHILNPQSTV with
+  // nonspecific digestion, variable Deamidated (N) and Amidated (C-term), at
+  // most two variable modifications. The shifts cancel, so the precursor
+  // matches the unmodified ANPEPTIDER as well: SNES must report both, the
+  // empty modification set and the zero-sum one.
+  //
+  // Only y9 (NPEPTIDER, carrying both modifications) is unshifted against the
+  // unmodified fragment index, hence fragment:min_matched_ions = 1.
+  const std::vector<FASTAFile::FASTAEntry> entries{{"p", "p", "AKANPEPTIDERHILNPQSTV"}};
+
+  FragmentIndex_test fi;
+  auto p = fi.getParameters();
+  p.setValue("peptide:enzyme_specificity", "none");
+  p.setValue("peptide:min_size", 8);
+  p.setValue("peptide:max_size", 12);
+  p.setValue("peptide:min_mass", 0);
+  p.setValue("peptide:max_mass", 50000);
+  p.setValue("precursor:mass_tolerance_lower", 20.0);
+  p.setValue("precursor:mass_tolerance_upper", 20.0);
+  p.setValue("precursor:mass_tolerance_unit", "ppm");
+  p.setValue("fragment:mass_tolerance", 20.0);
+  p.setValue("fragment:mass_tolerance_unit", "ppm");
+  p.setValue("precursor:isotope_error_min", 0);
+  p.setValue("precursor:isotope_error_max", 0);
+  p.setValue("modifications:variable", std::vector<std::string>{"Deamidated (N)", "Amidated (C-term)"});
+  p.setValue("modifications:variable_max_per_peptide", 2);
+  p.setValue("modifications:fixed", std::vector<std::string>{});
+  p.setValue("snes_enabled", "true");
+  p.setValue("fragment:min_matched_ions", 1);
+  fi.setParameters(p);
+  fi.build(entries);
+
+  const AASequence target = AASequence::fromString("AN(Deamidated)PEPTIDER.(Amidated)");
+  const AASequence unmodified = AASequence::fromString("ANPEPTIDER");
+  TEST_REAL_SIMILAR(target.getMonoWeight(), unmodified.getMonoWeight())
+
+  TheoreticalSpectrumGenerator tsg;
+  Param tsg_p = tsg.getParameters();
+  tsg_p.setValue("add_metainfo", "true");
+  tsg.setParameters(tsg_p);
+  PeakSpectrum theo;
+  tsg.getSpectrum(theo, target, 1, 1);
+  theo.sortByPosition();
+
+  MSSpectrum spec;
+  for (const auto& peak : theo) spec.push_back(peak);
+  Precursor prec;
+  prec.setMZ(target.getMonoWeight() + Constants::PROTON_MASS_U);
+  prec.setCharge(1);
+  spec.getPrecursors().push_back(prec);
+  spec.setMSLevel(2);
+
+  FragmentIndex::SpectrumMatchesTopN sms;
+  fi.querySpectrum(spec, entries, sms);
+
+  bool found_unmodified = false;
+  bool found_zero_sum = false;
+  bool zero_sigma_mass_mismatch = false;
+  for (const auto& hit : sms.hits_)
+  {
+    if (hit.sigma_delta_ != 0.0f) continue;
+    const auto& mother = fi.getPeptides()[hit.peptide_idx_];
+    const int realized_len = fi.realizeSNESLength(mother, entries,
+                                                  target.getMonoWeight() + Constants::PROTON_MASS_U,
+                                                  20.0, 20.0, true);
+    if (realized_len < 0) continue; // dropped later by the search as well
+    const AASequence realized = fi.reconstructRealizedSubSequence(mother, entries,
+                                                                  static_cast<size_t>(realized_len),
+                                                                  hit.subset_bitmask_);
+    // Every Σ = 0 hit, empty or not, keeps the unmodified precursor mass.
+    if (std::abs(realized.getMonoWeight() - unmodified.getMonoWeight()) > 1e-4) zero_sigma_mass_mismatch = true;
+    if (hit.subset_bitmask_ == 0 && realized == unmodified) found_unmodified = true;
+    if (hit.subset_bitmask_ != 0 && realized == target) found_zero_sum = true;
+  }
+  TEST_EQUAL(found_unmodified, true)
+  TEST_EQUAL(found_zero_sum, true)
+  TEST_EQUAL(zero_sigma_mass_mismatch, false)
+}
+END_SECTION
+
+START_SECTION(([EXTRA] SNES without a zero-sum modification set reports Σ = 0 hits unmodified only (Oxidation (M) control)))
+{
+  // Negative control for the zero-sum path: Oxidation (M) cannot sum to zero,
+  // so every Σ = 0 hit is the unmodified peptide (subset_bitmask_ = 0), each
+  // (mother, charge, isotope error) at most once, and the modified peptide is
+  // still found at Σ = +15.995.
+  const std::vector<FASTAFile::FASTAEntry> entries{{"p", "p", "AKACDEFMGMRHILNPQSTV"}};
+
+  FragmentIndex_test fi;
+  auto p = fi.getParameters();
+  p.setValue("peptide:enzyme_specificity", "none");
+  p.setValue("peptide:min_size", 8);
+  p.setValue("peptide:max_size", 12);
+  p.setValue("peptide:min_mass", 0);
+  p.setValue("peptide:max_mass", 50000);
+  p.setValue("precursor:mass_tolerance_lower", 20.0);
+  p.setValue("precursor:mass_tolerance_upper", 20.0);
+  p.setValue("precursor:mass_tolerance_unit", "ppm");
+  p.setValue("fragment:mass_tolerance", 20.0);
+  p.setValue("fragment:mass_tolerance_unit", "ppm");
+  p.setValue("precursor:isotope_error_min", 0);
+  p.setValue("precursor:isotope_error_max", 0);
+  p.setValue("modifications:variable", std::vector<std::string>{"Oxidation (M)"});
+  p.setValue("modifications:variable_max_per_peptide", 2);
+  p.setValue("modifications:fixed", std::vector<std::string>{});
+  p.setValue("snes_enabled", "true");
+  p.setValue("fragment:min_matched_ions", 1);
+  fi.setParameters(p);
+  fi.build(entries);
+
+  const auto& sigma = fi.getSnesSigmaDeltaSet();
+  TEST_EQUAL(sigma.size(), 3u)
+  ABORT_IF(sigma.size() != 3u)
+  TEST_EQUAL(sigma[0], 0.0)
+  TEST_REAL_SIMILAR(sigma[1], 15.994915)
+  TEST_REAL_SIMILAR(sigma[2], 31.989830)
+
+  for (const bool oxidized : {false, true})
+  {
+    AASequence target = AASequence::fromString("ACDEFMGMR");
+    if (oxidized) target.setModification(5, "Oxidation");
+
+    TheoreticalSpectrumGenerator tsg;
+    Param tsg_p = tsg.getParameters();
+    tsg_p.setValue("add_metainfo", "true");
+    tsg.setParameters(tsg_p);
+    PeakSpectrum theo;
+    tsg.getSpectrum(theo, target, 1, 1);
+    theo.sortByPosition();
+
+    MSSpectrum spec;
+    for (const auto& peak : theo) spec.push_back(peak);
+    Precursor prec;
+    prec.setMZ(target.getMonoWeight() + Constants::PROTON_MASS_U);
+    prec.setCharge(1);
+    spec.getPrecursors().push_back(prec);
+    spec.setMSLevel(2);
+
+    FragmentIndex::SpectrumMatchesTopN sms;
+    fi.querySpectrum(spec, entries, sms);
+
+    size_t zero_sigma_hits = 0;
+    bool zero_sigma_modified = false;
+    bool found_oxidized = false;
+    std::set<std::tuple<size_t, uint16_t, int16_t>> zero_sigma_keys;
+    for (const auto& hit : sms.hits_)
+    {
+      if (hit.sigma_delta_ == 0.0f)
+      {
+        ++zero_sigma_hits;
+        if (hit.subset_bitmask_ != 0) zero_sigma_modified = true;
+        zero_sigma_keys.emplace(hit.peptide_idx_, hit.precursor_charge_, hit.isotope_error_);
+      }
+      else if (hit.subset_bitmask_ != 0 && std::abs(hit.sigma_delta_ - 15.994915f) < 0.01f)
+      {
+        found_oxidized = true;
+      }
+    }
+    TEST_EQUAL(zero_sigma_modified, false)
+    TEST_EQUAL(zero_sigma_keys.size(), zero_sigma_hits)
+    TEST_EQUAL(zero_sigma_hits > 0, !oxidized)
+    TEST_EQUAL(found_oxidized, oxidized)
+  }
+}
+END_SECTION
+
 START_SECTION((SNES emits one SpectrumMatch per valid subset at the same Σ (emit-both)))
 {
   // Peptide "ACDEFMGMR" has two M residues at positions 5 and 7 (0-indexed).

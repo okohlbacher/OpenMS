@@ -606,9 +606,13 @@ protected:
     ///
     /// @param include_prot_nterm_mods include mods with PROTEIN_N_TERM specificity
     /// @param include_prot_cterm_mods include mods with PROTEIN_C_TERM specificity
+    /// @param zero_sum_reachable if not null, set to true iff a nonempty multiset of the
+    ///        eligible deltas sums to zero within 1e-6 Da (e.g. Deamidated (N) + Amidated (C-term)),
+    ///        i.e. the 0.0 entry also stands for modified peptidoforms
     /// @return sorted ascending distinct Σ values; always includes 0.0
     std::vector<double> computeSnesSigmaDeltaSet_(bool include_prot_nterm_mods,
-                                                   bool include_prot_cterm_mods) const;
+                                                   bool include_prot_cterm_mods,
+                                                   bool* zero_sum_reachable = nullptr) const;
 
     /// Per-AA fixed modification delta mass (0.0 if no fixed mod applies)
     std::array<double, 128> fixed_mod_deltas_{};
@@ -651,6 +655,13 @@ protected:
     /// SNES v1.1: Σ values including PROTEIN_C_TERM-only variable mods.
     /// Used only for Single-C mothers anchored at the protein C-terminus.
     std::vector<double> snes_sigma_delta_set_with_prot_cterm_;
+    /// SNES: true iff a nonempty set of the deltas behind the matching Σ set above sums to
+    /// zero (e.g. Deamidated (N) + Amidated (C-term)). Σ = 0 hits then also enumerate the
+    /// nonempty variable-mod subsets that sum to zero, next to the unmodified peptide.
+    /// All false when no configured set can sum to zero: the query is then unchanged.
+    bool snes_zero_sum_reachable_{false};
+    bool snes_zero_sum_reachable_with_prot_nterm_{false};  ///< as above, with PROTEIN_N_TERM mods
+    bool snes_zero_sum_reachable_with_prot_cterm_{false};  ///< as above, with PROTEIN_C_TERM mods
 
     /// Precomputed residue mass lookup table: ASCII char -> internal monoisotopic mass (Da).
     /// Indexed by single-letter amino acid code (e.g., 'A'=65). Entries for non-AA chars are 0.

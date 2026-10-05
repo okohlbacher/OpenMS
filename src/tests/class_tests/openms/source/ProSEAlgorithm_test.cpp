@@ -1401,6 +1401,79 @@ START_SECTION(([EXTRA] Closed search baseline))
 }
 END_SECTION
 
+START_SECTION(([EXTRA] SNES search finds a nonempty modification set with zero total mass shift))
+{
+  // Reproducer from the #10403 review (B3), as a search: the spectrum of
+  // AN(Deamidated)PEPTIDER.(Amidated) against AKANPEPTIDERHILNPQSTV,
+  // nonspecific digestion with SNES, variable Deamidated (N) and Amidated
+  // (C-term), at most two per peptide. Deamidated (+0.984016 Da) and Amidated
+  // (-0.984016 Da) cancel, so the precursor also matches the unmodified
+  // ANPEPTIDER; SNES used to report only that one. Only y9 (NPEPTIDER, carrying
+  // both modifications) is unshifted against the unmodified fragment index,
+  // hence fragment:min_matched_ions = 1.
+  vector<FASTAFile::FASTAEntry> fasta_db = {{"P01", "Test", "AKANPEPTIDERHILNPQSTV"}};
+  const AASequence target = AASequence::fromString("AN(Deamidated)PEPTIDER.(Amidated)");
+
+  TheoreticalSpectrumGenerator tsg;
+  Param tsg_param = tsg.getParameters();
+  tsg_param.setValue("add_metainfo", "true");
+  tsg.setParameters(tsg_param);
+  MSSpectrum spec;
+  tsg.getSpectrum(spec, target, 1, 1);
+  spec.sortByPosition();
+  spec.setMSLevel(2);
+  spec.setRT(100.0);
+  Precursor prec;
+  prec.setMZ(target.getMZ(1));
+  prec.setCharge(1);
+  spec.setPrecursors({prec});
+  spec.setNativeID("spectrum=0");
+  PeakMap spectra;
+  spectra.addSpectrum(std::move(spec));
+
+  ProSEAlgorithm algo;
+  Param p = algo.getParameters();
+  p.setValue("precursor:mass_tolerance_lower", 10.0);
+  p.setValue("precursor:mass_tolerance_upper", 10.0);
+  p.setValue("precursor:mass_tolerance_unit", "ppm");
+  p.setValue("precursor:isotope_error_min", 0);
+  p.setValue("precursor:isotope_error_max", 0);
+  p.setValue("fragment:mass_tolerance", 20.0);
+  p.setValue("fragment:mass_tolerance_unit", "ppm");
+  p.setValue("fragment:min_matched_ions", 1);
+  p.setValue("modifications:fixed", vector<string>{});
+  p.setValue("modifications:variable", vector<string>{"Deamidated (N)", "Amidated (C-term)"});
+  p.setValue("modifications:variable_max_per_peptide", 2);
+  p.setValue("peptide:enzyme_specificity", "none");
+  p.setValue("peptide:min_size", 8);
+  p.setValue("peptide:max_size", 12);
+  p.setValue("snes_enabled", "true");
+  p.setValue("decoys", "ignore");
+  p.setValue("report:top_hits", 10);
+  algo.setParameters(p);
+
+  vector<ProteinIdentification> prot_ids;
+  PeptideIdentificationList pep_ids;
+  auto ec = algo.search(spectra, fasta_db, prot_ids, pep_ids);
+  TEST_EQUAL(ec == ProSEAlgorithm::ExitCodes::EXECUTION_OK, true)
+  TEST_EQUAL(pep_ids.size(), 1)
+  ABORT_IF(pep_ids.size() != 1)
+  ABORT_IF(pep_ids[0].getHits().empty())
+
+  bool found_target = false;
+  bool found_unmodified = false;
+  for (const auto& hit : pep_ids[0].getHits())
+  {
+    if (hit.getSequence() == target) found_target = true;
+    if (hit.getSequence() == AASequence::fromString("ANPEPTIDER")) found_unmodified = true;
+  }
+  TEST_EQUAL(found_target, true)
+  TEST_EQUAL(found_unmodified, true)
+  // Every fragment ion matches the zero-sum candidate, so it ranks first.
+  TEST_EQUAL(pep_ids[0].getHits()[0].getSequence() == target, true)
+}
+END_SECTION
+
 START_SECTION(([EXTRA] Closed search with c/z ions toggled - ETD-style fragmentation))
 {
   // ProSE can score c/z fragment ions (e.g. ETD/ECD data) via the

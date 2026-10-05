@@ -335,8 +335,11 @@ namespace OpenMS
   }
 
   std::vector<double> FragmentIndex::computeSnesSigmaDeltaSet_(bool include_prot_nterm_mods,
-                                                                bool include_prot_cterm_mods) const
+                                                                bool include_prot_cterm_mods,
+                                                                bool* zero_sum_reachable) const
   {
+    if (zero_sum_reachable != nullptr) *zero_sum_reachable = false;
+
     // Precondition: initModificationTables_() has been called.
     // updateMembers_() guarantees this: it resets mod_tables_initialized_ and
     // calls initModificationTables_() at the end, so any setParameters() call
@@ -404,6 +407,10 @@ namespace OpenMS
           next_level.end());
       for (double v : next_level)
       {
+        // A sum of m >= 1 deltas that cancels (e.g. Deamidated +0.984016 and
+        // Amidated -0.984016) merges into the Σ = 0 entry below. Report it, so
+        // that the query also enumerates nonempty subsets at Σ = 0.
+        if (zero_sum_reachable != nullptr && std::abs(v) < 1e-6) *zero_sum_reachable = true;
         // Insert into result if not already present (within tolerance).
         auto it = std::lower_bound(result.begin(), result.end(), v - 1e-6);
         if (it == result.end() || std::abs(*it - v) >= 1e-6)
@@ -3490,22 +3497,30 @@ init_hits.hits_.erase(it_zero, init_hits.hits_.end());
 
     // SNES v1.1 subset enumeration: expand each (mother, Σ) hit in sms.hits_
     // into one SpectrumMatch per valid variable-mod subset on the realized
-    // sub-peptide. Σ=0 hits pass through unchanged (bitmask=0). Per-mother
-    // cap of 16 subsets across all (k, Σ) tuples prevents degenerate blowup.
+    // sub-peptide. Σ=0 hits pass through unchanged (bitmask=0, the empty
+    // subset); if the configured variable mods contain a nonempty set that
+    // sums to zero (e.g. Deamidated (N) + Amidated (C-term)), Σ=0 hits also
+    // enumerate the nonempty subsets that sum to zero. Per-mother cap of 16
+    // subsets across all (k, Σ) tuples prevents degenerate blowup.
     {
       std::vector<SpectrumMatch> expanded;
       expanded.reserve(sms.hits_.size());
       std::unordered_map<size_t, size_t> subsets_per_mother;
 
       const auto& fasta_entries_ref = fasta_entries;
+      const bool any_zero_sum = snes_zero_sum_reachable_
+          || snes_zero_sum_reachable_with_prot_nterm_
+          || snes_zero_sum_reachable_with_prot_cterm_;
 
       for (const SpectrumMatch& sm_raw : sms.hits_)
       {
-        if (sm_raw.sigma_delta_ == 0.0f)
+        const bool zero_sigma = (sm_raw.sigma_delta_ == 0.0f);
+        if (zero_sigma)
         {
-          // No variable mods: pass through unchanged, bitmask already 0.
+          // The empty subset: pass through unchanged, bitmask already 0.
           expanded.push_back(sm_raw);
-          continue;
+          // Without a zero-sum set no nonempty subset can match Σ = 0.
+          if (!any_zero_sum) continue;
         }
 
         const Peptide& mother = fi_peptides_[sm_raw.peptide_idx_];
@@ -3528,6 +3543,16 @@ init_hits.hits_.erase(it_zero, init_hits.hits_.end());
         const char* seq_ptr = protein_seq.c_str() + sub_start;
         const bool is_prot_nterm = isProteinNTerminal_(protein_seq, sub_start);
         const bool is_prot_cterm = (sub_start + sub_len == protein_seq.size());
+
+        // Σ = 0: enumerate only where a zero-sum set exists for this sub-peptide's
+        // context (protein-terminal mods take part only at the protein termini).
+        if (zero_sigma
+            && !(snes_zero_sum_reachable_
+                 || (is_prot_nterm && snes_zero_sum_reachable_with_prot_nterm_)
+                 || (is_prot_cterm && snes_zero_sum_reachable_with_prot_cterm_)))
+        {
+          continue;
+        }
 
         ModSlot slots[MAX_MOD_SLOTS];
         const size_t n_slots = buildModSlots_(seq_ptr, sub_len, slots, is_prot_nterm, is_prot_cterm);
@@ -3619,8 +3644,9 @@ init_hits.hits_.erase(it_zero, init_hits.hits_.end());
     // Backward-compatible 2-arg overload. Delegates to the 3-arg overload
     // with an empty FASTA. Safe for non-SNES and SNES-without-var-mods
     // callers — the subset-enumeration block in querySpectrumSNES_ only
-    // dereferences fasta_entries when sm.sigma_delta_ != 0, which cannot
-    // occur when modifications_variable_ is empty. SNES + var-mods callers
+    // dereferences fasta_entries when sm.sigma_delta_ != 0 or a zero-sum
+    // modification set is configured; neither can occur when
+    // modifications_variable_ is empty. SNES + var-mods callers
     // must use the 3-arg overload; this guard rejects them explicitly
     // rather than producing undefined behavior.
     if (is_snes_mode_ && !modifications_variable_.empty())
@@ -3964,9 +3990,11 @@ init_hits.hits_.erase(it_zero, init_hits.hits_.end());
     //   with_prot_cterm:     baseline + PROTEIN_C_TERM variable mods
     // Non-SNES queries never consult these; populated unconditionally (cheap)
     // so that toggling snes_enabled at runtime does not require a rebuild.
-    snes_sigma_delta_set_ = computeSnesSigmaDeltaSet_(false, false);
-    snes_sigma_delta_set_with_prot_nterm_ = computeSnesSigmaDeltaSet_(true, false);
-    snes_sigma_delta_set_with_prot_cterm_ = computeSnesSigmaDeltaSet_(false, true);
+    snes_sigma_delta_set_ = computeSnesSigmaDeltaSet_(false, false, &snes_zero_sum_reachable_);
+    snes_sigma_delta_set_with_prot_nterm_ =
+        computeSnesSigmaDeltaSet_(true, false, &snes_zero_sum_reachable_with_prot_nterm_);
+    snes_sigma_delta_set_with_prot_cterm_ =
+        computeSnesSigmaDeltaSet_(false, true, &snes_zero_sum_reachable_with_prot_cterm_);
 
     const size_t largest_set = std::max({snes_sigma_delta_set_.size(),
                                           snes_sigma_delta_set_with_prot_nterm_.size(),
