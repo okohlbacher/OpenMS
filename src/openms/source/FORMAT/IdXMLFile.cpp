@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cmath>
+#include <cstdio>
 #include <exception>
 #include <fstream>
 #include <functional>
@@ -109,6 +110,12 @@ namespace OpenMS
     {
       throw Exception::UnableToCreateFile(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename);
     }
+    // closes and removes the incomplete file before an error is reported
+    const auto discard_file = [&os, &filename]()
+    {
+      os.close();
+      std::remove(filename.c_str());
+    };
 
     startProgress(0, peptide_ids.size(), "Storing idXML");
 
@@ -503,6 +510,7 @@ namespace OpenMS
       const SignedSize num_blocks = static_cast<SignedSize>((to_write.size() + block_size - 1) / block_size);
       const std::streamsize precision = os.precision();
       std::exception_ptr error;
+      bool write_failed = false; // writing into the file failed; the exception is constructed after the parallel region
       std::atomic<bool> failed(false);
 
 #ifdef _OPENMP
@@ -526,10 +534,12 @@ namespace OpenMS
             {
               std::ostringstream block_os;
               block_os.precision(precision);
-              for (Size k = begin; k < end; ++k)
-              {
-                write_peptide_identification(block_os, peptide_ids[to_write[k]], scratch);
-              }
+              formatBlock_(block_os, [&](std::ostream& out) {
+                for (Size k = begin; k < end; ++k)
+                {
+                  write_peptide_identification(out, peptide_ids[to_write[k]], scratch);
+                }
+              });
               text = block_os.str();
             }
             catch (...)
@@ -549,13 +559,31 @@ namespace OpenMS
               else
               {
                 os.write(text.data(), static_cast<std::streamsize>(text.size()));
-                setProgress(to_write[end - 1]);
+                if (!os)
+                {
+                  write_failed = true;
+                  failed.store(true, std::memory_order_relaxed);
+                }
+                else
+                {
+                  setProgress(to_write[end - 1]);
+                }
               }
             }
           }
         }
       }
-      if (error) std::rethrow_exception(error);
+      if (error)
+      {
+        discard_file();
+        std::rethrow_exception(error);
+      }
+      if (write_failed)
+      {
+        discard_file();
+        throw Exception::UnableToCreateFile(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename,
+                                            "writing the file failed (e.g. disk full or I/O error); the incomplete file was removed");
+      }
 
       os << "\t</IdentificationRun>\n";
 
@@ -577,8 +605,15 @@ namespace OpenMS
     // write footer
     os << "</IdXML>\n";
 
-    // close stream
+    // close stream; a failed write anywhere above (the stream state is sticky) or a failed final flush must not leave a
+    // truncated file behind a successful return
     os.close();
+    if (os.fail())
+    {
+      std::remove(filename.c_str());
+      throw Exception::UnableToCreateFile(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename,
+                                          "writing the file failed (e.g. disk full or I/O error); the incomplete file was removed");
+    }
 
     endProgress();
 
@@ -1214,6 +1249,12 @@ namespace OpenMS
       }
     }
     return os;
+  }
+
+  void IdXMLFile::formatBlock_(std::ostream& block_os, const std::function<void(std::ostream&)>& write)
+  {
+    block_os.exceptions(std::ios::badbit | std::ios::failbit);
+    write(block_os);
   }
 
   void IdXMLFile::writeFragmentAnnotations_(const std::string & tag_name, std::ostream & os,

@@ -21,15 +21,22 @@
 #include <OpenMS/CHEMISTRY/ResidueModification.h>
 #include <OpenMS/CONCEPT/Constants.h>
 #include <OpenMS/DATASTRUCTURES/DateTime.h>
+#include <OpenMS/SYSTEM/File.h>
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <fstream>
 #include <limits>
+#include <new>
 #include <sstream>
+#include <streambuf>
 
 #ifdef _OPENMP
 #include <omp.h>
+#endif
+#ifdef __linux__
+#include <sys/stat.h>
+#include <unistd.h>
 #endif
 
 ///////////////////////////
@@ -76,6 +83,26 @@ namespace
   {
     return slurp4b(path).find(needle) != std::string::npos;
   }
+
+  // exposes the block formatter of the parallel writer
+  struct IdXMLFileBlockWriter : public IdXMLFile
+  {
+    using IdXMLFile::formatBlock_;
+  };
+
+  // a stream buffer that cannot grow, as a std::stringbuf whose allocation fails
+  struct BadAllocStreamBuf : public std::streambuf
+  {
+  protected:
+    int_type overflow(int_type) override { throw std::bad_alloc(); }
+  };
+
+  // a stream buffer that fails without throwing
+  struct FailingStreamBuf : public std::streambuf
+  {
+  protected:
+    int_type overflow(int_type) override { return traits_type::eof(); }
+  };
 
   // first occurrence only; returns false when @p from is absent
   bool replaceInFile4b(const std::string& path, const std::string& from, const std::string& to)
@@ -758,6 +785,110 @@ START_SECTION([EXTRA] store - hits with NaN scores are written in the order of P
     }
   }
   TEST_EQUAL(same_order, true)
+}
+END_SECTION
+
+START_SECTION([EXTRA] store - a failing stream throws and leaves no truncated idXML)
+{
+  // The block formatter of the parallel writer: a failure of the block's stream buffer propagates. Without exceptions on
+  // the stream, the std::bad_alloc would only set badbit and the partial block would be written as if complete.
+  const auto write_block = [](std::ostream& out) { out << "\t\t<PeptideIdentification score_type=\"score\" >\n" << 1.25 << '\n'; };
+  {
+    std::ostringstream formatted, direct;
+    IdXMLFileBlockWriter::formatBlock_(formatted, write_block);
+    write_block(direct);
+    TEST_EQUAL(formatted.str(), direct.str())
+  }
+  {
+    BadAllocStreamBuf buffer;
+    std::ostream out(&buffer);
+    TEST_EXCEPTION(std::bad_alloc, IdXMLFileBlockWriter::formatBlock_(out, write_block))
+  }
+  {
+    FailingStreamBuf buffer;
+    std::ostream out(&buffer);
+    TEST_EXCEPTION(std::ios_base::failure, IdXMLFileBlockWriter::formatBlock_(out, write_block))
+  }
+
+  std::vector<ProteinIdentification> prots(1);
+  prots[0].setIdentifier("runFail");
+  prots[0].setDateTime(DateTime::now());
+  prots[0].insertHit(ProteinHit(0.0, 1, "ACC_FAIL", ""));
+  const auto make_peps = [](Size n)
+  {
+    PeptideIdentificationList peps(n);
+    for (Size l = 0; l < n; ++l)
+    {
+      peps[l].setIdentifier("runFail");
+      peps[l].setScoreType("score");
+      peps[l].setHigherScoreBetter(true);
+      peps[l].setRT(double(l));
+      peps[l].setMZ(500.0 + double(l));
+      peps[l].setSpectrumReference("scan=" + StringUtils::toStr(l));
+      for (const std::string sequence : {"PEPTIDEA", "PEPTIDEB"})
+      {
+        PeptideHit hit(double(l), 0, 2, AASequence::fromString(sequence));
+        hit.addPeptideEvidence(PeptideEvidence("ACC_FAIL", 0, 7, '-', 'P'));
+        hit.setMetaValue("fail_test_string", std::string(64, 'x'));
+        peps[l].insertHit(hit);
+      }
+    }
+    return peps;
+  };
+
+  // A block that throws: the error is reported and the incomplete file is removed.
+  {
+    PeptideIdentificationList bad = make_peps(100);
+    for (PeptideHit& hit : bad[40].getHits()) hit.setMetaValue("fail_test_empty", DataValue()); // cannot be written
+    std::string file_bad;
+    NEW_TMP_FILE(file_bad)
+    TEST_EXCEPTION(Exception::ConversionError, IdXMLFile().store(file_bad, prots, bad))
+    TEST_EQUAL(File::exists(file_bad), false)
+  }
+
+#ifdef __linux__
+  // Disk full: an idXML symlinked to /dev/full. One identification fits into the buffer of the file, so the error shows
+  // only when the stream is flushed on close; 400 identifications overflow it while the blocks are written. Either way,
+  // store() throws and removes what it wrote (here: the link; /dev/full itself is untouched).
+  struct stat device;
+  if (::stat("/dev/full", &device) == 0 && S_ISCHR(device.st_mode))
+  {
+#ifdef _OPENMP
+    const int max_threads = omp_get_max_threads();
+#endif
+    for (const Size n : {Size(1), Size(400)})
+    {
+      for (const int threads : {1, 4})
+      {
+#ifdef _OPENMP
+        omp_set_num_threads(threads);
+#endif
+        const PeptideIdentificationList peps = make_peps(n);
+        // not a NEW_TMP_FILE: the end-of-test validation would read /dev/full through the link
+        const std::string link = "IdXMLFile_test_dev_full_" + StringUtils::toStr(n) + "_" + StringUtils::toStr(threads) + ".idXML";
+        std::remove(link.c_str());
+        ABORT_IF(::symlink("/dev/full", link.c_str()) != 0)
+        TEST_EXCEPTION(Exception::UnableToCreateFile, IdXMLFile().store(link, prots, peps))
+        struct stat link_stat;
+        TEST_EQUAL(::lstat(link.c_str(), &link_stat) != 0, true)
+        std::remove(link.c_str());
+      }
+    }
+#ifdef _OPENMP
+    omp_set_num_threads(max_threads);
+#endif
+    TEST_EQUAL(::stat("/dev/full", &device) == 0 && S_ISCHR(device.st_mode), true)
+  }
+#endif
+
+  // the same identifications into a regular file: written completely
+  std::string file_ok;
+  NEW_TMP_FILE(file_ok)
+  IdXMLFile().store(file_ok, prots, make_peps(400));
+  std::vector<ProteinIdentification> prots_in;
+  PeptideIdentificationList peps_in;
+  IdXMLFile().load(file_ok, prots_in, peps_in);
+  TEST_EQUAL(peps_in.size(), 400)
 }
 END_SECTION
 
