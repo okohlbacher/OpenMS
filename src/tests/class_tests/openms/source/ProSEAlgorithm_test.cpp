@@ -4152,6 +4152,67 @@ START_SECTION(([EXTRA] fixed terminal modifications that apply to some peptides 
 }
 END_SECTION
 
+START_SECTION(([EXTRA] residue-specific terminal variable modifications are searched on the terminus (Timo B1)))
+{
+  // Timo's B1 recipe: the theoretical spectrum of .(Gln->pyro-Glu)QPEPTIDER searched against QPEPTIDER (no cleavage)
+  // with Gln->pyro-Glu (N-term Q) variable. The index used to store the modification on residue 0, which aborts the
+  // scoring loop in Debug (ResidueDB precondition) and reports an unparsable sequence in Release. With a fixed
+  // TMT6plex (N-term) the terminus is occupied: pyro-Glu is not searched, and the TMT6plex form is found instead.
+  const vector<FASTAFile::FASTAEntry> fasta_db = {{"P1", "", "QPEPTIDER"}};
+  TheoreticalSpectrumGenerator tsg;
+  Param tsg_param = tsg.getParameters();
+  tsg_param.setValue("add_first_prefix_ion", "true");
+  tsg.setParameters(tsg_param);
+
+  for (const bool with_fixed_tmt : {false, true})
+  {
+    const AASequence target = AASequence::fromString(with_fixed_tmt ? ".(TMT6plex)QPEPTIDER" : ".(Gln->pyro-Glu)QPEPTIDER");
+    MSSpectrum spec;
+    tsg.getSpectrum(spec, target, 1, 1);
+    spec.sortByPosition();
+    spec.setMSLevel(2);
+    spec.setRT(10.0);
+    Precursor prec;
+    prec.setMZ(target.getMZ(2));
+    prec.setCharge(2);
+    spec.setPrecursors({prec});
+    spec.setNativeID("scan=1");
+    PeakMap spectra;
+    spectra.addSpectrum(spec);
+
+    ProSEAlgorithm algo;
+    Param p = algo.getParameters();
+    p.setValue("precursor:mass_tolerance_lower", 10.0);
+    p.setValue("precursor:mass_tolerance_upper", 10.0);
+    p.setValue("precursor:mass_tolerance_unit", "ppm");
+    p.setValue("fragment:mass_tolerance", 20.0);
+    p.setValue("fragment:mass_tolerance_unit", "ppm");
+    p.setValue("enzyme", "no cleavage");
+    p.setValue("peptide:min_size", 5);
+    p.setValue("decoys", "ignore");
+    p.setValue("report:top_hits", 10);
+    p.setValue("modifications:fixed", with_fixed_tmt ? StringList{"TMT6plex (N-term)"} : StringList{});
+    p.setValue("modifications:variable", StringList{"Gln->pyro-Glu (N-term Q)"});
+    algo.setParameters(p);
+
+    vector<ProteinIdentification> prot_ids;
+    PeptideIdentificationList pep_ids;
+    TEST_EQUAL(algo.search(spectra, fasta_db, prot_ids, pep_ids) == ProSEAlgorithm::ExitCodes::EXECUTION_OK, true)
+    TEST_EQUAL(pep_ids.size(), 1)
+    ABORT_IF(pep_ids.size() != 1 || pep_ids[0].getHits().empty())
+    const AASequence& top = pep_ids[0].getHits()[0].getSequence();
+    TEST_EQUAL(top, target)
+    TEST_EQUAL(AASequence::fromString(top.toString()), top)
+    for (const auto& hit : pep_ids[0].getHits())
+    {
+      TEST_FALSE(hit.getSequence()[0].isModified())
+      TEST_EQUAL(AASequence::fromString(hit.getSequence().toString()), hit.getSequence())
+      if (with_fixed_tmt) TEST_EQUAL(hit.getSequence().getNTerminalModificationName(), "TMT6plex")
+    }
+  }
+}
+END_SECTION
+
 START_SECTION(([EXTRA] decoys=auto warns when the supplied decoys do not start with M as often as the targets))
 {
   // With initial-Met clipping, reversed decoys (which end with the target's Met) leave the clipped N-terminal

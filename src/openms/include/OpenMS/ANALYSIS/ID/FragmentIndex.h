@@ -239,16 +239,16 @@ namespace OpenMS
     static void checkFixedModifications(const StringList& fixed_modifications);
 
     /**
-     * @brief Variable modifications of a whole terminus that a fixed terminal modification excludes.
+     * @brief Variable terminal modifications that a fixed terminal modification excludes.
      *
-     * A terminus carries one modification. A variable modification of the whole peptide or protein N- or C-terminus
-     * (no residue preference, e.g. 'Acetyl (Protein N-term)') is therefore not searched where a fixed one (e.g.
-     * 'TMT6plex (N-term)') sits on that terminus, as in ModifiedPeptideGenerator. Residue-specific terminal variable
-     * modifications (e.g. 'Gln->pyro-Glu (N-term Q)') modify the residue and are searched as before.
+     * A terminus carries one modification. A variable peptide- or protein-terminal modification is therefore not
+     * searched where a fixed one (e.g. 'TMT6plex (N-term)') sits on that terminus. This also applies to terminal
+     * modifications with a residue preference (e.g. 'Gln->pyro-Glu (N-term Q)'): AASequence stores them on the
+     * terminus, independently of modifications on the terminal amino-acid residue itself.
      *
      * @param[in] fixed_modifications Names of the fixed modifications (as in modifications:fixed)
      * @param[in] variable_modifications Names of the variable modifications (as in modifications:variable)
-     * @return Full ids of the variable modifications that the index does not apply
+     * @return Full ids of the variable terminal modifications that the index does not apply
      */
     static StringList shadowedVariableTerminalModifications(const StringList& fixed_modifications,
                                                             const StringList& variable_modifications);

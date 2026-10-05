@@ -155,10 +155,9 @@ namespace OpenMS
 
   namespace
   {
-    /// 0 (N) or 1 (C) for a modification of a whole peptide or protein terminus (no residue preference), else -1
-    int wholeTerminus(const ResidueModification& mod)
+    /// 0 (N) or 1 (C) for a terminal modification, including a residue-specific one, else -1.
+    int modifiedTerminus(const ResidueModification& mod)
     {
-      if (mod.getOrigin() != 'X' && mod.getOrigin() != '.') return -1;
       switch (mod.getTermSpecificity())
       {
         case ResidueModification::N_TERM:
@@ -181,13 +180,13 @@ namespace OpenMS
     bool fixed_terminus[2] = {false, false}; // N-, C-terminus
     for (const auto& [mod_ptr, residue_ptr] : ModifiedPeptideGenerator::getModifications(fixed_modifications).val)
     {
-      if (const int t = wholeTerminus(*mod_ptr); t >= 0) fixed_terminus[t] = true;
+      if (const int t = modifiedTerminus(*mod_ptr); t >= 0) fixed_terminus[t] = true;
     }
     for (const std::string& name : variable_modifications) // in the given order (getModifications() returns a hash map)
     {
       for (const auto& [mod_ptr, residue_ptr] : ModifiedPeptideGenerator::getModifications({name}).val)
       {
-        if (const int t = wholeTerminus(*mod_ptr); t >= 0 && fixed_terminus[t]) shadowed.push_back(name);
+        if (const int t = modifiedTerminus(*mod_ptr); t >= 0 && fixed_terminus[t]) shadowed.push_back(name);
       }
     }
     return shadowed;
@@ -282,8 +281,18 @@ namespace OpenMS
         }
         else
         {
-          // Residue-specific variable mod — add to the table for this AA
-          variable_mod_table_[static_cast<unsigned char>(origin)].push_back(entry);
+          // Terminal specificity determines the occupied site even when the modification has
+          // an amino-acid preference. Such a modification is independent of a fixed residue
+          // modification, but cannot replace an occupied terminus. Keep it in the per-AA table
+          // so eligibility and slot ordering remain residue/context dependent.
+          const auto aa = static_cast<unsigned char>(origin);
+          const int terminus = modifiedTerminus(*mod_ptr);
+          if ((terminus == 0 && fixed_nterm_mod_ptr_ == nullptr)
+              || (terminus == 1 && fixed_cterm_mod_ptr_ == nullptr)
+              || terminus < 0)
+          {
+            variable_mod_table_[aa].push_back(entry);
+          }
         }
       }
     }
@@ -425,7 +434,14 @@ namespace OpenMS
         }
         if (applies)
         {
-          out_slots[n_slots++] = {static_cast<uint16_t>(i), entry.delta_mass, entry.mod_ptr};
+          // A residue preference restricts eligibility, not storage. AASequence stores all
+          // terminal modifications on the terminus; sharing that slot also makes conflicts
+          // with pure terminal modifications visible to both enumeration paths.
+          const int terminus = modifiedTerminus(*entry.mod_ptr);
+          const uint16_t position = terminus == 0 ? ModSlot::NTERM_SLOT
+                                  : terminus == 1 ? ModSlot::CTERM_SLOT
+                                                  : static_cast<uint16_t>(i);
+          out_slots[n_slots++] = {position, entry.delta_mass, entry.mod_ptr};
         }
       }
     }

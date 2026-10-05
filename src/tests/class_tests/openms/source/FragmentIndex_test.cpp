@@ -13,6 +13,7 @@
 #include <OpenMS/ANALYSIS/ID/FragmentIndex.h>
 #include <OpenMS/CHEMISTRY/AASequence.h>
 #include <OpenMS/CHEMISTRY/EmpiricalFormula.h>
+#include <OpenMS/CHEMISTRY/ModificationsDB.h>
 #include <OpenMS/CHEMISTRY/ModifiedPeptideGenerator.h>
 #include <OpenMS/CHEMISTRY/TheoreticalSpectrumGenerator.h>
 #include <OpenMS/CONCEPT/Constants.h>
@@ -22,6 +23,7 @@
 #include <OpenMS/KERNEL/Peak1D.h>
 #include <algorithm>
 #include <bit>
+#include <cmath>
 #include <limits>
 #include <numeric>
 #include <random>
@@ -54,6 +56,12 @@ using namespace std;
 class FragmentIndex_test : public FragmentIndex
 {
 public:
+  Size modificationSlotCount(const std::string& sequence, bool protein_nterm, bool protein_cterm) const
+  {
+    ModSlot slots[MAX_MOD_SLOTS];
+    return buildModSlots_(sequence.data(), sequence.size(), slots, protein_nterm, protein_cterm);
+  }
+
   // Verifies that the generated peptide set matches the expected set exactly
   // (by subsequence window and mod bitmask).
   bool testDigestion(const std::vector<FragmentIndex::Peptide>& expected)
@@ -115,6 +123,38 @@ public:
   }
 
   const std::vector<Fragment>& getFragments() const { return fi_fragments_; }
+
+  // Independent b/y mass oracle for fixtures indexing every singly charged ion.
+  bool fragmentsMatchSequence(UInt32 peptide_idx, const AASequence& sequence) const
+  {
+    std::vector<double> expected, observed;
+    for (Size length = 1; length < sequence.size(); ++length)
+    {
+      expected.push_back(sequence.getPrefix(length).getMZ(1, Residue::BIon));
+      expected.push_back(sequence.getSuffix(length).getMZ(1, Residue::YIon));
+    }
+    for (const Fragment& fragment : fi_fragments_)
+    {
+      if (fragment.peptide_idx_ == peptide_idx) { observed.push_back(fragment.fragment_mz_); }
+    }
+    return fragmentMassesMatch(std::move(expected), std::move(observed));
+  }
+
+  static bool fragmentMassesMatch(std::vector<double> expected, std::vector<double> observed)
+  {
+    // Reject NaN/infinity before sorting: NaN is not ordered and abs(NaN) > tolerance is false.
+    const auto finite = [](double mz) { return std::isfinite(mz); };
+    if (!std::all_of(expected.begin(), expected.end(), finite)
+        || !std::all_of(observed.begin(), observed.end(), finite)) { return false; }
+    std::sort(expected.begin(), expected.end());
+    std::sort(observed.begin(), observed.end());
+    if (observed.size() != expected.size()) { return false; }
+    for (Size i = 0; i < expected.size(); ++i)
+    {
+      if (std::abs(expected[i] - observed[i]) > 0.002) { return false; } // index stores float m/z
+    }
+    return true;
+  }
 
   static void sortPeptides(std::vector<Peptide>& peptides) { sortPeptides_(peptides); }
   static void sortPeptides(std::vector<Peptide>& peptides, size_t min_task_size) { sortPeptides_(peptides, min_task_size); }
@@ -930,7 +970,7 @@ START_SECTION(cross_validate_vs_ModifiedPeptideGenerator)
                                size_t max_var_mods) -> std::vector<std::pair<float, std::string>>
   {
     std::vector<FASTAFile::FASTAEntry> entries {{"p", "p", seq}};
-    FragmentIndex fi;
+    FragmentIndex_test fi;
     auto params = fi.getParameters();
     params.setValue("enzyme", "no cleavage");
     params.setValue("peptide:min_size", 0);
@@ -939,6 +979,7 @@ START_SECTION(cross_validate_vs_ModifiedPeptideGenerator)
     params.setValue("peptide:max_mass", 50000);
     params.setValue("fragment:min_mz", 0);
     params.setValue("fragment:max_mz", 50000);
+    params.setValue("fragment:min_ion_index", 0);
     params.setValue("modifications:variable_max_per_peptide", static_cast<int>(max_var_mods));
     params.setValue("modifications:variable", std::vector<std::string>(var_mod_names.begin(), var_mod_names.end()));
     params.setValue("modifications:fixed", std::vector<std::string>(fixed_mod_names.begin(), fixed_mod_names.end()));
@@ -946,9 +987,12 @@ START_SECTION(cross_validate_vs_ModifiedPeptideGenerator)
     fi.build(entries);
 
     std::vector<std::pair<float, std::string>> result;
-    for (const auto& pep : fi.getPeptides())
+    for (Size index = 0; index < fi.getPeptides().size(); ++index)
     {
+      const auto& pep = fi.getPeptides()[index];
       AASequence reconstructed = fi.reconstructModifiedSequence(pep, entries);
+      TEST_REAL_SIMILAR(pep.precursor_mz_, reconstructed.getMZ(1))
+      TEST_TRUE(fi.fragmentsMatchSequence(static_cast<UInt32>(index), reconstructed))
       result.emplace_back(pep.precursor_mz_, reconstructed.toString());
     }
     std::sort(result.begin(), result.end());
@@ -3701,14 +3745,13 @@ END_SECTION
 
 START_SECTION((static StringList shadowedVariableTerminalModifications(const StringList& fixed_modifications, const StringList& variable_modifications)))
 {
-  // A terminus carries one modification: a variable modification of the whole terminus is not applied where a fixed
-  // one sits. Residue-specific terminal variable modifications modify the residue and stay.
+  // A terminus carries one modification, including ones with a residue preference.
   const StringList variable = {"Acetyl (Protein N-term)", "Oxidation (M)", "Gln->pyro-Glu (N-term Q)", "Amidated (C-term)"};
   TEST_EQUAL(ListUtils::concatenate(FragmentIndex::shadowedVariableTerminalModifications({"TMT6plex (N-term)"}, variable), ","),
-             "Acetyl (Protein N-term)")
+             "Acetyl (Protein N-term),Gln->pyro-Glu (N-term Q)")
   TEST_EQUAL(ListUtils::concatenate(FragmentIndex::shadowedVariableTerminalModifications(
                {"Carbamidomethyl (C)", "TMT6plex (N-term)", "Amidated (C-term)"}, variable), ","),
-             "Acetyl (Protein N-term),Amidated (C-term)")
+             "Acetyl (Protein N-term),Gln->pyro-Glu (N-term Q),Amidated (C-term)")
   TEST_EQUAL(FragmentIndex::shadowedVariableTerminalModifications({"Carbamidomethyl (C)", "TMT6plex (K)"}, variable).size(), 0)
   TEST_EQUAL(FragmentIndex::shadowedVariableTerminalModifications({"TMT6plex (N-term)"}, {}).size(), 0)
 
@@ -3743,6 +3786,198 @@ START_SECTION((static StringList shadowedVariableTerminalModifications(const Str
   TEST_EQUAL(acetylated_without, 2) // ACAPEPTIDEK and ACAPEPTIDEKQLGSVTAK
   TEST_EQUAL(acetylated_with, 0)
   TEST_EQUAL(n_with_fixed_nterm, n_without_fixed_nterm - acetylated_without)
+}
+END_SECTION
+
+START_SECTION(([EXTRA] residue-specific terminal modifications occupy the terminus consistently))
+{
+  struct TerminalCase
+  {
+    std::string sequence;
+    StringList fixed;
+    StringList variable;
+    Size expected_count;
+  };
+  const std::vector<TerminalCase> cases{
+    {"QPEPTIDER", {}, {"Gln->pyro-Glu (N-term Q)"}, 2},
+    {"APEPTIDER", {}, {"Gln->pyro-Glu (N-term Q)"}, 1},
+    {"AQPEPTIDER", {}, {"Gln->pyro-Glu (N-term Q)"}, 1},
+    {"QPEPTIDER", {"TMT6plex (N-term)"}, {"Gln->pyro-Glu (N-term Q)", "Acetyl (N-term)"}, 1},
+    {"QPEPTIDER", {}, {"Gln->pyro-Glu (N-term Q)", "Acetyl (N-term)"}, 3},
+    {"QPEPTIDER", {}, {"Gln->pyro-Glu (N-term Q)", "Deamidated (Q)"}, 4},
+    {"CCTESLVNR", {"Carbamidomethyl (C)"}, {"Pyro-carbamidomethyl (N-term C)"}, 2},
+    {"APEPTIDEQ", {}, {"Dehydrated (Protein C-term Q)"}, 2},
+    {"APEPTIDEQ", {"Amidated (C-term)"}, {"Dehydrated (Protein C-term Q)"}, 1}
+  };
+  for (const auto& fixture : cases)
+  {
+    FragmentIndex_test fi;
+    Param p = fi.getParameters();
+    p.setValue("enzyme", "no cleavage");
+    p.setValue("peptide:min_size", 1);
+    p.setValue("peptide:max_size", 100);
+    p.setValue("peptide:min_mass", 0);
+    p.setValue("peptide:max_mass", 50000);
+    p.setValue("fragment:min_mz", 0);
+    p.setValue("fragment:max_mz", 50000);
+    p.setValue("fragment:min_ion_index", 0);
+    p.setValue("modifications:fixed", fixture.fixed);
+    p.setValue("modifications:variable", fixture.variable);
+    p.setValue("modifications:variable_max_per_peptide", 2);
+    fi.setParameters(p);
+    const std::vector<FASTAFile::FASTAEntry> db{{"P", "terminal fixture", fixture.sequence}};
+    fi.build(db);
+
+    AASequence fixed = AASequence::fromString(fixture.sequence);
+    ModifiedPeptideGenerator::applyFixedModifications(
+      ModifiedPeptideGenerator::getModifications(fixture.fixed), fixed);
+    // Build a separate AASequence oracle. A residue preference controls eligibility;
+    // the terminal setters (not setModification(residue,...)) control storage.
+    std::vector<AASequence> expected{fixed};
+    for (const std::string& name : fixture.variable)
+    {
+      const auto* mod = ModificationsDB::getInstance()->getModification(name);
+      const auto term = mod->getTermSpecificity();
+      const bool nterm = term == ResidueModification::N_TERM || term == ResidueModification::PROTEIN_N_TERM;
+      const bool cterm = term == ResidueModification::C_TERM || term == ResidueModification::PROTEIN_C_TERM;
+      const Size previous_size = expected.size();
+      for (Size form = 0; form < previous_size; ++form)
+      {
+        AASequence modified = expected[form];
+        if (nterm && !modified.hasNTerminalModification()
+            && (mod->getOrigin() == 'X' || mod->getOrigin() == '.' || mod->getOrigin() == fixture.sequence.front()))
+        {
+          modified.setNTerminalModification(mod);
+          expected.push_back(modified);
+        }
+        else if (cterm && !modified.hasCTerminalModification()
+                 && (mod->getOrigin() == 'X' || mod->getOrigin() == '.' || mod->getOrigin() == fixture.sequence.back()))
+        {
+          modified.setCTerminalModification(mod);
+          expected.push_back(modified);
+        }
+        else if (term == ResidueModification::ANYWHERE && !modified[0].isModified()
+                 && mod->getOrigin() == fixture.sequence.front())
+        {
+          modified.setModification(0, mod);
+          expected.push_back(modified);
+        }
+      }
+    }
+    TEST_EQUAL(expected.size(), fixture.expected_count)
+    TEST_EQUAL(fi.getPeptides().size(), fixture.expected_count)
+    std::set<std::string> expected_sequences, actual_sequences;
+    for (const auto& sequence : expected) { expected_sequences.insert(sequence.toString()); }
+    for (Size index = 0; index < fi.getPeptides().size(); ++index)
+    {
+      const auto& peptide = fi.getPeptides()[index];
+      const AASequence sequence = fi.reconstructModifiedSequence(peptide, db);
+      actual_sequences.insert(sequence.toString());
+      TEST_REAL_SIMILAR(peptide.precursor_mz_, sequence.getMZ(1))
+      TEST_TRUE(fi.fragmentsMatchSequence(static_cast<UInt32>(index), sequence))
+      // AASequence round trip: the reconstructed peptidoform must be writable and readable again
+      // (a terminal modification stored on residue 0 renders as a string that does not parse back).
+      TEST_EQUAL(AASequence::fromString(sequence.toString()), sequence)
+    }
+    TEST_TRUE(actual_sequences == expected_sequences)
+  }
+
+  // Protein-terminal residue preferences must not become peptide-terminal rules.
+  FragmentIndex_test fi;
+  Param p = fi.getParameters();
+  p.setValue("modifications:fixed", StringList{});
+  p.setValue("modifications:variable", StringList{"Deamidated (Protein N-term F)", "Dehydrated (Protein C-term Q)"});
+  fi.setParameters(p);
+  TEST_EQUAL(fi.modificationSlotCount("FPEPTIDEQ", true, true), 2)
+  TEST_EQUAL(fi.modificationSlotCount("FPEPTIDEQ", false, false), 0)
+  TEST_EQUAL(fi.modificationSlotCount("FPEPTIDEQ", true, false), 1)
+  TEST_EQUAL(fi.modificationSlotCount("FPEPTIDEQ", false, true), 1)
+  TEST_EQUAL(fi.modificationSlotCount("AFPEPTIDEQA", true, true), 0)
+
+  // The same slot builder is used by SNES reconstruction, where its subset field
+  // is independent of the mother's kind flag. One slot activates the N-terminus.
+  p.setValue("peptide:enzyme_specificity", "none");
+  p.setValue("snes_enabled", "true");
+  p.setValue("peptide:min_size", 9);
+  p.setValue("peptide:max_size", 9);
+  p.setValue("modifications:variable", StringList{"Gln->pyro-Glu (N-term Q)"});
+  fi.setParameters(p);
+  const std::vector<FASTAFile::FASTAEntry> db{{"P", "SNES terminal fixture", "QPEPTIDER"}};
+  fi.build(db);
+  TEST_FALSE(fi.getPeptides().empty())
+  AASequence target = AASequence::fromString("QPEPTIDER");
+  target.setNTerminalModification("Gln->pyro-Glu (N-term Q)");
+  for (const auto& mother : fi.getPeptides())
+  {
+    const AASequence realized = fi.reconstructRealizedSubSequence(mother, db, 9, 1);
+    TEST_EQUAL(realized, target)
+    TEST_EQUAL(AASequence::fromString(realized.toString()), realized)
+  }
+}
+END_SECTION
+
+START_SECTION(([EXTRA] a fixed terminal modification shadows a residue-specific variable terminal modification))
+{
+  // Timo's B1 configuration: Gln->pyro-Glu (N-term Q) used to be stored on residue 0 (Debug: OPENMS_PRECONDITION in
+  // ResidueDB "Mod's term specificity needs to be ANYWHERE"; Release: '.(Gln->pyro-Glu)PEPTIDER', which does not parse
+  // back). It now occupies the N-terminus, so a fixed N-terminal modification (TMT6plex) excludes it, as for
+  // pure terminal variable modifications.
+  const std::vector<FASTAFile::FASTAEntry> db{{"P1", "", "QPEPTIDER"}};
+  for (const bool with_fixed_tmt : {false, true})
+  {
+    FragmentIndex_test fi;
+    Param p = fi.getParameters();
+    p.setValue("decoys", "false");
+    p.setValue("enzyme", "no cleavage");
+    p.setValue("peptide:min_size", 5);
+    p.setValue("fragment:min_mz", 0);
+    p.setValue("fragment:max_mz", 50000);
+    p.setValue("fragment:min_ion_index", 0);
+    p.setValue("modifications:fixed", with_fixed_tmt ? StringList{"TMT6plex (N-term)"} : StringList{});
+    p.setValue("modifications:variable", StringList{"Gln->pyro-Glu (N-term Q)"});
+    fi.setParameters(p);
+    fi.build(db);
+
+    std::set<std::string> observed;
+    for (Size index = 0; index < fi.getPeptides().size(); ++index)
+    {
+      const auto& peptide = fi.getPeptides()[index];
+      const AASequence sequence = fi.reconstructModifiedSequence(peptide, db);
+      observed.insert(sequence.toString());
+      TEST_FALSE(sequence[0].isModified()) // never on the residue
+      TEST_REAL_SIMILAR(peptide.precursor_mz_, sequence.getMZ(1))
+      TEST_TRUE(fi.fragmentsMatchSequence(static_cast<UInt32>(index), sequence))
+      const AASequence reparsed = AASequence::fromString(sequence.toString());
+      TEST_EQUAL(reparsed, sequence)
+      TEST_STRING_EQUAL(reparsed.toString(), sequence.toString())
+      TEST_REAL_SIMILAR(reparsed.getMonoWeight(), sequence.getMonoWeight())
+    }
+    if (with_fixed_tmt)
+    {
+      TEST_EQUAL(observed.size(), 1)
+      TEST_EQUAL(observed.count(AASequence::fromString(".(TMT6plex)QPEPTIDER").toString()), 1)
+    }
+    else
+    {
+      TEST_EQUAL(observed.size(), 2)
+      TEST_EQUAL(observed.count("QPEPTIDER"), 1)
+      TEST_EQUAL(observed.count(AASequence::fromString(".(Gln->pyro-Glu)QPEPTIDER").toString()), 1)
+    }
+  }
+}
+END_SECTION
+
+START_SECTION(([EXTRA] indexed fragment mass oracle rejects non-finite values))
+{
+  TEST_TRUE(FragmentIndex_test::fragmentMassesMatch({100.0, 200.0}, {200.0, 100.0}))
+  for (const double invalid : {std::numeric_limits<double>::quiet_NaN(),
+                              std::numeric_limits<double>::infinity(),
+                              -std::numeric_limits<double>::infinity()})
+  {
+    TEST_FALSE(FragmentIndex_test::fragmentMassesMatch({100.0, invalid}, {100.0, 200.0}))
+    TEST_FALSE(FragmentIndex_test::fragmentMassesMatch({100.0, 200.0}, {100.0, invalid}))
+    TEST_FALSE(FragmentIndex_test::fragmentMassesMatch({invalid}, {invalid}))
+  }
 }
 END_SECTION
 

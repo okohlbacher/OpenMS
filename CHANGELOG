@@ -48,6 +48,11 @@ OpenMS Library:
     peptide, from at most 31 sites (a warning counts peptides with more). The default precursor
     isotope range of FragmentIndex is [-2, 0] (it searched [0, +2], precursors picked below the
     monoisotopic peak).
+  - FIX: FragmentIndex stores residue-specific terminal variable modifications (e.g. Gln->pyro-Glu
+    (N-term Q)) on the peptide terminus, as AASequence does, not on the terminal residue. The
+    reconstructed sequence failed an assertion in Debug builds and did not parse back in Release.
+    A fixed terminal modification (e.g. TMT6plex (N-term)) now also excludes them, because a
+    terminus carries one modification; ProSE warns about them, as about whole-terminus ones.
   - PERF: IdXMLFile::store formats the PeptideIdentifications in parallel (at most 16 threads) and
     writes them in input order, so the output is unchanged; 12% less wall time for ProSE's 20
     benchmark searches of #10364 at 4 threads, 26% less for one search at 16 threads.
