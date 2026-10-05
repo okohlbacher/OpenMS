@@ -124,14 +124,24 @@ public:
 
   const std::vector<Fragment>& getFragments() const { return fi_fragments_; }
 
-  // Independent b/y mass oracle for fixtures indexing every singly charged ion.
-  bool fragmentsMatchSequence(UInt32 peptide_idx, const AASequence& sequence) const
+  // Variable modification slots of a sequence (position and delta), as the index enumerates them.
+  std::vector<std::pair<uint16_t, double>> modificationSlots(const std::string& sequence, bool protein_nterm, bool protein_cterm) const
+  {
+    ModSlot slots[MAX_MOD_SLOTS];
+    const Size n_slots = buildModSlots_(sequence.data(), sequence.size(), slots, protein_nterm, protein_cterm);
+    std::vector<std::pair<uint16_t, double>> result;
+    for (Size s = 0; s < n_slots; ++s) { result.emplace_back(slots[s].position, slots[s].delta_mass); }
+    return result;
+  }
+
+  // Independent b/y mass oracle for fixtures indexing every singly charged ion (SNES mothers: one series).
+  bool fragmentsMatchSequence(UInt32 peptide_idx, const AASequence& sequence, bool b_ions = true, bool y_ions = true) const
   {
     std::vector<double> expected, observed;
     for (Size length = 1; length < sequence.size(); ++length)
     {
-      expected.push_back(sequence.getPrefix(length).getMZ(1, Residue::BIon));
-      expected.push_back(sequence.getSuffix(length).getMZ(1, Residue::YIon));
+      if (b_ions) { expected.push_back(sequence.getPrefix(length).getMZ(1, Residue::BIon)); }
+      if (y_ions) { expected.push_back(sequence.getSuffix(length).getMZ(1, Residue::YIon)); }
     }
     for (const Fragment& fragment : fi_fragments_)
     {
@@ -1068,6 +1078,26 @@ START_SECTION(cross_validate_vs_ModifiedPeptideGenerator)
     {
       TEST_REAL_SIMILAR(fi[i].first, mpg[i].first)
       TEST_EQUAL(fi[i].second, mpg[i].second)
+    }
+  }
+
+  // A fixed modification occupies the residue. The previous index stacked an
+  // extra delta on C while reconstruction replaced the fixed CAM modification.
+  // Also cover the same modification configured twice; terminal modifications
+  // remain independent of the C residue site.
+  for (const std::vector<std::string>& variable : {
+         std::vector<std::string>{"Glutathione (C)"},
+         std::vector<std::string>{"Carbamidomethyl (C)"},
+         std::vector<std::string>{"Glutathione (C)", "Carbamyl (N-term)"}})
+  {
+    const auto mpg = run_modpepgen("CCTESLVNR", {"Carbamidomethyl (C)"}, variable, 2);
+    const auto fi = run_fragment_index("CCTESLVNR", {"Carbamidomethyl (C)"}, variable, 2);
+    TEST_EQUAL(fi.size(), mpg.size())
+    TEST_EQUAL(fi.size(), variable.size() == 2 ? 2 : 1)
+    for (Size i = 0; i < std::min(fi.size(), mpg.size()); ++i)
+    {
+      TEST_REAL_SIMILAR(fi[i].first, mpg[i].first)
+      TEST_STRING_EQUAL(fi[i].second, mpg[i].second)
     }
   }
 }
@@ -3977,6 +4007,189 @@ START_SECTION(([EXTRA] indexed fragment mass oracle rejects non-finite values))
     TEST_FALSE(FragmentIndex_test::fragmentMassesMatch({100.0, invalid}, {100.0, 200.0}))
     TEST_FALSE(FragmentIndex_test::fragmentMassesMatch({100.0, 200.0}, {100.0, invalid}))
     TEST_FALSE(FragmentIndex_test::fragmentMassesMatch({invalid}, {invalid}))
+  }
+}
+END_SECTION
+
+START_SECTION((static StringList shadowedVariableResidueModifications(const StringList& fixed_modifications, const StringList& variable_modifications)))
+{
+  // A residue carries one modification: a variable residue modification is not applied where a fixed one sits.
+  const StringList variable = {"Glutathione (C)", "Oxidation (M)", "Carbamidomethyl (C)", "Pyro-carbamidomethyl (N-term C)",
+                               "Acetyl (Protein N-term)"};
+  TEST_EQUAL(ListUtils::concatenate(FragmentIndex::shadowedVariableResidueModifications({"Carbamidomethyl (C)"}, variable), ","),
+             "Glutathione (C),Carbamidomethyl (C)")
+  TEST_EQUAL(ListUtils::concatenate(FragmentIndex::shadowedVariableResidueModifications(
+               {"Carbamidomethyl (C)", "TMT6plex (N-term)", "Oxidation (M)"}, variable), ","),
+             "Glutathione (C),Oxidation (M),Carbamidomethyl (C)")
+  // terminal fixed modifications do not occupy residues; residue-specific terminal ones are not residue modifications
+  TEST_EQUAL(FragmentIndex::shadowedVariableResidueModifications({"TMT6plex (N-term)"}, variable).size(), 0)
+  TEST_EQUAL(FragmentIndex::shadowedVariableResidueModifications({"Carbamidomethyl (C)"}, {"Pyro-carbamidomethyl (N-term C)"}).size(), 0)
+  TEST_EQUAL(FragmentIndex::shadowedVariableResidueModifications({"Carbamidomethyl (C)"}, {}).size(), 0)
+  TEST_EQUAL(FragmentIndex::shadowedVariableResidueModifications({}, variable).size(), 0)
+
+  // The index applies exactly the variable modifications that are not reported as shadowed.
+  FragmentIndex_test fi;
+  Param p = fi.getParameters();
+  p.setValue("modifications:fixed", StringList{"Carbamidomethyl (C)"});
+  p.setValue("modifications:variable", StringList{"Glutathione (C)", "Carbamidomethyl (C)", "Oxidation (M)"});
+  fi.setParameters(p);
+  const auto slots = fi.modificationSlots("ACMCK", false, false);
+  TEST_EQUAL(slots.size(), 1)
+  ABORT_IF(slots.size() != 1)
+  TEST_EQUAL(slots[0].first, 2)
+  TEST_REAL_SIMILAR(slots[0].second, ModificationsDB::getInstance()->getModification("Oxidation (M)")->getDiffMonoMass())
+}
+END_SECTION
+
+START_SECTION(([EXTRA] fixed residue modifications exclude occupied SNES variable slots))
+{
+  FragmentIndex_test fi;
+  Param p = fi.getParameters();
+  p.setValue("peptide:enzyme_specificity", "none");
+  p.setValue("snes_enabled", "true");
+  p.setValue("peptide:min_size", 9);
+  p.setValue("peptide:max_size", 9);
+  p.setValue("modifications:fixed", std::vector<std::string>{"Carbamidomethyl (C)"});
+  p.setValue("modifications:variable", std::vector<std::string>{"Glutathione (C)"});
+  fi.setParameters(p);
+  // No free C sites means no Glutathione delta enters even the global SNES walks.
+  TEST_EQUAL(fi.getSnesSigmaDeltaSet().size(), 1)
+  TEST_REAL_SIMILAR(fi.getSnesSigmaDeltaSet()[0], 0.0)
+  const std::vector<FASTAFile::FASTAEntry> db{{"P01", "Occupied C sites", "CCTESLVNR"}};
+  fi.build(db);
+  TEST_FALSE(fi.getPeptides().empty())
+  for (const auto& mother : fi.getPeptides())
+  {
+    const AASequence sequence = fi.reconstructRealizedSubSequence(mother, db, 9, 0);
+    TEST_STRING_EQUAL(sequence.toString(), "C(Carbamidomethyl)C(Carbamidomethyl)TESLVNR")
+    TEST_REAL_SIMILAR(mother.precursor_mz_, sequence.getMZ(1))
+  }
+}
+END_SECTION
+
+START_SECTION(([EXTRA] Timo B2: the same modification fixed and variable gives one candidate at the sequence mass))
+{
+  // Timo's B2 recipe: no-cleavage ACPEPTIDER with Carbamidomethyl (C) configured as both fixed and variable. The index
+  // had two candidates that reconstruct to AC(Carbamidomethyl)PEPTIDER, the variable one 57.0215 Da above the
+  // reconstructed sequence's getMonoWeight() + PROTON_MASS_U (peptide:deduplicate removed it by string only).
+  const std::vector<FASTAFile::FASTAEntry> db{{"P1", "", "ACPEPTIDER"}};
+  for (const bool deduplicate : {false, true})
+  {
+    FragmentIndex_test fi;
+    Param p = fi.getParameters();
+    p.setValue("decoys", "false");
+    p.setValue("enzyme", "no cleavage");
+    p.setValue("peptide:min_size", 5);
+    p.setValue("fragment:min_mz", 0);
+    p.setValue("fragment:max_mz", 50000);
+    p.setValue("fragment:min_ion_index", 0);
+    p.setValue("peptide:deduplicate", deduplicate ? "true" : "false");
+    p.setValue("modifications:fixed", StringList{"Carbamidomethyl (C)"});
+    p.setValue("modifications:variable", StringList{"Carbamidomethyl (C)"});
+    fi.setParameters(p);
+    fi.build(db);
+    TEST_EQUAL(fi.getPeptides().size(), 1)
+    for (Size index = 0; index < fi.getPeptides().size(); ++index)
+    {
+      const auto& peptide = fi.getPeptides()[index];
+      const AASequence sequence = fi.reconstructModifiedSequence(peptide, db);
+      TEST_STRING_EQUAL(sequence.toString(), "AC(Carbamidomethyl)PEPTIDER")
+      TEST_REAL_SIMILAR(peptide.precursor_mz_, sequence.getMonoWeight() + Constants::PROTON_MASS_U)
+      TEST_TRUE(fi.fragmentsMatchSequence(static_cast<UInt32>(index), sequence))
+    }
+  }
+}
+END_SECTION
+
+START_SECTION(([EXTRA] fixed and variable modifications of one residue: {CAM, GSH} x SNES x deduplication))
+{
+  // Fixed Carbamidomethyl (C); variable X (C) with X in {Carbamidomethyl, Glutathione}, plus Oxidation (M) so that
+  // free slots remain. Every indexed precursor m/z and fragment m/z must equal the mass of the sequence the index
+  // reports, and no variable modification may sit on the fixed-modified C.
+  const std::string protein = "ACPEPMTIDER";
+  const std::vector<FASTAFile::FASTAEntry> db{{"P1", "", protein}};
+  const double oxidation = ModificationsDB::getInstance()->getModification("Oxidation (M)")->getDiffMonoMass();
+  for (const std::string variable_c : {"Carbamidomethyl (C)", "Glutathione (C)"})
+  {
+    for (const bool snes : {false, true})
+    {
+      for (const bool deduplicate : {false, true})
+      {
+        FragmentIndex_test fi;
+        Param p = fi.getParameters();
+        p.setValue("decoys", "false");
+        if (snes)
+        {
+          p.setValue("peptide:enzyme_specificity", "none");
+          p.setValue("snes_enabled", "true");
+        }
+        else
+        {
+          p.setValue("enzyme", "no cleavage");
+        }
+        p.setValue("peptide:min_size", static_cast<int>(protein.size()));
+        p.setValue("peptide:max_size", static_cast<int>(protein.size()));
+        p.setValue("fragment:min_mz", 0);
+        p.setValue("fragment:max_mz", 50000);
+        p.setValue("fragment:min_ion_index", 0);
+        p.setValue("peptide:deduplicate", deduplicate ? "true" : "false");
+        p.setValue("modifications:fixed", StringList{"Carbamidomethyl (C)"});
+        p.setValue("modifications:variable", StringList{variable_c, "Oxidation (M)"});
+        p.setValue("modifications:variable_max_per_peptide", 2);
+        fi.setParameters(p);
+        TEST_EQUAL(fi.isSnesMode(), snes)
+
+        // Only the M site is a variable slot; the occupied C is not.
+        const auto slots = fi.modificationSlots(protein, true, true);
+        TEST_EQUAL(slots.size(), 1)
+        ABORT_IF(slots.size() != 1)
+        TEST_EQUAL(slots[0].first, 5)
+        TEST_REAL_SIMILAR(slots[0].second, oxidation)
+        fi.build(db);
+
+        std::set<std::string> observed;
+        for (Size index = 0; index < fi.getPeptides().size(); ++index)
+        {
+          const auto& peptide = fi.getPeptides()[index];
+          if (!snes)
+          {
+            const AASequence sequence = fi.reconstructModifiedSequence(peptide, db);
+            observed.insert(sequence.toString());
+            TEST_STRING_EQUAL(sequence[1].getModificationName(), "Carbamidomethyl")
+            TEST_REAL_SIMILAR(peptide.precursor_mz_, sequence.getMZ(1))
+            TEST_TRUE(fi.fragmentsMatchSequence(static_cast<UInt32>(index), sequence))
+            continue;
+          }
+          // SNES: the mother is indexed unmodified with one ion series; variable modifications are realized as slot
+          // subsets at query time, so every subset's sequence must have the mother's mass plus the subset's deltas.
+          const bool single_c = FragmentIndex::isSingleCMother(peptide.mod_bitmask_);
+          const AASequence mother = fi.reconstructRealizedSubSequence(peptide, db, protein.size(), 0);
+          TEST_REAL_SIMILAR(peptide.precursor_mz_, mother.getMZ(1))
+          TEST_TRUE(fi.fragmentsMatchSequence(static_cast<UInt32>(index), mother, !single_c, single_c))
+          for (uint32_t subset = 0; subset < (1u << slots.size()); ++subset)
+          {
+            const AASequence sequence = fi.reconstructRealizedSubSequence(peptide, db, protein.size(), subset);
+            observed.insert(sequence.toString());
+            TEST_STRING_EQUAL(sequence[1].getModificationName(), "Carbamidomethyl")
+            TEST_REAL_SIMILAR(sequence.getMZ(1), mother.getMZ(1) + ((subset & 1u) ? oxidation : 0.0))
+            TEST_EQUAL(AASequence::fromString(sequence.toString()), sequence)
+          }
+        }
+        TEST_EQUAL(fi.getPeptides().size(), 2) // SNES: one N and one C mother; otherwise unmodified and Ox(M)
+        TEST_EQUAL(observed.size(), 2)
+        TEST_EQUAL(observed.count("AC(Carbamidomethyl)PEPMTIDER"), 1)
+        TEST_EQUAL(observed.count("AC(Carbamidomethyl)PEPM(Oxidation)TIDER"), 1)
+        if (snes)
+        {
+          // the Sigma set holds sums of up to two Oxidation deltas only (no X (C) delta for an occupied site)
+          TEST_EQUAL(fi.getSnesSigmaDeltaSet().size(), 3)
+          ABORT_IF(fi.getSnesSigmaDeltaSet().size() != 3)
+          TEST_REAL_SIMILAR(fi.getSnesSigmaDeltaSet()[0], 0.0)
+          TEST_REAL_SIMILAR(fi.getSnesSigmaDeltaSet()[1], oxidation)
+          TEST_REAL_SIMILAR(fi.getSnesSigmaDeltaSet()[2], 2 * oxidation)
+        }
+      }
+    }
   }
 }
 END_SECTION

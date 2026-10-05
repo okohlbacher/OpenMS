@@ -253,6 +253,21 @@ namespace OpenMS
     static StringList shadowedVariableTerminalModifications(const StringList& fixed_modifications,
                                                             const StringList& variable_modifications);
 
+    /**
+     * @brief Variable residue modifications that a fixed modification of the same residue excludes.
+     *
+     * A residue carries one modification. A variable modification of a residue anywhere in the peptide (e.g.
+     * 'Glutathione (C)', or 'Carbamidomethyl (C)' configured as fixed and variable) is therefore not searched where a
+     * fixed one (e.g. 'Carbamidomethyl (C)') sits, as in ModifiedPeptideGenerator. Terminal modifications with a
+     * residue preference (e.g. 'Pyro-carbamidomethyl (N-term C)') occupy the terminus and are not affected.
+     *
+     * @param[in] fixed_modifications Names of the fixed modifications (as in modifications:fixed)
+     * @param[in] variable_modifications Names of the variable modifications (as in modifications:variable)
+     * @return Full ids of the variable residue modifications that the index does not apply, in the given order
+     */
+    static StringList shadowedVariableResidueModifications(const StringList& fixed_modifications,
+                                                           const StringList& variable_modifications);
+
     /// @name SNES (Speedy Non-specific Enzyme Search) bit encoding
     ///
     /// When the index is built in SNES mode (@ref isSnesMode), a @ref Peptide entry

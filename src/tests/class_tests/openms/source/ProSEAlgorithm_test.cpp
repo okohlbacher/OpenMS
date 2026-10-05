@@ -17,6 +17,7 @@
 #include <OpenMS/ANALYSIS/ID/OpenSearchModificationAnalysis.h>
 #include <OpenMS/CHEMISTRY/AASequence.h>
 #include <OpenMS/CHEMISTRY/DecoyGenerator.h>
+#include <OpenMS/CHEMISTRY/ModificationsDB.h>
 #include <OpenMS/CHEMISTRY/ModifiedPeptideGenerator.h>
 #include <OpenMS/CHEMISTRY/ProteaseDigestion.h>
 #include <OpenMS/CHEMISTRY/TheoreticalSpectrumGenerator.h>
@@ -4208,6 +4209,92 @@ START_SECTION(([EXTRA] residue-specific terminal variable modifications are sear
       TEST_FALSE(hit.getSequence()[0].isModified())
       TEST_EQUAL(AASequence::fromString(hit.getSequence().toString()), hit.getSequence())
       if (with_fixed_tmt) TEST_EQUAL(hit.getSequence().getNTerminalModificationName(), "TMT6plex")
+    }
+  }
+}
+END_SECTION
+
+START_SECTION(([EXTRA] a variable modification of a fixed-modified residue is not searched (Timo B2)))
+{
+  // Timo's B2 configuration (ACPEPTIDER, Carbamidomethyl (C) fixed) with Carbamidomethyl (C) or Glutathione (C)
+  // variable. The index used to hold a variant with both deltas on C, which reconstructs to a sequence with one.
+  // A spectrum whose precursor lies one Carbamidomethyl delta above that sequence therefore matched it (reported
+  // 57.02 Da off its precursor), unless peptide:deduplicate removed the variant by its string (CAM only).
+  const vector<FASTAFile::FASTAEntry> fasta_db = {{"P1", "", "ACPEPTIDER"}};
+  const double cam = ModificationsDB::getInstance()->getModification("Carbamidomethyl (C)")->getDiffMonoMass();
+  TheoreticalSpectrumGenerator tsg;
+  Param tsg_param = tsg.getParameters();
+  tsg_param.setValue("add_first_prefix_ion", "true");
+  tsg.setParameters(tsg_param);
+
+  for (const std::string variable_c : {"Carbamidomethyl", "Glutathione"})
+  {
+    for (const bool deduplicate : {false, true})
+    {
+      const AASequence fixed_only = AASequence::fromString("AC(Carbamidomethyl)PEPTIDER");
+      const AASequence variable_form = AASequence::fromString("AC(" + variable_c + ")PEPTIDER");
+      PeakMap spectra;
+      std::map<std::string, double> precursor_mz;
+      // scan=1: the fixed-only form at its own mass; scan=2: the variable form one CAM delta above its mass
+      for (Size scan = 1; scan <= 2; ++scan)
+      {
+        const AASequence& peptide = scan == 1 ? fixed_only : variable_form;
+        MSSpectrum spec;
+        tsg.getSpectrum(spec, peptide, 1, 1);
+        spec.sortByPosition();
+        spec.setMSLevel(2);
+        spec.setRT(10.0 * scan);
+        Precursor prec;
+        prec.setMZ(scan == 1 ? peptide.getMZ(2) : (peptide.getMonoWeight() + cam + 2 * Constants::PROTON_MASS_U) / 2.0);
+        prec.setCharge(2);
+        spec.setPrecursors({prec});
+        spec.setNativeID("scan=" + std::to_string(scan));
+        precursor_mz["scan=" + std::to_string(scan)] = prec.getMZ();
+        spectra.addSpectrum(spec);
+      }
+
+      ProSEAlgorithm algo;
+      Param p = algo.getParameters();
+      p.setValue("precursor:mass_tolerance_lower", 10.0);
+      p.setValue("precursor:mass_tolerance_upper", 10.0);
+      p.setValue("precursor:mass_tolerance_unit", "ppm");
+      p.setValue("fragment:mass_tolerance", 20.0);
+      p.setValue("fragment:mass_tolerance_unit", "ppm");
+      p.setValue("enzyme", "no cleavage");
+      p.setValue("peptide:min_size", 5);
+      p.setValue("peptide:deduplicate", deduplicate ? "true" : "false");
+      p.setValue("decoys", "ignore");
+      p.setValue("report:top_hits", 10);
+      p.setValue("modifications:fixed", StringList{"Carbamidomethyl (C)"});
+      p.setValue("modifications:variable", StringList{variable_c + " (C)"});
+      algo.setParameters(p);
+
+      vector<ProteinIdentification> prot_ids;
+      PeptideIdentificationList pep_ids;
+      TEST_EQUAL(algo.search(spectra, fasta_db, prot_ids, pep_ids) == ProSEAlgorithm::ExitCodes::EXECUTION_OK, true)
+      Size hits_scan1 = 0, hits_scan2 = 0;
+      for (const auto& pep_id : pep_ids)
+      {
+        const std::string reference = pep_id.getSpectrumReference();
+        TEST_EQUAL(precursor_mz.count(reference), 1)
+        ABORT_IF(precursor_mz.count(reference) != 1)
+        const bool scan1 = reference == "scan=1";
+        for (const auto& hit : pep_id.getHits())
+        {
+          (scan1 ? hits_scan1 : hits_scan2) += 1;
+          // every reported sequence lies within the precursor tolerance (no 57 Da offset)
+          const double observed = precursor_mz[reference];
+          TEST_TRUE(std::abs(hit.getSequence().getMZ(2) - observed) / observed * 1e6 <= 10.0)
+          TEST_STRING_EQUAL(hit.getSequence()[1].getModificationName(), "Carbamidomethyl")
+        }
+        if (scan1)
+        {
+          ABORT_IF(pep_id.getHits().empty())
+          TEST_EQUAL(pep_id.getHits()[0].getSequence(), fixed_only)
+        }
+      }
+      TEST_EQUAL(hits_scan1, 1)
+      TEST_EQUAL(hits_scan2, 0)
     }
   }
 }

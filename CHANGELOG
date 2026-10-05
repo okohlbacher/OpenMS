@@ -53,6 +53,10 @@ OpenMS Library:
     reconstructed sequence failed an assertion in Debug builds and did not parse back in Release.
     A fixed terminal modification (e.g. TMT6plex (N-term)) now also excludes them, because a
     terminus carries one modification; ProSE warns about them, as about whole-terminus ones.
+  - FIX: FragmentIndex does not apply a variable residue modification where a fixed modification
+    sits on that residue (e.g. Carbamidomethyl (C) fixed and Glutathione (C) or Carbamidomethyl (C)
+    variable), as ModifiedPeptideGenerator does. The indexed masses held both deltas, while the reported
+    sequence held only the variable one. ProSE warns about every such variable modification.
   - PERF: IdXMLFile::store formats the PeptideIdentifications in parallel (at most 16 threads) and
     writes them in input order, so the output is unchanged; 12% less wall time for ProSE's 20
     benchmark searches of #10364 at 4 threads, 26% less for one search at 16 threads.
