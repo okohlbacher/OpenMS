@@ -4664,7 +4664,7 @@ START_SECTION(([EXTRA] fragments on bucket boundaries are matched by query() and
   const size_t num_buckets = bucket_min_mz.size();
   const std::pair<size_t, size_t> all_peptides {0, fi.getPeptides().size()};
   const float tol = 0.5f;
-  TEST_EQUAL(num_buckets >= 8, true)
+  TEST_EQUAL(num_buckets >= 9, true) // 8 boundaries below need 9 buckets (with stride 1 up to 17 buckets)
 
   const auto expectedMatches = [&fragments](float lo, float hi)
   {
