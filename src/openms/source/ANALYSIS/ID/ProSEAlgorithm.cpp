@@ -816,7 +816,7 @@ namespace OpenMS
     // neither iterates chromatograms. They are therefore applied at the top of the parallel
     // loop below instead, which is per-spectrum equivalent and removes two full sweeps over
     // the peak data. Both objects are configured once here; like window_mower_filter and
-    // nlargest_filter below, each OpenMP thread works on its own copy (firstprivate):
+    // nlargest_filter below, each OpenMP thread works on its own copy:
     // ThresholdMower stores its 'threshold' Param in a member on every call and WindowMower
     // its window size and peak count, and concurrent writes are a data race even when every
     // thread writes the same value. One copy per thread costs a few Param copies per search.
@@ -892,19 +892,42 @@ namespace OpenMS
     const bool do_deisotope = deisotope_requested &&
       Deisotoper::isToleranceSupported(fragment_mass_tolerance, fragment_mass_tolerance_unit_ppm);
 
+    // The per-thread copies of the filters are made here, before the parallel loop: copying them in the loop
+    // (firstprivate) happens outside the exception guard of the loop body, so an exception from a copy (e.g.
+    // std::bad_alloc) would leave the OpenMP region and terminate the process.
+#ifdef _OPENMP
+    const int num_threads = omp_get_max_threads();
+#else
+    const int num_threads = 1;
+#endif
+    std::vector<ThresholdMower> threshold_mower_filters(num_threads, threshold_mower_filter);
+    std::vector<Normalizer> normalizers(num_threads, normalizer);
+    std::vector<WindowMower> window_mower_filters(num_threads, window_mower_filter);
+    std::vector<NLargest> nlargest_filters(num_threads, nlargest_filter);
+
     Internal::OMPExceptionGuard omp_guard;
 #pragma omp parallel for default(none) shared(omp_guard, exp, evidence_spectra, query_spectra, do_deisotope, fragment_mass_tolerance, \
                                                 fragment_mass_tolerance_unit_ppm, full_window_quota, peaks_window_top, \
-                                                deisotoping, ion_evidence, ion_evidence_scored_peaks) \
-                                         firstprivate(threshold_mower_filter, normalizer, window_mower_filter, nlargest_filter)
+                                                deisotoping, ion_evidence, ion_evidence_scored_peaks, \
+                                                threshold_mower_filters, normalizers, window_mower_filters, nlargest_filters)
     for (SignedSize exp_index = 0; exp_index < (SignedSize)exp.size(); ++exp_index)
     {
       if (omp_guard.failed()) continue;
       try
       {
+#ifdef _OPENMP
+        const int tid = omp_get_thread_num();
+#else
+        const int tid = 0;
+#endif
+        ThresholdMower& thread_threshold_mower = threshold_mower_filters[tid];
+        Normalizer& thread_normalizer = normalizers[tid];
+        WindowMower& thread_window_mower = window_mower_filters[tid];
+        NLargest& thread_nlargest = nlargest_filters[tid];
+
         // remove 0 intensities, then normalize (formerly two serial full-map passes)
-        threshold_mower_filter.filterPeakSpectrum(exp[exp_index]);
-        normalizer.filterPeakSpectrum(exp[exp_index]);
+        thread_threshold_mower.filterPeakSpectrum(exp[exp_index]);
+        thread_normalizer.filterPeakSpectrum(exp[exp_index]);
 
         // sort by mz
         exp[exp_index].sortByPosition();
@@ -956,8 +979,8 @@ namespace OpenMS
 
         // remove noise
         if (full_window_quota) { filterLocalPeaks_(exp[exp_index], static_cast<Size>(peaks_window_top)); }
-        else { window_mower_filter.filterPeakSpectrum(exp[exp_index]); }
-        nlargest_filter.filterPeakSpectrum(exp[exp_index]);
+        else { thread_window_mower.filterPeakSpectrum(exp[exp_index]); }
+        thread_nlargest.filterPeakSpectrum(exp[exp_index]);
 
         // sort (nlargest changes order)
         exp[exp_index].sortByPosition();
