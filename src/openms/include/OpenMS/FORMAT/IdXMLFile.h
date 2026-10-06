@@ -86,7 +86,9 @@ public:
                    any exception while the data are written, e.g. a meta value that cannot be written), the
                    incomplete file is removed, so no truncated idXML remains. Exception: a @p filename that is not
                    a regular file created or replaced by this call (a symbolic link, a device, a file with further
-                   hard links) is left in place; the error message then says so.
+                   hard links) is left in place. If writing failed (Exception::UnableToCreateFile), the error message
+                   says whether the incomplete file was removed or left in place; any other exception is rethrown
+                   unchanged.
     */
     void store(const std::string& filename, const std::vector<ProteinIdentification>& protein_ids, const PeptideIdentificationList& peptide_ids, const std::string& document_id = "");
 

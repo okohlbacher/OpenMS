@@ -49,23 +49,25 @@ namespace OpenMS
     /// (not a symbolic link) without further hard links, whose content opening it for writing replaces anyway. A
     /// symbolic link, a device (e.g. /dev/full), a FIFO or a file with further hard links is not store()'s to remove:
     /// removing the name would leave the data behind it, or remove something this call did not create.
-    bool removableOnFailure(const std::string& filename)
+    bool removableOnFailure(const std::filesystem::path& path)
     {
       std::error_code ec;
-      const std::filesystem::file_status status = std::filesystem::symlink_status(filename, ec);
+      const std::filesystem::file_status status = std::filesystem::symlink_status(path, ec);
       if (status.type() == std::filesystem::file_type::not_found) return true;
       if (ec || status.type() != std::filesystem::file_type::regular) return false;
-      const std::uintmax_t links = std::filesystem::hard_link_count(filename, ec);
+      const std::uintmax_t links = std::filesystem::hard_link_count(path, ec);
       return !ec && links == 1;
     }
 
     /// Closes the stream of store() and removes the incomplete file, unless store() completed (release()). Covers
-    /// every way out of store() after the file was opened, exceptions included.
+    /// every way out of store() after the file was opened (arm()), exceptions included. It refers to the absolute path
+    /// and the file name of store() and allocates nothing, so it is set up before the file is opened, and arming it
+    /// cannot fail.
     class IncompleteFileRemover
     {
     public:
-      IncompleteFileRemover(std::ofstream& os, const std::string& filename, bool removable) :
-        os_(os), filename_(filename), removable_(removable)
+      IncompleteFileRemover(std::ofstream& os, const std::filesystem::path& path, const std::string& filename, bool removable) noexcept :
+        os_(os), path_(path), filename_(filename), removable_(removable)
       {
       }
       IncompleteFileRemover(const IncompleteFileRemover&) = delete;
@@ -74,8 +76,24 @@ namespace OpenMS
       {
         try { discard(); } catch (...) {} // never throws out of a destructor (stack unwinding)
       }
+      /// the file is open: from now on, remove it unless store() completes
+      void arm() noexcept { armed_ = true; }
       /// store() completed: keep the file
-      void release() { armed_ = false; }
+      void release() noexcept { armed_ = false; }
+      /// Opening the file threw. Opening can create or truncate the file before it throws (e.g. std::bad_alloc for the
+      /// stream's buffer, which libstdc++ allocates after it opened the file), so an empty file that may be removed is
+      /// removed: the file this call created, or the content it replaced.
+      void discardIfEmpty() noexcept
+      {
+        try
+        {
+          if (os_.is_open()) os_.close();
+          std::error_code ec;
+          const std::uintmax_t size = std::filesystem::file_size(path_, ec);
+          if (!ec && size == 0 && removable_ && removableOnFailure(path_)) std::filesystem::remove(path_, ec);
+        }
+        catch (...) {} // the exception of opening is the one reported
+      }
       /// Closes the stream and removes the file if it may be removed; true iff it was removed. Only the first call acts.
       bool discard()
       {
@@ -83,10 +101,10 @@ namespace OpenMS
         armed_ = false;
         if (os_.is_open()) os_.close();
         // the name must still be a regular file without further hard links (e.g. not replaced by a symbolic link)
-        if (removable_ && removableOnFailure(filename_))
+        if (removable_ && removableOnFailure(path_))
         {
           std::error_code ec;
-          removed_ = std::filesystem::remove(filename_, ec) && !ec;
+          removed_ = std::filesystem::remove(path_, ec) && !ec;
         }
         return removed_;
       }
@@ -104,9 +122,10 @@ namespace OpenMS
 
     private:
       std::ofstream& os_;
-      const std::string filename_;
+      const std::filesystem::path& path_; ///< absolute: the file is opened, inspected and removed by it
+      const std::string& filename_; ///< as given to store(), for the messages
       const bool removable_;
-      bool armed_{true};
+      bool armed_{false};
       bool removed_{false};
     };
   } // namespace
@@ -173,17 +192,30 @@ namespace OpenMS
     //set filename for the handler. Just in case (e.g. when fatalError function is used).
     file_ = filename;
 
+    // The file is opened, inspected and, if store() fails, removed by its absolute path: a change of the working
+    // directory while store() runs (e.g. in another thread) must not redirect the removal to another file.
+    const std::filesystem::path path = std::filesystem::absolute(std::filesystem::path(filename));
     //open stream; decide before opening whether a failed store() may remove the file (it may not, e.g., remove a
     //symbolic link or a device it writes through)
-    const bool removable = removableOnFailure(filename);
-    std::ofstream os(filename.c_str());
+    const bool removable = removableOnFailure(path);
+    std::ofstream os;
+    IncompleteFileRemover incomplete_file(os, path, filename, removable);
+    try
+    {
+      os.open(path);
+    }
+    catch (...)
+    {
+      incomplete_file.discardIfEmpty();
+      throw;
+    }
     if (!os)
     {
       throw Exception::UnableToCreateFile(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename);
     }
     // from here on, every way out of store() other than success (a failed write, an exception from a block or from
     // any other part of the serialization) closes the file and removes it if it may (see removableOnFailure)
-    IncompleteFileRemover incomplete_file(os, filename, removable);
+    incomplete_file.arm();
 
     startProgress(0, peptide_ids.size(), "Storing idXML");
 

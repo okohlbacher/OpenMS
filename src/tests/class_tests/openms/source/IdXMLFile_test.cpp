@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <limits>
@@ -38,6 +39,49 @@
 #ifdef __linux__
 #include <sys/stat.h>
 #include <unistd.h>
+#endif
+
+#ifdef __linux__
+// Fault injection for the allocation tests below (Linux only: there, this replacement of the global operator new also
+// receives the allocations of libOpenMS). Armed on one thread, the n-th allocation of that thread after arming runs
+// action() or, without an action, throws std::bad_alloc; allocations made inside action() are not counted.
+namespace AllocFault
+{
+  thread_local long countdown = 0;
+  thread_local bool fired = false;
+  thread_local bool in_action = false;
+  thread_local void (*action)() = nullptr;
+  void arm(long n, void (*on_fire)() = nullptr) { fired = false; action = on_fire; countdown = n; }
+  void disarm() { countdown = 0; action = nullptr; }
+}
+void* operator new(std::size_t size)
+{
+  if (AllocFault::countdown > 0 && !AllocFault::in_action && --AllocFault::countdown == 0)
+  {
+    AllocFault::fired = true;
+    if (AllocFault::action == nullptr) throw std::bad_alloc();
+    AllocFault::in_action = true;
+    AllocFault::action();
+    AllocFault::in_action = false;
+  }
+  if (void* p = std::malloc(size == 0 ? 1 : size)) return p;
+  throw std::bad_alloc();
+}
+void* operator new[](std::size_t size) { return ::operator new(size); }
+void* operator new(std::size_t size, const std::nothrow_t&) noexcept
+{
+  try { return ::operator new(size); } catch (...) { return nullptr; }
+}
+void* operator new[](std::size_t size, const std::nothrow_t&) noexcept
+{
+  try { return ::operator new(size); } catch (...) { return nullptr; }
+}
+void operator delete(void* p) noexcept { std::free(p); }
+void operator delete[](void* p) noexcept { std::free(p); }
+void operator delete(void* p, std::size_t) noexcept { std::free(p); }
+void operator delete[](void* p, std::size_t) noexcept { std::free(p); }
+void operator delete(void* p, const std::nothrow_t&) noexcept { std::free(p); }
+void operator delete[](void* p, const std::nothrow_t&) noexcept { std::free(p); }
 #endif
 
 ///////////////////////////
@@ -104,6 +148,22 @@ namespace
   protected:
     int_type overflow(int_type) override { return traits_type::eof(); }
   };
+
+#ifdef __linux__
+  // the working directory test of store(): the action of AllocFault changes to directory B once the output in A exists
+  std::filesystem::path cwd_test_dir_b;
+  std::filesystem::path cwd_test_out_a;
+  bool cwd_test_changed = false;
+  void changeToDirBOnceOutputExists()
+  {
+    std::error_code ec;
+    if (!cwd_test_changed && std::filesystem::exists(cwd_test_out_a, ec))
+    {
+      std::filesystem::current_path(cwd_test_dir_b, ec);
+      cwd_test_changed = !ec;
+    }
+  }
+#endif
 
   // first occurrence only; returns false when @p from is absent
   bool replaceInFile4b(const std::string& path, const std::string& from, const std::string& to)
@@ -931,6 +991,147 @@ START_SECTION([EXTRA] store - a failing stream throws and leaves no truncated id
   PeptideIdentificationList peps_in;
   IdXMLFile().load(file_ok, prots_in, peps_in);
   TEST_EQUAL(peps_in.size(), 400)
+}
+END_SECTION
+
+START_SECTION([EXTRA] store - an allocation failure anywhere in store() leaves no incomplete idXML)
+{
+#ifdef __linux__
+  // Every allocation of the calling thread in store() fails once, one after the other. An exception between opening
+  // the file and setting up its removal (e.g. from copying the file name) bypassed the removal and left an incomplete
+  // file. After each failure the name holds no incomplete idXML: it is absent, holds its previous content (the failure
+  // came before the file was opened) or the complete file (the failure came after the file was written).
+  std::vector<ProteinIdentification> prots(1);
+  prots[0].setIdentifier("runAlloc");
+  prots[0].setDateTime(DateTime::now());
+  prots[0].insertHit(ProteinHit(0.0, 1, "ACC_ALLOC", ""));
+  PeptideIdentificationList peps(3); // one block, formatted by the calling thread
+  for (Size l = 0; l < peps.size(); ++l)
+  {
+    peps[l].setIdentifier("runAlloc");
+    peps[l].setScoreType("score");
+    peps[l].setHigherScoreBetter(true);
+    peps[l].setRT(double(l));
+    peps[l].setMZ(500.0 + double(l));
+    PeptideHit hit(double(l), 0, 2, AASequence::fromString("PEPTIDER"));
+    hit.addPeptideEvidence(PeptideEvidence("ACC_ALLOC", 0, 7, '-', '-'));
+    hit.setMetaValue("alloc_test", std::string(64, 'x'));
+    peps[l].insertHit(hit);
+  }
+  // longer than any short-string buffer, so that copying the name allocates
+  const std::string file = "IdXMLFile_test_" + File::getUniqueName(false) + "_" + std::string(100, 'n') + ".idXML";
+  IdXMLFile().store(file, prots, peps);
+  const std::string complete = slurp4b(file);
+  const std::string previous = "previous content\n";
+  for (const bool existed : {false, true})
+  {
+    long injected = 0, failed_stores = 0, incomplete_left = 0, first_incomplete = 0;
+    for (long n = 1; n < 10000000; ++n)
+    {
+      std::remove(file.c_str());
+      if (existed) { std::ofstream(file) << previous; }
+      bool threw = false;
+      AllocFault::arm(n);
+      try
+      {
+        IdXMLFile().store(file, prots, peps);
+      }
+      catch (...)
+      {
+        threw = true;
+      }
+      const bool fired = AllocFault::fired;
+      AllocFault::disarm();
+      const bool exists = File::exists(file);
+      const std::string content = exists ? slurp4b(file) : std::string();
+      const bool ok = threw ? (!exists || content == complete || (existed && content == previous)) : (exists && content == complete);
+      if (!ok && incomplete_left++ == 0) first_incomplete = n;
+      if (!fired) break; // n is past the last allocation of store()
+      ++injected;
+      if (threw) ++failed_stores;
+    }
+    STATUS("file existed before: " << existed << "; " << injected << " allocations failed one at a time, " << failed_stores
+           << " stores threw, " << incomplete_left << " left an incomplete file (first at allocation " << first_incomplete << ")")
+    TEST_EQUAL(failed_stores > 0, true)
+    TEST_EQUAL(incomplete_left, 0)
+  }
+  std::remove(file.c_str());
+#endif
+}
+END_SECTION
+
+START_SECTION([EXTRA] store - a change of the working directory while store() runs does not redirect the removal of the incomplete file)
+{
+#ifdef __linux__
+  // store("out.idXML") in directory A writes A/out.idXML. If the working directory changes to B (e.g. in another thread)
+  // before store() fails, removing the incomplete file by its relative name would remove B/out.idXML, a file this call
+  // did not write, and leave A/out.idXML behind. The change happens at each allocation of the calling thread after the
+  // file was created, one after the other; store() fails in the protein section (a meta value without a value).
+  namespace fs = std::filesystem;
+  const fs::path base = fs::absolute("IdXMLFile_test_" + File::getUniqueName(false) + "_cwd");
+  const fs::path dir_a = base / "A";
+  cwd_test_dir_b = base / "B";
+  fs::create_directories(dir_a);
+  fs::create_directories(cwd_test_dir_b);
+  cwd_test_out_a = dir_a / "out.idXML";
+  const fs::path out_b = cwd_test_dir_b / "out.idXML";
+  const std::string unrelated = "a file in B that store() does not write\n";
+
+  std::vector<ProteinIdentification> prots(1);
+  prots[0].setIdentifier("runCwd");
+  prots[0].setDateTime(DateTime::now());
+  ProteinHit protein_hit(0.0, 1, "ACC_CWD", "");
+  protein_hit.setMetaValue("fail_test_empty", DataValue()); // cannot be written
+  prots[0].insertHit(protein_hit);
+  PeptideIdentificationList peps(2);
+  for (Size l = 0; l < peps.size(); ++l)
+  {
+    peps[l].setIdentifier("runCwd");
+    peps[l].setScoreType("score");
+    PeptideHit hit(double(l), 0, 2, AASequence::fromString("PEPTIDER"));
+    peps[l].insertHit(hit);
+  }
+
+  struct RestoreWorkingDirectory
+  {
+    fs::path saved = fs::current_path();
+    ~RestoreWorkingDirectory() { std::error_code ec; fs::current_path(saved, ec); }
+  } restore_working_directory;
+  long changed = 0, b_damaged = 0, a_left = 0, first_b_damaged = 0;
+  for (long n = 1; n < 10000000; ++n)
+  {
+    { std::ofstream(out_b.string()) << unrelated; }
+    fs::remove(cwd_test_out_a);
+    fs::current_path(dir_a);
+    cwd_test_changed = false;
+    AllocFault::arm(n, &changeToDirBOnceOutputExists);
+    try
+    {
+      IdXMLFile().store("out.idXML", prots, peps);
+    }
+    catch (...)
+    {
+    }
+    const bool fired = AllocFault::fired;
+    AllocFault::disarm();
+    fs::current_path(restore_working_directory.saved);
+    if (!fired) break; // n is past the last allocation of store()
+    if (!cwd_test_changed) continue; // the change came before the file was created: B/out.idXML was the output
+    ++changed;
+    if (!fs::exists(out_b) || slurp4b(out_b.string()) != unrelated)
+    {
+      if (b_damaged++ == 0) first_b_damaged = n;
+    }
+    if (fs::exists(cwd_test_out_a)) ++a_left;
+  }
+  STATUS(changed << " stores changed the working directory after the file was created; B/out.idXML removed or changed in "
+         << b_damaged << " (first at allocation " << first_b_damaged << "), A/out.idXML left in " << a_left)
+  TEST_EQUAL(changed > 0, true)
+  TEST_EQUAL(b_damaged, 0)
+  TEST_EQUAL(a_left, 0)
+  std::error_code ec;
+  fs::remove_all(base, ec);
+#endif
 }
 END_SECTION
 
