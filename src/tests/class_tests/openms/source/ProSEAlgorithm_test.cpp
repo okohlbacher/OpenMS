@@ -77,6 +77,7 @@ public:
   using ProSEAlgorithm::buildDecoyAugmentedDB_;
   using ProSEAlgorithm::annotateIonPriors_;
   using ProSEAlgorithm::reversedNoiseSequence_;
+  using ProSEAlgorithm::fragment_mass_tolerance_;
 };
 
 // --- Shared calibration fixture -------------------------------------------------
@@ -4092,6 +4093,57 @@ START_SECTION(([EXTRA] fragment:mass_tolerance must be finite and positive for e
         TEST_REAL_SIMILAR(static_cast<double>(algo.getParameters().getValue("fragment:mass_tolerance")), unit == "Da" ? 0.02 : 20.0)
       }
     }
+  }
+}
+END_SECTION
+
+START_SECTION(([EXTRA] an exception thrown inside the parallel scoring and calibration loops reaches the caller of search()))
+{
+  // setParameters() now rejects Timo Sachsenberg's B4 tolerance of 0 (previous section). To still throw from inside
+  // the OpenMP scoring loop, and with calibration from inside the calibration pass, the tolerance is set to 0 on the
+  // member, past that check: HyperScore::computeMassAccuracy() then throws InvalidParameter in the loop. Without the
+  // exception guard of these loops the process called std::terminate(); search() must throw instead. One spectrum, so
+  // only one thread constructs the exception (concurrent construction of OpenMS exceptions is not thread-safe, see
+  // OMPExceptionGuard).
+  const AASequence peptide = AASequence::fromString("PEPTIDER");
+  const vector<FASTAFile::FASTAEntry> db = {{"P01", "", "PEPTIDER"}, {"P02", "", "VLVLDTDYK"}};
+  PeakMap spectra;
+  {
+    MSSpectrum spectrum;
+    TheoreticalSpectrumGenerator().getSpectrum(spectrum, peptide, 1, 1);
+    spectrum.setMSLevel(2);
+    spectrum.setNativeID("scan=1");
+    Precursor precursor;
+    precursor.setMZ(peptide.getMZ(2));
+    precursor.setCharge(2);
+    spectrum.setPrecursors({precursor});
+    spectra.addSpectrum(spectrum);
+  }
+
+  for (const std::string calibration : {"false", "true"})
+  {
+    ProSEAlgorithm_test algo;
+    Param p = algo.getParameters();
+    p.setValue("scoring:method", "mass_accuracy");
+    p.setValue("fragment:mass_tolerance", 20.0);
+    p.setValue("annotate:local_fragment_evidence", "false");
+    p.setValue("fragment:deisotope", "false");
+    p.setValue("calibration:enabled", calibration);
+    algo.setParameters(p);
+    {
+      // control: the valid configuration searches normally
+      PeakMap input = spectra;
+      vector<ProteinIdentification> proteins;
+      PeptideIdentificationList peptides;
+      algo.search(input, db, proteins, peptides);
+      ABORT_IF(peptides.size() != 1)
+      TEST_EQUAL(peptides[0].getHits()[0].getSequence(), peptide)
+    }
+    algo.fragment_mass_tolerance_ = 0.0;
+    PeakMap input = spectra;
+    vector<ProteinIdentification> proteins;
+    PeptideIdentificationList peptides;
+    TEST_EXCEPTION(Exception::InvalidParameter, algo.search(input, db, proteins, peptides))
   }
 }
 END_SECTION
