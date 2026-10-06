@@ -69,9 +69,9 @@ OpenMS Library:
     Deamidated (N) + Amidated (C-term)) next to the unmodified peptide at the same precursor mass;
     it reported only the unmodified one. Configurations without such a set are unchanged.
   - FIX: FragmentIndex tests the fragments against the same float bounds of a peak's tolerance
-    window that select the fragment buckets. They differed by an ulp, so whether a fragment exactly
-    on a bound was counted depended on the bucket layout. Search results can change only for
-    spectra with a candidate fragment exactly on such a bound.
+    window that select the fragment buckets. They differed by up to a float ulp, so whether a
+    fragment on or next to a bound was counted depended on the bucket layout. Search results can
+    change only for spectra with a candidate fragment on or within one float ulp of such a bound.
   - PERF: IdXMLFile::store formats the PeptideIdentifications in parallel (at most 16 threads) and
     writes them in input order, so the output is unchanged; 12% less wall time for ProSE's 20
     benchmark searches of #10364 at 4 threads, 26% less for one search at 16 threads.
