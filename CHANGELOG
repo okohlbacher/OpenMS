@@ -170,8 +170,8 @@ TOPP tools:
       - FIX: MS2 deisotoping (high-resolution fragments) requires isotope intensities to fall from the
         monoisotopic peak. A small peak one isotope spacing below a fragment ion was taken as the
         envelope's monoisotopic peak, and the ion was removed as its isotope. Every TMT/TMTpro-labelled
-        fragment has such a peak from the reagent's isotope impurity, so labelled searches lost a fifth
-        of their matchable fragment peaks; dense Orbitrap Astral and timsTOF spectra lost about 5%.
+        fragment has such a peak from the reagent's isotope impurity, so labelled searches lost many of
+        their matchable fragment peaks; dense Orbitrap Astral and timsTOF spectra lost some as well.
       - New peptide:deduplicate=true (the default) indexes each exact modified peptide once before
         candidate selection. A peptide that occurs in several proteins used to take one candidate slot
         per occurrence, so the runner-up was often the same peptide (delta score 0) and the candidate
