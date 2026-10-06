@@ -71,8 +71,7 @@ OpenMS Library:
   - FIX: FragmentIndex tests the fragments against the same float bounds of a peak's tolerance
     window that select the fragment buckets. The two tests rounded differently, so whether a
     fragment on or next to a bound was counted depended on the bucket layout. Search results can
-    change only for spectra with a candidate fragment on or next to such a bound (within the float
-    rounding of the window bounds).
+    change only for spectra with a candidate fragment on or next to such a bound.
   - PERF: IdXMLFile::store formats the PeptideIdentifications in parallel (at most 16 threads) and
     writes them in input order, so the output is unchanged; 12% less wall time for ProSE's 20
     benchmark searches of #10364 at 4 threads, 26% less for one search at 16 threads.
