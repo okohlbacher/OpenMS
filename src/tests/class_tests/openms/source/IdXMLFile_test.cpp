@@ -1129,6 +1129,15 @@ START_SECTION([EXTRA] store - a change of the working directory while store() ru
   TEST_EQUAL(changed > 0, true)
   TEST_EQUAL(b_damaged, 0)
   TEST_EQUAL(a_left, 0)
+
+  // a working directory that no longer exists: a relative name cannot be resolved, store() reports that it cannot
+  // create the file (as when opening it fails)
+  const fs::path gone = base / "gone";
+  fs::create_directories(gone);
+  fs::current_path(gone);
+  fs::remove(gone);
+  TEST_EXCEPTION(Exception::UnableToCreateFile, IdXMLFile().store("out.idXML", prots, peps))
+  fs::current_path(restore_working_directory.saved);
   std::error_code ec;
   fs::remove_all(base, ec);
 #endif

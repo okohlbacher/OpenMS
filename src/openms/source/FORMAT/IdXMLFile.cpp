@@ -194,7 +194,13 @@ namespace OpenMS
 
     // The file is opened, inspected and, if store() fails, removed by its absolute path: a change of the working
     // directory while store() runs (e.g. in another thread) must not redirect the removal to another file.
-    const std::filesystem::path path = std::filesystem::absolute(std::filesystem::path(filename));
+    std::error_code path_error;
+    const std::filesystem::path path = std::filesystem::absolute(std::filesystem::path(filename), path_error);
+    if (path_error)
+    {
+      throw Exception::UnableToCreateFile(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename,
+                                          "its absolute path cannot be determined: " + path_error.message());
+    }
     //open stream; decide before opening whether a failed store() may remove the file (it may not, e.g., remove a
     //symbolic link or a device it writes through)
     const bool removable = removableOnFailure(path);
