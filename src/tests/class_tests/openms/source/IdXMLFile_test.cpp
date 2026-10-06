@@ -23,6 +23,7 @@
 #include <OpenMS/DATASTRUCTURES/DateTime.h>
 #include <OpenMS/SYSTEM/File.h>
 #include <algorithm>
+#include <cerrno>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -44,7 +45,8 @@
 #ifdef __linux__
 // Fault injection for the allocation tests below (Linux only: there, this replacement of the global operator new also
 // receives the allocations of libOpenMS). Armed on one thread, the n-th allocation of that thread after arming runs
-// action() or, without an action, throws std::bad_alloc; allocations made inside action() are not counted.
+// action() or, without an action, throws std::bad_alloc; allocations made inside action() are not counted. Over-aligned
+// allocations (operator new with std::align_val_t) are not replaced and not counted.
 namespace AllocFault
 {
   thread_local long countdown = 0;
@@ -1018,7 +1020,8 @@ START_SECTION([EXTRA] store - an allocation failure anywhere in store() leaves n
     hit.setMetaValue("alloc_test", std::string(64, 'x'));
     peps[l].insertHit(hit);
   }
-  // longer than any short-string buffer, so that copying the name allocates
+  // longer than any short-string buffer, so that copying the name allocates. Not a NEW_TMP_FILE: the sweep removes the
+  // file, and VALIDATE_TMP_FILES at the end would check it.
   const std::string file = "IdXMLFile_test_" + File::getUniqueName(false) + "_" + std::string(100, 'n') + ".idXML";
   IdXMLFile().store(file, prots, peps);
   const std::string complete = slurp4b(file);
@@ -1052,7 +1055,7 @@ START_SECTION([EXTRA] store - an allocation failure anywhere in store() leaves n
     }
     STATUS("file existed before: " << existed << "; " << injected << " allocations failed one at a time, " << failed_stores
            << " stores threw, " << incomplete_left << " left an incomplete file (first at allocation " << first_incomplete << ")")
-    TEST_EQUAL(failed_stores > 0, true)
+    TEST_TRUE(failed_stores > 0)
     TEST_EQUAL(incomplete_left, 0)
   }
   std::remove(file.c_str());
@@ -1068,6 +1071,7 @@ START_SECTION([EXTRA] store - a change of the working directory while store() ru
   // did not write, and leave A/out.idXML behind. The change happens at each allocation of the calling thread after the
   // file was created, one after the other; store() fails in the protein section (a meta value without a value).
   namespace fs = std::filesystem;
+  // not NEW_TMP_FILE: the directories are removed at the end of the section
   const fs::path base = fs::absolute("IdXMLFile_test_" + File::getUniqueName(false) + "_cwd");
   const fs::path dir_a = base / "A";
   cwd_test_dir_b = base / "B";
@@ -1126,7 +1130,7 @@ START_SECTION([EXTRA] store - a change of the working directory while store() ru
   }
   STATUS(changed << " stores changed the working directory after the file was created; B/out.idXML removed or changed in "
          << b_damaged << " (first at allocation " << first_b_damaged << "), A/out.idXML left in " << a_left)
-  TEST_EQUAL(changed > 0, true)
+  TEST_TRUE(changed > 0)
   TEST_EQUAL(b_damaged, 0)
   TEST_EQUAL(a_left, 0)
 
@@ -1139,6 +1143,90 @@ START_SECTION([EXTRA] store - a change of the working directory while store() ru
   TEST_EXCEPTION(Exception::UnableToCreateFile, IdXMLFile().store("out.idXML", prots, peps))
   fs::current_path(restore_working_directory.saved);
   std::error_code ec;
+  fs::remove_all(base, ec);
+#endif
+}
+END_SECTION
+
+START_SECTION([EXTRA] store - a relative name is written where the working directory can be used but not its absolute path)
+{
+#ifdef __linux__
+  // Creating a file by a relative name needs permissions on the working directory only; its absolute path also needs
+  // search permission on every ancestor. Here the parent of the working directory has no permissions: store() of a
+  // relative name must write the file, as any other writer can (a privileged user is not restricted; then the case is
+  // not reached and only reported). Not NEW_TMP_FILE: the directories are removed at the end of the section.
+  namespace fs = std::filesystem;
+  const fs::path base = fs::absolute("IdXMLFile_test_" + File::getUniqueName(false) + "_ancestor");
+  const fs::path parent = base / "parent";
+  const fs::path work = parent / "work";
+  fs::create_directories(work);
+
+  std::vector<ProteinIdentification> prots(1);
+  prots[0].setIdentifier("runAncestor");
+  prots[0].setDateTime(DateTime::now());
+  prots[0].insertHit(ProteinHit(0.0, 1, "ACC_ANCESTOR", ""));
+  PeptideIdentificationList peps(2);
+  for (Size l = 0; l < peps.size(); ++l)
+  {
+    peps[l].setIdentifier("runAncestor");
+    peps[l].setScoreType("score");
+    PeptideHit hit(double(l), 0, 2, AASequence::fromString("PEPTIDER"));
+    hit.addPeptideEvidence(PeptideEvidence("ACC_ANCESTOR", 0, 7, '-', '-'));
+    peps[l].insertHit(hit);
+  }
+  const fs::path reference = base / "reference.idXML";
+  IdXMLFile().store(reference.string(), prots, peps);
+  const std::string complete = slurp4b(reference.string());
+
+  struct RestoreDirectories
+  {
+    fs::path saved = fs::current_path();
+    fs::path locked;
+    ~RestoreDirectories()
+    {
+      std::error_code ec;
+      if (!locked.empty()) fs::permissions(locked, fs::perms::owner_all, ec);
+      fs::current_path(saved, ec);
+    }
+  } restore;
+  fs::current_path(work);
+  fs::permissions(parent, fs::perms::none);
+  restore.locked = parent;
+  const bool reached = ::access((work / "control").c_str(), F_OK) != 0 && errno == EACCES;
+  { std::ofstream("control") << "x"; }
+  const bool relative_name_usable = File::exists("control");
+  STATUS("absolute path of the working directory not searchable: " << reached << "; a relative name can be created: "
+         << relative_name_usable)
+  if (reached && relative_name_usable)
+  {
+    bool stored = false;
+    try
+    {
+      IdXMLFile().store("out.idXML", prots, peps);
+      stored = true;
+    }
+    catch (const Exception::BaseException& e)
+    {
+      STATUS("store() threw: " << e.what());
+    }
+    TEST_TRUE(stored)
+    TEST_TRUE(File::exists("out.idXML") && slurp4b("out.idXML") == complete)
+  }
+
+  // a pre-existing empty file that cannot be opened for writing stays (opening it changed nothing)
+  fs::permissions(parent, fs::perms::owner_all);
+  restore.locked.clear();
+  fs::current_path(restore.saved);
+  const fs::path read_only = work / "read_only_empty.idXML";
+  { std::ofstream create(read_only.string()); }
+  fs::permissions(read_only, fs::perms::owner_read);
+  if (::access(read_only.c_str(), W_OK) != 0)
+  {
+    TEST_EXCEPTION(Exception::UnableToCreateFile, IdXMLFile().store(read_only.string(), prots, peps))
+    TEST_TRUE(fs::exists(read_only))
+  }
+  std::error_code ec;
+  fs::permissions(read_only, fs::perms::owner_all, ec);
   fs::remove_all(base, ec);
 #endif
 }

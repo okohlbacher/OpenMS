@@ -80,8 +80,9 @@ OpenMS Library:
     writeUserParam_).
   - FIX: IdXMLFile::store throws when writing the file fails (e.g. disk full, an I/O error, or an
     allocation failure while a block of the parallel writer is formatted) and removes the incomplete
-    file. The block writer accepted the text of a failed block stream, and the state of the file
-    stream was never checked, so a truncated idXML could be left behind a successful return.
+    file where it may (a symbolic link or a device is left in place; the error message says which).
+    The block writer accepted the text of a failed block stream, and the state of the file stream
+    was never checked, so a truncated idXML could be left behind a successful return.
   - FIX: RNaseDigestion::digest returns no fragments for a sequence shorter than min_length, or
     when min_length exceeds max_length. Unsigned arithmetic wrapped around there, so unspecific
     cleavage asked reserve() for a huge capacity and could index far past the end of the sequence
