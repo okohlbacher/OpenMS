@@ -60,14 +60,17 @@ extern char** environ;
 #ifdef __linux__
 // Fault injection for the allocation tests below (Linux only: there, this replacement of the global operator new also
 // receives the allocations of libOpenMS). Armed on one thread, the n-th allocation of that thread after arming runs
-// action() or, without an action, throws std::bad_alloc; allocations made inside action() are not counted.
+// action() or, without an action, throws std::bad_alloc; allocations made inside action() are not counted. A failed
+// nothrow allocation returns nullptr to its caller and sets nothrow_failed. Over-aligned allocations (operator new with
+// std::align_val_t) are not replaced and not counted.
 namespace AllocFault
 {
   thread_local long countdown = 0;
   thread_local bool fired = false;
+  thread_local bool nothrow_failed = false;
   thread_local bool in_action = false;
   thread_local void (*action)() = nullptr;
-  void arm(long n, void (*on_fire)() = nullptr) { fired = false; action = on_fire; countdown = n; }
+  void arm(long n, void (*on_fire)() = nullptr) { fired = false; nothrow_failed = false; action = on_fire; countdown = n; }
   void disarm() { countdown = 0; action = nullptr; }
 }
 void* operator new(std::size_t size)
@@ -86,11 +89,11 @@ void* operator new(std::size_t size)
 void* operator new[](std::size_t size) { return ::operator new(size); }
 void* operator new(std::size_t size, const std::nothrow_t&) noexcept
 {
-  try { return ::operator new(size); } catch (...) { return nullptr; }
+  try { return ::operator new(size); } catch (...) { AllocFault::nothrow_failed = true; return nullptr; }
 }
 void* operator new[](std::size_t size, const std::nothrow_t&) noexcept
 {
-  try { return ::operator new(size); } catch (...) { return nullptr; }
+  try { return ::operator new(size); } catch (...) { AllocFault::nothrow_failed = true; return nullptr; }
 }
 void operator delete(void* p) noexcept { std::free(p); }
 void operator delete[](void* p) noexcept { std::free(p); }
@@ -141,7 +144,9 @@ public:
 #ifdef __linux__
 // The child process of the section "preprocessSpectra_ - an allocation failure ... reaches the caller": every allocation
 // of the calling thread in preprocessSpectra_() fails once, one after the other. Exit code 0: every failure reached the
-// caller as an exception, at least one as std::bad_alloc. A failure that leaves an OpenMP region terminates the process.
+// caller as an exception, at least one as std::bad_alloc; only a failed nothrow allocation (reported to its caller as
+// nullptr, e.g. the temporary buffer of std::stable_sort) may be handled inside. A failure that leaves an OpenMP region
+// terminates the process.
 static long alloc_fault_child_n = 0;
 static int preprocessAllocFaultChild()
 {
@@ -180,10 +185,11 @@ static int preprocessAllocFaultChild()
     PeakMap warm_up = make_exp(); // singletons and caches that are built on first use
     ProSEAlgorithm_test::preprocessSpectra_(warm_up, 0.05, false, true, 0, 20);
   }
-  long caught = 0, other = 0;
+  long caught = 0, other = 0, nothrow = 0, swallowed = 0, first_swallowed = 0;
   for (alloc_fault_child_n = 1; alloc_fault_child_n < 10000000; ++alloc_fault_child_n)
   {
     PeakMap exp = make_exp();
+    bool threw = false;
     AllocFault::arm(alloc_fault_child_n);
     try
     {
@@ -192,19 +198,27 @@ static int preprocessAllocFaultChild()
     catch (const std::bad_alloc&)
     {
       ++caught;
+      threw = true;
     }
     catch (...)
     {
       ++other;
+      threw = true;
     }
     const bool fired = AllocFault::fired;
+    const bool nothrow_failed = AllocFault::nothrow_failed;
     AllocFault::disarm();
     if (!fired) break; // past the last allocation of preprocessSpectra_()
+    if (threw) continue;
+    if (nothrow_failed) ++nothrow;
+    else if (swallowed++ == 0) first_swallowed = alloc_fault_child_n;
   }
   std::printf("alloc-fault child: %ld allocations failed one at a time; std::bad_alloc reached the caller %ld times, "
-              "another exception %ld times\n", alloc_fault_child_n - 1, caught, other);
+              "another exception %ld times; a failed nothrow allocation was handled %ld times; another failure did not "
+              "reach the caller %ld times (first at allocation %ld)\n",
+              alloc_fault_child_n - 1, caught, other, nothrow, swallowed, first_swallowed);
   std::fflush(stdout);
-  return caught > 0 ? 0 : 2;
+  return caught > 0 && swallowed == 0 ? 0 : 2;
 }
 #endif
 
@@ -3137,12 +3151,14 @@ START_SECTION(([EXTRA] preprocessSpectra_ - an allocation failure, also in the p
   const int spawn_rc = ::posix_spawn(&pid, "/proc/self/exe", nullptr, nullptr, child_argv, envp.data());
   TEST_EQUAL(spawn_rc, 0)
   int status = 0;
+  pid_t waited = -1;
   if (spawn_rc == 0)
   {
-    while (::waitpid(pid, &status, 0) < 0 && errno == EINTR) {}
+    do { waited = ::waitpid(pid, &status, 0); } while (waited < 0 && errno == EINTR);
   }
-  TEST_EQUAL(WIFSIGNALED(status), false) // e.g. SIGABRT: std::terminate
-  TEST_EQUAL(WIFEXITED(status) ? WEXITSTATUS(status) : -1, 0)
+  TEST_EQUAL(waited, pid) // the status below is the child's (e.g. not ECHILD after an ignored SIGCHLD)
+  TEST_FALSE(waited == pid && WIFSIGNALED(status)) // e.g. SIGABRT: std::terminate
+  TEST_EQUAL(waited == pid && WIFEXITED(status) ? WEXITSTATUS(status) : -1, 0)
 #endif
 }
 END_SECTION
