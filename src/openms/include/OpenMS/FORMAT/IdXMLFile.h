@@ -90,8 +90,11 @@ public:
         std::bad_alloc); a file that was already empty before is kept. Removal is best effort and is attempted only
         for a regular file without further hard links that @p filename still names:
         - a symbolic link, a device or a file with further hard links is left in place;
-        - so is a file that was moved or replaced while store() ran (on POSIX systems, the device and inode are
-          compared; the check and the removal are not atomic);
+        - so is a file that was moved, or renamed into the place of the output, while store() ran: store() opens the
+          file itself right before writing it and removes only that file. On POSIX systems it holds the file open and
+          compares the device and inode; if they cannot be determined, the file is left in place. On Windows the file
+          cannot be renamed while store() holds it open. The comparison and the removal are not atomic (on Windows,
+          the closing of the file and the removal), so a file renamed into place within that short window is removed;
         - a file opened by its relative name because its absolute path cannot be used (e.g. an ancestor of the
           working directory is not searchable) is never removed, not even an empty one that opening created;
         - if removing fails (e.g. the directory is not writable), the incomplete file stays.

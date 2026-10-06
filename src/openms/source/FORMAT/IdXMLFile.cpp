@@ -40,7 +40,10 @@
 #endif
 
 #ifndef OPENMS_WINDOWSPLATFORM
-#include <sys/stat.h> // lstat(): the device and inode of the file that store() opened
+#include <cerrno>
+#include <fcntl.h>    // open(): the descriptor by which store() holds the file it owns
+#include <sys/stat.h> // fstat(), lstat(): the device and inode of that file, and of the file that the name denotes
+#include <unistd.h>   // close()
 #endif
 
 using namespace std;
@@ -64,53 +67,91 @@ namespace OpenMS
       return !ec && links == 1;
     }
 
-    /// The identity of the directory entry that a path names (a symbolic link is not followed): its device and inode
-    /// (POSIX). It tells whether a name still denotes the file that store() opened, or another file that was renamed
-    /// into its place (or reached through a retargeted symbolic link of an ancestor) while store() ran. On Windows it
-    /// is not determined and every name counts as unchanged: there, the C runtime opens the file without
-    /// FILE_SHARE_DELETE, so it cannot be renamed or removed while the stream holds it open.
-    struct FileIdentity
+    /// The file that store() owns: store() opens it itself, by its absolute path and without truncating it (creating it
+    /// if needed), right before the stream opens the same name. On POSIX systems, store() holds it open by a descriptor
+    /// until store() returns, so that its device and inode identify it (they cannot be reused meanwhile). A failed
+    /// store() removes the file only if the name still denotes that file (lstat(): a final symbolic link is not
+    /// followed): a file that another process renamed into the place of the output at any time after this, or that the
+    /// name reaches through a retargeted symbolic link of an ancestor, is not removed. The comparison and the removal
+    /// are not atomic (POSIX has no unlink-if-inode). On Windows, the file is not opened here and its identity is not
+    /// compared: the C runtime opens it without FILE_SHARE_DELETE, so it cannot be renamed or removed while the stream
+    /// holds it open; the stream is closed right before the removal, and that short window is not covered (as on POSIX
+    /// the window from the comparison to the removal).
+    class OwnedFile
     {
-      bool known{false};
-#ifndef OPENMS_WINDOWSPLATFORM
-      dev_t device{};
-      ino_t inode{};
-#endif
-      static FileIdentity of(const std::filesystem::path& path) noexcept
+    public:
+      enum class Match
       {
-        FileIdentity id;
+        same,    ///< the name denotes the owned file
+        other,   ///< the name denotes another file, or none
+        unknown  ///< no file is owned, or what the name denotes could not be determined
+      };
+      OwnedFile() = default;
+      OwnedFile(const OwnedFile&) = delete;
+      OwnedFile& operator=(const OwnedFile&) = delete;
+      ~OwnedFile() { close(); }
+      /// opens (creates) @p path for writing, without truncating it; if that fails or it is not a regular file, no file
+      /// is owned
+      void open(const std::filesystem::path& path) noexcept
+      {
+        close();
 #ifdef OPENMS_WINDOWSPLATFORM
         (void)path;
-        id.known = true;
+        owned_ = true;
 #else
+        // O_NONBLOCK: a FIFO without a reader fails instead of blocking (it is not owned in any case)
+        fd_ = ::open(path.c_str(), O_WRONLY | O_CREAT | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC, 0666);
         struct stat st;
-        if (::lstat(path.c_str(), &st) == 0)
+        if (fd_ >= 0 && ::fstat(fd_, &st) == 0 && S_ISREG(st.st_mode))
         {
-          id.known = true;
-          id.device = st.st_dev;
-          id.inode = st.st_ino;
+          owned_ = true;
+          device_ = st.st_dev;
+          inode_ = st.st_ino;
+        }
+        else
+        {
+          close();
         }
 #endif
-        return id;
       }
-      /// both known and the same file
-      bool sameAs(const FileIdentity& other) const noexcept
+      /// whether @p path denotes the owned file
+      Match namedBy(const std::filesystem::path& path) const noexcept
       {
+        if (!owned_) return Match::unknown;
 #ifdef OPENMS_WINDOWSPLATFORM
-        return known && other.known;
+        (void)path;
+        return Match::same;
 #else
-        return known && other.known && device == other.device && inode == other.inode;
+        struct stat st;
+        if (::lstat(path.c_str(), &st) != 0) return errno == ENOENT || errno == ENOTDIR ? Match::other : Match::unknown;
+        return st.st_dev == device_ && st.st_ino == inode_ ? Match::same : Match::other;
 #endif
       }
+      /// no file is owned any more
+      void close() noexcept
+      {
+#ifndef OPENMS_WINDOWSPLATFORM
+        if (fd_ >= 0) ::close(fd_);
+        fd_ = -1;
+#endif
+        owned_ = false;
+      }
+
+    private:
+      bool owned_{false};
+#ifndef OPENMS_WINDOWSPLATFORM
+      int fd_{-1};
+      dev_t device_{};
+      ino_t inode_{};
+#endif
     };
 
     /// Closes the stream of store() and removes the incomplete file, unless store() completed (release()). Covers
     /// every way out of store() after the file was opened (arm()), exceptions included. It refers to the absolute path
     /// and the file name of store() and allocates nothing, so it is set up before the file is opened, and arming it
-    /// cannot fail. A file opened by its relative name instead (detach()) is never removed. arm() records the identity
-    /// of the opened file; the file is removed only if the absolute path still names it (FileIdentity), so a file that
-    /// another process renamed into its place while store() ran is not removed. The check and the removal are not
-    /// atomic, and neither are opening and arm(): a replacement within these two short windows is not detected.
+    /// cannot fail; it never throws. own() opens the file that store() owns (OwnedFile) right before the stream opens
+    /// it; only that file is removed, and only while the absolute path still denotes it. A file opened by its relative
+    /// name instead (detach()) is never removed.
     class IncompleteFileRemover
     {
     public:
@@ -121,47 +162,48 @@ namespace OpenMS
       }
       IncompleteFileRemover(const IncompleteFileRemover&) = delete;
       IncompleteFileRemover& operator=(const IncompleteFileRemover&) = delete;
-      ~IncompleteFileRemover()
+      ~IncompleteFileRemover() { discard(); }
+      /// opens the file that store() owns by the absolute path, right before the stream opens it (only a file that may
+      /// be removed is owned)
+      void own() noexcept
       {
-        try { discard(); } catch (...) {} // never throws out of a destructor (stack unwinding)
+        if (by_path_ && removable_) owned_.open(path_);
       }
-      /// the file is opened by its relative name, not by path_: path_ may name another file or none, so nothing is removed
-      void detach() noexcept { by_path_ = false; }
-      /// the file is open: from now on, remove it unless store() completes (if the absolute path still names it)
-      void arm() noexcept
+      /// The stream could not open the absolute path, so the file is opened by its relative name, not by path_: path_
+      /// may name another file or none, so nothing is removed after this. The empty file that own() may have created
+      /// is removed first.
+      void detach() noexcept
       {
-        armed_ = true;
-        if (by_path_) opened_ = FileIdentity::of(path_);
+#ifndef OPENMS_WINDOWSPLATFORM
+        if (by_path_) removeOwnedIfEmpty();
+#endif
+        owned_.close();
+        by_path_ = false;
       }
+      /// the file is open: from now on, remove it unless store() completes (if the absolute path still denotes it)
+      void arm() noexcept { armed_ = true; }
       /// store() completed: keep the file
       void release() noexcept { armed_ = false; }
-      /// Opening the file failed or threw. Opening can create or truncate the file before it throws (e.g. std::bad_alloc
-      /// for the stream's buffer, which libstdc++ allocates after it opened the file), so an empty file that may be
-      /// removed is removed: the file this call created, or the content it replaced. A file that was empty before is
-      /// kept: opening it changed nothing.
+      /// Opening the file failed or threw. Opening can create or truncate the file before it throws (e.g.
+      /// std::bad_alloc for the stream's buffer, which libstdc++ allocates after it opened the file), so an empty file
+      /// that store() owns is removed: the file this call created, or the content it replaced. A file that was empty
+      /// before is kept: opening it changed nothing.
       void discardIfEmpty() noexcept
       {
-        try
-        {
-          if (os_.is_open()) os_.close();
-          if (!by_path_ || was_empty_) return;
-          std::error_code ec;
-          const std::uintmax_t size = std::filesystem::file_size(path_, ec);
-          if (!ec && size == 0 && removable_ && removableOnFailure(path_)) std::filesystem::remove(path_, ec);
-        }
-        catch (...) {} // the failure of opening is the one reported
+        closeStream();
+        if (by_path_) removeOwnedIfEmpty();
       }
       /// Closes the stream and removes the file if it may be removed; true iff it was removed. Only the first call acts.
-      bool discard()
+      bool discard() noexcept
       {
         if (!armed_) return removed_;
         armed_ = false;
-        if (os_.is_open()) os_.close();
+        closeStream();
         if (!by_path_ || !removable_) return removed_;
-        // the name must still denote the file that store() opened (not another file renamed into its place), and still
-        // be a regular file without further hard links
-        replaced_ = !opened_.sameAs(FileIdentity::of(path_));
-        if (!replaced_ && removableOnFailure(path_))
+        // the name must still denote the file that store() owns (not another file renamed into its place), and still be
+        // a regular file without further hard links
+        match_ = owned_.namedBy(path_);
+        if (match_ == OwnedFile::Match::same && removableOnFailure(path_))
         {
           std::error_code ec;
           removed_ = std::filesystem::remove(path_, ec) && !ec;
@@ -182,25 +224,51 @@ namespace OpenMS
           return "the incomplete output was left in place: '" + filename_
                  + "' is not a regular file that this call created or replaced (e.g. a symbolic link or a device)";
         }
-        if (replaced_)
+        if (match_ == OwnedFile::Match::other)
         {
           return "the incomplete output was not removed: '" + filename_
                  + "' no longer names the file that this call opened (it was moved, removed or replaced meanwhile)";
+        }
+        if (match_ == OwnedFile::Match::unknown)
+        {
+          return "the incomplete output was left in place: it could not be verified that '" + filename_
+                 + "' still names the file that this call opened";
         }
         return "the incomplete file '" + filename_ + "' could not be removed";
       }
 
     private:
+      /// closes the stream; a failure to close (e.g. an exception from a code conversion facet) neither replaces the
+      /// error that store() reports nor stops the removal
+      void closeStream() noexcept
+      {
+        try
+        {
+          if (os_.is_open()) os_.close();
+        }
+        catch (...)
+        {
+        }
+      }
+      /// removes the file that store() owns if it is empty and was not empty before
+      void removeOwnedIfEmpty() noexcept
+      {
+        if (was_empty_ || owned_.namedBy(path_) != OwnedFile::Match::same) return;
+        std::error_code ec;
+        const std::uintmax_t size = std::filesystem::file_size(path_, ec);
+        if (!ec && size == 0 && removableOnFailure(path_)) std::filesystem::remove(path_, ec);
+      }
+
       std::ofstream& os_;
       const std::filesystem::path& path_; ///< absolute: the file is opened, inspected and removed by it
       const std::string& filename_; ///< as given to store(), for the messages
       const bool removable_;
       const bool was_empty_; ///< the name was an empty file before store() opened it
       bool by_path_; ///< the file was opened by path_
-      FileIdentity opened_; ///< the file that store() opened by path_ (set by arm())
+      OwnedFile owned_; ///< the file that store() opened by path_ (own()); held until the remover is destroyed
       bool armed_{false};
       bool removed_{false};
-      bool replaced_{false}; ///< discard() found that path_ no longer names the opened file
+      OwnedFile::Match match_{OwnedFile::Match::unknown}; ///< whether path_ denoted the owned file (discard())
     };
   } // namespace
 
@@ -284,7 +352,11 @@ namespace OpenMS
     IncompleteFileRemover incomplete_file(os, path, filename, removable, was_empty);
     try
     {
-      if (!path.empty()) os.open(path);
+      if (!path.empty())
+      {
+        incomplete_file.own(); // the file that a failed store() may remove, opened right before the stream opens it
+        os.open(path);
+      }
       if (!os.is_open() && given.is_relative())
       {
         incomplete_file.detach();
