@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <filesystem>
 #include <fstream>
 #include <limits>
 #include <new>
@@ -788,7 +789,7 @@ START_SECTION([EXTRA] store - hits with NaN scores are written in the order of P
 }
 END_SECTION
 
-START_SECTION([EXTRA] store - a failing stream throws and leaves no truncated idXML)
+START_SECTION([EXTRA] store - a failing stream throws and leaves no truncated idXML of its own)
 {
   // The block formatter of the parallel writer: a failure of the block's stream buffer propagates. Without exceptions on
   // the stream, the std::bad_alloc would only set badbit and the partial block would be written as if complete.
@@ -846,10 +847,53 @@ START_SECTION([EXTRA] store - a failing stream throws and leaves no truncated id
     TEST_EQUAL(File::exists(file_bad), false)
   }
 
+  // An exception from any other part of the file, here the protein section (a meta value without a value cannot be
+  // written), removes the incomplete file as well: a file that store() created, and a regular file that existed
+  // before (its content is replaced when store() opens it).
+  std::vector<ProteinIdentification> bad_prots = prots;
+  {
+    std::vector<ProteinHit> hits = bad_prots[0].getHits();
+    hits[0].setMetaValue("fail_test_empty", DataValue());
+    bad_prots[0].setHits(hits);
+  }
+  for (const bool existed : {false, true})
+  {
+    std::string file_bad;
+    NEW_TMP_FILE(file_bad)
+    std::remove(file_bad.c_str());
+    if (existed) { std::ofstream(file_bad) << "previous content\n"; }
+    TEST_EXCEPTION(Exception::ConversionError, IdXMLFile().store(file_bad, bad_prots, make_peps(10)))
+    TEST_EQUAL(File::exists(file_bad), false)
+  }
+
 #ifdef __linux__
+  // Names that store() did not create and that are not a regular file of their own are left in place when store()
+  // fails: removing them would remove a link (the data behind it stays) or something this call did not create.
+  // The names are unique (File::getUniqueName), so concurrent runs of this test do not interfere, and they are not
+  // NEW_TMP_FILEs: the end-of-test validation would read them.
+  PeptideIdentificationList bad_peps = make_peps(100);
+  for (PeptideHit& hit : bad_peps[40].getHits()) hit.setMetaValue("fail_test_empty", DataValue());
+  for (const bool fail_in_block : {true, false})
+  {
+    // a file with a second hard link: neither name is removed (failure in a block of peptide identifications, or in
+    // the protein section)
+    const std::string original = "IdXMLFile_test_" + File::getUniqueName(false) + "_original.idXML";
+    const std::string link = "IdXMLFile_test_" + File::getUniqueName(false) + "_hardlink.idXML";
+    { std::ofstream(original) << "previous content\n"; }
+    std::error_code ec;
+    std::filesystem::create_hard_link(original, link, ec);
+    ABORT_IF(bool(ec))
+    if (fail_in_block) { TEST_EXCEPTION(Exception::ConversionError, IdXMLFile().store(link, prots, bad_peps)) }
+    else { TEST_EXCEPTION(Exception::ConversionError, IdXMLFile().store(link, bad_prots, make_peps(10))) }
+    TEST_EQUAL(File::exists(link), true)
+    TEST_EQUAL(File::exists(original), true)
+    std::remove(link.c_str());
+    std::remove(original.c_str());
+  }
+
   // Disk full: an idXML symlinked to /dev/full. One identification fits into the buffer of the file, so the error shows
   // only when the stream is flushed on close; 400 identifications overflow it while the blocks are written. Either way,
-  // store() throws and removes what it wrote (here: the link; /dev/full itself is untouched).
+  // store() throws; the link is not store()'s to remove and stays, /dev/full itself is untouched.
   struct stat device;
   if (::stat("/dev/full", &device) == 0 && S_ISCHR(device.st_mode))
   {
@@ -864,13 +908,11 @@ START_SECTION([EXTRA] store - a failing stream throws and leaves no truncated id
         omp_set_num_threads(threads);
 #endif
         const PeptideIdentificationList peps = make_peps(n);
-        // not a NEW_TMP_FILE: the end-of-test validation would read /dev/full through the link
-        const std::string link = "IdXMLFile_test_dev_full_" + StringUtils::toStr(n) + "_" + StringUtils::toStr(threads) + ".idXML";
-        std::remove(link.c_str());
+        const std::string link = "IdXMLFile_test_" + File::getUniqueName(false) + "_dev_full.idXML";
         ABORT_IF(::symlink("/dev/full", link.c_str()) != 0)
         TEST_EXCEPTION(Exception::UnableToCreateFile, IdXMLFile().store(link, prots, peps))
         struct stat link_stat;
-        TEST_EQUAL(::lstat(link.c_str(), &link_stat) != 0, true)
+        TEST_EQUAL(::lstat(link.c_str(), &link_stat) == 0 && S_ISLNK(link_stat.st_mode), true)
         std::remove(link.c_str());
       }
     }

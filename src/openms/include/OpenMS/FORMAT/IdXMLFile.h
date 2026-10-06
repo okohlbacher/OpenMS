@@ -82,8 +82,11 @@ public:
         Note that ranks are not stored and need to be reassigned after loading.
 
         @exception Exception::UnableToCreateFile is thrown if the file could not be created, or if writing it failed
-                   (e.g. disk full or an I/O error). A file that could not be written completely is removed, so no
-                   truncated idXML remains; the same holds when formatting a peptide identification throws.
+                   (e.g. disk full or an I/O error). If store() fails after it opened the file (a failed write, or
+                   any exception while the data are written, e.g. a meta value that cannot be written), the
+                   incomplete file is removed, so no truncated idXML remains. Exception: a @p filename that is not
+                   a regular file created or replaced by this call (a symbolic link, a device, a file with further
+                   hard links) is left in place; the error message then says so.
     */
     void store(const std::string& filename, const std::vector<ProteinIdentification>& protein_ids, const PeptideIdentificationList& peptide_ids, const std::string& document_id = "");
 

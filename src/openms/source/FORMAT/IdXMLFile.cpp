@@ -27,6 +27,7 @@
 #include <cmath>
 #include <cstdio>
 #include <exception>
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <numeric>
@@ -41,6 +42,74 @@ using namespace std;
 
 namespace OpenMS
 {
+
+  namespace
+  {
+    /// Whether store() may remove @p filename if writing fails: only a file that store() creates, or a regular file
+    /// (not a symbolic link) without further hard links, whose content opening it for writing replaces anyway. A
+    /// symbolic link, a device (e.g. /dev/full), a FIFO or a file with further hard links is not store()'s to remove:
+    /// removing the name would leave the data behind it, or remove something this call did not create.
+    bool removableOnFailure(const std::string& filename)
+    {
+      std::error_code ec;
+      const std::filesystem::file_status status = std::filesystem::symlink_status(filename, ec);
+      if (status.type() == std::filesystem::file_type::not_found) return true;
+      if (ec || status.type() != std::filesystem::file_type::regular) return false;
+      const std::uintmax_t links = std::filesystem::hard_link_count(filename, ec);
+      return !ec && links == 1;
+    }
+
+    /// Closes the stream of store() and removes the incomplete file, unless store() completed (release()). Covers
+    /// every way out of store() after the file was opened, exceptions included.
+    class IncompleteFileRemover
+    {
+    public:
+      IncompleteFileRemover(std::ofstream& os, const std::string& filename, bool removable) :
+        os_(os), filename_(filename), removable_(removable)
+      {
+      }
+      IncompleteFileRemover(const IncompleteFileRemover&) = delete;
+      IncompleteFileRemover& operator=(const IncompleteFileRemover&) = delete;
+      ~IncompleteFileRemover()
+      {
+        try { discard(); } catch (...) {} // never throws out of a destructor (stack unwinding)
+      }
+      /// store() completed: keep the file
+      void release() { armed_ = false; }
+      /// Closes the stream and removes the file if it may be removed; true iff it was removed. Only the first call acts.
+      bool discard()
+      {
+        if (!armed_) return removed_;
+        armed_ = false;
+        if (os_.is_open()) os_.close();
+        // the name must still be a regular file without further hard links (e.g. not replaced by a symbolic link)
+        if (removable_ && removableOnFailure(filename_))
+        {
+          std::error_code ec;
+          removed_ = std::filesystem::remove(filename_, ec) && !ec;
+        }
+        return removed_;
+      }
+      /// The end of the error message of a failed store()
+      std::string outcome()
+      {
+        if (discard()) return "the incomplete file was removed";
+        if (!removable_)
+        {
+          return "the incomplete output was left in place: '" + filename_
+                 + "' is not a regular file that this call created or replaced (e.g. a symbolic link or a device)";
+        }
+        return "the incomplete file '" + filename_ + "' could not be removed";
+      }
+
+    private:
+      std::ofstream& os_;
+      const std::string filename_;
+      const bool removable_;
+      bool armed_{true};
+      bool removed_{false};
+    };
+  } // namespace
 
   IdXMLFile::IdXMLFile() :
     XMLHandler("", "1.5"),
@@ -104,18 +173,17 @@ namespace OpenMS
     //set filename for the handler. Just in case (e.g. when fatalError function is used).
     file_ = filename;
 
-    //open stream
+    //open stream; decide before opening whether a failed store() may remove the file (it may not, e.g., remove a
+    //symbolic link or a device it writes through)
+    const bool removable = removableOnFailure(filename);
     std::ofstream os(filename.c_str());
     if (!os)
     {
       throw Exception::UnableToCreateFile(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename);
     }
-    // closes and removes the incomplete file before an error is reported
-    const auto discard_file = [&os, &filename]()
-    {
-      os.close();
-      std::remove(filename.c_str());
-    };
+    // from here on, every way out of store() other than success (a failed write, an exception from a block or from
+    // any other part of the serialization) closes the file and removes it if it may (see removableOnFailure)
+    IncompleteFileRemover incomplete_file(os, filename, removable);
 
     startProgress(0, peptide_ids.size(), "Storing idXML");
 
@@ -575,14 +643,13 @@ namespace OpenMS
       }
       if (error)
       {
-        discard_file();
+        incomplete_file.discard();
         std::rethrow_exception(error);
       }
       if (write_failed)
       {
-        discard_file();
         throw Exception::UnableToCreateFile(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename,
-                                            "writing the file failed (e.g. disk full or I/O error); the incomplete file was removed");
+                                            "writing the file failed (e.g. disk full or I/O error); " + incomplete_file.outcome());
       }
 
       os << "\t</IdentificationRun>\n";
@@ -610,10 +677,10 @@ namespace OpenMS
     os.close();
     if (os.fail())
     {
-      std::remove(filename.c_str());
       throw Exception::UnableToCreateFile(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename,
-                                          "writing the file failed (e.g. disk full or I/O error); the incomplete file was removed");
+                                          "writing the file failed (e.g. disk full or I/O error); " + incomplete_file.outcome());
     }
+    incomplete_file.release();
 
     endProgress();
 
