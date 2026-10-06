@@ -8,6 +8,7 @@
 
 #include <OpenMS/FORMAT/IdXMLFile.h>
 
+#include <OpenMS/config.h>
 #include <OpenMS/CONCEPT/Constants.h>
 #include <OpenMS/CONCEPT/LogStream.h>
 #include <OpenMS/CONCEPT/PrecisionWrapper.h>
@@ -38,6 +39,10 @@
 #include <omp.h>
 #endif
 
+#ifndef OPENMS_WINDOWSPLATFORM
+#include <sys/stat.h> // lstat(): the device and inode of the file that store() opened
+#endif
+
 using namespace std;
 
 namespace OpenMS
@@ -59,10 +64,53 @@ namespace OpenMS
       return !ec && links == 1;
     }
 
+    /// The identity of the directory entry that a path names (a symbolic link is not followed): its device and inode
+    /// (POSIX). It tells whether a name still denotes the file that store() opened, or another file that was renamed
+    /// into its place (or reached through a retargeted symbolic link of an ancestor) while store() ran. On Windows it
+    /// is not determined and every name counts as unchanged: there, the C runtime opens the file without
+    /// FILE_SHARE_DELETE, so it cannot be renamed or removed while the stream holds it open.
+    struct FileIdentity
+    {
+      bool known{false};
+#ifndef OPENMS_WINDOWSPLATFORM
+      dev_t device{};
+      ino_t inode{};
+#endif
+      static FileIdentity of(const std::filesystem::path& path) noexcept
+      {
+        FileIdentity id;
+#ifdef OPENMS_WINDOWSPLATFORM
+        (void)path;
+        id.known = true;
+#else
+        struct stat st;
+        if (::lstat(path.c_str(), &st) == 0)
+        {
+          id.known = true;
+          id.device = st.st_dev;
+          id.inode = st.st_ino;
+        }
+#endif
+        return id;
+      }
+      /// both known and the same file
+      bool sameAs(const FileIdentity& other) const noexcept
+      {
+#ifdef OPENMS_WINDOWSPLATFORM
+        return known && other.known;
+#else
+        return known && other.known && device == other.device && inode == other.inode;
+#endif
+      }
+    };
+
     /// Closes the stream of store() and removes the incomplete file, unless store() completed (release()). Covers
     /// every way out of store() after the file was opened (arm()), exceptions included. It refers to the absolute path
     /// and the file name of store() and allocates nothing, so it is set up before the file is opened, and arming it
-    /// cannot fail. A file opened by its relative name instead (detach()) is never removed.
+    /// cannot fail. A file opened by its relative name instead (detach()) is never removed. arm() records the identity
+    /// of the opened file; the file is removed only if the absolute path still names it (FileIdentity), so a file that
+    /// another process renamed into its place while store() ran is not removed. The check and the removal are not
+    /// atomic, and neither are opening and arm(): a replacement within these two short windows is not detected.
     class IncompleteFileRemover
     {
     public:
@@ -79,8 +127,12 @@ namespace OpenMS
       }
       /// the file is opened by its relative name, not by path_: path_ may name another file or none, so nothing is removed
       void detach() noexcept { by_path_ = false; }
-      /// the file is open: from now on, remove it unless store() completes
-      void arm() noexcept { armed_ = true; }
+      /// the file is open: from now on, remove it unless store() completes (if the absolute path still names it)
+      void arm() noexcept
+      {
+        armed_ = true;
+        if (by_path_) opened_ = FileIdentity::of(path_);
+      }
       /// store() completed: keep the file
       void release() noexcept { armed_ = false; }
       /// Opening the file failed or threw. Opening can create or truncate the file before it throws (e.g. std::bad_alloc
@@ -105,8 +157,11 @@ namespace OpenMS
         if (!armed_) return removed_;
         armed_ = false;
         if (os_.is_open()) os_.close();
-        // the name must still be a regular file without further hard links (e.g. not replaced by a symbolic link)
-        if (by_path_ && removable_ && removableOnFailure(path_))
+        if (!by_path_ || !removable_) return removed_;
+        // the name must still denote the file that store() opened (not another file renamed into its place), and still
+        // be a regular file without further hard links
+        replaced_ = !opened_.sameAs(FileIdentity::of(path_));
+        if (!replaced_ && removableOnFailure(path_))
         {
           std::error_code ec;
           removed_ = std::filesystem::remove(path_, ec) && !ec;
@@ -127,6 +182,11 @@ namespace OpenMS
           return "the incomplete output was left in place: '" + filename_
                  + "' is not a regular file that this call created or replaced (e.g. a symbolic link or a device)";
         }
+        if (replaced_)
+        {
+          return "the incomplete output was not removed: '" + filename_
+                 + "' no longer names the file that this call opened (it was moved, removed or replaced meanwhile)";
+        }
         return "the incomplete file '" + filename_ + "' could not be removed";
       }
 
@@ -137,8 +197,10 @@ namespace OpenMS
       const bool removable_;
       const bool was_empty_; ///< the name was an empty file before store() opened it
       bool by_path_; ///< the file was opened by path_
+      FileIdentity opened_; ///< the file that store() opened by path_ (set by arm())
       bool armed_{false};
       bool removed_{false};
+      bool replaced_{false}; ///< discard() found that path_ no longer names the opened file
     };
   } // namespace
 
@@ -205,7 +267,8 @@ namespace OpenMS
     file_ = filename;
 
     // The file is opened, inspected and, if store() fails, removed by its absolute path: a change of the working
-    // directory while store() runs (e.g. in another thread) must not redirect the removal to another file. Where the
+    // directory while store() runs (e.g. in another thread) must not redirect the removal to another file, and the
+    // removal requires that the path still names the file opened here (IncompleteFileRemover). Where the
     // absolute path cannot be used but a relative name can (it cannot be determined, an ancestor of the working
     // directory is not searchable, or it is too long), the file is written by the relative name and not removed.
     const std::filesystem::path given(filename);

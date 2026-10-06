@@ -165,6 +165,33 @@ namespace
       cwd_test_changed = !ec;
     }
   }
+
+  // the open-failure test of store(): the action of AllocFault notes whether the output exists
+  std::filesystem::path open_test_file;
+  bool open_test_file_seen = false;
+  void noteWhetherOpenTestFileExists()
+  {
+    std::error_code ec;
+    open_test_file_seen = std::filesystem::exists(open_test_file, ec);
+  }
+
+  // the replacement test of store(): once store() has written to its output (its size is no longer 0, so opening it is
+  // over), the action of AllocFault moves the output aside and renames the sentinel into its place, as another process
+  // could
+  std::filesystem::path swap_test_out;
+  std::filesystem::path swap_test_aside;
+  std::filesystem::path swap_test_sentinel;
+  bool swap_test_swapped = false;
+  void swapInSentinelOnceOutputWritten()
+  {
+    std::error_code ec;
+    const std::uintmax_t size = std::filesystem::file_size(swap_test_out, ec);
+    if (swap_test_swapped || ec || size == 0) return;
+    std::filesystem::rename(swap_test_out, swap_test_aside, ec);
+    if (ec) return;
+    std::filesystem::rename(swap_test_sentinel, swap_test_out, ec);
+    swap_test_swapped = !ec;
+  }
 #endif
 
   // first occurrence only; returns false when @p from is absent
@@ -1058,6 +1085,57 @@ START_SECTION([EXTRA] store - an allocation failure anywhere in store() leaves n
     TEST_TRUE(failed_stores > 0)
     TEST_EQUAL(incomplete_left, 0)
   }
+
+#ifdef __GLIBCXX__
+  // Opening can create or truncate the file and then throw: libstdc++ allocates the stream buffer after it opened the
+  // file. That allocation is the first one at which a file that did not exist before exists. If it fails, store()
+  // removes the empty file it created, but keeps a writable file that was already empty before (opening it changed
+  // nothing). The sweep above cannot tell these apart: it accepts an absent file.
+  open_test_file = file;
+  long n_open = 0;
+  for (long n = 1; n < 10000000 && n_open == 0; ++n)
+  {
+    std::remove(file.c_str());
+    open_test_file_seen = false;
+    AllocFault::arm(n, &noteWhetherOpenTestFileExists);
+    try
+    {
+      IdXMLFile().store(file, prots, peps);
+    }
+    catch (...)
+    {
+    }
+    const bool fired = AllocFault::fired;
+    AllocFault::disarm();
+    if (!fired) break;
+    if (open_test_file_seen) n_open = n;
+  }
+  STATUS("first allocation at which the output exists: " << n_open)
+  TEST_TRUE(n_open > 0)
+  for (const bool existed_empty : {false, true})
+  {
+    std::remove(file.c_str());
+    if (existed_empty) { std::ofstream create(file); }
+    bool bad_alloc_thrown = false;
+    AllocFault::arm(n_open);
+    try
+    {
+      IdXMLFile().store(file, prots, peps);
+    }
+    catch (const std::bad_alloc&)
+    {
+      bad_alloc_thrown = true;
+    }
+    catch (...)
+    {
+    }
+    AllocFault::disarm();
+    TEST_TRUE(bad_alloc_thrown)
+    // the file store() created is removed; the file that was empty before stays, empty
+    TEST_EQUAL(File::exists(file), existed_empty)
+    if (existed_empty) { TEST_TRUE(slurp4b(file).empty()) }
+  }
+#endif
   std::remove(file.c_str());
 #endif
 }
@@ -1160,6 +1238,21 @@ START_SECTION([EXTRA] store - a relative name is written where the working direc
   const fs::path parent = base / "parent";
   const fs::path work = parent / "work";
   fs::create_directories(work);
+  // restores the permissions and the working directory and removes the directories, also if the section stops early
+  struct RestoreDirectories
+  {
+    fs::path saved = fs::current_path();
+    fs::path locked;
+    fs::path remove_tree;
+    ~RestoreDirectories()
+    {
+      std::error_code ec;
+      if (!locked.empty()) fs::permissions(locked, fs::perms::owner_all, ec);
+      fs::current_path(saved, ec);
+      if (!remove_tree.empty()) fs::remove_all(remove_tree, ec);
+    }
+  } restore;
+  restore.remove_tree = base;
 
   std::vector<ProteinIdentification> prots(1);
   prots[0].setIdentifier("runAncestor");
@@ -1178,21 +1271,11 @@ START_SECTION([EXTRA] store - a relative name is written where the working direc
   IdXMLFile().store(reference.string(), prots, peps);
   const std::string complete = slurp4b(reference.string());
 
-  struct RestoreDirectories
-  {
-    fs::path saved = fs::current_path();
-    fs::path locked;
-    ~RestoreDirectories()
-    {
-      std::error_code ec;
-      if (!locked.empty()) fs::permissions(locked, fs::perms::owner_all, ec);
-      fs::current_path(saved, ec);
-    }
-  } restore;
   fs::current_path(work);
-  fs::permissions(parent, fs::perms::none);
-  restore.locked = parent;
-  const bool reached = ::access((work / "control").c_str(), F_OK) != 0 && errno == EACCES;
+  std::error_code lock_error; // a file system without permissions: the case is not reached
+  fs::permissions(parent, fs::perms::none, lock_error);
+  if (!lock_error) restore.locked = parent;
+  const bool reached = !lock_error && ::access((work / "control").c_str(), F_OK) != 0 && errno == EACCES;
   { std::ofstream("control") << "x"; }
   const bool relative_name_usable = File::exists("control");
   STATUS("absolute path of the working directory not searchable: " << reached << "; a relative name can be created: "
@@ -1214,20 +1297,103 @@ START_SECTION([EXTRA] store - a relative name is written where the working direc
   }
 
   // a pre-existing empty file that cannot be opened for writing stays (opening it changed nothing)
-  fs::permissions(parent, fs::perms::owner_all);
+  std::error_code ec;
+  fs::permissions(parent, fs::perms::owner_all, ec);
   restore.locked.clear();
   fs::current_path(restore.saved);
   const fs::path read_only = work / "read_only_empty.idXML";
   { std::ofstream create(read_only.string()); }
-  fs::permissions(read_only, fs::perms::owner_read);
-  if (::access(read_only.c_str(), W_OK) != 0)
+  std::error_code read_only_error;
+  fs::permissions(read_only, fs::perms::owner_read, read_only_error);
+  if (!read_only_error && ::access(read_only.c_str(), W_OK) != 0)
   {
     TEST_EXCEPTION(Exception::UnableToCreateFile, IdXMLFile().store(read_only.string(), prots, peps))
     TEST_TRUE(fs::exists(read_only))
   }
-  std::error_code ec;
   fs::permissions(read_only, fs::perms::owner_all, ec);
-  fs::remove_all(base, ec);
+#endif
+}
+END_SECTION
+
+START_SECTION([EXTRA] store - a file renamed into the place of the output while store() runs is not removed)
+{
+#ifdef __linux__
+  // store() fails in the protein section (a meta value without a value), after the proteins before it have overflowed
+  // the stream buffer, so the output has been written to. At each allocation of the calling thread after that, one
+  // after the other, the output is moved aside and another file is renamed into its place, as another process could.
+  // That file is not store()'s to remove: it must stay, with its content. The output moved aside is left in place.
+  // Not NEW_TMP_FILE: the directory is removed at the end of the section.
+  namespace fs = std::filesystem;
+  struct RemoveTree
+  {
+    fs::path tree;
+    ~RemoveTree() { std::error_code ec; fs::remove_all(tree, ec); }
+  } remove_tree{fs::absolute("IdXMLFile_test_" + File::getUniqueName(false) + "_replaced")};
+  fs::create_directories(remove_tree.tree);
+  swap_test_out = remove_tree.tree / "out.idXML";
+  swap_test_aside = remove_tree.tree / "aside.idXML";
+  swap_test_sentinel = remove_tree.tree / "sentinel.idXML";
+  const std::string sentinel = "a file that was renamed into the place of the output\n";
+
+  std::vector<ProteinIdentification> prots(1);
+  prots[0].setIdentifier("runReplaced");
+  prots[0].setDateTime(DateTime::now());
+  for (Size i = 0; i < 120; ++i)
+  {
+    ProteinHit hit(0.0, 1, "ACC_REPLACED_" + StringUtils::toStr(i), "");
+    hit.setMetaValue("replaced_test", std::string(64, 'x'));
+    prots[0].insertHit(hit);
+  }
+  ProteinHit bad_hit(0.0, 1, "ACC_REPLACED_BAD", "");
+  bad_hit.setMetaValue("fail_test_empty", DataValue()); // cannot be written
+  prots[0].insertHit(bad_hit);
+  PeptideIdentificationList peps(2);
+  for (Size l = 0; l < peps.size(); ++l)
+  {
+    peps[l].setIdentifier("runReplaced");
+    peps[l].setScoreType("score");
+    PeptideHit hit(double(l), 0, 2, AASequence::fromString("PEPTIDER"));
+    peps[l].insertHit(hit);
+  }
+
+  long swapped = 0, sentinel_lost = 0, first_lost = 0, other_outcome = 0;
+  for (long n = 1; n < 10000000; ++n)
+  {
+    std::error_code ec;
+    fs::remove(swap_test_out, ec);
+    fs::remove(swap_test_aside, ec);
+    { std::ofstream(swap_test_sentinel.string()) << sentinel; }
+    swap_test_swapped = false;
+    bool conversion_error = false;
+    AllocFault::arm(n, &swapInSentinelOnceOutputWritten);
+    try
+    {
+      IdXMLFile().store(swap_test_out.string(), prots, peps);
+    }
+    catch (const Exception::ConversionError&)
+    {
+      conversion_error = true;
+    }
+    catch (...)
+    {
+    }
+    const bool fired = AllocFault::fired;
+    AllocFault::disarm();
+    if (!fired) break; // n is past the last allocation of store()
+    if (!swap_test_swapped) continue; // the output had not been written to yet
+    ++swapped;
+    if (!conversion_error) ++other_outcome;
+    if (!fs::exists(swap_test_out) || slurp4b(swap_test_out.string()) != sentinel)
+    {
+      if (sentinel_lost++ == 0) first_lost = n;
+    }
+  }
+  STATUS(swapped << " stores had another file renamed into the place of their output; it was removed or changed in "
+         << sentinel_lost << " (first at allocation " << first_lost << "); stores that did not fail as expected: "
+         << other_outcome)
+  TEST_TRUE(swapped > 0)
+  TEST_EQUAL(sentinel_lost, 0)
+  TEST_EQUAL(other_outcome, 0)
 #endif
 }
 END_SECTION

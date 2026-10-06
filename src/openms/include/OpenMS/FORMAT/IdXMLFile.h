@@ -82,15 +82,22 @@ public:
         Note that ranks are not stored and need to be reassigned after loading.
 
         @exception Exception::UnableToCreateFile is thrown if the file could not be created, or if writing it failed
-                   (e.g. disk full or an I/O error). If store() fails after it opened the file (a failed write, or
-                   any exception while the data are written, e.g. a meta value that cannot be written), the
-                   incomplete file is removed, so no truncated idXML remains; so is an empty file that opening
-                   created or truncated before it failed (e.g. std::bad_alloc). Exceptions: a @p filename that is
-                   not a regular file created or replaced by this call (a symbolic link, a device, a file with
-                   further hard links) is left in place, and so is a file written by its relative name because its
-                   absolute path cannot be used (e.g. an ancestor of the working directory is not searchable). If
-                   writing failed (Exception::UnableToCreateFile), the error message says whether the incomplete
-                   file was removed or left in place; any other exception is rethrown unchanged.
+                   (e.g. disk full or an I/O error).
+
+        If store() fails after it opened the file (a failed write, or any exception while the data are written, e.g.
+        a meta value that cannot be written), it attempts to remove the incomplete file, so that no truncated idXML
+        remains. It also attempts to remove an empty file that opening created or truncated before it failed (e.g.
+        std::bad_alloc); a file that was already empty before is kept. Removal is best effort and is attempted only
+        for a regular file without further hard links that @p filename still names:
+        - a symbolic link, a device or a file with further hard links is left in place;
+        - so is a file that was moved or replaced while store() ran (on POSIX systems, the device and inode are
+          compared; the check and the removal are not atomic);
+        - a file opened by its relative name because its absolute path cannot be used (e.g. an ancestor of the
+          working directory is not searchable) is never removed, not even an empty one that opening created;
+        - if removing fails (e.g. the directory is not writable), the incomplete file stays.
+        If writing failed (Exception::UnableToCreateFile), the error message says whether the incomplete file was
+        removed or left in place. Any other exception (e.g. std::bad_alloc, or the error of a meta value) is rethrown
+        unchanged and does not say so.
     */
     void store(const std::string& filename, const std::vector<ProteinIdentification>& protein_ids, const PeptideIdentificationList& peptide_ids, const std::string& document_id = "");
 
