@@ -662,6 +662,10 @@ protected:
     bool snes_zero_sum_reachable_{false};
     bool snes_zero_sum_reachable_with_prot_nterm_{false};  ///< as above, with PROTEIN_N_TERM mods
     bool snes_zero_sum_reachable_with_prot_cterm_{false};  ///< as above, with PROTEIN_C_TERM mods
+    /// as above, with PROTEIN_N_TERM and PROTEIN_C_TERM mods: a sub-peptide that spans the whole protein can carry both
+    /// (e.g. Deamidated (Protein N-term F) + Amidated (Protein C-term)). Only this flag is kept for that context; its
+    /// Σ = 0 entry is in every Σ set.
+    bool snes_zero_sum_reachable_with_both_prot_termini_{false};
 
     /// Precomputed residue mass lookup table: ASCII char -> internal monoisotopic mass (Da).
     /// Indexed by single-letter amino acid code (e.g., 'A'=65). Entries for non-AA chars are 0.

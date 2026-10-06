@@ -2516,6 +2516,20 @@ START_SECTION(([EXTRA] SNES Σ sets report nonempty modification sets that sum t
     TEST_EQUAL(zero_nterm, false)
     TEST_EQUAL(zero_cterm, true)
   }
+  {
+    // Partners at both protein termini cancel only where both take part: a sub-peptide spanning the whole protein.
+    ZeroSumProbe fi;
+    configure(fi, {"Deamidated (Protein N-term F)", "Amidated (Protein C-term)"}, 2);
+    bool zero_base = true, zero_nterm = true, zero_cterm = true, zero_both = false;
+    fi.sigmaSet(false, false, zero_base);
+    fi.sigmaSet(true, false, zero_nterm);
+    fi.sigmaSet(false, true, zero_cterm);
+    fi.sigmaSet(true, true, zero_both);
+    TEST_EQUAL(zero_base, false)
+    TEST_EQUAL(zero_nterm, false)
+    TEST_EQUAL(zero_cterm, false)
+    TEST_EQUAL(zero_both, true)
+  }
 }
 END_SECTION
 
@@ -2596,6 +2610,79 @@ START_SECTION(([EXTRA] SNES finds a nonempty modification set with zero total ma
     if (std::abs(realized.getMonoWeight() - unmodified.getMonoWeight()) > 1e-4) zero_sigma_mass_mismatch = true;
     if (hit.subset_bitmask_ == 0 && realized == unmodified) found_unmodified = true;
     if (hit.subset_bitmask_ != 0 && realized == target) found_zero_sum = true;
+  }
+  TEST_EQUAL(found_unmodified, true)
+  TEST_EQUAL(found_zero_sum, true)
+  TEST_EQUAL(zero_sigma_mass_mismatch, false)
+}
+END_SECTION
+
+START_SECTION(([EXTRA] SNES finds a zero-sum modification set at both protein termini (Deamidated (Protein N-term F) + Amidated (Protein C-term))))
+{
+  // Review finding CX1-R6 (S11B r1): the protein FPEPTIDER as a whole, Deamidated (Protein N-term F) +0.984016 Da
+  // and Amidated (Protein C-term) -0.984016 Da. The shifts cancel only on a sub-peptide that carries both protein
+  // termini, i.e. the full protein; SNES must report that peptidoform next to the unmodified FPEPTIDER.
+  // The spectrum is the unmodified one: SNES matches fragments of the unmodified index and enumerates the subsets
+  // at Σ = 0 afterwards, so the zero-sum candidate has the same matched peaks.
+  const std::vector<FASTAFile::FASTAEntry> entries{{"p", "p", "FPEPTIDER"}};
+
+  FragmentIndex_test fi;
+  auto p = fi.getParameters();
+  p.setValue("peptide:enzyme_specificity", "none");
+  p.setValue("peptide:min_size", 9);
+  p.setValue("peptide:max_size", 9);
+  p.setValue("peptide:min_mass", 0);
+  p.setValue("peptide:max_mass", 50000);
+  p.setValue("precursor:mass_tolerance_lower", 20.0);
+  p.setValue("precursor:mass_tolerance_upper", 20.0);
+  p.setValue("precursor:mass_tolerance_unit", "ppm");
+  p.setValue("fragment:mass_tolerance", 20.0);
+  p.setValue("fragment:mass_tolerance_unit", "ppm");
+  p.setValue("precursor:isotope_error_min", 0);
+  p.setValue("precursor:isotope_error_max", 0);
+  p.setValue("modifications:variable", std::vector<std::string>{"Deamidated (Protein N-term F)", "Amidated (Protein C-term)"});
+  p.setValue("modifications:variable_max_per_peptide", 2);
+  p.setValue("modifications:fixed", std::vector<std::string>{});
+  p.setValue("snes_enabled", "true");
+  p.setValue("fragment:min_matched_ions", 1);
+  fi.setParameters(p);
+  fi.build(entries);
+
+  const AASequence unmodified = AASequence::fromString("FPEPTIDER");
+  TheoreticalSpectrumGenerator tsg;
+  PeakSpectrum theo;
+  tsg.getSpectrum(theo, unmodified, 1, 1);
+  theo.sortByPosition();
+  MSSpectrum spec;
+  for (const auto& peak : theo) spec.push_back(peak);
+  Precursor prec;
+  prec.setMZ(unmodified.getMonoWeight() + Constants::PROTON_MASS_U);
+  prec.setCharge(1);
+  spec.getPrecursors().push_back(prec);
+  spec.setMSLevel(2);
+
+  FragmentIndex::SpectrumMatchesTopN sms;
+  fi.querySpectrum(spec, entries, sms);
+
+  bool found_unmodified = false;
+  bool found_zero_sum = false;
+  bool zero_sigma_mass_mismatch = false;
+  for (const auto& hit : sms.hits_)
+  {
+    if (hit.sigma_delta_ != 0.0f) continue;
+    const auto& mother = fi.getPeptides()[hit.peptide_idx_];
+    const int realized_len = fi.realizeSNESLength(mother, entries, prec.getMZ(), 20.0, 20.0, true);
+    if (realized_len < 0) continue;
+    const AASequence realized = fi.reconstructRealizedSubSequence(mother, entries,
+                                                                  static_cast<size_t>(realized_len),
+                                                                  hit.subset_bitmask_);
+    if (std::abs(realized.getMonoWeight() - unmodified.getMonoWeight()) > 1e-4) zero_sigma_mass_mismatch = true;
+    if (hit.subset_bitmask_ == 0 && realized == unmodified) found_unmodified = true;
+    if (hit.subset_bitmask_ != 0 && realized.size() == 9 && realized.hasNTerminalModification()
+        && realized.hasCTerminalModification())
+    {
+      found_zero_sum = true;
+    }
   }
   TEST_EQUAL(found_unmodified, true)
   TEST_EQUAL(found_zero_sum, true)

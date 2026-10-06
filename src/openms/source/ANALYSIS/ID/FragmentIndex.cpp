@@ -3521,7 +3521,8 @@ init_hits.hits_.erase(it_zero, init_hits.hits_.end());
       const auto& fasta_entries_ref = fasta_entries;
       const bool any_zero_sum = snes_zero_sum_reachable_
           || snes_zero_sum_reachable_with_prot_nterm_
-          || snes_zero_sum_reachable_with_prot_cterm_;
+          || snes_zero_sum_reachable_with_prot_cterm_
+          || snes_zero_sum_reachable_with_both_prot_termini_;
 
       for (const SpectrumMatch& sm_raw : sms.hits_)
       {
@@ -3556,11 +3557,13 @@ init_hits.hits_.erase(it_zero, init_hits.hits_.end());
         const bool is_prot_cterm = (sub_start + sub_len == protein_seq.size());
 
         // Σ = 0: enumerate only where a zero-sum set exists for this sub-peptide's
-        // context (protein-terminal mods take part only at the protein termini).
+        // context (protein-terminal mods take part only at the protein termini; a
+        // sub-peptide spanning the whole protein can carry mods of both).
         if (zero_sigma
             && !(snes_zero_sum_reachable_
                  || (is_prot_nterm && snes_zero_sum_reachable_with_prot_nterm_)
-                 || (is_prot_cterm && snes_zero_sum_reachable_with_prot_cterm_)))
+                 || (is_prot_cterm && snes_zero_sum_reachable_with_prot_cterm_)
+                 || (is_prot_nterm && is_prot_cterm && snes_zero_sum_reachable_with_both_prot_termini_)))
         {
           continue;
         }
@@ -3571,7 +3574,7 @@ init_hits.hits_.erase(it_zero, init_hits.hits_.end());
         // Enumerate bitmask subsets 1..(2^n_slots - 1) with constraints:
         //   - popcount ≤ max_variable_mods_per_peptide_
         //   - no two active bits share a residue position
-        //   - Σ_subset ≈ sigma_delta_ within 1e-6 Da
+        //   - Σ_subset ≈ sigma_delta_ within 1e-4 Da (see below)
         // Cap: ≤ 16 subsets per mother (across all k, Σ tuples in this query).
         if (n_slots == 0) continue;
         // Enumerate all non-empty bitmasks in [1, 2^n_slots - 1]. Use uint64_t for
@@ -4006,6 +4009,8 @@ init_hits.hits_.erase(it_zero, init_hits.hits_.end());
         computeSnesSigmaDeltaSet_(true, false, &snes_zero_sum_reachable_with_prot_nterm_);
     snes_sigma_delta_set_with_prot_cterm_ =
         computeSnesSigmaDeltaSet_(false, true, &snes_zero_sum_reachable_with_prot_cterm_);
+    // Both protein termini: only the zero-sum flag is needed (the Σ = 0 entry is in every set above).
+    computeSnesSigmaDeltaSet_(true, true, &snes_zero_sum_reachable_with_both_prot_termini_);
 
     const size_t largest_set = std::max({snes_sigma_delta_set_.size(),
                                           snes_sigma_delta_set_with_prot_nterm_.size(),
