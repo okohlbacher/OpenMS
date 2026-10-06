@@ -41,6 +41,64 @@
 #include <set>
 #include <sstream>
 #include <iomanip>
+#include <cerrno>
+#include <cstdio>
+#include <cstdlib>
+#include <exception>
+#include <new>
+
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+#ifdef __linux__
+#include <spawn.h>
+#include <sys/wait.h>
+#include <unistd.h>
+extern char** environ;
+#endif
+
+#ifdef __linux__
+// Fault injection for the allocation tests below (Linux only: there, this replacement of the global operator new also
+// receives the allocations of libOpenMS). Armed on one thread, the n-th allocation of that thread after arming runs
+// action() or, without an action, throws std::bad_alloc; allocations made inside action() are not counted.
+namespace AllocFault
+{
+  thread_local long countdown = 0;
+  thread_local bool fired = false;
+  thread_local bool in_action = false;
+  thread_local void (*action)() = nullptr;
+  void arm(long n, void (*on_fire)() = nullptr) { fired = false; action = on_fire; countdown = n; }
+  void disarm() { countdown = 0; action = nullptr; }
+}
+void* operator new(std::size_t size)
+{
+  if (AllocFault::countdown > 0 && !AllocFault::in_action && --AllocFault::countdown == 0)
+  {
+    AllocFault::fired = true;
+    if (AllocFault::action == nullptr) throw std::bad_alloc();
+    AllocFault::in_action = true;
+    AllocFault::action();
+    AllocFault::in_action = false;
+  }
+  if (void* p = std::malloc(size == 0 ? 1 : size)) return p;
+  throw std::bad_alloc();
+}
+void* operator new[](std::size_t size) { return ::operator new(size); }
+void* operator new(std::size_t size, const std::nothrow_t&) noexcept
+{
+  try { return ::operator new(size); } catch (...) { return nullptr; }
+}
+void* operator new[](std::size_t size, const std::nothrow_t&) noexcept
+{
+  try { return ::operator new(size); } catch (...) { return nullptr; }
+}
+void operator delete(void* p) noexcept { std::free(p); }
+void operator delete[](void* p) noexcept { std::free(p); }
+void operator delete(void* p, std::size_t) noexcept { std::free(p); }
+void operator delete[](void* p, std::size_t) noexcept { std::free(p); }
+void operator delete(void* p, const std::nothrow_t&) noexcept { std::free(p); }
+void operator delete[](void* p, const std::nothrow_t&) noexcept { std::free(p); }
+#endif
 
 using namespace OpenMS;
 using namespace std;
@@ -79,6 +137,76 @@ public:
   using ProSEAlgorithm::reversedNoiseSequence_;
   using ProSEAlgorithm::fragment_mass_tolerance_;
 };
+
+#ifdef __linux__
+// The child process of the section "preprocessSpectra_ - an allocation failure ... reaches the caller": every allocation
+// of the calling thread in preprocessSpectra_() fails once, one after the other. Exit code 0: every failure reached the
+// caller as an exception, at least one as std::bad_alloc. A failure that leaves an OpenMP region terminates the process.
+static long alloc_fault_child_n = 0;
+static int preprocessAllocFaultChild()
+{
+  std::set_terminate([] {
+    std::fprintf(stderr, "alloc-fault child: std::terminate at allocation %ld\n", alloc_fault_child_n);
+    std::fflush(stderr);
+    std::abort();
+  });
+#ifdef _OPENMP
+  omp_set_num_threads(4);
+#endif
+  const auto make_exp = []
+  {
+    PeakMap exp;
+    for (int s = 0; s < 8; ++s)
+    {
+      MSSpectrum spec;
+      spec.setMSLevel(2);
+      spec.setRT(1.0 + s);
+      Precursor prec;
+      prec.setMZ(500.0 + s);
+      prec.setCharge(2);
+      spec.getPrecursors().push_back(prec);
+      for (double mz : {110.07, 120.08, 130.10, 200.10, 201.10, 300.20, 350.25, 500.30})
+      {
+        Peak1D p;
+        p.setMZ(mz + s);
+        p.setIntensity(1000.0f);
+        spec.push_back(p);
+      }
+      exp.addSpectrum(spec);
+    }
+    return exp;
+  };
+  {
+    PeakMap warm_up = make_exp(); // singletons and caches that are built on first use
+    ProSEAlgorithm_test::preprocessSpectra_(warm_up, 0.05, false, true, 0, 20);
+  }
+  long caught = 0, other = 0;
+  for (alloc_fault_child_n = 1; alloc_fault_child_n < 10000000; ++alloc_fault_child_n)
+  {
+    PeakMap exp = make_exp();
+    AllocFault::arm(alloc_fault_child_n);
+    try
+    {
+      ProSEAlgorithm_test::preprocessSpectra_(exp, 0.05, false, true, 0, 20);
+    }
+    catch (const std::bad_alloc&)
+    {
+      ++caught;
+    }
+    catch (...)
+    {
+      ++other;
+    }
+    const bool fired = AllocFault::fired;
+    AllocFault::disarm();
+    if (!fired) break; // past the last allocation of preprocessSpectra_()
+  }
+  std::printf("alloc-fault child: %ld allocations failed one at a time; std::bad_alloc reached the caller %ld times, "
+              "another exception %ld times\n", alloc_fault_child_n - 1, caught, other);
+  std::fflush(stdout);
+  return caught > 0 ? 0 : 2;
+}
+#endif
 
 // --- Shared calibration fixture -------------------------------------------------
 //
@@ -575,6 +703,16 @@ static std::vector<std::string> ion_prior_rows_(const PeptideIdentificationList&
 }
 
 START_TEST(ProSEAlgorithm, "$Id$")
+
+#ifdef __linux__
+// child process of the allocation-failure section below
+if (std::getenv("OPENMS_PROSE_TEST_ALLOC_FAULT_CHILD") != nullptr)
+{
+  const int child_rc = preprocessAllocFaultChild();
+  std::fflush(nullptr);
+  std::_Exit(child_rc);
+}
+#endif
 
 /////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////
@@ -2977,6 +3115,35 @@ START_SECTION(([EXTRA] preprocessSpectra_ never aborts; gates deisotoping on the
     ProSEAlgorithm_test::preprocessSpectra_(exp, 20.0, true, false, 0, 20);
     TEST_EQUAL(exp.size(), 1)
   }
+}
+END_SECTION
+
+START_SECTION(([EXTRA] preprocessSpectra_ - an allocation failure, also in the per-thread filter copies, reaches the caller))
+{
+#ifdef __linux__
+  // The filters were copied per thread on entry to the OpenMP region (firstprivate), outside the exception guard of
+  // the loop body, so a failing copy (std::bad_alloc) terminated the process. A child process (this test program, see
+  // preprocessAllocFaultChild()) fails every allocation of preprocessSpectra_() on the calling thread once, one after
+  // the other; it must exit normally.
+  std::vector<std::string> env_strings;
+  for (char** e = environ; *e != nullptr; ++e) env_strings.emplace_back(*e);
+  env_strings.emplace_back("OPENMS_PROSE_TEST_ALLOC_FAULT_CHILD=1");
+  std::vector<char*> envp;
+  for (std::string& e : env_strings) envp.push_back(&e[0]);
+  envp.push_back(nullptr);
+  char arg0[] = "ProSEAlgorithm_test";
+  char* child_argv[] = {arg0, nullptr};
+  pid_t pid = 0;
+  const int spawn_rc = ::posix_spawn(&pid, "/proc/self/exe", nullptr, nullptr, child_argv, envp.data());
+  TEST_EQUAL(spawn_rc, 0)
+  int status = 0;
+  if (spawn_rc == 0)
+  {
+    while (::waitpid(pid, &status, 0) < 0 && errno == EINTR) {}
+  }
+  TEST_EQUAL(WIFSIGNALED(status), false) // e.g. SIGABRT: std::terminate
+  TEST_EQUAL(WIFEXITED(status) ? WEXITSTATUS(status) : -1, 0)
+#endif
 }
 END_SECTION
 
