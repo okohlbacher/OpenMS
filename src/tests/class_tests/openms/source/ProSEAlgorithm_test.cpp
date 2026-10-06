@@ -50,19 +50,32 @@
 #ifdef _OPENMP
 #include <omp.h>
 #endif
-#ifdef __linux__
+// The allocation-failure section below starts this test program as a child process (by /proc/self/exe) and replaces
+// the global operator new of this program; the replacement must also receive the allocations of libOpenMS. That is the
+// case on Linux (and checked at run time, see allocFaultReachesLibOpenMS()); elsewhere, without /proc, or if
+// OPENMS_TEST_NO_FAULT_INJECTION is defined, the section is skipped with a message.
+#if defined(__linux__) && !defined(OPENMS_TEST_NO_FAULT_INJECTION)
+#define FAULT_INJECTION_TESTS 1
+#else
+#define FAULT_INJECTION_TESTS 0
+#endif
+
+#if FAULT_INJECTION_TESTS
+#ifndef OPENMS_TEST_SELF_EXE
+#define OPENMS_TEST_SELF_EXE "/proc/self/exe" // the running test program (another path checks the skip without /proc)
+#endif
+#include <OpenMS/SYSTEM/File.h>
 #include <spawn.h>
 #include <sys/wait.h>
 #include <unistd.h>
 extern char** environ;
 #endif
 
-#ifdef __linux__
-// Fault injection for the allocation tests below (Linux only: there, this replacement of the global operator new also
-// receives the allocations of libOpenMS). Armed on one thread, the n-th allocation of that thread after arming runs
-// action() or, without an action, throws std::bad_alloc; allocations made inside action() are not counted. A failed
-// nothrow allocation returns nullptr to its caller and sets nothrow_failed. Over-aligned allocations (operator new with
-// std::align_val_t) are not replaced and not counted.
+#if FAULT_INJECTION_TESTS
+// Fault injection for the allocation tests below. Armed on one thread, the n-th allocation of that thread after arming
+// runs action() or, without an action, throws std::bad_alloc; allocations made inside action() are not counted. A
+// failed nothrow allocation returns nullptr to its caller and sets nothrow_failed. Over-aligned allocations (operator
+// new with std::align_val_t) are not replaced and not counted.
 namespace AllocFault
 {
   thread_local long countdown = 0;
@@ -141,7 +154,19 @@ public:
   using ProSEAlgorithm::fragment_mass_tolerance_;
 };
 
-#ifdef __linux__
+#if FAULT_INJECTION_TESTS
+// whether the replacement of operator new above receives an allocation made inside libOpenMS (it does not, e.g., with
+// a statically linked C++ runtime)
+static void noAllocFaultAction() {}
+static bool allocFaultReachesLibOpenMS()
+{
+  AllocFault::arm(1, &noAllocFaultAction);
+  const std::string name = File::getUniqueName(false);
+  const bool fired = AllocFault::fired;
+  AllocFault::disarm();
+  return fired && !name.empty();
+}
+
 // The child process of the section "preprocessSpectra_ - an allocation failure ... reaches the caller": every allocation
 // of the calling thread in preprocessSpectra_() fails once, one after the other. Exit code 0: every failure reached the
 // caller as an exception, at least one as std::bad_alloc; only a failed nothrow allocation (reported to its caller as
@@ -718,7 +743,7 @@ static std::vector<std::string> ion_prior_rows_(const PeptideIdentificationList&
 
 START_TEST(ProSEAlgorithm, "$Id$")
 
-#ifdef __linux__
+#if FAULT_INJECTION_TESTS
 // child process of the allocation-failure section below
 if (std::getenv("OPENMS_PROSE_TEST_ALLOC_FAULT_CHILD") != nullptr)
 {
@@ -3134,31 +3159,48 @@ END_SECTION
 
 START_SECTION(([EXTRA] preprocessSpectra_ - an allocation failure, also in the per-thread filter copies, reaches the caller))
 {
-#ifdef __linux__
+#if FAULT_INJECTION_TESTS
   // The filters were copied per thread on entry to the OpenMP region (firstprivate), outside the exception guard of
   // the loop body, so a failing copy (std::bad_alloc) terminated the process. A child process (this test program, see
   // preprocessAllocFaultChild()) fails every allocation of preprocessSpectra_() on the calling thread once, one after
   // the other; it must exit normally.
-  std::vector<std::string> env_strings;
-  for (char** e = environ; *e != nullptr; ++e) env_strings.emplace_back(*e);
-  env_strings.emplace_back("OPENMS_PROSE_TEST_ALLOC_FAULT_CHILD=1");
-  std::vector<char*> envp;
-  for (std::string& e : env_strings) envp.push_back(&e[0]);
-  envp.push_back(nullptr);
-  char arg0[] = "ProSEAlgorithm_test";
-  char* child_argv[] = {arg0, nullptr};
-  pid_t pid = 0;
-  const int spawn_rc = ::posix_spawn(&pid, "/proc/self/exe", nullptr, nullptr, child_argv, envp.data());
-  TEST_EQUAL(spawn_rc, 0)
-  int status = 0;
-  pid_t waited = -1;
-  if (spawn_rc == 0)
+  if (::access(OPENMS_TEST_SELF_EXE, X_OK) != 0)
   {
-    do { waited = ::waitpid(pid, &status, 0); } while (waited < 0 && errno == EINTR);
+    STATUS("SKIPPED: " OPENMS_TEST_SELF_EXE " is not available (e.g. /proc is not mounted), so this test program "
+           "cannot start itself as the child process")
   }
-  TEST_EQUAL(waited, pid) // the status below is the child's (e.g. not ECHILD after an ignored SIGCHLD)
-  TEST_FALSE(waited == pid && WIFSIGNALED(status)) // e.g. SIGABRT: std::terminate
-  TEST_EQUAL(waited == pid && WIFEXITED(status) ? WEXITSTATUS(status) : -1, 0)
+  else if (!allocFaultReachesLibOpenMS())
+  {
+    STATUS("SKIPPED: the replacement of operator new in this test program does not receive the allocations of "
+           "libOpenMS (e.g. a statically linked C++ runtime)")
+  }
+  else
+  {
+    std::vector<std::string> env_strings;
+    for (char** e = environ; *e != nullptr; ++e) env_strings.emplace_back(*e);
+    env_strings.emplace_back("OPENMS_PROSE_TEST_ALLOC_FAULT_CHILD=1");
+    std::vector<char*> envp;
+    for (std::string& e : env_strings) envp.push_back(&e[0]);
+    envp.push_back(nullptr);
+    char arg0[] = "ProSEAlgorithm_test";
+    char* child_argv[] = {arg0, nullptr};
+    pid_t pid = 0;
+    const int spawn_rc = ::posix_spawn(&pid, OPENMS_TEST_SELF_EXE, nullptr, nullptr, child_argv, envp.data());
+    TEST_EQUAL(spawn_rc, 0)
+    int status = 0;
+    pid_t waited = -1;
+    if (spawn_rc == 0)
+    {
+      do { waited = ::waitpid(pid, &status, 0); } while (waited < 0 && errno == EINTR);
+    }
+    TEST_EQUAL(waited, pid) // the status below is the child's (e.g. not ECHILD after an ignored SIGCHLD)
+    TEST_FALSE(waited == pid && WIFSIGNALED(status)) // e.g. SIGABRT: std::terminate
+    TEST_EQUAL(waited == pid && WIFEXITED(status) ? WEXITSTATUS(status) : -1, 0)
+  }
+#else
+  STATUS("SKIPPED: fault injection (a replacement of the global operator new that also receives the allocations "
+         "of libOpenMS, in a child process started by /proc/self/exe) is available on Linux only, and not if "
+         "OPENMS_TEST_NO_FAULT_INJECTION is defined")
 #endif
 }
 END_SECTION
