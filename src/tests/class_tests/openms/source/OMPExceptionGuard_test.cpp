@@ -132,9 +132,13 @@ START_SECTION(void capture() noexcept)
   TEST_EXCEPTION(Exception::InvalidParameter, typed.rethrow())
 
   // a parallel region with a worksharing loop: every thread throws in the loop and the region still completes
-  // (the threads reach the implicit barrier); a run() inside a critical section releases the lock
+  // (the threads reach the implicit barrier); a run() inside a critical section releases the lock. The critical
+  // section uses a guard of its own: with the loop's guard, failed() is already true there and run() would skip
+  // the throwing work.
   OMPExceptionGuard region;
+  OMPExceptionGuard in_critical;
   std::atomic<int> after_loop{0};
+  int entered_critical_work = 0; // only changed inside the critical section
   int threads = 1;
 #pragma omp parallel num_threads(6)
   {
@@ -155,11 +159,13 @@ START_SECTION(void capture() noexcept)
       }
     }
 #pragma omp critical (OMPExceptionGuard_test)
-    region.run([] { throw std::logic_error("inside critical"); });
+    in_critical.run([&entered_critical_work] { ++entered_critical_work; throw std::logic_error("inside critical"); });
     ++after_loop;
   }
-  TEST_EQUAL(after_loop.load(), threads)
-  TEST_EXCEPTION(std::logic_error, region.rethrow())
+  TEST_EQUAL(after_loop.load(), threads) // every thread left the critical section: the lock was released
+  TEST_EQUAL(entered_critical_work, 1)   // the first thread ran the work and threw; the others skipped it
+  TEST_EXCEPTION_WITH_MESSAGE(std::logic_error, region.rethrow(), "thread work")
+  TEST_EXCEPTION_WITH_MESSAGE(std::logic_error, in_critical.rethrow(), "inside critical")
 }
 END_SECTION
 
