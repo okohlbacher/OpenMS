@@ -73,8 +73,7 @@ OpenMS Library:
     fragment on or next to a bound was counted depended on the bucket layout. Search results can
     change only for spectra with a candidate fragment on or next to such a bound.
   - PERF: IdXMLFile::store formats the PeptideIdentifications in parallel (at most 16 threads) and
-    writes them in input order, so the output is unchanged; 12% less wall time for ProSE's 20
-    benchmark searches of #10364 at 4 threads, 26% less for one search at 16 threads.
+    writes them in input order, so the output is unchanged.
     XMLHandler::writeUserParamValue_() writes a single meta value as UserParam (used by
     writeUserParam_).
   - FIX: IdXMLFile::store throws when writing the file fails (e.g. disk full, an I/O error, or an
@@ -208,7 +207,7 @@ TOPP tools:
         spectrum before). Only high-resolution (deisotoped) searches change; 3 / none / false restores
         the earlier output. It gave more PSMs after Percolator on high-resolution Orbitrap data, but fewer
         PSMs after native-score FDR pooled over precursor charges (FDR:PSM, FalseDiscoveryRate) on
-        timsTOF data (-3.6% on two files, although each precursor charge on its own gained). The search
+        timsTOF data (on two files, although each precursor charge on its own gained). The search
         parameters of the idXML output record the three settings.
       - New fragment:query_spectrum (auto, raw, processed). 'raw' retrieves candidates from the fragment
         index with all positive-intensity peaks, before deisotoping and local/top-N peak filtering, also
@@ -222,9 +221,9 @@ TOPP tools:
         features. Computed on the peak list before local/top-N filtering; candidates and native scores
         do not change. Requires a finite, positive fragment:mass_tolerance; set it to false to search
         with other tolerances.
-      - PERF: about 4.5x faster searches with unchanged output (20 searches of #10364 at 4 threads:
-        431 s -> 96 s): the fragment index bins fragments by m/z instead of sorting them globally and
-        writes them straight into their bins; regex-free digestion; a multi-threaded peptide sort that
+      - PERF: faster searches with unchanged output: the fragment index bins fragments by m/z instead
+        of sorting them globally and writes them straight into their bins; regex-free digestion; a
+        multi-threaded peptide sort that
         reproduces std::sort exactly; one bucket walk for all precursor isotope errors, with skip tables
         and prefetching; PSM meta value keys resolved once; flat-storage Da alignment for the peak
         annotation; the mzML is read while the fragment index is built; parallel FASTA reading and index
