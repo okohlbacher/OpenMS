@@ -529,14 +529,34 @@ namespace OpenMS
       OPENMS_LOG_WARN << "Duplicate variable modification provided. Making them unique." << endl;
       modifications_variable_.assign(var_unique.begin(), var_unique.end());
     }
+    // A modification that is fixed as well applies everywhere already: the remedy is to drop the fixed one, not to add
+    // it as a variable one.
+    const auto also_fixed = [this](const std::string& mod)
+    {
+      return std::find(modifications_fixed_.begin(), modifications_fixed_.end(), mod) != modifications_fixed_.end();
+    };
     for (const std::string& mod : FragmentIndex::shadowedVariableTerminalModifications(modifications_fixed_, modifications_variable_))
     {
+      if (also_fixed(mod))
+      {
+        OPENMS_LOG_WARN << "Variable modification '" << mod << "' is not searched: it is also a fixed modification, which "
+                        << "applies to every such terminus. To search the terminus with and without it, remove it from "
+                        << "modifications:fixed." << endl;
+        continue;
+      }
       OPENMS_LOG_WARN << "Variable modification '" << mod << "' is not searched: a fixed modification already sits on "
                       << "that terminus, which carries one modification. To search it, specify the fixed terminal "
                       << "modification as a variable one as well." << endl;
     }
     for (const std::string& mod : FragmentIndex::shadowedVariableResidueModifications(modifications_fixed_, modifications_variable_))
     {
+      if (also_fixed(mod))
+      {
+        OPENMS_LOG_WARN << "Variable modification '" << mod << "' is not searched: it is also a fixed modification, which "
+                        << "applies to every such residue. To search the residue with and without it, remove it from "
+                        << "modifications:fixed." << endl;
+        continue;
+      }
       OPENMS_LOG_WARN << "Variable modification '" << mod << "' is not searched: a fixed modification already sits on "
                       << "that residue, which carries one modification. To search it, specify the fixed residue "
                       << "modification as a variable one instead." << endl;

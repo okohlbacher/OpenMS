@@ -4417,6 +4417,47 @@ START_SECTION(([EXTRA] residue-specific terminal variable modifications are sear
 }
 END_SECTION
 
+START_SECTION(([EXTRA] the warning for a shadowed variable modification that is also fixed says to remove the fixed one))
+{
+  // Review finding KM1-R3 (S11B r1): with Carbamidomethyl (C) fixed and variable (Timo's B2 configuration), the
+  // advice "specify the fixed residue modification as a variable one instead" was circular. A modification that is
+  // fixed as well gets the advice to remove it from modifications:fixed; another shadowed one (Glutathione (C)) keeps
+  // the advice to make the fixed one variable. The same for a terminal modification (TMT6plex (N-term)).
+  const auto warnings = [](const std::vector<std::string>& fixed, const std::vector<std::string>& variable)
+  {
+    std::ostringstream captured;
+    OPENMS_LOG_WARN.insert(captured);
+    ProSEAlgorithm algo;
+    Param p = algo.getParameters();
+    p.setValue("modifications:fixed", fixed);
+    p.setValue("modifications:variable", variable);
+    algo.setParameters(p);
+    OPENMS_LOG_WARN.remove(captured);
+    return captured.str();
+  };
+  const std::string fixed_too = "remove it from modifications:fixed";
+  const std::string make_variable = "as a variable one";
+  {
+    const std::string w = warnings({"Carbamidomethyl (C)"}, {"Carbamidomethyl (C)"});
+    TEST_EQUAL(w.find("'Carbamidomethyl (C)' is not searched") != std::string::npos, true)
+    TEST_EQUAL(w.find(fixed_too) != std::string::npos, true)
+    TEST_EQUAL(w.find(make_variable) == std::string::npos, true)
+  }
+  {
+    const std::string w = warnings({"Carbamidomethyl (C)"}, {"Glutathione (C)"});
+    TEST_EQUAL(w.find("'Glutathione (C)' is not searched") != std::string::npos, true)
+    TEST_EQUAL(w.find(fixed_too) == std::string::npos, true)
+    TEST_EQUAL(w.find(make_variable) != std::string::npos, true)
+  }
+  {
+    const std::string w = warnings({"TMT6plex (N-term)"}, {"TMT6plex (N-term)"});
+    TEST_EQUAL(w.find("'TMT6plex (N-term)' is not searched") != std::string::npos, true)
+    TEST_EQUAL(w.find(fixed_too) != std::string::npos, true)
+    TEST_EQUAL(w.find(make_variable) == std::string::npos, true)
+  }
+}
+END_SECTION
+
 START_SECTION(([EXTRA] a variable modification of a fixed-modified residue is not searched (Timo B2)))
 {
   // Timo's B2 configuration (ACPEPTIDER, Carbamidomethyl (C) fixed) with Carbamidomethyl (C) or Glutathione (C)
