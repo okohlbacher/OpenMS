@@ -77,9 +77,8 @@ OpenMS Library:
     XMLHandler::writeUserParamValue_() writes a single meta value as UserParam (used by
     writeUserParam_).
   - FIX: IdXMLFile::store throws when writing the file fails (e.g. disk full, an I/O error, or an
-    allocation failure while a block of the parallel writer is formatted) and removes the incomplete
-    file where it may: a symbolic link, a device, or a file that was moved or replaced while store()
-    ran is left in place, and the error message of a failed write says which.
+    allocation failure while a block of the parallel writer is formatted). It does not remove the
+    file: a partial file may remain, and the error message names the file and says so.
     The block writer accepted the text of a failed block stream, and the state of the file stream
     was never checked, so a truncated idXML could be left behind a successful return.
   - FIX: RNaseDigestion::digest returns no fragments for a sequence shorter than min_length, or

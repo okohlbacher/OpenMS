@@ -8,7 +8,6 @@
 
 #include <OpenMS/FORMAT/IdXMLFile.h>
 
-#include <OpenMS/config.h>
 #include <OpenMS/CONCEPT/Constants.h>
 #include <OpenMS/CONCEPT/LogStream.h>
 #include <OpenMS/CONCEPT/PrecisionWrapper.h>
@@ -26,9 +25,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cmath>
-#include <cstdio>
 #include <exception>
-#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <numeric>
@@ -39,13 +36,6 @@
 #include <omp.h>
 #endif
 
-#ifndef OPENMS_WINDOWSPLATFORM
-#include <cerrno>
-#include <fcntl.h>    // open(): the descriptor by which store() holds the file it owns
-#include <sys/stat.h> // fstat(), lstat(): the device and inode of that file, and of the file that the name denotes
-#include <unistd.h>   // close()
-#endif
-
 using namespace std;
 
 namespace OpenMS
@@ -53,223 +43,11 @@ namespace OpenMS
 
   namespace
   {
-    /// Whether store() may remove @p path if writing fails: only a file that store() creates, or a regular file
-    /// (not a symbolic link) without further hard links, whose content opening it for writing replaces anyway. A
-    /// symbolic link, a device (e.g. /dev/full), a FIFO or a file with further hard links is not store()'s to remove:
-    /// removing the name would leave the data behind it, or remove something this call did not create.
-    bool removableOnFailure(const std::filesystem::path& path)
+    /// Appended to the message of an error of IdXMLFile::store(): store() does not remove what it has written.
+    std::string partialFileNote(const std::string& filename)
     {
-      std::error_code ec;
-      const std::filesystem::file_status status = std::filesystem::symlink_status(path, ec);
-      if (status.type() == std::filesystem::file_type::not_found) return true;
-      if (ec || status.type() != std::filesystem::file_type::regular) return false;
-      const std::uintmax_t links = std::filesystem::hard_link_count(path, ec);
-      return !ec && links == 1;
+      return " (writing '" + filename + "' did not complete: a partial file may remain)";
     }
-
-    /// The file that store() owns: store() opens it itself, by its absolute path and without truncating it (creating it
-    /// if needed), right before the stream opens the same name. On POSIX systems, store() holds it open by a descriptor
-    /// until store() returns, so that its device and inode identify it (they cannot be reused meanwhile). A failed
-    /// store() removes the file only if the name still denotes that file (lstat(): a final symbolic link is not
-    /// followed): a file that another process renamed into the place of the output at any time after this, or that the
-    /// name reaches through a retargeted symbolic link of an ancestor, is not removed. The comparison and the removal
-    /// are not atomic (POSIX has no unlink-if-inode). On Windows, the file is not opened here and its identity is not
-    /// compared: the C runtime opens it without FILE_SHARE_DELETE, so it cannot be renamed or removed while the stream
-    /// holds it open; the stream is closed right before the removal, and that short window is not covered (as on POSIX
-    /// the window from the comparison to the removal).
-    class OwnedFile
-    {
-    public:
-      enum class Match
-      {
-        same,    ///< the name denotes the owned file
-        other,   ///< the name denotes another file, or none
-        unknown  ///< no file is owned, or what the name denotes could not be determined
-      };
-      OwnedFile() = default;
-      OwnedFile(const OwnedFile&) = delete;
-      OwnedFile& operator=(const OwnedFile&) = delete;
-      ~OwnedFile() { close(); }
-      /// opens (creates) @p path for writing, without truncating it; if that fails or it is not a regular file, no file
-      /// is owned
-      void open(const std::filesystem::path& path) noexcept
-      {
-        close();
-#ifdef OPENMS_WINDOWSPLATFORM
-        (void)path;
-        owned_ = true;
-#else
-        // O_NONBLOCK: a FIFO without a reader fails instead of blocking (it is not owned in any case)
-        fd_ = ::open(path.c_str(), O_WRONLY | O_CREAT | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC, 0666);
-        struct stat st;
-        if (fd_ >= 0 && ::fstat(fd_, &st) == 0 && S_ISREG(st.st_mode))
-        {
-          owned_ = true;
-          device_ = st.st_dev;
-          inode_ = st.st_ino;
-        }
-        else
-        {
-          close();
-        }
-#endif
-      }
-      /// whether @p path denotes the owned file
-      Match namedBy(const std::filesystem::path& path) const noexcept
-      {
-        if (!owned_) return Match::unknown;
-#ifdef OPENMS_WINDOWSPLATFORM
-        (void)path;
-        return Match::same;
-#else
-        struct stat st;
-        if (::lstat(path.c_str(), &st) != 0) return errno == ENOENT || errno == ENOTDIR ? Match::other : Match::unknown;
-        return st.st_dev == device_ && st.st_ino == inode_ ? Match::same : Match::other;
-#endif
-      }
-      /// no file is owned any more
-      void close() noexcept
-      {
-#ifndef OPENMS_WINDOWSPLATFORM
-        if (fd_ >= 0) ::close(fd_);
-        fd_ = -1;
-#endif
-        owned_ = false;
-      }
-
-    private:
-      bool owned_{false};
-#ifndef OPENMS_WINDOWSPLATFORM
-      int fd_{-1};
-      dev_t device_{};
-      ino_t inode_{};
-#endif
-    };
-
-    /// Closes the stream of store() and removes the incomplete file, unless store() completed (release()). Covers
-    /// every way out of store() after the file was opened (arm()), exceptions included. It refers to the absolute path
-    /// and the file name of store() and allocates nothing, so it is set up before the file is opened, and arming it
-    /// cannot fail; it never throws. own() opens the file that store() owns (OwnedFile) right before the stream opens
-    /// it; only that file is removed, and only while the absolute path still denotes it. A file opened by its relative
-    /// name instead (detach()) is never removed.
-    class IncompleteFileRemover
-    {
-    public:
-      IncompleteFileRemover(std::ofstream& os, const std::filesystem::path& path, const std::string& filename, bool removable,
-                            bool was_empty) noexcept :
-        os_(os), path_(path), filename_(filename), removable_(removable), was_empty_(was_empty), by_path_(!path.empty())
-      {
-      }
-      IncompleteFileRemover(const IncompleteFileRemover&) = delete;
-      IncompleteFileRemover& operator=(const IncompleteFileRemover&) = delete;
-      ~IncompleteFileRemover() { discard(); }
-      /// opens the file that store() owns by the absolute path, right before the stream opens it (only a file that may
-      /// be removed is owned)
-      void own() noexcept
-      {
-        if (by_path_ && removable_) owned_.open(path_);
-      }
-      /// The stream could not open the absolute path, so the file is opened by its relative name, not by path_: path_
-      /// may name another file or none, so nothing is removed after this. The empty file that own() may have created
-      /// is removed first.
-      void detach() noexcept
-      {
-#ifndef OPENMS_WINDOWSPLATFORM
-        if (by_path_) removeOwnedIfEmpty();
-#endif
-        owned_.close();
-        by_path_ = false;
-      }
-      /// the file is open: from now on, remove it unless store() completes (if the absolute path still denotes it)
-      void arm() noexcept { armed_ = true; }
-      /// store() completed: keep the file
-      void release() noexcept { armed_ = false; }
-      /// Opening the file failed or threw. Opening can create or truncate the file before it throws (e.g.
-      /// std::bad_alloc for the stream's buffer, which libstdc++ allocates after it opened the file), so an empty file
-      /// that store() owns is removed: the file this call created, or the content it replaced. A file that was empty
-      /// before is kept: opening it changed nothing.
-      void discardIfEmpty() noexcept
-      {
-        closeStream();
-        if (by_path_) removeOwnedIfEmpty();
-      }
-      /// Closes the stream and removes the file if it may be removed; true iff it was removed. Only the first call acts.
-      bool discard() noexcept
-      {
-        if (!armed_) return removed_;
-        armed_ = false;
-        closeStream();
-        if (!by_path_ || !removable_) return removed_;
-        // the name must still denote the file that store() owns (not another file renamed into its place), and still be
-        // a regular file without further hard links
-        match_ = owned_.namedBy(path_);
-        if (match_ == OwnedFile::Match::same && removableOnFailure(path_))
-        {
-          std::error_code ec;
-          removed_ = std::filesystem::remove(path_, ec) && !ec;
-        }
-        return removed_;
-      }
-      /// The end of the error message of a failed store()
-      std::string outcome()
-      {
-        if (discard()) return "the incomplete file was removed";
-        if (!by_path_)
-        {
-          return "the incomplete file '" + filename_ + "' was left in place: it was written by its relative name, as its "
-                 "absolute path could not be used";
-        }
-        if (!removable_)
-        {
-          return "the incomplete output was left in place: '" + filename_
-                 + "' is not a regular file that this call created or replaced (e.g. a symbolic link or a device)";
-        }
-        if (match_ == OwnedFile::Match::other)
-        {
-          return "the incomplete output was not removed: '" + filename_
-                 + "' no longer names the file that this call opened (it was moved, removed or replaced meanwhile)";
-        }
-        if (match_ == OwnedFile::Match::unknown)
-        {
-          return "the incomplete output was left in place: it could not be verified that '" + filename_
-                 + "' still names the file that this call opened";
-        }
-        return "the incomplete file '" + filename_ + "' could not be removed";
-      }
-
-    private:
-      /// closes the stream; a failure to close (e.g. an exception from a code conversion facet) neither replaces the
-      /// error that store() reports nor stops the removal
-      void closeStream() noexcept
-      {
-        try
-        {
-          if (os_.is_open()) os_.close();
-        }
-        catch (...)
-        {
-        }
-      }
-      /// removes the file that store() owns if it is empty and was not empty before
-      void removeOwnedIfEmpty() noexcept
-      {
-        if (was_empty_ || owned_.namedBy(path_) != OwnedFile::Match::same) return;
-        std::error_code ec;
-        const std::uintmax_t size = std::filesystem::file_size(path_, ec);
-        if (!ec && size == 0 && removableOnFailure(path_)) std::filesystem::remove(path_, ec);
-      }
-
-      std::ofstream& os_;
-      const std::filesystem::path& path_; ///< absolute: the file is opened, inspected and removed by it
-      const std::string& filename_; ///< as given to store(), for the messages
-      const bool removable_;
-      const bool was_empty_; ///< the name was an empty file before store() opened it
-      bool by_path_; ///< the file was opened by path_
-      OwnedFile owned_; ///< the file that store() opened by path_ (own()); held until the remover is destroyed
-      bool armed_{false};
-      bool removed_{false};
-      OwnedFile::Match match_{OwnedFile::Match::unknown}; ///< whether path_ denoted the owned file (discard())
-    };
   } // namespace
 
   IdXMLFile::IdXMLFile() :
@@ -320,6 +98,7 @@ namespace OpenMS
   }
 
   void IdXMLFile::store(const std::string& filename, const std::vector<ProteinIdentification>& protein_ids, const PeptideIdentificationList& peptide_ids, const std::string& document_id)
+  try
   {
     if (!FileHandler::hasValidExtension(filename, FileTypes::IDXML))
     {
@@ -334,49 +113,12 @@ namespace OpenMS
     //set filename for the handler. Just in case (e.g. when fatalError function is used).
     file_ = filename;
 
-    // The file is opened, inspected and, if store() fails, removed by its absolute path: a change of the working
-    // directory while store() runs (e.g. in another thread) must not redirect the removal to another file, and the
-    // removal requires that the path still names the file opened here (IncompleteFileRemover). Where the
-    // absolute path cannot be used but a relative name can (it cannot be determined, an ancestor of the working
-    // directory is not searchable, or it is too long), the file is written by the relative name and not removed.
-    const std::filesystem::path given(filename);
-    std::error_code path_error;
-    std::filesystem::path path = std::filesystem::absolute(given, path_error);
-    if (path_error) path.clear();
-    //open stream; decide before opening whether a failed store() may remove the file (it may not, e.g., remove a
-    //symbolic link or a device it writes through)
-    const bool removable = !path.empty() && removableOnFailure(path);
-    std::error_code size_error;
-    const bool was_empty = !path.empty() && std::filesystem::file_size(path, size_error) == 0 && !size_error;
-    std::ofstream os;
-    IncompleteFileRemover incomplete_file(os, path, filename, removable, was_empty);
-    try
-    {
-      if (!path.empty())
-      {
-        incomplete_file.own(); // the file that a failed store() may remove, opened right before the stream opens it
-        os.open(path);
-      }
-      if (!os.is_open() && given.is_relative())
-      {
-        incomplete_file.detach();
-        os.clear();
-        os.open(given);
-      }
-    }
-    catch (...)
-    {
-      incomplete_file.discardIfEmpty();
-      throw;
-    }
+    //open stream
+    std::ofstream os(filename.c_str());
     if (!os)
     {
-      incomplete_file.discardIfEmpty();
       throw Exception::UnableToCreateFile(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename);
     }
-    // from here on, every way out of store() other than success (a failed write, an exception from a block or from
-    // any other part of the serialization) closes the file and removes it if it may (see removableOnFailure)
-    incomplete_file.arm();
 
     startProgress(0, peptide_ids.size(), "Storing idXML");
 
@@ -834,15 +576,11 @@ namespace OpenMS
           }
         }
       }
-      if (error)
-      {
-        incomplete_file.discard();
-        std::rethrow_exception(error);
-      }
+      if (error) std::rethrow_exception(error);
       if (write_failed)
       {
         throw Exception::UnableToCreateFile(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename,
-                                            "writing the file failed (e.g. disk full or I/O error); " + incomplete_file.outcome());
+                                            "writing the file failed (e.g. disk full or I/O error)");
       }
 
       os << "\t</IdentificationRun>\n";
@@ -871,9 +609,8 @@ namespace OpenMS
     if (os.fail())
     {
       throw Exception::UnableToCreateFile(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename,
-                                          "writing the file failed (e.g. disk full or I/O error); " + incomplete_file.outcome());
+                                          "writing the file failed (e.g. disk full or I/O error)");
     }
-    incomplete_file.release();
 
     endProgress();
 
@@ -889,6 +626,19 @@ namespace OpenMS
     prot_hit_ = ProteinHit();
     pep_hit_ = PeptideHit();
     proteinid_to_accession_.clear();
+  }
+  // Every failure of store() is raised, and the output is never removed: if writing fails (opening, a block, a write, the
+  // final flush or an allocation), a partial file may remain, and the message names it. An OpenMS exception keeps its
+  // type; any other exception (e.g. std::bad_alloc) becomes Exception::UnableToCreateFile.
+  catch (Exception::BaseException& e)
+  {
+    if (!FileHandler::hasValidExtension(filename, FileTypes::IDXML)) throw; // checked before any file is opened
+    static_cast<std::runtime_error&>(e) = std::runtime_error(e.what() + partialFileNote(filename));
+    throw;
+  }
+  catch (const std::exception& e)
+  {
+    throw Exception::UnableToCreateFile(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename, e.what() + partialFileNote(filename));
   }
 
   void IdXMLFile::onStartElement(const char16_t* qname, const Internal::XMLAttributes& attributes)

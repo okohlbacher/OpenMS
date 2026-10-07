@@ -157,6 +157,39 @@ namespace
     using IdXMLFile::formatBlock_;
   };
 
+  // whether the message of an error of store() names the file and says that a partial file may remain (store() does not
+  // remove its output)
+  bool saysPartialFileRemains(const std::string& message, const std::string& file)
+  {
+    return message.find("writing '" + file + "' did not complete: a partial file may remain") != std::string::npos;
+  }
+
+  // the message of the exception of type E that f() throws; empty if it throws none or another one
+  template <typename E, typename F>
+  std::string messageOf(F&& f)
+  {
+    try
+    {
+      f();
+    }
+    catch (const E& e)
+    {
+      return e.what();
+    }
+    catch (...)
+    {
+    }
+    return std::string();
+  }
+
+  // whether @p file holds a partial idXML: written to, but not to its end
+  bool isPartialIdXML(const std::string& file)
+  {
+    if (!File::exists(file)) return false;
+    const std::string content = slurp4b(file);
+    return !content.empty() && content.find("</IdXML>") == std::string::npos;
+  }
+
   // a stream buffer that cannot grow, as a std::stringbuf whose allocation fails
   struct BadAllocStreamBuf : public std::streambuf
   {
@@ -930,7 +963,7 @@ START_SECTION([EXTRA] store - hits with NaN scores are written in the order of P
 }
 END_SECTION
 
-START_SECTION([EXTRA] store - a failing stream throws and leaves no truncated idXML of its own)
+START_SECTION([EXTRA] store - a failing store() throws and says so; the partial file is left in place)
 {
   // The block formatter of the parallel writer: a failure of the block's stream buffer propagates. Without exceptions on
   // the stream, the std::bad_alloc would only set badbit and the partial block would be written as if complete.
@@ -978,19 +1011,22 @@ START_SECTION([EXTRA] store - a failing stream throws and leaves no truncated id
     return peps;
   };
 
-  // A block that throws: the error is reported and the incomplete file is removed.
+  // A block that throws: the error keeps its type, its message names the file and says that a partial file may remain,
+  // and the partial file is left in place (store() does not remove its output).
   {
     PeptideIdentificationList bad = make_peps(100);
     for (PeptideHit& hit : bad[40].getHits()) hit.setMetaValue("fail_test_empty", DataValue()); // cannot be written
     std::string file_bad;
     NEW_TMP_FILE(file_bad)
-    TEST_EXCEPTION(Exception::ConversionError, IdXMLFile().store(file_bad, prots, bad))
-    TEST_EQUAL(File::exists(file_bad), false)
+    const std::string message = messageOf<Exception::ConversionError>([&] { IdXMLFile().store(file_bad, prots, bad); });
+    TEST_TRUE(saysPartialFileRemains(message, file_bad))
+    TEST_TRUE(isPartialIdXML(file_bad))
+    std::remove(file_bad.c_str()); // partial, not to be validated
   }
 
   // An exception from any other part of the file, here the protein section (a meta value without a value cannot be
-  // written), removes the incomplete file as well: a file that store() created, and a regular file that existed
-  // before (its content is replaced when store() opens it).
+  // written), as well: for a file that store() created, and for a regular file that existed before (its content is
+  // replaced when store() opens it), the partial file is left in place and the message says so.
   std::vector<ProteinIdentification> bad_prots = prots;
   {
     std::vector<ProteinHit> hits = bad_prots[0].getHits();
@@ -1003,13 +1039,15 @@ START_SECTION([EXTRA] store - a failing stream throws and leaves no truncated id
     NEW_TMP_FILE(file_bad)
     std::remove(file_bad.c_str());
     if (existed) { std::ofstream(file_bad) << "previous content\n"; }
-    TEST_EXCEPTION(Exception::ConversionError, IdXMLFile().store(file_bad, bad_prots, make_peps(10)))
-    TEST_EQUAL(File::exists(file_bad), false)
+    const std::string message = messageOf<Exception::ConversionError>([&] { IdXMLFile().store(file_bad, bad_prots, make_peps(10)); });
+    TEST_TRUE(saysPartialFileRemains(message, file_bad))
+    TEST_TRUE(isPartialIdXML(file_bad))
+    std::remove(file_bad.c_str()); // partial, not to be validated
   }
 
 #ifdef __linux__
   // Names that store() did not create and that are not a regular file of their own are left in place when store()
-  // fails: removing them would remove a link (the data behind it stays) or something this call did not create.
+  // fails, as every output is (regression guard: an earlier version removed some outputs of a failed store()).
   // The names are unique (File::getUniqueName), so concurrent runs of this test do not interfere, and they are not
   // NEW_TMP_FILEs: the end-of-test validation would read them.
   PeptideIdentificationList bad_peps = make_peps(100);
@@ -1034,7 +1072,7 @@ START_SECTION([EXTRA] store - a failing stream throws and leaves no truncated id
 
   // Disk full: an idXML symlinked to /dev/full. One identification fits into the buffer of the file, so the error shows
   // only when the stream is flushed on close; 400 identifications overflow it while the blocks are written. Either way,
-  // store() throws; the link is not store()'s to remove and stays, /dev/full itself is untouched.
+  // store() throws and says that a partial file may remain; the link stays, /dev/full itself is untouched.
   struct stat device;
   if (::stat("/dev/full", &device) == 0 && S_ISCHR(device.st_mode))
   {
@@ -1051,7 +1089,8 @@ START_SECTION([EXTRA] store - a failing stream throws and leaves no truncated id
         const PeptideIdentificationList peps = make_peps(n);
         const std::string link = "IdXMLFile_test_" + File::getUniqueName(false) + "_dev_full.idXML";
         ABORT_IF(::symlink("/dev/full", link.c_str()) != 0)
-        TEST_EXCEPTION(Exception::UnableToCreateFile, IdXMLFile().store(link, prots, peps))
+        const std::string message = messageOf<Exception::UnableToCreateFile>([&] { IdXMLFile().store(link, prots, peps); });
+        TEST_TRUE(saysPartialFileRemains(message, link))
         struct stat link_stat;
         TEST_EQUAL(::lstat(link.c_str(), &link_stat) == 0 && S_ISLNK(link_stat.st_mode), true)
         std::remove(link.c_str());
@@ -1077,7 +1116,7 @@ START_SECTION([EXTRA] store - a failing stream throws and leaves no truncated id
 }
 END_SECTION
 
-START_SECTION([EXTRA] store - an allocation failure anywhere in store() leaves no incomplete idXML)
+START_SECTION([EXTRA] store - an allocation failure anywhere in store() is raised and leaves the output in place)
 {
 #if FAULT_INJECTION_TESTS
   if (!allocFaultReachesLibOpenMS())
@@ -1086,10 +1125,10 @@ START_SECTION([EXTRA] store - an allocation failure anywhere in store() leaves n
   }
   else
   {
-    // Every allocation of the calling thread in store() fails once, one after the other. An exception between opening
-    // the file and setting up its removal (e.g. from copying the file name) bypassed the removal and left an incomplete
-    // file. After each failure the name holds no incomplete idXML: it is absent, holds its previous content (the
-    // failure came before the file was opened) or the complete file (the failure came after the file was written).
+    // Every allocation of the calling thread in store() fails once, one after the other. store() must raise the failure
+    // with a message that names the file and says that a partial file may remain, and must not remove its output: once
+    // the output exists when the allocation fails (it existed before, or opening created it), it is left in place. A
+    // store() that completes (the failed allocation was handled, e.g. a nothrow allocation) writes the complete file.
     std::vector<ProteinIdentification> prots(1);
     prots[0].setIdentifier("runAlloc");
     prots[0].setDateTime(DateTime::now());
@@ -1107,24 +1146,33 @@ START_SECTION([EXTRA] store - an allocation failure anywhere in store() leaves n
       hit.setMetaValue("alloc_test", std::string(64, 'x'));
       peps[l].insertHit(hit);
     }
-    // longer than any short-string buffer, so that copying the name allocates. Not a NEW_TMP_FILE: the sweep removes
-    // the file, and VALIDATE_TMP_FILES at the end would check it.
+    // longer than any short-string buffer, so that copying the name allocates. Not a NEW_TMP_FILE: the sweep leaves
+    // partial files, and VALIDATE_TMP_FILES at the end would check it.
     const std::string file = "IdXMLFile_test_" + File::getUniqueName(false) + "_" + std::string(100, 'n') + ".idXML";
     IdXMLFile().store(file, prots, peps);
     const std::string complete = slurp4b(file);
     const std::string previous = "previous content\n";
+    open_test_file = file;
     for (const bool existed : {false, true})
     {
-      long injected = 0, failed_stores = 0, incomplete_left = 0, first_incomplete = 0;
+      long injected = 0, failed_stores = 0, left_in_place = 0, wrong = 0, first_wrong = 0;
       for (long n = 1; n < 10000000; ++n)
       {
         std::remove(file.c_str());
         if (existed) { std::ofstream(file) << previous; }
+        open_test_file_seen = false;
         bool threw = false;
-        AllocFault::arm(n);
+        std::string message;
+        IdXMLFile writer; // constructed before arming: only the allocations of store() fail
+        AllocFault::arm(n, &noteWhetherOpenTestFileExists, true); // notes whether the output exists, then fails
         try
         {
-          IdXMLFile().store(file, prots, peps);
+          writer.store(file, prots, peps);
+        }
+        catch (const std::exception& e)
+        {
+          threw = true;
+          message = e.what();
         }
         catch (...)
         {
@@ -1133,25 +1181,27 @@ START_SECTION([EXTRA] store - an allocation failure anywhere in store() leaves n
         const bool fired = AllocFault::fired;
         AllocFault::disarm();
         const bool exists = File::exists(file);
-        const std::string content = exists ? slurp4b(file) : std::string();
-        const bool ok = threw ? (!exists || content == complete || (existed && content == previous)) : (exists && content == complete);
-        if (!ok && incomplete_left++ == 0) first_incomplete = n;
+        const bool ok = threw ? saysPartialFileRemains(message, file) && (exists || !open_test_file_seen)
+                              : exists && slurp4b(file) == complete;
+        if (!ok && wrong++ == 0) first_wrong = n;
         if (!fired) break; // n is past the last allocation of store()
         ++injected;
         if (threw) ++failed_stores;
+        if (threw && open_test_file_seen && exists) ++left_in_place;
       }
       STATUS("file existed before: " << existed << "; " << injected << " allocations failed one at a time, " << failed_stores
-             << " stores threw, " << incomplete_left << " left an incomplete file (first at allocation " << first_incomplete << ")")
+             << " stores threw, " << left_in_place << " left the output in place, " << wrong
+             << " raised no note or removed the output (first at allocation " << first_wrong << ")")
       TEST_TRUE(failed_stores > 0)
-      TEST_EQUAL(incomplete_left, 0)
+      TEST_TRUE(left_in_place > 0)
+      TEST_EQUAL(wrong, 0)
     }
 
 #ifdef __GLIBCXX__
     // Opening can create or truncate the file and then throw: libstdc++ allocates the stream buffer after it opened the
     // file. That allocation is the first one at which a file that did not exist before exists. If it fails, store()
-    // removes the empty file it created, but keeps a writable file that was already empty before (opening it changed
-    // nothing). The sweep above cannot tell these apart: it accepts an absent file.
-    open_test_file = file;
+    // reports it (as UnableToCreateFile, with the note) and leaves the empty file in place, whether it created it or
+    // the file was already empty before.
     long n_open = 0;
     for (long n = 1; n < 10000000 && n_open == 0; ++n)
     {
@@ -1176,24 +1226,11 @@ START_SECTION([EXTRA] store - an allocation failure anywhere in store() leaves n
     {
       std::remove(file.c_str());
       if (existed_empty) { std::ofstream create(file); }
-      bool bad_alloc_thrown = false;
       AllocFault::arm(n_open);
-      try
-      {
-        IdXMLFile().store(file, prots, peps);
-      }
-      catch (const std::bad_alloc&)
-      {
-        bad_alloc_thrown = true;
-      }
-      catch (...)
-      {
-      }
+      const std::string message = messageOf<Exception::UnableToCreateFile>([&] { IdXMLFile().store(file, prots, peps); });
       AllocFault::disarm();
-      TEST_TRUE(bad_alloc_thrown)
-      // the file store() created is removed; the file that was empty before stays, empty
-      TEST_EQUAL(File::exists(file), existed_empty)
-      if (existed_empty) { TEST_TRUE(slurp4b(file).empty()) }
+      TEST_TRUE(saysPartialFileRemains(message, file))
+      TEST_TRUE(File::exists(file) && slurp4b(file).empty())
     }
 #endif
     std::remove(file.c_str());
@@ -1204,7 +1241,7 @@ START_SECTION([EXTRA] store - an allocation failure anywhere in store() leaves n
 }
 END_SECTION
 
-START_SECTION([EXTRA] store - a change of the working directory while store() runs does not redirect the removal of the incomplete file)
+START_SECTION([EXTRA] store - a change of the working directory while store() runs does not make it touch another file)
 {
 #if FAULT_INJECTION_TESTS
   if (!allocFaultReachesLibOpenMS())
@@ -1214,10 +1251,10 @@ START_SECTION([EXTRA] store - a change of the working directory while store() ru
   else
   {
     // store("out.idXML") in directory A writes A/out.idXML. If the working directory changes to B (e.g. in another
-    // thread) before store() fails, removing the incomplete file by its relative name would remove B/out.idXML, a file
-    // this call did not write, and leave A/out.idXML behind. The change happens at each allocation of the calling
-    // thread after the file was created, one after the other; store() fails in the protein section (a meta value
-    // without a value).
+    // thread) before store() fails, B/out.idXML, a file this call did not write, must stay unchanged (regression guard:
+    // an earlier version removed the output of a failed store() by its name), and the partial A/out.idXML is left in
+    // place. The change happens at each allocation of the calling thread after the file was created, one after the
+    // other; store() fails in the protein section (a meta value without a value).
     namespace fs = std::filesystem;
     // not NEW_TMP_FILE: the directories are removed at the end of the section
     const fs::path base = fs::absolute("IdXMLFile_test_" + File::getUniqueName(false) + "_cwd");
@@ -1280,7 +1317,7 @@ START_SECTION([EXTRA] store - a change of the working directory while store() ru
            << b_damaged << " (first at allocation " << first_b_damaged << "), A/out.idXML left in " << a_left)
     TEST_TRUE(changed > 0)
     TEST_EQUAL(b_damaged, 0)
-    TEST_EQUAL(a_left, 0)
+    TEST_EQUAL(a_left, changed)
 
     // a working directory that no longer exists: a relative name cannot be resolved, store() reports that it cannot
     // create the file (as when opening it fails)
@@ -1402,8 +1439,9 @@ START_SECTION([EXTRA] store - a file renamed into the place of the output while 
     // store() fails in the protein section (a meta value without a value), after the proteins before it have overflowed
     // the stream buffer, so the output has been written to. At each allocation of the calling thread after that, one
     // after the other, the output is moved aside and another file is renamed into its place, as another process could.
-    // That file is not store()'s to remove: it must stay, with its content. The output moved aside is left in place.
-    // Not NEW_TMP_FILE: the directory is removed at the end of the section.
+    // store() removes nothing: that file must stay, with its content, and the output moved aside is left in place
+    // (regression guard: an earlier version removed the output of a failed store() by its name). Not NEW_TMP_FILE: the
+    // directory is removed at the end of the section.
     namespace fs = std::filesystem;
     struct RemoveTree
     {
@@ -1495,14 +1533,13 @@ START_SECTION([EXTRA] store - a file renamed into the place of the output while 
   {
     // As in the section above, but the output is moved aside and another file is renamed into its place while the
     // output exists and is still empty: at each such allocation of the calling thread, one after the other. With
-    // libstdc++, the first is the allocation of the stream buffer within opening the file, i.e. before store() has
-    // set up the removal of its output. Two cases:
+    // libstdc++, the first is the allocation of the stream buffer within opening the file. Two cases:
     // - a file with content is renamed into place and store() continues; it fails in the protein section (a meta
     //   value without a value);
     // - an empty file is renamed into place and the allocation fails (std::bad_alloc); within opening, opening fails.
     //   The data have no other error here: an allocation that fails while an OpenMS exception is constructed
     //   terminates the program (the constructors are noexcept).
-    // The file renamed into place is not store()'s to remove: it must stay, the same file with its content. The output
+    // store() removes nothing: the file renamed into place must stay, the same file with its content, and the output
     // moved aside is left in place. Not NEW_TMP_FILE: the directory is removed at the end of the section.
     namespace fs = std::filesystem;
     struct RemoveTree
@@ -1560,7 +1597,7 @@ START_SECTION([EXTRA] store - a file renamed into the place of the output while 
         }
         catch (...)
         {
-          expected_error = empty_and_fail; // std::bad_alloc, or UnableToCreateFile if it set the stream's badbit
+          expected_error = empty_and_fail; // UnableToCreateFile (std::bad_alloc is reported as one)
         }
         const bool fired = AllocFault::fired;
         AllocFault::disarm();
@@ -1597,9 +1634,9 @@ END_SECTION
 START_SECTION([EXTRA] store - an exception from closing the file does not replace the error that store() reports)
 {
 #ifdef __GLIBCXX__
-  // A code conversion facet whose unshift() throws makes closing a written file stream throw. store() closes the file
-  // before it removes it after an error (here: a meta value of a peptide hit that cannot be written, in a block of the
-  // parallel writer); that must neither replace the error nor stop the removal. libstdc++ closes the file and then
+  // A code conversion facet whose unshift() throws makes closing a written file stream throw. The stream of store() is
+  // closed when store() fails (here: a meta value of a peptide hit that cannot be written, in a block of the parallel
+  // writer); that must not replace the error, nor its note on the partial file. libstdc++ closes the file and then
   // rethrows from close(); other standard libraries leave a stream whose close() threw in a state that its destructor
   // cannot handle, so the section is libstdc++-only.
   struct CloseError
@@ -1661,9 +1698,11 @@ START_SECTION([EXTRA] store - an exception from closing the file does not replac
   std::remove(file.c_str());
   {
     RestoreGlobalLocale restore{std::locale::global(std::locale(std::locale(), new ThrowOnUnshift))};
-    TEST_EXCEPTION(Exception::ConversionError, IdXMLFile().store(file, prots, peps))
+    const std::string message = messageOf<Exception::ConversionError>([&] { IdXMLFile().store(file, prots, peps); });
+    TEST_TRUE(saysPartialFileRemains(message, file))
   }
-  TEST_EQUAL(File::exists(file), false)
+  TEST_TRUE(isPartialIdXML(file))
+  std::remove(file.c_str()); // partial, not to be validated
 #else
   STATUS("SKIPPED (libstdc++ only): a stream whose close() threw")
 #endif

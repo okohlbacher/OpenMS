@@ -82,25 +82,11 @@ public:
         Note that ranks are not stored and need to be reassigned after loading.
 
         @exception Exception::UnableToCreateFile is thrown if the file could not be created, or if writing it failed
-                   (e.g. disk full or an I/O error).
+                   (e.g. disk full, an I/O error, or an allocation failure).
 
-        If store() fails after it opened the file (a failed write, or any exception while the data are written, e.g.
-        a meta value that cannot be written), it attempts to remove the incomplete file, so that no truncated idXML
-        remains. It also attempts to remove an empty file that opening created or truncated before it failed (e.g.
-        std::bad_alloc); a file that was already empty before is kept. Removal is best effort and is attempted only
-        for a regular file without further hard links that @p filename still names:
-        - a symbolic link, a device or a file with further hard links is left in place;
-        - so is a file that was moved, or renamed into the place of the output, while store() ran: store() opens the
-          file itself right before writing it and removes only that file. On POSIX systems it holds the file open and
-          compares the device and inode; if they cannot be determined, the file is left in place. On Windows the file
-          cannot be renamed while store() holds it open. The comparison and the removal are not atomic (on Windows,
-          the closing of the file and the removal), so a file renamed into place within that short window is removed;
-        - a file opened by its relative name because its absolute path cannot be used (e.g. an ancestor of the
-          working directory is not searchable) is never removed, not even an empty one that opening created;
-        - if removing fails (e.g. the directory is not writable), the incomplete file stays.
-        If writing failed (Exception::UnableToCreateFile), the error message says whether the incomplete file was
-        removed or left in place. Any other exception (e.g. std::bad_alloc, or the error of a meta value) is rethrown
-        unchanged and does not say so.
+        If store() fails, the file is not removed: a partial file may remain. The error message names the file and says
+        so. Exceptions of OpenMS (e.g. Exception::ConversionError for a meta value that cannot be written) keep their
+        type; any other exception (e.g. std::bad_alloc) is reported as Exception::UnableToCreateFile.
     */
     void store(const std::string& filename, const std::vector<ProteinIdentification>& protein_ids, const PeptideIdentificationList& peptide_ids, const std::string& document_id = "");
 
