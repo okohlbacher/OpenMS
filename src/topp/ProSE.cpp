@@ -110,6 +110,35 @@ peak) until the PSMs are annotated.
 // We do not want this class to show up in the docu:
 /// @cond TOPPCLASSES
 
+// The -out_pin columns of a ProSE run.
+static StringList pinFeatureSet(const ProteinIdentification::SearchParameters& sp, int& min_charge, int& max_charge)
+{
+  const auto colon = sp.charges.find(':');
+  min_charge = (colon != std::string::npos)
+                 ? StringUtils::toInt32(sp.charges.substr(0, colon))
+                 : StringUtils::toInt32(sp.charges);
+  max_charge = (colon != std::string::npos)
+                 ? StringUtils::toInt32(sp.charges.substr(colon + 1))
+                 : min_charge;
+
+  // Standard columns (SpecId/Label/ScanNr + mass/charge/enzyme features)
+  // come from the centralized helper so .pin output matches PercolatorAdapter
+  // and is directly consumable by the percolator CLI.
+  StringList feature_set = PercolatorInfile::getStandardFeatureSet(min_charge, max_charge);
+  if (sp.metaValueExists("extra_features"))
+  {
+    StringList extra = ListUtils::create<std::string>(sp.getMetaValue("extra_features").toString());
+    feature_set.insert(feature_set.end(), extra.begin(), extra.end());
+  }
+  if (std::find(feature_set.begin(), feature_set.end(), "score") == feature_set.end())
+  {
+    feature_set.push_back("score");
+  }
+  feature_set.push_back("Peptide");
+  feature_set.push_back("Proteins");
+  return feature_set;
+}
+
 class ProSE :
     public TOPPExternalToolBase
 {
@@ -608,29 +637,8 @@ class ProSE :
             {
               const auto& sp = result.protein_ids.front().getSearchParameters();
               const std::string enz_str = sp.digestion_enzyme.getName();
-              const auto colon = sp.charges.find(':');
-              const int min_charge = (colon != std::string::npos)
-                                       ? StringUtils::toInt32(sp.charges.substr(0, colon))
-                                       : StringUtils::toInt32(sp.charges);
-              const int max_charge = (colon != std::string::npos)
-                                       ? StringUtils::toInt32(sp.charges.substr(colon + 1))
-                                       : min_charge;
-
-              // Standard columns (SpecId/Label/ScanNr + mass/charge/enzyme features)
-              // come from the centralized helper so .pin output matches PercolatorAdapter
-              // and is directly consumable by the percolator CLI.
-              StringList feature_set = PercolatorInfile::getStandardFeatureSet(min_charge, max_charge);
-              if (sp.metaValueExists("extra_features"))
-              {
-                StringList extra = ListUtils::create<std::string>(sp.getMetaValue("extra_features").toString());
-                feature_set.insert(feature_set.end(), extra.begin(), extra.end());
-              }
-              if (std::find(feature_set.begin(), feature_set.end(), "score") == feature_set.end())
-              {
-                feature_set.push_back("score");
-              }
-              feature_set.push_back("Peptide");
-              feature_set.push_back("Proteins");
+              int min_charge, max_charge;
+              const StringList feature_set = pinFeatureSet(sp, min_charge, max_charge);
               PercolatorInfile::store(out_pin_list[i], result.peptide_ids,
                                      feature_set, enz_str, min_charge, max_charge);
               written_pin.push_back(out_pin_list[i]);
