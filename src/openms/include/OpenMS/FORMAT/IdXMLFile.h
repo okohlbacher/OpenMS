@@ -82,11 +82,12 @@ public:
         Note that ranks are not stored and need to be reassigned after loading.
 
         @exception Exception::UnableToCreateFile is thrown if the file could not be created, or if writing it failed
-                   (e.g. disk full, an I/O error, or an allocation failure).
+                   (e.g. disk full or an I/O error).
 
-        If store() fails, the file is not removed: a partial file may remain. The error message names the file and says
-        so. Exceptions of OpenMS (e.g. Exception::ConversionError for a meta value that cannot be written) keep their
-        type; any other exception (e.g. std::bad_alloc) is reported as Exception::UnableToCreateFile.
+        If store() fails, the file is not removed: a partial file may remain. An exception of OpenMS (e.g.
+        Exception::ConversionError for a meta value that cannot be written) keeps its type, and its message names the
+        file and says so (unless memory runs out while the note is added). Any other exception (e.g. std::bad_alloc) is
+        raised unchanged.
     */
     void store(const std::string& filename, const std::vector<ProteinIdentification>& protein_ids, const PeptideIdentificationList& peptide_ids, const std::string& document_id = "");
 

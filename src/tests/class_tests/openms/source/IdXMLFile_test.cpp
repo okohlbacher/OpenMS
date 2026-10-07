@@ -27,6 +27,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <limits>
@@ -39,7 +40,9 @@
 #include <omp.h>
 #endif
 #ifdef __linux__
+#include <sys/resource.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #endif
 
@@ -271,6 +274,80 @@ namespace
     std::filesystem::rename(swap_test_sentinel, swap_test_out, ec);
     swap_test_swapped = !ec;
   }
+
+#ifdef __GLIBCXX__
+  // The reporting test of store(): a code conversion facet whose unshift() throws makes the final close() of store()
+  // throw (libstdc++). Just before it throws, it arms AllocFault, so that the n-th allocation after the throw fails: an
+  // allocation made to report the error.
+  struct CloseTestError
+  {
+  };
+  std::exception_ptr close_test_error; // what the facet throws (rethrown: throwing it allocates nothing); CloseTestError if null
+  long close_test_alloc_n = 0;         // 0: no allocation fails
+  struct ArmAndThrowOnUnshift : public std::codecvt<char, char, std::mbstate_t>
+  {
+  protected:
+    bool do_always_noconv() const noexcept override { return false; }
+    result do_out(state_type&, const char* from, const char* from_end, const char*& from_next, char* to, char* to_end,
+                  char*& to_next) const override
+    {
+      const std::ptrdiff_t n = std::min(from_end - from, to_end - to);
+      std::copy(from, from + n, to);
+      from_next = from + n;
+      to_next = to + n;
+      return from_next == from_end ? ok : partial;
+    }
+    result do_unshift(state_type&, char*, char*, char*&) const override
+    {
+      if (close_test_alloc_n > 0) AllocFault::arm(close_test_alloc_n);
+      if (close_test_error) std::rethrow_exception(close_test_error);
+      throw CloseTestError();
+    }
+  };
+
+  // Runs in a child process (an allocation failure may end it): store() whose close() throws the error of @p kind (0:
+  // Exception::ConversionError, 1: std::bad_alloc, 2: CloseTestError, which is not a std::exception), and the n-th
+  // allocation after that fails (none if n is 0). Returns 0 if store() raised that error with its type (the OpenMS
+  // exception with the note, unless the failed allocation was one of the note's), 1 otherwise; plus 16 if the
+  // allocation failure was injected.
+  int closeTestChild(int kind, long n, const std::string& file, const std::vector<ProteinIdentification>& prots,
+                     const PeptideIdentificationList& peps)
+  {
+    struct rlimit no_core = {0, 0};
+    ::setrlimit(RLIMIT_CORE, &no_core); // a child that is ended leaves no core file
+    if (kind == 0) close_test_error = std::make_exception_ptr(Exception::ConversionError(__FILE__, __LINE__, "closeTestChild", "an error while closing"));
+    if (kind == 1) close_test_error = std::make_exception_ptr(std::bad_alloc());
+    close_test_alloc_n = n;
+    std::locale::global(std::locale(std::locale(), new ArmAndThrowOnUnshift));
+    IdXMLFile writer; // constructed before store(): only allocations after the throw fail
+    bool with_type = false;
+    try
+    {
+      writer.store(file, prots, peps);
+      AllocFault::disarm();
+    }
+    catch (const Exception::ConversionError& e)
+    {
+      AllocFault::disarm();
+      with_type = kind == 0 && (AllocFault::fired || saysPartialFileRemains(e.what(), file));
+    }
+    catch (const std::bad_alloc&)
+    {
+      AllocFault::disarm();
+      with_type = kind == 1;
+    }
+    catch (const CloseTestError&)
+    {
+      AllocFault::disarm();
+      with_type = kind == 2;
+    }
+    catch (...)
+    {
+      AllocFault::disarm();
+    }
+    return (with_type ? 0 : 1) | (AllocFault::fired ? 16 : 0);
+  }
+#endif
 #endif
 
   const char* const fault_injection_unavailable = "SKIPPED: fault injection (a replacement of the global operator new "
@@ -1126,9 +1203,10 @@ START_SECTION([EXTRA] store - an allocation failure anywhere in store() is raise
   else
   {
     // Every allocation of the calling thread in store() fails once, one after the other. store() must raise the failure
-    // with a message that names the file and says that a partial file may remain, and must not remove its output: once
-    // the output exists when the allocation fails (it existed before, or opening created it), it is left in place. A
-    // store() that completes (the failed allocation was handled, e.g. a nothrow allocation) writes the complete file.
+    // (the std::bad_alloc unchanged; an OpenMS exception with a message that names the file and says that a partial file
+    // may remain), and must not remove its output: once the output exists when the allocation fails (it existed before,
+    // or opening created it), it is left in place. A store() that completes (the failed allocation was handled, e.g. a
+    // nothrow allocation) writes the complete file.
     std::vector<ProteinIdentification> prots(1);
     prots[0].setIdentifier("runAlloc");
     prots[0].setDateTime(DateTime::now());
@@ -1155,13 +1233,13 @@ START_SECTION([EXTRA] store - an allocation failure anywhere in store() is raise
     open_test_file = file;
     for (const bool existed : {false, true})
     {
-      long injected = 0, failed_stores = 0, left_in_place = 0, wrong = 0, first_wrong = 0;
+      long injected = 0, failed_stores = 0, raised_bad_alloc = 0, left_in_place = 0, wrong = 0, first_wrong = 0;
       for (long n = 1; n < 10000000; ++n)
       {
         std::remove(file.c_str());
         if (existed) { std::ofstream(file) << previous; }
         open_test_file_seen = false;
-        bool threw = false;
+        bool threw = false, bad_alloc = false, openms_error = false;
         std::string message;
         IdXMLFile writer; // constructed before arming: only the allocations of store() fail
         AllocFault::arm(n, &noteWhetherOpenTestFileExists, true); // notes whether the output exists, then fails
@@ -1169,10 +1247,14 @@ START_SECTION([EXTRA] store - an allocation failure anywhere in store() is raise
         {
           writer.store(file, prots, peps);
         }
-        catch (const std::exception& e)
+        catch (const Exception::BaseException& e)
         {
-          threw = true;
+          threw = openms_error = true;
           message = e.what();
+        }
+        catch (const std::bad_alloc&)
+        {
+          threw = bad_alloc = true;
         }
         catch (...)
         {
@@ -1181,17 +1263,21 @@ START_SECTION([EXTRA] store - an allocation failure anywhere in store() is raise
         const bool fired = AllocFault::fired;
         AllocFault::disarm();
         const bool exists = File::exists(file);
-        const bool ok = threw ? saysPartialFileRemains(message, file) && (exists || !open_test_file_seen)
+        const bool ok = threw ? (bad_alloc || (openms_error && saysPartialFileRemains(message, file)))
+                                  && (exists || !open_test_file_seen)
                               : exists && slurp4b(file) == complete;
         if (!ok && wrong++ == 0) first_wrong = n;
         if (!fired) break; // n is past the last allocation of store()
         ++injected;
         if (threw) ++failed_stores;
+        if (bad_alloc) ++raised_bad_alloc;
         if (threw && open_test_file_seen && exists) ++left_in_place;
       }
       STATUS("file existed before: " << existed << "; " << injected << " allocations failed one at a time, " << failed_stores
-             << " stores threw, " << left_in_place << " left the output in place, " << wrong
-             << " raised no note or removed the output (first at allocation " << first_wrong << ")")
+             << " stores threw (" << raised_bad_alloc << " the std::bad_alloc), " << left_in_place
+             << " left the output in place, " << wrong
+             << " raised another error, an OpenMS error without the note, or removed the output (first at allocation "
+             << first_wrong << ")")
       TEST_TRUE(failed_stores > 0)
       TEST_TRUE(left_in_place > 0)
       TEST_EQUAL(wrong, 0)
@@ -1200,8 +1286,8 @@ START_SECTION([EXTRA] store - an allocation failure anywhere in store() is raise
 #ifdef __GLIBCXX__
     // Opening can create or truncate the file and then throw: libstdc++ allocates the stream buffer after it opened the
     // file. That allocation is the first one at which a file that did not exist before exists. If it fails, store()
-    // reports it (as UnableToCreateFile, with the note) and leaves the empty file in place, whether it created it or
-    // the file was already empty before.
+    // raises the std::bad_alloc unchanged and leaves the empty file in place, whether it created it or the file was
+    // already empty before.
     long n_open = 0;
     for (long n = 1; n < 10000000 && n_open == 0; ++n)
     {
@@ -1226,10 +1312,21 @@ START_SECTION([EXTRA] store - an allocation failure anywhere in store() is raise
     {
       std::remove(file.c_str());
       if (existed_empty) { std::ofstream create(file); }
+      bool bad_alloc = false;
       AllocFault::arm(n_open);
-      const std::string message = messageOf<Exception::UnableToCreateFile>([&] { IdXMLFile().store(file, prots, peps); });
+      try
+      {
+        IdXMLFile().store(file, prots, peps);
+      }
+      catch (const std::bad_alloc&)
+      {
+        bad_alloc = true;
+      }
+      catch (...)
+      {
+      }
       AllocFault::disarm();
-      TEST_TRUE(saysPartialFileRemains(message, file))
+      TEST_TRUE(bad_alloc)
       TEST_TRUE(File::exists(file) && slurp4b(file).empty())
     }
 #endif
@@ -1597,7 +1694,7 @@ START_SECTION([EXTRA] store - a file renamed into the place of the output while 
         }
         catch (...)
         {
-          expected_error = empty_and_fail; // UnableToCreateFile (std::bad_alloc is reported as one)
+          expected_error = empty_and_fail; // the std::bad_alloc, or UnableToCreateFile if opening failed
         }
         const bool fired = AllocFault::fired;
         AllocFault::disarm();
@@ -1636,7 +1733,8 @@ START_SECTION([EXTRA] store - an exception from closing the file does not replac
 #ifdef __GLIBCXX__
   // A code conversion facet whose unshift() throws makes closing a written file stream throw. The stream of store() is
   // closed when store() fails (here: a meta value of a peptide hit that cannot be written, in a block of the parallel
-  // writer); that must not replace the error, nor its note on the partial file. libstdc++ closes the file and then
+  // writer); that must not replace the error, nor its note on the partial file. Without another error, the exception
+  // of close() (not a std::exception) is raised unchanged, and the file stays. libstdc++ closes the file and then
   // rethrows from close(); other standard libraries leave a stream whose close() threw in a state that its destructor
   // cannot handle, so the section is libstdc++-only.
   struct CloseError
@@ -1667,16 +1765,17 @@ START_SECTION([EXTRA] store - an exception from closing the file does not replac
   prots[0].setIdentifier("runClose");
   prots[0].setDateTime(DateTime::now());
   prots[0].insertHit(ProteinHit(0.0, 1, "ACC_CLOSE", ""));
-  PeptideIdentificationList peps(100);
-  for (Size l = 0; l < peps.size(); ++l)
+  PeptideIdentificationList peps_valid(100);
+  for (Size l = 0; l < peps_valid.size(); ++l)
   {
-    peps[l].setIdentifier("runClose");
-    peps[l].setScoreType("score");
+    peps_valid[l].setIdentifier("runClose");
+    peps_valid[l].setScoreType("score");
     PeptideHit hit(double(l), 0, 2, AASequence::fromString("PEPTIDER"));
     hit.addPeptideEvidence(PeptideEvidence("ACC_CLOSE", 0, 7, '-', '-'));
-    if (l == 40) hit.setMetaValue("fail_test_empty", DataValue()); // cannot be written
-    peps[l].insertHit(hit);
+    peps_valid[l].insertHit(hit);
   }
+  PeptideIdentificationList peps = peps_valid;
+  for (PeptideHit& hit : peps[40].getHits()) hit.setMetaValue("fail_test_empty", DataValue()); // cannot be written
   std::string file;
   NEW_TMP_FILE(file)
   {
@@ -1703,8 +1802,92 @@ START_SECTION([EXTRA] store - an exception from closing the file does not replac
   }
   TEST_TRUE(isPartialIdXML(file))
   std::remove(file.c_str()); // partial, not to be validated
+  {
+    // only close() fails
+    RestoreGlobalLocale restore{std::locale::global(std::locale(std::locale(), new ThrowOnUnshift))};
+    bool close_error = false;
+    try
+    {
+      IdXMLFile().store(file, prots, peps_valid);
+    }
+    catch (const CloseError&)
+    {
+      close_error = true;
+    }
+    catch (...)
+    {
+    }
+    TEST_TRUE(close_error)
+  }
+  TEST_TRUE(File::exists(file))
+  std::remove(file.c_str());
 #else
   STATUS("SKIPPED (libstdc++ only): a stream whose close() threw")
+#endif
+}
+END_SECTION
+
+START_SECTION([EXTRA] store - an error keeps its type even if memory runs out while store() reports it)
+{
+#if FAULT_INJECTION_TESTS && defined(__GLIBCXX__)
+  if (!allocFaultReachesLibOpenMS())
+  {
+    STATUS(fault_injection_unreached)
+  }
+  else
+  {
+    // The final close() of store() throws (see closeTestChild()): an OpenMS exception, a std::bad_alloc, or an exception
+    // that is not a std::exception. Then every allocation after the throw fails once, one after the other, each in a
+    // child process: an allocation failure while an OpenMS exception is constructed ends the program (the constructors
+    // are noexcept). store() must raise the error with its type (an OpenMS exception with the note, unless the failed
+    // allocation was one of the note's; the others unchanged), and the output stays.
+    std::vector<ProteinIdentification> prots(1);
+    prots[0].setIdentifier("runReport");
+    prots[0].setDateTime(DateTime::now());
+    prots[0].insertHit(ProteinHit(0.0, 1, "ACC_REPORT", ""));
+    PeptideIdentificationList peps(3); // one block, formatted by the calling thread
+    for (Size l = 0; l < peps.size(); ++l)
+    {
+      peps[l].setIdentifier("runReport");
+      peps[l].setScoreType("score");
+      PeptideHit hit(double(l), 0, 2, AASequence::fromString("PEPTIDER"));
+      hit.addPeptideEvidence(PeptideEvidence("ACC_REPORT", 0, 7, '-', '-'));
+      peps[l].insertHit(hit);
+    }
+    // longer than any short-string buffer, so that copying the name allocates; not a NEW_TMP_FILE (removed below)
+    const std::string file = "IdXMLFile_test_" + File::getUniqueName(false) + "_" + std::string(100, 'r') + ".idXML";
+    for (const int kind : {0, 1, 2})
+    {
+      long runs = 0, ended = 0, wrong = 0, first_wrong = -1;
+      for (long n = 0; n < 10000; ++n)
+      {
+        std::remove(file.c_str());
+        std::cout.flush();
+        std::cerr.flush();
+        const pid_t pid = ::fork();
+        ABORT_IF(pid < 0)
+        if (pid == 0) ::_exit(closeTestChild(kind, n, file, prots, peps));
+        int status = 0;
+        while (::waitpid(pid, &status, 0) < 0 && errno == EINTR) {}
+        ++runs;
+        const bool exited = WIFEXITED(status);
+        if (!exited) ++ended;
+        const bool ok = exited && (WEXITSTATUS(status) & 1) == 0 && File::exists(file);
+        if (!ok && wrong++ == 0) first_wrong = n;
+        if (n > 0 && exited && (WEXITSTATUS(status) & 16) == 0) break; // n is past the last allocation after the throw
+      }
+      STATUS((kind == 0 ? "Exception::ConversionError" : kind == 1 ? "std::bad_alloc" : "not a std::exception")
+             << " from close(): " << runs << " runs (the first without a failed allocation); ended by a signal: " << ended
+             << "; raised another error, an OpenMS error without the note, or removed the output: " << wrong
+             << " (first at allocation " << first_wrong << ")")
+      TEST_EQUAL(wrong, 0)
+    }
+    std::remove(file.c_str());
+  }
+#elif FAULT_INJECTION_TESTS
+  STATUS("SKIPPED (libstdc++ only): a stream whose close() throws")
+#else
+  STATUS(fault_injection_unavailable)
 #endif
 }
 END_SECTION

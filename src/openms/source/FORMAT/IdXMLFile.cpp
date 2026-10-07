@@ -46,7 +46,7 @@ namespace OpenMS
     /// Appended to the message of an error of IdXMLFile::store(): store() does not remove what it has written.
     std::string partialFileNote(const std::string& filename)
     {
-      return " (writing '" + filename + "' did not complete: a partial file may remain)";
+      return "(writing '" + filename + "' did not complete: a partial file may remain)";
     }
   } // namespace
 
@@ -628,17 +628,27 @@ namespace OpenMS
     proteinid_to_accession_.clear();
   }
   // Every failure of store() is raised, and the output is never removed: if writing fails (opening, a block, a write, the
-  // final flush or an allocation), a partial file may remain, and the message names it. An OpenMS exception keeps its
-  // type; any other exception (e.g. std::bad_alloc) becomes Exception::UnableToCreateFile.
+  // final flush or close, an allocation), a partial file may remain. An OpenMS exception keeps its type, and its message
+  // gets a note that names the file and says so, if there is memory for it (otherwise the error is raised as it is). Any
+  // other exception (e.g. std::bad_alloc) is raised unchanged: wrapping it would need memory, and an allocation failure
+  // inside the (noexcept) constructor of an OpenMS exception ends the program.
   catch (Exception::BaseException& e)
   {
-    if (!FileHandler::hasValidExtension(filename, FileTypes::IDXML)) throw; // checked before any file is opened
-    static_cast<std::runtime_error&>(e) = std::runtime_error(e.what() + partialFileNote(filename));
+    try
+    {
+      if (FileHandler::hasValidExtension(filename, FileTypes::IDXML)) // an invalid extension is reported before any file is opened
+      {
+        std::string message = e.what();
+        if (!message.empty() && message.back() != ' ') message += ' ';
+        message += partialFileNote(filename);
+        static_cast<std::runtime_error&>(e) = std::runtime_error(message);
+      }
+    }
+    catch (...)
+    {
+      // no memory for the note: the error is raised without it
+    }
     throw;
-  }
-  catch (const std::exception& e)
-  {
-    throw Exception::UnableToCreateFile(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename, e.what() + partialFileNote(filename));
   }
 
   void IdXMLFile::onStartElement(const char16_t* qname, const Internal::XMLAttributes& attributes)

@@ -78,7 +78,8 @@ OpenMS Library:
     writeUserParam_).
   - FIX: IdXMLFile::store throws when writing the file fails (e.g. disk full, an I/O error, or an
     allocation failure while a block of the parallel writer is formatted). It does not remove the
-    file: a partial file may remain, and the error message names the file and says so.
+    file: a partial file may remain. The message of an OpenMS exception names the file and says
+    so; other exceptions (e.g. std::bad_alloc) are raised unchanged.
     The block writer accepted the text of a failed block stream, and the state of the file stream
     was never checked, so a truncated idXML could be left behind a successful return.
   - FIX: RNaseDigestion::digest returns no fragments for a sequence shorter than min_length, or
