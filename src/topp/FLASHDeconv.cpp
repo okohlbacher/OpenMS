@@ -16,6 +16,43 @@
 #include <OpenMS/FORMAT/FileTypes.h>
 #include <OpenMS/FORMAT/FileHandler.h>
 
+#include <algorithm>
+#ifdef _OPENMP
+  #include <omp.h>
+#endif
+
+namespace
+{
+  // Limit only the initiating reader task; restore its scalar team setting on
+  // normal return and C++ exception unwinding before spectral deconvolution.
+  class ScopedReaderThreads
+  {
+  public:
+    ScopedReaderThreads() noexcept
+    {
+#ifdef _OPENMP
+      saved_threads_ = omp_get_max_threads();
+      omp_set_num_threads(std::min(saved_threads_, 64));
+#endif
+    }
+
+    ~ScopedReaderThreads() noexcept
+    {
+#ifdef _OPENMP
+      omp_set_num_threads(saved_threads_);
+#endif
+    }
+
+    ScopedReaderThreads(const ScopedReaderThreads&) = delete;
+    ScopedReaderThreads& operator=(const ScopedReaderThreads&) = delete;
+
+  private:
+#ifdef _OPENMP
+    int saved_threads_;
+#endif
+  };
+}
+
 using namespace OpenMS;
 using namespace std;
 
@@ -256,8 +293,12 @@ protected:
       opt.setMSLevels(ms_levels);
     }
 
+    opt.setMaxDataPoolSize(512);
     fh.setOptions(opt);
-    fh.loadExperiment(in_file, map, {FileTypes::MZML, FileTypes::RAW}, log_type_);
+    {
+      ScopedReaderThreads reader_threads;
+      fh.loadExperiment(in_file, map, {FileTypes::MZML, FileTypes::RAW}, log_type_);
+    }
 
     std::vector<DeconvolvedSpectrum> deconvolved_spectra;
     std::vector<FLASHHelperClasses::MassFeature> deconvolved_features;
@@ -340,13 +381,9 @@ protected:
         FLASHDeconvSpectrumFile::writeDeconvolvedMassesHeader(out_spec_streams[i], i + 1, write_detail, report_decoy);
       }
 
-      for (const auto& deconvolved_spectrum : deconvolved_spectra)
-      {
-        uint ms_level = deconvolved_spectrum.getOriginalSpectrum().getMSLevel();
-        if (ms_level > out_spec_file.size() || out_spec_file[ms_level - 1].empty()) continue;
-        FLASHDeconvSpectrumFile::writeDeconvolvedMasses(deconvolved_spectrum, out_spec_streams[ms_level - 1], in_file, fd.getAveragine(), fd.getDecoyAveragine(),
-                                                        tols[ms_level - 1], write_detail, report_decoy, fd.getNoiseDecoyWeight());
-      }
+      FLASHDeconvSpectrumFile::writeDeconvolvedMassesParallel(deconvolved_spectra, out_spec_streams, out_spec_file,
+                                                             in_file, fd.getAveragine(), fd.getDecoyAveragine(), tols,
+                                                             write_detail, report_decoy, fd.getNoiseDecoyWeight());
 
       for (Size i = 0; i < out_spec_file.size(); i++)
       {

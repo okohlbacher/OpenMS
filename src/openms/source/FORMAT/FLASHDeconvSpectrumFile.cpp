@@ -10,6 +10,11 @@
 #include <OpenMS/FORMAT/MzMLFile.h>
 #include <random>
 
+#include <exception>
+#ifdef _OPENMP
+  #include <omp.h>
+#endif
+
 namespace OpenMS
 {
   /**
@@ -21,22 +26,26 @@ namespace OpenMS
   inline std::default_random_engine generator_;
   inline std::uniform_real_distribution<double> distribution_(0.0,1.0);
 
-  void FLASHDeconvSpectrumFile::writeDeconvolvedMasses(const DeconvolvedSpectrum& dspec, std::ostream& os, const std::string& file_name, const FLASHHelperClasses::PrecalculatedAveragine& avg, const FLASHHelperClasses::PrecalculatedAveragine& decoy_avg, double tol,
-                                                       const bool write_detail, const bool report_decoy, const double noise_decoy_weight)
+  namespace
+  {
+    // Legacy and buffered writes share counters, advanced only by the caller.
+    std::vector<uint>& writerIndices_()
+    {
+      static std::vector<uint> indices;
+      return indices;
+    }
+  }
+
+  static void writeDeconvolvedMasses_(const DeconvolvedSpectrum& dspec, std::ostream& os, const std::string& file_name, const FLASHHelperClasses::PrecalculatedAveragine& avg, const FLASHHelperClasses::PrecalculatedAveragine& decoy_avg, double tol,
+                                                       const bool write_detail, const bool report_decoy, const double noise_decoy_weight, uint& index)
   {
     if (!report_decoy && dspec.isDecoy()) return;
-    static std::vector<uint> indices {};
     std::stringstream ss;
     if (dspec.empty())
     {
       return;
     }
 
-    while (indices.size() <= dspec.getOriginalSpectrum().getMSLevel())
-    {
-      indices.push_back(1);
-    }
-    uint& index = indices[dspec.getOriginalSpectrum().getMSLevel() - 1];
 
     std::stringstream precursor_ss;
     if (dspec.getOriginalSpectrum().getMSLevel() > 1)
@@ -231,6 +240,122 @@ namespace OpenMS
       ss << "\n";
     }
     os << ss.str();
+  }
+
+  void FLASHDeconvSpectrumFile::writeDeconvolvedMasses(const DeconvolvedSpectrum& dspec, std::ostream& os, const std::string& file_name,
+                                                       const FLASHHelperClasses::PrecalculatedAveragine& avg,
+                                                       const FLASHHelperClasses::PrecalculatedAveragine& decoy_avg, double tol,
+                                                       const bool write_detail, const bool report_decoy, const double noise_decoy_weight)
+  {
+    if ((!report_decoy && dspec.isDecoy()) || dspec.empty()) { return; }
+    auto& indices = writerIndices_();
+    while (indices.size() <= dspec.getOriginalSpectrum().getMSLevel()) { indices.push_back(1); }
+    writeDeconvolvedMasses_(dspec, os, file_name, avg, decoy_avg, tol, write_detail, report_decoy,
+                           noise_decoy_weight, indices[dspec.getOriginalSpectrum().getMSLevel() - 1]);
+  }
+
+  void FLASHDeconvSpectrumFile::writeDeconvolvedMassesParallel(const std::vector<DeconvolvedSpectrum>& spectra,
+                                                              std::vector<std::ofstream>& streams, const StringList& output_files,
+                                                              const std::string& file_name,
+                                                              const FLASHHelperClasses::PrecalculatedAveragine& avg,
+                                                              const FLASHHelperClasses::PrecalculatedAveragine& decoy_avg,
+                                                              const DoubleList& tols, bool write_detail, bool report_decoy,
+                                                              double noise_decoy_weight)
+  {
+    std::vector<Size> jobs;
+    int worker_count = 1;
+#ifdef _OPENMP
+    if (write_detail && !report_decoy && omp_get_level() == 0)
+    {
+      worker_count = std::min(64, omp_get_max_threads());
+    }
+#endif
+    for (Size i = 0; i < spectra.size(); ++i)
+    {
+      const auto level = spectra[i].getOriginalSpectrum().getMSLevel();
+      if (level == 0 || level > output_files.size() || level > streams.size())
+      {
+        throw Exception::InvalidParameter(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "Detailed writer requires an output slot for each spectrum MS level");
+      }
+      if (output_files[level - 1].empty()) { continue; }
+      if (level > tols.size()) { throw Exception::InvalidParameter(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "Detailed writer lacks an MS-level tolerance"); }
+      // Failed streams and invalid raw-spectrum state keep the original path.
+      if (!streams[level - 1].good() || !streams[level - 1].is_open()
+          || (!spectra[i].empty() && spectra[i].getOriginalSpectrum().empty()))
+      {
+        worker_count = 1;
+      }
+      if (!spectra[i].empty() && (!spectra[i].isDecoy() || report_decoy)) { jobs.push_back(i); }
+    }
+    if (worker_count <= 1 || jobs.size() <= 1)
+    {
+      for (auto& spectrum : spectra)
+      {
+        const auto level = spectrum.getOriginalSpectrum().getMSLevel();
+        if (output_files[level - 1].empty()) { continue; }
+        writeDeconvolvedMasses(spectrum, streams[level - 1], file_name, avg, decoy_avg, tols[level - 1],
+                              write_detail, report_decoy, noise_decoy_weight);
+      }
+      return;
+    }
+    worker_count = (int)std::min((Size)worker_count, jobs.size());
+
+    auto& indices = writerIndices_();
+    // Bound the retained strings to four spectra per requested worker (at most
+    // 256 spectra), not to a fixed byte budget. Never buffer the whole file.
+    const Size wave_capacity = 4 * (Size)worker_count;
+    for (Size begin = 0; begin < jobs.size(); begin += wave_capacity)
+    {
+      const SignedSize count = std::min(wave_capacity, jobs.size() - begin);
+      const int team_threads = (int)std::min((Size)worker_count, (Size)count);
+      std::vector<uint> first_indices(count), end_indices(count);
+      auto next_indices = indices;
+      for (SignedSize row = 0; row < count; ++row)
+      {
+        const auto& spectrum = spectra[jobs[begin + row]];
+        const auto level = spectrum.getOriginalSpectrum().getMSLevel();
+        while (next_indices.size() <= level) { next_indices.push_back(1); }
+        first_indices[row] = next_indices[level - 1];
+        for (const auto& pg : spectrum)
+        {
+          if (pg.getTargetDecoyType() == PeakGroup::TargetDecoyType::target) { ++next_indices[level - 1]; }
+        }
+      }
+      std::vector<std::string> buffers(count);
+      std::vector<std::exception_ptr> errors(count);
+      // Each job reads its spectrum; noisy peaks and formatting state are local.
+#pragma omp parallel for num_threads(team_threads) schedule(dynamic, 1) default(none) shared(spectra, jobs, begin, count, first_indices, end_indices, buffers, errors, file_name, avg, decoy_avg, tols, write_detail, noise_decoy_weight)
+      for (SignedSize row = 0; row < count; ++row)
+      {
+        uint index = first_indices[row];
+        try
+        {
+          auto& spectrum = spectra[jobs[begin + row]];
+          const auto level = spectrum.getOriginalSpectrum().getMSLevel();
+          std::ostringstream buffer;
+          writeDeconvolvedMasses_(spectrum, buffer, file_name, avg, decoy_avg, tols[level - 1],
+                                 write_detail, false, noise_decoy_weight, index);
+          buffers[row] = buffer.str();
+          end_indices[row] = index;
+        }
+        catch (...)
+        {
+          end_indices[row] = index;
+          errors[row] = std::current_exception();
+        }
+      }
+      // Commit in original order, with legacy per-MS indices and stream behavior.
+      for (SignedSize row = 0; row < count; ++row)
+      {
+        const auto level = spectra[jobs[begin + row]].getOriginalSpectrum().getMSLevel();
+        while (indices.size() <= level) { indices.push_back(1); }
+        // Legacy formatting consumes indices before a failure; retain that state
+        // while withholding the failed spectrum's buffered output.
+        indices[level - 1] = end_indices[row];
+        if (errors[row]) { std::rethrow_exception(errors[row]); }
+        streams[level - 1] << buffers[row];
+      }
+    }
   }
 
   void FLASHDeconvSpectrumFile::writeDeconvolvedMassesHeader(std::ostream& os, const uint ms_level, const bool detail, const bool report_decoy)

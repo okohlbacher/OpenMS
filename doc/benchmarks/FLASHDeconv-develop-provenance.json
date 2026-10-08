@@ -1,0 +1,2575 @@
+{
+  "base_revision": "0bee1589e6baa5fad030115804ba94c5ac2f52da",
+  "source_snapshot_sha256": "4b6fa9b637927986770cccbc725a105fe0bfb973d578065ca6252ff650ac219f",
+  "cohort_manifest_sha256": "bef35e6d5bcca4f07b9152f0e23cb8a5ea31431ef19bb32ce79d3f7dde3e3967",
+  "host": "kim",
+  "topology_sha256": "fc1081a09dbcc3cf50f9fa8d7dabe1926cf3e1897f9a541996dddd782a1efa43",
+  "physical_allocations": {
+    "4": {
+      "threads": 4,
+      "cpu_order": [
+        0,
+        96,
+        8,
+        104
+      ],
+      "cpu_mask": "0,96,8,104",
+      "places": "{0},{96},{8},{104}",
+      "physical_core_keys": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          96
+        ],
+        [
+          0,
+          8
+        ],
+        [
+          1,
+          104
+        ]
+      ],
+      "socket_core_counts": {
+        "0": 2,
+        "1": 2
+      },
+      "policy": "Nested physical prefix of saved LLC-striped/socket-round-robin128 order"
+    },
+    "8": {
+      "threads": 8,
+      "cpu_order": [
+        0,
+        96,
+        8,
+        104,
+        16,
+        112,
+        24,
+        120
+      ],
+      "cpu_mask": "0,96,8,104,16,112,24,120",
+      "places": "{0},{96},{8},{104},{16},{112},{24},{120}",
+      "physical_core_keys": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          96
+        ],
+        [
+          0,
+          8
+        ],
+        [
+          1,
+          104
+        ],
+        [
+          0,
+          16
+        ],
+        [
+          1,
+          112
+        ],
+        [
+          0,
+          24
+        ],
+        [
+          1,
+          120
+        ]
+      ],
+      "socket_core_counts": {
+        "0": 4,
+        "1": 4
+      },
+      "policy": "Nested physical prefix of saved LLC-striped/socket-round-robin128 order"
+    },
+    "16": {
+      "threads": 16,
+      "cpu_order": [
+        0,
+        96,
+        8,
+        104,
+        16,
+        112,
+        24,
+        120,
+        32,
+        128,
+        40,
+        136,
+        48,
+        144,
+        56,
+        152
+      ],
+      "cpu_mask": "0,96,8,104,16,112,24,120,32,128,40,136,48,144,56,152",
+      "places": "{0},{96},{8},{104},{16},{112},{24},{120},{32},{128},{40},{136},{48},{144},{56},{152}",
+      "physical_core_keys": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          96
+        ],
+        [
+          0,
+          8
+        ],
+        [
+          1,
+          104
+        ],
+        [
+          0,
+          16
+        ],
+        [
+          1,
+          112
+        ],
+        [
+          0,
+          24
+        ],
+        [
+          1,
+          120
+        ],
+        [
+          0,
+          32
+        ],
+        [
+          1,
+          128
+        ],
+        [
+          0,
+          40
+        ],
+        [
+          1,
+          136
+        ],
+        [
+          0,
+          48
+        ],
+        [
+          1,
+          144
+        ],
+        [
+          0,
+          56
+        ],
+        [
+          1,
+          152
+        ]
+      ],
+      "socket_core_counts": {
+        "0": 8,
+        "1": 8
+      },
+      "policy": "Nested physical prefix of saved LLC-striped/socket-round-robin128 order"
+    },
+    "32": {
+      "threads": 32,
+      "cpu_order": [
+        0,
+        96,
+        8,
+        104,
+        16,
+        112,
+        24,
+        120,
+        32,
+        128,
+        40,
+        136,
+        48,
+        144,
+        56,
+        152,
+        64,
+        160,
+        72,
+        168,
+        80,
+        176,
+        88,
+        184,
+        1,
+        97,
+        9,
+        105,
+        17,
+        113,
+        25,
+        121
+      ],
+      "cpu_mask": "0,96,8,104,16,112,24,120,32,128,40,136,48,144,56,152,64,160,72,168,80,176,88,184,1,97,9,105,17,113,25,121",
+      "places": "{0},{96},{8},{104},{16},{112},{24},{120},{32},{128},{40},{136},{48},{144},{56},{152},{64},{160},{72},{168},{80},{176},{88},{184},{1},{97},{9},{105},{17},{113},{25},{121}",
+      "physical_core_keys": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          96
+        ],
+        [
+          0,
+          8
+        ],
+        [
+          1,
+          104
+        ],
+        [
+          0,
+          16
+        ],
+        [
+          1,
+          112
+        ],
+        [
+          0,
+          24
+        ],
+        [
+          1,
+          120
+        ],
+        [
+          0,
+          32
+        ],
+        [
+          1,
+          128
+        ],
+        [
+          0,
+          40
+        ],
+        [
+          1,
+          136
+        ],
+        [
+          0,
+          48
+        ],
+        [
+          1,
+          144
+        ],
+        [
+          0,
+          56
+        ],
+        [
+          1,
+          152
+        ],
+        [
+          0,
+          64
+        ],
+        [
+          1,
+          160
+        ],
+        [
+          0,
+          72
+        ],
+        [
+          1,
+          168
+        ],
+        [
+          0,
+          80
+        ],
+        [
+          1,
+          176
+        ],
+        [
+          0,
+          88
+        ],
+        [
+          1,
+          184
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          97
+        ],
+        [
+          0,
+          9
+        ],
+        [
+          1,
+          105
+        ],
+        [
+          0,
+          17
+        ],
+        [
+          1,
+          113
+        ],
+        [
+          0,
+          25
+        ],
+        [
+          1,
+          121
+        ]
+      ],
+      "socket_core_counts": {
+        "0": 16,
+        "1": 16
+      },
+      "policy": "Nested physical prefix of saved LLC-striped/socket-round-robin128 order"
+    },
+    "64": {
+      "threads": 64,
+      "cpu_order": [
+        0,
+        96,
+        8,
+        104,
+        16,
+        112,
+        24,
+        120,
+        32,
+        128,
+        40,
+        136,
+        48,
+        144,
+        56,
+        152,
+        64,
+        160,
+        72,
+        168,
+        80,
+        176,
+        88,
+        184,
+        1,
+        97,
+        9,
+        105,
+        17,
+        113,
+        25,
+        121,
+        33,
+        129,
+        41,
+        137,
+        49,
+        145,
+        57,
+        153,
+        65,
+        161,
+        73,
+        169,
+        81,
+        177,
+        89,
+        185,
+        2,
+        98,
+        10,
+        106,
+        18,
+        114,
+        26,
+        122,
+        34,
+        130,
+        42,
+        138,
+        50,
+        146,
+        58,
+        154
+      ],
+      "cpu_mask": "0,96,8,104,16,112,24,120,32,128,40,136,48,144,56,152,64,160,72,168,80,176,88,184,1,97,9,105,17,113,25,121,33,129,41,137,49,145,57,153,65,161,73,169,81,177,89,185,2,98,10,106,18,114,26,122,34,130,42,138,50,146,58,154",
+      "places": "{0},{96},{8},{104},{16},{112},{24},{120},{32},{128},{40},{136},{48},{144},{56},{152},{64},{160},{72},{168},{80},{176},{88},{184},{1},{97},{9},{105},{17},{113},{25},{121},{33},{129},{41},{137},{49},{145},{57},{153},{65},{161},{73},{169},{81},{177},{89},{185},{2},{98},{10},{106},{18},{114},{26},{122},{34},{130},{42},{138},{50},{146},{58},{154}",
+      "physical_core_keys": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          96
+        ],
+        [
+          0,
+          8
+        ],
+        [
+          1,
+          104
+        ],
+        [
+          0,
+          16
+        ],
+        [
+          1,
+          112
+        ],
+        [
+          0,
+          24
+        ],
+        [
+          1,
+          120
+        ],
+        [
+          0,
+          32
+        ],
+        [
+          1,
+          128
+        ],
+        [
+          0,
+          40
+        ],
+        [
+          1,
+          136
+        ],
+        [
+          0,
+          48
+        ],
+        [
+          1,
+          144
+        ],
+        [
+          0,
+          56
+        ],
+        [
+          1,
+          152
+        ],
+        [
+          0,
+          64
+        ],
+        [
+          1,
+          160
+        ],
+        [
+          0,
+          72
+        ],
+        [
+          1,
+          168
+        ],
+        [
+          0,
+          80
+        ],
+        [
+          1,
+          176
+        ],
+        [
+          0,
+          88
+        ],
+        [
+          1,
+          184
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          97
+        ],
+        [
+          0,
+          9
+        ],
+        [
+          1,
+          105
+        ],
+        [
+          0,
+          17
+        ],
+        [
+          1,
+          113
+        ],
+        [
+          0,
+          25
+        ],
+        [
+          1,
+          121
+        ],
+        [
+          0,
+          33
+        ],
+        [
+          1,
+          129
+        ],
+        [
+          0,
+          41
+        ],
+        [
+          1,
+          137
+        ],
+        [
+          0,
+          49
+        ],
+        [
+          1,
+          145
+        ],
+        [
+          0,
+          57
+        ],
+        [
+          1,
+          153
+        ],
+        [
+          0,
+          65
+        ],
+        [
+          1,
+          161
+        ],
+        [
+          0,
+          73
+        ],
+        [
+          1,
+          169
+        ],
+        [
+          0,
+          81
+        ],
+        [
+          1,
+          177
+        ],
+        [
+          0,
+          89
+        ],
+        [
+          1,
+          185
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          1,
+          98
+        ],
+        [
+          0,
+          10
+        ],
+        [
+          1,
+          106
+        ],
+        [
+          0,
+          18
+        ],
+        [
+          1,
+          114
+        ],
+        [
+          0,
+          26
+        ],
+        [
+          1,
+          122
+        ],
+        [
+          0,
+          34
+        ],
+        [
+          1,
+          130
+        ],
+        [
+          0,
+          42
+        ],
+        [
+          1,
+          138
+        ],
+        [
+          0,
+          50
+        ],
+        [
+          1,
+          146
+        ],
+        [
+          0,
+          58
+        ],
+        [
+          1,
+          154
+        ]
+      ],
+      "socket_core_counts": {
+        "0": 32,
+        "1": 32
+      },
+      "policy": "Nested physical prefix of saved LLC-striped/socket-round-robin128 order"
+    }
+  },
+  "compiler_version": "x86_64-conda-linux-gnu-c++ (conda-forge gcc 14.4.0-4) 14.4.0",
+  "compiler_version_capture_sha256": "2551eb270b9e7ce9ce572b42e3547569a44d28bb1984094791e9670b545d968d",
+  "common_external_dependency_count": 158,
+  "runtime_closure": {
+    "baseline": {
+      "files": {
+        "libOpenMS.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/flashdeconv-performance-20261006/pr-develop/native-inputs-r2/baseline/lib/libOpenMS.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/flashdeconv-performance-20261006/pr-develop/native-inputs-r2/baseline/lib/libOpenMS.so",
+          "sha256": "b545831342b3b195d2e36c2df3f6cdc5717c1fbad90d23167dafaa58f7d47dc8"
+        },
+        "libOpenSwathAlgo.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/flashdeconv-performance-20261006/pr-develop/native-inputs-r2/baseline/lib/libOpenSwathAlgo.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/flashdeconv-performance-20261006/pr-develop/native-inputs-r2/baseline/lib/libOpenSwathAlgo.so",
+          "sha256": "12301d4985009506e45ebe421c92c13adb91709cf1ccd92a4ad646bde6865bed"
+        },
+        "libgomp.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgomp.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgomp.so.1.0.0",
+          "sha256": "483345c7ffb82e1cd3e50a657f613145930a6ecadc5284806090315bf1b50392"
+        },
+        "libstdc++.so.6": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libstdc++.so.6",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libstdc++.so.6.0.36",
+          "sha256": "e3549df69430b452252a93f037e7bb382ae1011ba247f39cf570e0927a3b3af0"
+        },
+        "libm.so.6": {
+          "loader_path": "/lib/x86_64-linux-gnu/libm.so.6",
+          "resolved_path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+          "sha256": "fce00b6f25f459cf4ae0b7fae4257909a1a8a86f9149e7c029a5d617baf1ccd0"
+        },
+        "libgcc_s.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgcc_s.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgcc_s.so.1",
+          "sha256": "7cd19c412b9fbe2c5900f052ab78aaaaa54c03adcc61c80555b6a264133287a6"
+        },
+        "libc.so.6": {
+          "loader_path": "/lib/x86_64-linux-gnu/libc.so.6",
+          "resolved_path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+          "sha256": "3a15d66867d83762c7f2f1e37359cb8f6c5743edb369c65285cb0b1c4f7498bf"
+        },
+        "libcurl.so.4": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libcurl.so.4",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libcurl.so.4.8.0",
+          "sha256": "131df25191e11811f827af5fd00c9f00d20a26812eb81c67e606825d68bf61db"
+        },
+        "libxerces-c-3.3.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libxerces-c-3.3.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libxerces-c-3.3.so",
+          "sha256": "69614ee39fa3732691e1febc9a7811d8e9fb54b055c7efa8709796d354a3659e"
+        },
+        "libbz2.so.1.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libbz2.so.1.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libbz2.so.1.0.8",
+          "sha256": "89167cfb36a81306dcf8f439436f46dda12f0bbf4877b9f87abfd079bf765c46"
+        },
+        "libboost_date_time.so.1.89.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libboost_date_time.so.1.89.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libboost_date_time.so.1.89.0",
+          "sha256": "001ab2374f89e75169a98ff1dc1ca8191f08a7a026bb0e8cc10dc5268a4a5e96"
+        },
+        "libboost_iostreams.so.1.89.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libboost_iostreams.so.1.89.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libboost_iostreams.so.1.89.0",
+          "sha256": "8bae84b6e101618df7902f3c5a4221d84ba94e951fe752661d014413f0c82afb"
+        },
+        "libboost_regex.so.1.89.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libboost_regex.so.1.89.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libboost_regex.so.1.89.0",
+          "sha256": "aba781706cf6d7c99875c4af4b5e3ffb988e4f39fd6f105742017610ce05dc69"
+        },
+        "libsvm.so.4": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libsvm.so.4",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libsvm.so.4",
+          "sha256": "e18b7301dd92bd77b3b0982696e8fe01b5b862531db1cf191cf579d286b8f897"
+        },
+        "libz.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libz.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libz.so.1.3.2",
+          "sha256": "3c6fd78e248a60e45081bcc77031204a7cb64a88ff2e27fc786ef12ae7e91fca"
+        },
+        "libzip.so.5": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libzip.so.5",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libzip.so.5.5",
+          "sha256": "c5bd4e30ded41b5798b96d25537efdc67ad2b5cfde6ae4683442a41868d3afdb"
+        },
+        "libarrow_compute.so.2300": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libarrow_compute.so.2300",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libarrow_compute.so.2300.1.0",
+          "sha256": "39cb2f8535a7e9d91d3de3bb0f373527ffb1cb44321770b37fdc3974540358c8"
+        },
+        "libarrow_dataset.so.2300": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libarrow_dataset.so.2300",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libarrow_dataset.so.2300.1.0",
+          "sha256": "fbbe0589d8e5b0a283c35c0b19c2772188239fe2720a9fa798a5e5c55f5c003c"
+        },
+        "libxml2.so.16": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libxml2.so.16",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libxml2.so.16.1.1",
+          "sha256": "258d0c5a7e5b0a7c0c1be3c42c08b10bf7fb893cbc2d56ce283f923783005246"
+        },
+        "libCbc.so.3": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libCbc.so.3",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libCbc.so.3.10.13",
+          "sha256": "a78a84d117a52340635bca9367d48e18d064911a5bed047ac14411f3c6a53956"
+        },
+        "libCgl.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libCgl.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libCgl.so.1.10.10",
+          "sha256": "7a98185849b0527172b10495dd149bc70cb1237091d6198a88a53926ee96663b"
+        },
+        "libClp.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libClp.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libClp.so.1.14.11",
+          "sha256": "4bb3c283ff065f6d63472dfc9ca6624b483e23211b129c39bbaf1487a793cf64"
+        },
+        "libCoinUtils.so.3": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libCoinUtils.so.3",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libCoinUtils.so.3.11.13",
+          "sha256": "de2046f2cdbe78296410f051ed17aaa4406aa38549d190c1532963b278b8d721"
+        },
+        "libOsi.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libOsi.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libOsi.so.1.13.12",
+          "sha256": "e7bdac33274e339f91ecc1717be51032bba87c72a92d1c8f88c693cd1d3ee1a3"
+        },
+        "libOsiClp.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libOsiClp.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libOsiClp.so.1.14.11",
+          "sha256": "8068c29cbfc7430dc55345d10c7269bb471a21b532139d9232ddca863e45c9fb"
+        },
+        "libboost_random.so.1.89.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libboost_random.so.1.89.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libboost_random.so.1.89.0",
+          "sha256": "681c448be3ccf9c58e8311916dfccec7eea2522aadf4cdc2f2f33761481fc8b7"
+        },
+        "libparquet.so.2300": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libparquet.so.2300",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libparquet.so.2300.1.0",
+          "sha256": "8b32fc979d57137f82d57d595a63273922749320178dad93f34b6fbbdb4d934d"
+        },
+        "libarrow_acero.so.2300": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libarrow_acero.so.2300",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libarrow_acero.so.2300.1.0",
+          "sha256": "bea01d46b2360c6a009dbe92f67b1d866a03cceaa1fd599305fe06959193f6ee"
+        },
+        "libarrow.so.2300": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libarrow.so.2300",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libarrow.so.2300.1.0",
+          "sha256": "0288b64eb2bdc0aa47ba5a76783d0c4ff92b7dae6c9320f1bfc62232c8fb4c35"
+        },
+        "ld-linux-x86-64.so.2": {
+          "loader_path": "/lib64/ld-linux-x86-64.so.2",
+          "resolved_path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+          "sha256": "c20a2dc8917c755f02b94049356320fe1f62ac7d9f8994731f807d9df39302da"
+        },
+        "libdl.so.2": {
+          "loader_path": "/lib/x86_64-linux-gnu/libdl.so.2",
+          "resolved_path": "/usr/lib/x86_64-linux-gnu/libdl.so.2",
+          "sha256": "c2994527172cc23b7fb0f7d611b71e00a37da27af12c2e5e9e0dc1a742886c96"
+        },
+        "libpthread.so.0": {
+          "loader_path": "/lib/x86_64-linux-gnu/libpthread.so.0",
+          "resolved_path": "/usr/lib/x86_64-linux-gnu/libpthread.so.0",
+          "sha256": "90491a21ce44efcf3bd4b65ec82501c091d7ebe7f8d9b341dd01d721001d9ecd"
+        },
+        "libnghttp2.so.14": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libnghttp2.so.14",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libnghttp2.so.14.29.3",
+          "sha256": "90ea9756606017da9b40f5ded6de140b98c3bbaac301a3c12f02ee2b15a204bd"
+        },
+        "libssh2.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libssh2.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libssh2.so.1.0.1",
+          "sha256": "3b209bcbd821d33e16776334b02194bc4cba05d1f412f6252aadbd8668c4c78d"
+        },
+        "libssl.so.3": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libssl.so.3",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libssl.so.3",
+          "sha256": "0246a392f07abf2c65cf701b2e0fa5f8c673d4606e13dff940defac1c6017659"
+        },
+        "libcrypto.so.3": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libcrypto.so.3",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libcrypto.so.3",
+          "sha256": "a75b715e5881dcd2dc4e41353b463c631ba5a1c3b57a32d7524a5995e39ef84d"
+        },
+        "libgssapi_krb5.so.2": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgssapi_krb5.so.2",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgssapi_krb5.so.2.2",
+          "sha256": "bea80c354a32a22c2a1d218fada2241f00062112a88290af1194f6fffdafd489"
+        },
+        "libzstd.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libzstd.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libzstd.so.1.5.7",
+          "sha256": "b0e2bad8c117a3ad7d344d7924272d12b8e363956efb91b5074e43d4e201a08d"
+        },
+        "libnsl.so.3": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libnsl.so.3",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libnsl.so.3.0.0",
+          "sha256": "61d409bf7c9d115d008dbc30cbbd43c98255f6272f328f2311466bcc37485518"
+        },
+        "libicui18n.so.75": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libicui18n.so.75",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libicui18n.so.75.1",
+          "sha256": "8332a1c6b589195ceac95fa127a256258f26e636616cf3d4f64fb9e5d182336d"
+        },
+        "libicuuc.so.75": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libicuuc.so.75",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libicuuc.so.75.1",
+          "sha256": "c9a25b3248c0b20fe3e2bf10042fba72009eed6d72422dca53c8ac169ca65d1b"
+        },
+        "libicudata.so.75": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libicudata.so.75",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libicudata.so.75.1",
+          "sha256": "e065d9cbce8450291e1e8f9125f9a115a07b0181728217b7bf4e3db65c60a322"
+        },
+        "librt.so.1": {
+          "loader_path": "/lib/x86_64-linux-gnu/librt.so.1",
+          "resolved_path": "/usr/lib/x86_64-linux-gnu/librt.so.1",
+          "sha256": "6d072187d88e092e81561a44c03a4a41397319022c6d43519757cc051c576d82"
+        },
+        "liblzma.so.5": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/liblzma.so.5",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/liblzma.so.5",
+          "sha256": "491c01c02da5a22f5825a7c05a561e175aa70c203d5e462dfe90b5040dbdaf50"
+        },
+        "libre2.so.11": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libre2.so.11",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libre2.so.11",
+          "sha256": "0974c4dc5cd2a262cfac4ba04800fb80bcd6a54ad32f6a9f738c1db68d519748"
+        },
+        "libutf8proc.so.3": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libutf8proc.so.3",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libutf8proc.so.3.2.3",
+          "sha256": "324af4f1f1cb0b389292635d6144675d2c3d617745f0e5ef1c80d279949ad861"
+        },
+        "libiconv.so.2": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libiconv.so.2",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libiconv.so.2.7.0",
+          "sha256": "59b942b8a9dfabcfec7d65ff2be1de2e59902765837768ca37468cef5dca9571"
+        },
+        "libClpSolver.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libClpSolver.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libClpSolver.so.1.14.11",
+          "sha256": "20a34f75be22a079e30f8c3338da7c4950b5fd1f0dd44b8e4a936bfb796ad861"
+        },
+        "liblapack.so.3": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/liblapack.so.3",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopenblasp-r0.3.34.so",
+          "sha256": "f1424288e9ac125331102c0150b66fbd244560987779552e0e97d5cfd9de572b"
+        },
+        "libthrift.so.0.22.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libthrift.so.0.22.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libthrift.so.0.22.0",
+          "sha256": "85f4a830f1255056173e423f40bb89182ce11a73de2c2707d75440e295f4b832"
+        },
+        "libazure-storage-files-datalake.so.12.14.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libazure-storage-files-datalake.so.12.14.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libazure-storage-files-datalake.so.12.14.0",
+          "sha256": "6a56610219bade7e4a2455cf6d719293486c30d9fddec3e7a0d36bf221da7620"
+        },
+        "libazure-storage-blobs.so.12.16.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libazure-storage-blobs.so.12.16.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libazure-storage-blobs.so.12.16.0",
+          "sha256": "670c56cac655b211c6112758fc0d43c4e20da15b177bf8fff0998a12979339e1"
+        },
+        "libazure-identity.so.1.13.3": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libazure-identity.so.1.13.3",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libazure-identity.so.1.13.3",
+          "sha256": "a1418c19536b024c175ece744320a4cd1f3480a72f74a4b630b91a537c07743c"
+        },
+        "libazure-core.so.1.16.2": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libazure-core.so.1.16.2",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libazure-core.so.1.16.2",
+          "sha256": "802a9a9e97affe73fcd5101d9baa846265509d2d66e1140b6796c7fcd6ea010b"
+        },
+        "libgoogle_cloud_cpp_storage.so.2": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgoogle_cloud_cpp_storage.so.2",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgoogle_cloud_cpp_storage.so.2.39.0",
+          "sha256": "115902ba3f9a00e0dab39921025ae8bd7efa76d367e0863892b9a0c8d9cf7539"
+        },
+        "libgoogle_cloud_cpp_common.so.2": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgoogle_cloud_cpp_common.so.2",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgoogle_cloud_cpp_common.so.2.39.0",
+          "sha256": "403d56ace02dc39a54090e5545c73ba14cae172665dfcc4dcc67b10e3732200c"
+        },
+        "libaws-cpp-sdk-identity-management.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-cpp-sdk-identity-management.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-cpp-sdk-identity-management.so",
+          "sha256": "bdc0c97b65203ca5751ad8a9381db1c6f922b8931e0bafa819e49c7aff37e1d1"
+        },
+        "libaws-cpp-sdk-s3.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-cpp-sdk-s3.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-cpp-sdk-s3.so",
+          "sha256": "30932988bbc5091b3957e892ce48ca69dcbd625e5df9fd47ddd2dd5b65ca8759"
+        },
+        "libaws-cpp-sdk-core.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-cpp-sdk-core.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-cpp-sdk-core.so",
+          "sha256": "f58de5cce6262f3e8862d2e68dd22d8bcf4a7509ef01ba0732bb88deb12aa1a2"
+        },
+        "libaws-crt-cpp.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-crt-cpp.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-crt-cpp.so",
+          "sha256": "bc1386a90d53bc688bf72149ceb7cf0751c3e7534d264f1e453a7a7ce25c36e3"
+        },
+        "liborc.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/liborc.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/liborc.so",
+          "sha256": "2e983532dd4b85aae77589473acd71c6df0f6b0c80fa3733e92967eb172a4095"
+        },
+        "libopentelemetry_exporter_otlp_http_log.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_exporter_otlp_http_log.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_exporter_otlp_http_log.so",
+          "sha256": "927b025cdfee8e6c34f5640776fea7433078fae29ba4e8157e1c4b714cf05f2e"
+        },
+        "libopentelemetry_exporter_ostream_logs.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_exporter_ostream_logs.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_exporter_ostream_logs.so",
+          "sha256": "e91bc5fdd2fb93efb59d151f15a8c1ba3053de329580a335d77b6bf6cf8255a2"
+        },
+        "libopentelemetry_exporter_ostream_span.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_exporter_ostream_span.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_exporter_ostream_span.so",
+          "sha256": "6c3e5b867eeeab87f173b9293d4e2e162fa93b5826c2205e52350ceab6f85997"
+        },
+        "libopentelemetry_exporter_otlp_http.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_exporter_otlp_http.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_exporter_otlp_http.so",
+          "sha256": "c6df47139787132316a14e83dc46c68d00640322a2d4b7b021d5c33a98b7cc66"
+        },
+        "libopentelemetry_otlp_recordable.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_otlp_recordable.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_otlp_recordable.so",
+          "sha256": "0acaeaad2ecc2f81b564b038c4b6133208178f465fc68258996497cfb10feb17"
+        },
+        "libopentelemetry_trace.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_trace.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_trace.so",
+          "sha256": "fbe8ccda8bfb2f8cd7f4ab710377cae89decb81d697d35fe931c22694a2e9506"
+        },
+        "libopentelemetry_logs.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_logs.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_logs.so",
+          "sha256": "6d3594cf7fa1b1966003db94363d382f6f101a24c3fd819a697d479c34fb168c"
+        },
+        "libopentelemetry_resources.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_resources.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_resources.so",
+          "sha256": "5318454be54f03568e0bb1f224602ff57de23813caefc90976f375cf4b888b77"
+        },
+        "libopentelemetry_exporter_otlp_http_client.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_exporter_otlp_http_client.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_exporter_otlp_http_client.so",
+          "sha256": "20026fbf6f9647177daa625729fc8cf46cb8d758bfeeb71830be5606c95b6a8f"
+        },
+        "libopentelemetry_proto.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_proto.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_proto.so",
+          "sha256": "0604038be3999fd6fa271d56508160b2711a2cc2db7983f8f14566fbe32165df"
+        },
+        "libprotobuf.so.33.5.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libprotobuf.so.33.5.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libprotobuf.so.33.5.0",
+          "sha256": "047bc07d233c198b9b61d5ad5fc1c55fe0b9a1ce1f3781c71daaabdc15aa94e5"
+        },
+        "libabsl_status.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_status.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_status.so.2601.0.0",
+          "sha256": "d2687f736a6109ca5da36396760a276ee36422b28d2810615aa1521a42978605"
+        },
+        "libabsl_time.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_time.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_time.so.2601.0.0",
+          "sha256": "d44c9f63e8682b513513579d0cfeffcb5c396b03e221a1edc6291eea34ab1c64"
+        },
+        "libabsl_time_zone.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_time_zone.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_time_zone.so.2601.0.0",
+          "sha256": "2d94ea723ea8d571123190042ea2e506fa75f2f33d3044bb5cc1060ffb76e677"
+        },
+        "libglog.so.2": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libglog.so.2",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libglog.so.0.7.1",
+          "sha256": "4af63e30a164377c17b4c5afb12247e00742cdc9192998aceadafebe39cbb659"
+        },
+        "libbrotlienc.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libbrotlienc.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libbrotlienc.so.1.2.0",
+          "sha256": "03989d64af3833b2a14cfb50540d38c9b039a244de657e6cade01167ed4eb4f9"
+        },
+        "libbrotlidec.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libbrotlidec.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libbrotlidec.so.1.2.0",
+          "sha256": "64242b3d5636ba6ea933a58dec3d498cb71ca2707f637343570c836cfd5c99ea"
+        },
+        "liblz4.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/liblz4.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/liblz4.so.1.10.0",
+          "sha256": "3e0df06a1a179077b1e89c3496dd4fa9d8fbbf493e4fec0586c9ccddf786a3ff"
+        },
+        "libsnappy.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libsnappy.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libsnappy.so.1.2.2",
+          "sha256": "760fde12da87cb6e21a697151458fe864df1021c7f0a56c6e61fb3812796f6cf"
+        },
+        "libkrb5.so.3": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libkrb5.so.3",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libkrb5.so.3.3",
+          "sha256": "734d3df8b01cc03fc2950039b0849e3a93b6b077081fff9c747717162dcbeb7e"
+        },
+        "libk5crypto.so.3": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libk5crypto.so.3",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libk5crypto.so.3.1",
+          "sha256": "73b90eff29b55af2317c17be164a36adab72db193d9b403974c39b5277999a13"
+        },
+        "libcom_err.so.3": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libcom_err.so.3",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libcom_err.so.3.0",
+          "sha256": "5788f4585d9d8febea117fc3d38fd52012af2e5167995603663dd708c75c57cb"
+        },
+        "libkrb5support.so.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libkrb5support.so.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libkrb5support.so.0.1",
+          "sha256": "ecf1d6c0c918f694cc90d6c2d8497fc16ca82d7e79671590d183dd1a94b1ad76"
+        },
+        "libkeyutils.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libkeyutils.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libkeyutils.so.1.10",
+          "sha256": "bfe024accca85c9f39b7c0e5bf8f2e551f45989db6ea4de2d4cf5bd5319f8e9d"
+        },
+        "libresolv.so.2": {
+          "loader_path": "/lib/x86_64-linux-gnu/libresolv.so.2",
+          "resolved_path": "/usr/lib/x86_64-linux-gnu/libresolv.so.2",
+          "sha256": "1d730ea434da5a5595bc6a961d7a9ace83e03703205df9644044b3dca79c362f"
+        },
+        "libabsl_log_internal_message.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_message.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_message.so.2601.0.0",
+          "sha256": "78c3a17394c730dd8bcb837ac8a9c718a35eccf12d236a9cfad29da912c69d81"
+        },
+        "libabsl_raw_hash_set.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_raw_hash_set.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_raw_hash_set.so.2601.0.0",
+          "sha256": "4eda0c7a54318c88f253c8d7c7ee2fe121112f0c8a247b0f0b4af3f12fb5487c"
+        },
+        "libabsl_str_format_internal.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_str_format_internal.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_str_format_internal.so.2601.0.0",
+          "sha256": "09b81476f7ea8a36578014436bca5d6d53d031279036c04abb5dba989ac26642"
+        },
+        "libabsl_synchronization.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_synchronization.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_synchronization.so.2601.0.0",
+          "sha256": "6e2958629b9ae48709b39e520eec7711689eef75c8d91bd3e4dae36e2604b83b"
+        },
+        "libabsl_hash.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_hash.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_hash.so.2601.0.0",
+          "sha256": "c7ec9a273c8c4d78fbfedeca2ba756c2a1f7aff93dedafa7b67813d694705848"
+        },
+        "libabsl_strings.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_strings.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_strings.so.2601.0.0",
+          "sha256": "730550be67c999a89204499dfefb064e3bea9d6ce13ba7341013dc52bbfac698"
+        },
+        "libabsl_spinlock_wait.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_spinlock_wait.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_spinlock_wait.so.2601.0.0",
+          "sha256": "23fe3df6abbe22b99d952a83458e0c6182a4543429db964718c8c65db579d708"
+        },
+        "libgfortran.so.5": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgfortran.so.5",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgfortran.so.5.0.0",
+          "sha256": "7c80ef77460f5a6e80a4046774f7b424d3dee776040abebc1a15182553d56c64"
+        },
+        "libazure-storage-common.so.12.13.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libazure-storage-common.so.12.13.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libazure-storage-common.so.12.13.0",
+          "sha256": "2bee781d7fde262ad05feb61e6ad6ce06d3b947b2be2c1e0a000d77d91483710"
+        },
+        "libgoogle_cloud_cpp_rest_internal.so.2": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgoogle_cloud_cpp_rest_internal.so.2",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgoogle_cloud_cpp_rest_internal.so.2.39.0",
+          "sha256": "1eff5883b2fc338c83e1b4db54952a78825f23d456cf2570a214530525123d0d"
+        },
+        "libcrc32c.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libcrc32c.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libcrc32c.so.1.1.0",
+          "sha256": "ea8ae3493df07598d7ddb74e36a9ae21ddf73e50d38ef149e903e0c742df89d1"
+        },
+        "libabsl_crc32c.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_crc32c.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_crc32c.so.2601.0.0",
+          "sha256": "8f2fc385248951222e992271c765acf8e35396df65c38b0d2537cf9eb220f812"
+        },
+        "libabsl_strings_internal.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_strings_internal.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_strings_internal.so.2601.0.0",
+          "sha256": "db950cd2cb83f504375f263a56184b7be7b3da59b8e3e768cbff59f5a1571f6d"
+        },
+        "libaws-cpp-sdk-cognito-identity.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-cpp-sdk-cognito-identity.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-cpp-sdk-cognito-identity.so",
+          "sha256": "0a9273918069c3552024817baf22d0289e7b33febc41ea70a237e7e2f23973bd"
+        },
+        "libaws-cpp-sdk-sts.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-cpp-sdk-sts.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-cpp-sdk-sts.so",
+          "sha256": "4adb440420794305c05f82976d2efd4ec44cd6dc78e2a0b5fc546a093775d4b9"
+        },
+        "libaws-c-common.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-common.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-common.so.1.0.0",
+          "sha256": "ab935b3a229cebb93e1def8d4a1b806851ddf09a7754d3926306536d71170f51"
+        },
+        "libaws-c-event-stream.so.1.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-event-stream.so.1.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-event-stream.so.1.0.0",
+          "sha256": "2475525cbb41c4564d4ec5c4138c2c3cf09485e133554f0fc439b4a9cbfb9b74"
+        },
+        "libaws-c-mqtt.so.1.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-mqtt.so.1.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-mqtt.so.1.0.0",
+          "sha256": "7a2dfd2cf04ace7c48b67215556d1b51e745a96c67e1648824fa8f4437ec0122"
+        },
+        "libaws-c-s3.so.0unstable": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-s3.so.0unstable",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-s3.so.1.0.0",
+          "sha256": "c563e1671f59cfcf8b81424838f2cd6a1f3a0cc35d39dc19e2025d2d7d551c4f"
+        },
+        "libaws-c-auth.so.1.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-auth.so.1.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-auth.so.1.0.0",
+          "sha256": "21077891376922264fb60ef77104546aee8469e2959db2c37aa5cd27add68c22"
+        },
+        "libaws-c-http.so.1.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-http.so.1.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-http.so.1.0.0",
+          "sha256": "b44e9ddfb7c16ee7bea1656264ee7a0d95d08f30e34290834df3690cfe3bc554"
+        },
+        "libaws-c-io.so.1.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-io.so.1.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-io.so.1.0.0",
+          "sha256": "3d0b00479eca4bf3726ac21dd051fd9f0b404b75c3375dc45ee56a8712cae801"
+        },
+        "libaws-c-cal.so.1.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-cal.so.1.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-cal.so.1.0.0",
+          "sha256": "fa2487260a971a9842c06c3d66eba7f07910378e73223ec15ba23e768b1cb2e7"
+        },
+        "libaws-c-sdkutils.so.1.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-sdkutils.so.1.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-sdkutils.so.1.0.0",
+          "sha256": "0e9b7e3f28cda32988e7e1a7c445ec6703851315089f2f8f161501492f2268b6"
+        },
+        "libaws-checksums.so.1.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-checksums.so.1.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-checksums.so.1.0.0",
+          "sha256": "15338041e0600b8266eaaf8666efa148abd75d0feb867769b5125a3fbd4c1233"
+        },
+        "libopentelemetry_common.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_common.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_common.so",
+          "sha256": "ca5faa56ac6c62532091bd8937efcfdbec499ae44533c60e771cd8381b4b9622"
+        },
+        "libopentelemetry_metrics.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_metrics.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_metrics.so",
+          "sha256": "8b0b781bcfb7325b98f8117ab7bc2d555bb61fc6f70962b1315fb75e7cf68ed3"
+        },
+        "libopentelemetry_http_client_curl.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_http_client_curl.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_http_client_curl.so",
+          "sha256": "4cb5b0faf785bef18a04173b86a01a8cfad76f5e6a55249dcb4758ed2906c88d"
+        },
+        "libabsl_die_if_null.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_die_if_null.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_die_if_null.so.2601.0.0",
+          "sha256": "7bb3d1dff56dcc24be47f2baa285eee8abf48ce7a5f9cb1671e0c1934cc51e27"
+        },
+        "libabsl_statusor.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_statusor.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_statusor.so.2601.0.0",
+          "sha256": "0df8d6fcac9f627135345c5a6ad803855e6ad1c85525ae87ec25889d731df953"
+        },
+        "libutf8_validity.so.33.5.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libutf8_validity.so.33.5.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libutf8_validity.so.33.5.0",
+          "sha256": "31ec2e15d69687976fd738ecde7d73b22faa4ae25c4a19823f2f189131cc0807"
+        },
+        "libabsl_log_internal_check_op.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_check_op.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_check_op.so.2601.0.0",
+          "sha256": "8a0725d30fab24df82b1411181dfb7fe9a91268ec3759ccf4dbf3bd18eea0914"
+        },
+        "libabsl_log_internal_conditions.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_conditions.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_conditions.so.2601.0.0",
+          "sha256": "aae3679aeca7a7bb79023679896215cc3c2e82711e48caa32a0084728a61e7a2"
+        },
+        "libabsl_log_internal_nullguard.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_nullguard.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_nullguard.so.2601.0.0",
+          "sha256": "bf0051a6462ee4c04f76515929032e8cb6c1caec4d6b0d90b5b542aa05ae62c2"
+        },
+        "libabsl_cord.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_cord.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_cord.so.2601.0.0",
+          "sha256": "cd186fb6bc021016c865e0f0313add1fb341abed83ace884f8a4c3367121dd3b"
+        },
+        "libabsl_cordz_info.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_cordz_info.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_cordz_info.so.2601.0.0",
+          "sha256": "104d7eda23ffffeb49a950a3bc60a29717c255207c8140ea2038971a280b216c"
+        },
+        "libabsl_cord_internal.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_cord_internal.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_cord_internal.so.2601.0.0",
+          "sha256": "530159f01b590eed2ee868bf485ad45d1756bbb6781bbc1e4940a2631826ed6a"
+        },
+        "libabsl_throw_delegate.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_throw_delegate.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_throw_delegate.so.2601.0.0",
+          "sha256": "0bc3b163b8e40e491a9b9e160e8adfb0acc73a59b715a7f8248f553e2ce23599"
+        },
+        "libabsl_leak_check.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_leak_check.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_leak_check.so.2601.0.0",
+          "sha256": "f18c5c8a36efb55a7154bb48c85e940764312fd25c6b85fd149f81453a708f5c"
+        },
+        "libabsl_strerror.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_strerror.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_strerror.so.2601.0.0",
+          "sha256": "5edbbad32d0e10cf86f6043b22ea3cd2345b1d6fba1e81bf19204f9e264ffa85"
+        },
+        "libabsl_raw_logging_internal.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_raw_logging_internal.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_raw_logging_internal.so.2601.0.0",
+          "sha256": "2a55c0013eb7dd830c15776e6d04a09e388c6a7dd37fd977ca5ac3116b64af0b"
+        },
+        "libgflags.so.2.3": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgflags.so.2.3",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgflags.so.2.3.0",
+          "sha256": "b4ff477de88e9f3213dc5f3b1bc3ed8c02b9d23a7b43bcaef785004d71eb4ec1"
+        },
+        "libbrotlicommon.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libbrotlicommon.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libbrotlicommon.so.1.2.0",
+          "sha256": "0d3a498fba7e059eac803b01321796746d1a1c66c693f768a4864c3d8a9348f1"
+        },
+        "libabsl_examine_stack.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_examine_stack.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_examine_stack.so.2601.0.0",
+          "sha256": "2a74e3e7ca30a0a2012ad4632b4c29929942add2c2269be77e1d0011151a14b5"
+        },
+        "libabsl_log_internal_format.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_format.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_format.so.2601.0.0",
+          "sha256": "18c257e119d949f65a86fe2236faf9579a74a622dc9ecc7f7b2e0784067b9a9e"
+        },
+        "libabsl_log_internal_structured_proto.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_structured_proto.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_structured_proto.so.2601.0.0",
+          "sha256": "70c76edf793d88944babad4112beaf95ad756475e177b8aa339b380d0d4efebe"
+        },
+        "libabsl_log_internal_log_sink_set.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_log_sink_set.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_log_sink_set.so.2601.0.0",
+          "sha256": "3f555a00fd1166a331dc241f9325e4f13e2e30a3cf339c34f308d902edb168c1"
+        },
+        "libabsl_log_internal_globals.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_globals.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_globals.so.2601.0.0",
+          "sha256": "e638937c2d55d9c9ccb6067a15489c785eb3fa80555e849640d3d29bed5c4ff6"
+        },
+        "libabsl_log_globals.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_globals.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_globals.so.2601.0.0",
+          "sha256": "e33327d3c09de0f1e536ecbcd5eeff169849909f1da36e7d9f095ea6d7be38e3"
+        },
+        "libabsl_log_internal_proto.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_proto.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_proto.so.2601.0.0",
+          "sha256": "f1db9af95eda9a32b7d4191808621fa2a6f59f760cfae6919cd1657f89a1e9b4"
+        },
+        "libabsl_base.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_base.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_base.so.2601.0.0",
+          "sha256": "7e8d70373539dc7b4531b996ddf55e76725871fad529521cd024802ccae92887"
+        },
+        "libabsl_hashtablez_sampler.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_hashtablez_sampler.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_hashtablez_sampler.so.2601.0.0",
+          "sha256": "c4f37d198890a8a379478e42d53c620ca3073184b450875da0a754397a6ae07f"
+        },
+        "libabsl_int128.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_int128.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_int128.so.2601.0.0",
+          "sha256": "ffd682054863c7d859d4f7824f36030166767887ad25d91dd18cef8eaf4c335d"
+        },
+        "libabsl_kernel_timeout_internal.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_kernel_timeout_internal.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_kernel_timeout_internal.so.2601.0.0",
+          "sha256": "49c6f39d9550a4bbeb234d6ec570cdcf2ff63f7120fa1145d9fb149ad4e96729"
+        },
+        "libabsl_stacktrace.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_stacktrace.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_stacktrace.so.2601.0.0",
+          "sha256": "cfcbe18eb1c1a05f21fa1d24e3fe6c2dfa3940ddad47fe04485747937f95d58e"
+        },
+        "libabsl_tracing_internal.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_tracing_internal.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_tracing_internal.so.2601.0.0",
+          "sha256": "82fae4d24d33be9e8f80cefd2c59d932ccb74ba0dcf0fde645a68a609d895b0e"
+        },
+        "libabsl_malloc_internal.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_malloc_internal.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_malloc_internal.so.2601.0.0",
+          "sha256": "07d853b6b4348700d86fca051bc260c7d5412288f104186621d4529c7466a458"
+        },
+        "libabsl_city.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_city.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_city.so.2601.0.0",
+          "sha256": "d683c85cc550c76efc2a04db5b71d0783a5033eda69a63525600bf517487bf41"
+        },
+        "libquadmath.so.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libquadmath.so.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libquadmath.so.0.0.0",
+          "sha256": "e8746c5393bbec4a7598bfe52ad044804d1c102d5479ca1eb72610ac5cb18dc7"
+        },
+        "libabsl_crc_internal.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_crc_internal.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_crc_internal.so.2601.0.0",
+          "sha256": "20b728af0022d8e2a7701f07715ca321120bc827c7fd21371bb647f08e8bdeb9"
+        },
+        "libaws-c-compression.so.1.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-compression.so.1.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-compression.so.1.0.0",
+          "sha256": "4ce96d0af7cb423781042f2e86f41ba70ed1e07882ed22713712fbf5db65e298"
+        },
+        "libs2n.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libs2n.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libs2n.so.1.0.0",
+          "sha256": "3899be149616b47ace2595774ffa0b598c0e1b91b2e1000350be45af518625b0"
+        },
+        "libabsl_crc_cord_state.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_crc_cord_state.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_crc_cord_state.so.2601.0.0",
+          "sha256": "27b5c44e404788c27f1332d1992cf34168a7a1fc51eef3b0de8de8c61e2fbf79"
+        },
+        "libabsl_cordz_functions.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_cordz_functions.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_cordz_functions.so.2601.0.0",
+          "sha256": "e1407862d5a8178bb8881300316434a1831c5ecc7d4fc071967b8fffdfe64ccb"
+        },
+        "libabsl_cordz_handle.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_cordz_handle.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_cordz_handle.so.2601.0.0",
+          "sha256": "7f05cd990142d4b3d9121c73dcea9b738e7d08b55972a1f05cad3d6e228a1629"
+        },
+        "libabsl_symbolize.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_symbolize.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_symbolize.so.2601.0.0",
+          "sha256": "9a116d2690d7abac5ea9cfef4cb3857f5af8e07c883d05deab36e309821a0a74"
+        },
+        "libabsl_log_sink.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_sink.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_sink.so.2601.0.0",
+          "sha256": "6e2c220e54e0c3ab6c561643d2340e8cf9f543882b890092ada3f2927b7dd0e6"
+        },
+        "libabsl_borrowed_fixup_buffer.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_borrowed_fixup_buffer.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_borrowed_fixup_buffer.so.2601.0.0",
+          "sha256": "d4b727b2809c714e8abb17f01767a025b5c6fb0e5dbc7dc07dfe61a1bfa1c271"
+        },
+        "libabsl_debugging_internal.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_debugging_internal.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_debugging_internal.so.2601.0.0",
+          "sha256": "86e6e5152803f43f31f643f65b461dfd170475d33dd772c49f8398b8baec621b"
+        },
+        "libabsl_exponential_biased.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_exponential_biased.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_exponential_biased.so.2601.0.0",
+          "sha256": "2ec07485df36fb17a0e899e0e18077c80cd37cd74869aebe4a610f43f9102a83"
+        },
+        "libabsl_demangle_internal.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_demangle_internal.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_demangle_internal.so.2601.0.0",
+          "sha256": "c67cc85929a81bcc795f739c4e33c0ca71984e923fca9e10ffa01d6a6864fe12"
+        },
+        "libabsl_demangle_rust.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_demangle_rust.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_demangle_rust.so.2601.0.0",
+          "sha256": "38f45e362eefaa398cecca634fdf13b625a7f107fd280f21f6590405f7f9d9ee"
+        },
+        "libabsl_decode_rust_punycode.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_decode_rust_punycode.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_decode_rust_punycode.so.2601.0.0",
+          "sha256": "de9f2cd0125ced4dd3a0e8dcf5f0db58245acc178a50730f77728f840ad1af1d"
+        },
+        "libabsl_utf8_for_code_point.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_utf8_for_code_point.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_utf8_for_code_point.so.2601.0.0",
+          "sha256": "5c5b32404229eac71755c1bb76dba639ede049939fdee8749b73a1aa0b6923a9"
+        }
+      },
+      "virtual_dependencies": [
+        "linux-vdso.so.1"
+      ]
+    },
+    "ported": {
+      "files": {
+        "libOpenMS.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/flashdeconv-performance-20261006/pr-develop/native-inputs-r2/ported/lib/libOpenMS.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/flashdeconv-performance-20261006/pr-develop/native-inputs-r2/ported/lib/libOpenMS.so",
+          "sha256": "98a2d7f4ec2955278e0eee5c66bd2b10cc292e8d527363067912cdd8da82af88"
+        },
+        "libOpenSwathAlgo.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/flashdeconv-performance-20261006/pr-develop/native-inputs-r2/ported/lib/libOpenSwathAlgo.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/flashdeconv-performance-20261006/pr-develop/native-inputs-r2/ported/lib/libOpenSwathAlgo.so",
+          "sha256": "12301d4985009506e45ebe421c92c13adb91709cf1ccd92a4ad646bde6865bed"
+        },
+        "libgomp.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgomp.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgomp.so.1.0.0",
+          "sha256": "483345c7ffb82e1cd3e50a657f613145930a6ecadc5284806090315bf1b50392"
+        },
+        "libstdc++.so.6": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libstdc++.so.6",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libstdc++.so.6.0.36",
+          "sha256": "e3549df69430b452252a93f037e7bb382ae1011ba247f39cf570e0927a3b3af0"
+        },
+        "libm.so.6": {
+          "loader_path": "/lib/x86_64-linux-gnu/libm.so.6",
+          "resolved_path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+          "sha256": "fce00b6f25f459cf4ae0b7fae4257909a1a8a86f9149e7c029a5d617baf1ccd0"
+        },
+        "libgcc_s.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgcc_s.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgcc_s.so.1",
+          "sha256": "7cd19c412b9fbe2c5900f052ab78aaaaa54c03adcc61c80555b6a264133287a6"
+        },
+        "libc.so.6": {
+          "loader_path": "/lib/x86_64-linux-gnu/libc.so.6",
+          "resolved_path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+          "sha256": "3a15d66867d83762c7f2f1e37359cb8f6c5743edb369c65285cb0b1c4f7498bf"
+        },
+        "libcurl.so.4": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libcurl.so.4",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libcurl.so.4.8.0",
+          "sha256": "131df25191e11811f827af5fd00c9f00d20a26812eb81c67e606825d68bf61db"
+        },
+        "libxerces-c-3.3.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libxerces-c-3.3.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libxerces-c-3.3.so",
+          "sha256": "69614ee39fa3732691e1febc9a7811d8e9fb54b055c7efa8709796d354a3659e"
+        },
+        "libbz2.so.1.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libbz2.so.1.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libbz2.so.1.0.8",
+          "sha256": "89167cfb36a81306dcf8f439436f46dda12f0bbf4877b9f87abfd079bf765c46"
+        },
+        "libboost_date_time.so.1.89.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libboost_date_time.so.1.89.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libboost_date_time.so.1.89.0",
+          "sha256": "001ab2374f89e75169a98ff1dc1ca8191f08a7a026bb0e8cc10dc5268a4a5e96"
+        },
+        "libboost_iostreams.so.1.89.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libboost_iostreams.so.1.89.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libboost_iostreams.so.1.89.0",
+          "sha256": "8bae84b6e101618df7902f3c5a4221d84ba94e951fe752661d014413f0c82afb"
+        },
+        "libboost_regex.so.1.89.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libboost_regex.so.1.89.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libboost_regex.so.1.89.0",
+          "sha256": "aba781706cf6d7c99875c4af4b5e3ffb988e4f39fd6f105742017610ce05dc69"
+        },
+        "libsvm.so.4": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libsvm.so.4",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libsvm.so.4",
+          "sha256": "e18b7301dd92bd77b3b0982696e8fe01b5b862531db1cf191cf579d286b8f897"
+        },
+        "libz.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libz.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libz.so.1.3.2",
+          "sha256": "3c6fd78e248a60e45081bcc77031204a7cb64a88ff2e27fc786ef12ae7e91fca"
+        },
+        "libzip.so.5": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libzip.so.5",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libzip.so.5.5",
+          "sha256": "c5bd4e30ded41b5798b96d25537efdc67ad2b5cfde6ae4683442a41868d3afdb"
+        },
+        "libarrow_compute.so.2300": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libarrow_compute.so.2300",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libarrow_compute.so.2300.1.0",
+          "sha256": "39cb2f8535a7e9d91d3de3bb0f373527ffb1cb44321770b37fdc3974540358c8"
+        },
+        "libarrow_dataset.so.2300": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libarrow_dataset.so.2300",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libarrow_dataset.so.2300.1.0",
+          "sha256": "fbbe0589d8e5b0a283c35c0b19c2772188239fe2720a9fa798a5e5c55f5c003c"
+        },
+        "libxml2.so.16": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libxml2.so.16",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libxml2.so.16.1.1",
+          "sha256": "258d0c5a7e5b0a7c0c1be3c42c08b10bf7fb893cbc2d56ce283f923783005246"
+        },
+        "libCbc.so.3": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libCbc.so.3",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libCbc.so.3.10.13",
+          "sha256": "a78a84d117a52340635bca9367d48e18d064911a5bed047ac14411f3c6a53956"
+        },
+        "libCgl.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libCgl.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libCgl.so.1.10.10",
+          "sha256": "7a98185849b0527172b10495dd149bc70cb1237091d6198a88a53926ee96663b"
+        },
+        "libClp.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libClp.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libClp.so.1.14.11",
+          "sha256": "4bb3c283ff065f6d63472dfc9ca6624b483e23211b129c39bbaf1487a793cf64"
+        },
+        "libCoinUtils.so.3": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libCoinUtils.so.3",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libCoinUtils.so.3.11.13",
+          "sha256": "de2046f2cdbe78296410f051ed17aaa4406aa38549d190c1532963b278b8d721"
+        },
+        "libOsi.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libOsi.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libOsi.so.1.13.12",
+          "sha256": "e7bdac33274e339f91ecc1717be51032bba87c72a92d1c8f88c693cd1d3ee1a3"
+        },
+        "libOsiClp.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libOsiClp.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libOsiClp.so.1.14.11",
+          "sha256": "8068c29cbfc7430dc55345d10c7269bb471a21b532139d9232ddca863e45c9fb"
+        },
+        "libboost_random.so.1.89.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libboost_random.so.1.89.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libboost_random.so.1.89.0",
+          "sha256": "681c448be3ccf9c58e8311916dfccec7eea2522aadf4cdc2f2f33761481fc8b7"
+        },
+        "libparquet.so.2300": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libparquet.so.2300",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libparquet.so.2300.1.0",
+          "sha256": "8b32fc979d57137f82d57d595a63273922749320178dad93f34b6fbbdb4d934d"
+        },
+        "libarrow_acero.so.2300": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libarrow_acero.so.2300",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libarrow_acero.so.2300.1.0",
+          "sha256": "bea01d46b2360c6a009dbe92f67b1d866a03cceaa1fd599305fe06959193f6ee"
+        },
+        "libarrow.so.2300": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libarrow.so.2300",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libarrow.so.2300.1.0",
+          "sha256": "0288b64eb2bdc0aa47ba5a76783d0c4ff92b7dae6c9320f1bfc62232c8fb4c35"
+        },
+        "ld-linux-x86-64.so.2": {
+          "loader_path": "/lib64/ld-linux-x86-64.so.2",
+          "resolved_path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+          "sha256": "c20a2dc8917c755f02b94049356320fe1f62ac7d9f8994731f807d9df39302da"
+        },
+        "libdl.so.2": {
+          "loader_path": "/lib/x86_64-linux-gnu/libdl.so.2",
+          "resolved_path": "/usr/lib/x86_64-linux-gnu/libdl.so.2",
+          "sha256": "c2994527172cc23b7fb0f7d611b71e00a37da27af12c2e5e9e0dc1a742886c96"
+        },
+        "libpthread.so.0": {
+          "loader_path": "/lib/x86_64-linux-gnu/libpthread.so.0",
+          "resolved_path": "/usr/lib/x86_64-linux-gnu/libpthread.so.0",
+          "sha256": "90491a21ce44efcf3bd4b65ec82501c091d7ebe7f8d9b341dd01d721001d9ecd"
+        },
+        "libnghttp2.so.14": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libnghttp2.so.14",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libnghttp2.so.14.29.3",
+          "sha256": "90ea9756606017da9b40f5ded6de140b98c3bbaac301a3c12f02ee2b15a204bd"
+        },
+        "libssh2.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libssh2.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libssh2.so.1.0.1",
+          "sha256": "3b209bcbd821d33e16776334b02194bc4cba05d1f412f6252aadbd8668c4c78d"
+        },
+        "libssl.so.3": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libssl.so.3",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libssl.so.3",
+          "sha256": "0246a392f07abf2c65cf701b2e0fa5f8c673d4606e13dff940defac1c6017659"
+        },
+        "libcrypto.so.3": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libcrypto.so.3",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libcrypto.so.3",
+          "sha256": "a75b715e5881dcd2dc4e41353b463c631ba5a1c3b57a32d7524a5995e39ef84d"
+        },
+        "libgssapi_krb5.so.2": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgssapi_krb5.so.2",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgssapi_krb5.so.2.2",
+          "sha256": "bea80c354a32a22c2a1d218fada2241f00062112a88290af1194f6fffdafd489"
+        },
+        "libzstd.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libzstd.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libzstd.so.1.5.7",
+          "sha256": "b0e2bad8c117a3ad7d344d7924272d12b8e363956efb91b5074e43d4e201a08d"
+        },
+        "libnsl.so.3": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libnsl.so.3",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libnsl.so.3.0.0",
+          "sha256": "61d409bf7c9d115d008dbc30cbbd43c98255f6272f328f2311466bcc37485518"
+        },
+        "libicui18n.so.75": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libicui18n.so.75",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libicui18n.so.75.1",
+          "sha256": "8332a1c6b589195ceac95fa127a256258f26e636616cf3d4f64fb9e5d182336d"
+        },
+        "libicuuc.so.75": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libicuuc.so.75",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libicuuc.so.75.1",
+          "sha256": "c9a25b3248c0b20fe3e2bf10042fba72009eed6d72422dca53c8ac169ca65d1b"
+        },
+        "libicudata.so.75": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libicudata.so.75",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libicudata.so.75.1",
+          "sha256": "e065d9cbce8450291e1e8f9125f9a115a07b0181728217b7bf4e3db65c60a322"
+        },
+        "librt.so.1": {
+          "loader_path": "/lib/x86_64-linux-gnu/librt.so.1",
+          "resolved_path": "/usr/lib/x86_64-linux-gnu/librt.so.1",
+          "sha256": "6d072187d88e092e81561a44c03a4a41397319022c6d43519757cc051c576d82"
+        },
+        "liblzma.so.5": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/liblzma.so.5",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/liblzma.so.5",
+          "sha256": "491c01c02da5a22f5825a7c05a561e175aa70c203d5e462dfe90b5040dbdaf50"
+        },
+        "libre2.so.11": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libre2.so.11",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libre2.so.11",
+          "sha256": "0974c4dc5cd2a262cfac4ba04800fb80bcd6a54ad32f6a9f738c1db68d519748"
+        },
+        "libutf8proc.so.3": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libutf8proc.so.3",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libutf8proc.so.3.2.3",
+          "sha256": "324af4f1f1cb0b389292635d6144675d2c3d617745f0e5ef1c80d279949ad861"
+        },
+        "libiconv.so.2": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libiconv.so.2",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libiconv.so.2.7.0",
+          "sha256": "59b942b8a9dfabcfec7d65ff2be1de2e59902765837768ca37468cef5dca9571"
+        },
+        "libClpSolver.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libClpSolver.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libClpSolver.so.1.14.11",
+          "sha256": "20a34f75be22a079e30f8c3338da7c4950b5fd1f0dd44b8e4a936bfb796ad861"
+        },
+        "liblapack.so.3": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/liblapack.so.3",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopenblasp-r0.3.34.so",
+          "sha256": "f1424288e9ac125331102c0150b66fbd244560987779552e0e97d5cfd9de572b"
+        },
+        "libthrift.so.0.22.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libthrift.so.0.22.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libthrift.so.0.22.0",
+          "sha256": "85f4a830f1255056173e423f40bb89182ce11a73de2c2707d75440e295f4b832"
+        },
+        "libazure-storage-files-datalake.so.12.14.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libazure-storage-files-datalake.so.12.14.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libazure-storage-files-datalake.so.12.14.0",
+          "sha256": "6a56610219bade7e4a2455cf6d719293486c30d9fddec3e7a0d36bf221da7620"
+        },
+        "libazure-storage-blobs.so.12.16.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libazure-storage-blobs.so.12.16.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libazure-storage-blobs.so.12.16.0",
+          "sha256": "670c56cac655b211c6112758fc0d43c4e20da15b177bf8fff0998a12979339e1"
+        },
+        "libazure-identity.so.1.13.3": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libazure-identity.so.1.13.3",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libazure-identity.so.1.13.3",
+          "sha256": "a1418c19536b024c175ece744320a4cd1f3480a72f74a4b630b91a537c07743c"
+        },
+        "libazure-core.so.1.16.2": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libazure-core.so.1.16.2",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libazure-core.so.1.16.2",
+          "sha256": "802a9a9e97affe73fcd5101d9baa846265509d2d66e1140b6796c7fcd6ea010b"
+        },
+        "libgoogle_cloud_cpp_storage.so.2": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgoogle_cloud_cpp_storage.so.2",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgoogle_cloud_cpp_storage.so.2.39.0",
+          "sha256": "115902ba3f9a00e0dab39921025ae8bd7efa76d367e0863892b9a0c8d9cf7539"
+        },
+        "libgoogle_cloud_cpp_common.so.2": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgoogle_cloud_cpp_common.so.2",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgoogle_cloud_cpp_common.so.2.39.0",
+          "sha256": "403d56ace02dc39a54090e5545c73ba14cae172665dfcc4dcc67b10e3732200c"
+        },
+        "libaws-cpp-sdk-identity-management.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-cpp-sdk-identity-management.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-cpp-sdk-identity-management.so",
+          "sha256": "bdc0c97b65203ca5751ad8a9381db1c6f922b8931e0bafa819e49c7aff37e1d1"
+        },
+        "libaws-cpp-sdk-s3.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-cpp-sdk-s3.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-cpp-sdk-s3.so",
+          "sha256": "30932988bbc5091b3957e892ce48ca69dcbd625e5df9fd47ddd2dd5b65ca8759"
+        },
+        "libaws-cpp-sdk-core.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-cpp-sdk-core.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-cpp-sdk-core.so",
+          "sha256": "f58de5cce6262f3e8862d2e68dd22d8bcf4a7509ef01ba0732bb88deb12aa1a2"
+        },
+        "libaws-crt-cpp.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-crt-cpp.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-crt-cpp.so",
+          "sha256": "bc1386a90d53bc688bf72149ceb7cf0751c3e7534d264f1e453a7a7ce25c36e3"
+        },
+        "liborc.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/liborc.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/liborc.so",
+          "sha256": "2e983532dd4b85aae77589473acd71c6df0f6b0c80fa3733e92967eb172a4095"
+        },
+        "libopentelemetry_exporter_otlp_http_log.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_exporter_otlp_http_log.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_exporter_otlp_http_log.so",
+          "sha256": "927b025cdfee8e6c34f5640776fea7433078fae29ba4e8157e1c4b714cf05f2e"
+        },
+        "libopentelemetry_exporter_ostream_logs.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_exporter_ostream_logs.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_exporter_ostream_logs.so",
+          "sha256": "e91bc5fdd2fb93efb59d151f15a8c1ba3053de329580a335d77b6bf6cf8255a2"
+        },
+        "libopentelemetry_exporter_ostream_span.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_exporter_ostream_span.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_exporter_ostream_span.so",
+          "sha256": "6c3e5b867eeeab87f173b9293d4e2e162fa93b5826c2205e52350ceab6f85997"
+        },
+        "libopentelemetry_exporter_otlp_http.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_exporter_otlp_http.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_exporter_otlp_http.so",
+          "sha256": "c6df47139787132316a14e83dc46c68d00640322a2d4b7b021d5c33a98b7cc66"
+        },
+        "libopentelemetry_otlp_recordable.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_otlp_recordable.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_otlp_recordable.so",
+          "sha256": "0acaeaad2ecc2f81b564b038c4b6133208178f465fc68258996497cfb10feb17"
+        },
+        "libopentelemetry_trace.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_trace.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_trace.so",
+          "sha256": "fbe8ccda8bfb2f8cd7f4ab710377cae89decb81d697d35fe931c22694a2e9506"
+        },
+        "libopentelemetry_logs.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_logs.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_logs.so",
+          "sha256": "6d3594cf7fa1b1966003db94363d382f6f101a24c3fd819a697d479c34fb168c"
+        },
+        "libopentelemetry_resources.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_resources.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_resources.so",
+          "sha256": "5318454be54f03568e0bb1f224602ff57de23813caefc90976f375cf4b888b77"
+        },
+        "libopentelemetry_exporter_otlp_http_client.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_exporter_otlp_http_client.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_exporter_otlp_http_client.so",
+          "sha256": "20026fbf6f9647177daa625729fc8cf46cb8d758bfeeb71830be5606c95b6a8f"
+        },
+        "libopentelemetry_proto.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_proto.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_proto.so",
+          "sha256": "0604038be3999fd6fa271d56508160b2711a2cc2db7983f8f14566fbe32165df"
+        },
+        "libprotobuf.so.33.5.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libprotobuf.so.33.5.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libprotobuf.so.33.5.0",
+          "sha256": "047bc07d233c198b9b61d5ad5fc1c55fe0b9a1ce1f3781c71daaabdc15aa94e5"
+        },
+        "libabsl_status.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_status.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_status.so.2601.0.0",
+          "sha256": "d2687f736a6109ca5da36396760a276ee36422b28d2810615aa1521a42978605"
+        },
+        "libabsl_time.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_time.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_time.so.2601.0.0",
+          "sha256": "d44c9f63e8682b513513579d0cfeffcb5c396b03e221a1edc6291eea34ab1c64"
+        },
+        "libabsl_time_zone.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_time_zone.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_time_zone.so.2601.0.0",
+          "sha256": "2d94ea723ea8d571123190042ea2e506fa75f2f33d3044bb5cc1060ffb76e677"
+        },
+        "libglog.so.2": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libglog.so.2",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libglog.so.0.7.1",
+          "sha256": "4af63e30a164377c17b4c5afb12247e00742cdc9192998aceadafebe39cbb659"
+        },
+        "libbrotlienc.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libbrotlienc.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libbrotlienc.so.1.2.0",
+          "sha256": "03989d64af3833b2a14cfb50540d38c9b039a244de657e6cade01167ed4eb4f9"
+        },
+        "libbrotlidec.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libbrotlidec.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libbrotlidec.so.1.2.0",
+          "sha256": "64242b3d5636ba6ea933a58dec3d498cb71ca2707f637343570c836cfd5c99ea"
+        },
+        "liblz4.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/liblz4.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/liblz4.so.1.10.0",
+          "sha256": "3e0df06a1a179077b1e89c3496dd4fa9d8fbbf493e4fec0586c9ccddf786a3ff"
+        },
+        "libsnappy.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libsnappy.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libsnappy.so.1.2.2",
+          "sha256": "760fde12da87cb6e21a697151458fe864df1021c7f0a56c6e61fb3812796f6cf"
+        },
+        "libkrb5.so.3": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libkrb5.so.3",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libkrb5.so.3.3",
+          "sha256": "734d3df8b01cc03fc2950039b0849e3a93b6b077081fff9c747717162dcbeb7e"
+        },
+        "libk5crypto.so.3": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libk5crypto.so.3",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libk5crypto.so.3.1",
+          "sha256": "73b90eff29b55af2317c17be164a36adab72db193d9b403974c39b5277999a13"
+        },
+        "libcom_err.so.3": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libcom_err.so.3",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libcom_err.so.3.0",
+          "sha256": "5788f4585d9d8febea117fc3d38fd52012af2e5167995603663dd708c75c57cb"
+        },
+        "libkrb5support.so.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libkrb5support.so.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libkrb5support.so.0.1",
+          "sha256": "ecf1d6c0c918f694cc90d6c2d8497fc16ca82d7e79671590d183dd1a94b1ad76"
+        },
+        "libkeyutils.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libkeyutils.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libkeyutils.so.1.10",
+          "sha256": "bfe024accca85c9f39b7c0e5bf8f2e551f45989db6ea4de2d4cf5bd5319f8e9d"
+        },
+        "libresolv.so.2": {
+          "loader_path": "/lib/x86_64-linux-gnu/libresolv.so.2",
+          "resolved_path": "/usr/lib/x86_64-linux-gnu/libresolv.so.2",
+          "sha256": "1d730ea434da5a5595bc6a961d7a9ace83e03703205df9644044b3dca79c362f"
+        },
+        "libabsl_log_internal_message.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_message.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_message.so.2601.0.0",
+          "sha256": "78c3a17394c730dd8bcb837ac8a9c718a35eccf12d236a9cfad29da912c69d81"
+        },
+        "libabsl_raw_hash_set.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_raw_hash_set.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_raw_hash_set.so.2601.0.0",
+          "sha256": "4eda0c7a54318c88f253c8d7c7ee2fe121112f0c8a247b0f0b4af3f12fb5487c"
+        },
+        "libabsl_str_format_internal.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_str_format_internal.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_str_format_internal.so.2601.0.0",
+          "sha256": "09b81476f7ea8a36578014436bca5d6d53d031279036c04abb5dba989ac26642"
+        },
+        "libabsl_synchronization.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_synchronization.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_synchronization.so.2601.0.0",
+          "sha256": "6e2958629b9ae48709b39e520eec7711689eef75c8d91bd3e4dae36e2604b83b"
+        },
+        "libabsl_hash.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_hash.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_hash.so.2601.0.0",
+          "sha256": "c7ec9a273c8c4d78fbfedeca2ba756c2a1f7aff93dedafa7b67813d694705848"
+        },
+        "libabsl_strings.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_strings.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_strings.so.2601.0.0",
+          "sha256": "730550be67c999a89204499dfefb064e3bea9d6ce13ba7341013dc52bbfac698"
+        },
+        "libabsl_spinlock_wait.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_spinlock_wait.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_spinlock_wait.so.2601.0.0",
+          "sha256": "23fe3df6abbe22b99d952a83458e0c6182a4543429db964718c8c65db579d708"
+        },
+        "libgfortran.so.5": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgfortran.so.5",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgfortran.so.5.0.0",
+          "sha256": "7c80ef77460f5a6e80a4046774f7b424d3dee776040abebc1a15182553d56c64"
+        },
+        "libazure-storage-common.so.12.13.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libazure-storage-common.so.12.13.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libazure-storage-common.so.12.13.0",
+          "sha256": "2bee781d7fde262ad05feb61e6ad6ce06d3b947b2be2c1e0a000d77d91483710"
+        },
+        "libgoogle_cloud_cpp_rest_internal.so.2": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgoogle_cloud_cpp_rest_internal.so.2",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgoogle_cloud_cpp_rest_internal.so.2.39.0",
+          "sha256": "1eff5883b2fc338c83e1b4db54952a78825f23d456cf2570a214530525123d0d"
+        },
+        "libcrc32c.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libcrc32c.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libcrc32c.so.1.1.0",
+          "sha256": "ea8ae3493df07598d7ddb74e36a9ae21ddf73e50d38ef149e903e0c742df89d1"
+        },
+        "libabsl_crc32c.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_crc32c.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_crc32c.so.2601.0.0",
+          "sha256": "8f2fc385248951222e992271c765acf8e35396df65c38b0d2537cf9eb220f812"
+        },
+        "libabsl_strings_internal.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_strings_internal.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_strings_internal.so.2601.0.0",
+          "sha256": "db950cd2cb83f504375f263a56184b7be7b3da59b8e3e768cbff59f5a1571f6d"
+        },
+        "libaws-cpp-sdk-cognito-identity.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-cpp-sdk-cognito-identity.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-cpp-sdk-cognito-identity.so",
+          "sha256": "0a9273918069c3552024817baf22d0289e7b33febc41ea70a237e7e2f23973bd"
+        },
+        "libaws-cpp-sdk-sts.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-cpp-sdk-sts.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-cpp-sdk-sts.so",
+          "sha256": "4adb440420794305c05f82976d2efd4ec44cd6dc78e2a0b5fc546a093775d4b9"
+        },
+        "libaws-c-common.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-common.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-common.so.1.0.0",
+          "sha256": "ab935b3a229cebb93e1def8d4a1b806851ddf09a7754d3926306536d71170f51"
+        },
+        "libaws-c-event-stream.so.1.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-event-stream.so.1.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-event-stream.so.1.0.0",
+          "sha256": "2475525cbb41c4564d4ec5c4138c2c3cf09485e133554f0fc439b4a9cbfb9b74"
+        },
+        "libaws-c-mqtt.so.1.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-mqtt.so.1.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-mqtt.so.1.0.0",
+          "sha256": "7a2dfd2cf04ace7c48b67215556d1b51e745a96c67e1648824fa8f4437ec0122"
+        },
+        "libaws-c-s3.so.0unstable": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-s3.so.0unstable",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-s3.so.1.0.0",
+          "sha256": "c563e1671f59cfcf8b81424838f2cd6a1f3a0cc35d39dc19e2025d2d7d551c4f"
+        },
+        "libaws-c-auth.so.1.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-auth.so.1.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-auth.so.1.0.0",
+          "sha256": "21077891376922264fb60ef77104546aee8469e2959db2c37aa5cd27add68c22"
+        },
+        "libaws-c-http.so.1.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-http.so.1.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-http.so.1.0.0",
+          "sha256": "b44e9ddfb7c16ee7bea1656264ee7a0d95d08f30e34290834df3690cfe3bc554"
+        },
+        "libaws-c-io.so.1.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-io.so.1.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-io.so.1.0.0",
+          "sha256": "3d0b00479eca4bf3726ac21dd051fd9f0b404b75c3375dc45ee56a8712cae801"
+        },
+        "libaws-c-cal.so.1.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-cal.so.1.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-cal.so.1.0.0",
+          "sha256": "fa2487260a971a9842c06c3d66eba7f07910378e73223ec15ba23e768b1cb2e7"
+        },
+        "libaws-c-sdkutils.so.1.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-sdkutils.so.1.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-sdkutils.so.1.0.0",
+          "sha256": "0e9b7e3f28cda32988e7e1a7c445ec6703851315089f2f8f161501492f2268b6"
+        },
+        "libaws-checksums.so.1.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-checksums.so.1.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-checksums.so.1.0.0",
+          "sha256": "15338041e0600b8266eaaf8666efa148abd75d0feb867769b5125a3fbd4c1233"
+        },
+        "libopentelemetry_common.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_common.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_common.so",
+          "sha256": "ca5faa56ac6c62532091bd8937efcfdbec499ae44533c60e771cd8381b4b9622"
+        },
+        "libopentelemetry_metrics.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_metrics.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_metrics.so",
+          "sha256": "8b0b781bcfb7325b98f8117ab7bc2d555bb61fc6f70962b1315fb75e7cf68ed3"
+        },
+        "libopentelemetry_http_client_curl.so": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_http_client_curl.so",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libopentelemetry_http_client_curl.so",
+          "sha256": "4cb5b0faf785bef18a04173b86a01a8cfad76f5e6a55249dcb4758ed2906c88d"
+        },
+        "libabsl_die_if_null.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_die_if_null.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_die_if_null.so.2601.0.0",
+          "sha256": "7bb3d1dff56dcc24be47f2baa285eee8abf48ce7a5f9cb1671e0c1934cc51e27"
+        },
+        "libabsl_statusor.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_statusor.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_statusor.so.2601.0.0",
+          "sha256": "0df8d6fcac9f627135345c5a6ad803855e6ad1c85525ae87ec25889d731df953"
+        },
+        "libutf8_validity.so.33.5.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libutf8_validity.so.33.5.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libutf8_validity.so.33.5.0",
+          "sha256": "31ec2e15d69687976fd738ecde7d73b22faa4ae25c4a19823f2f189131cc0807"
+        },
+        "libabsl_log_internal_check_op.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_check_op.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_check_op.so.2601.0.0",
+          "sha256": "8a0725d30fab24df82b1411181dfb7fe9a91268ec3759ccf4dbf3bd18eea0914"
+        },
+        "libabsl_log_internal_conditions.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_conditions.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_conditions.so.2601.0.0",
+          "sha256": "aae3679aeca7a7bb79023679896215cc3c2e82711e48caa32a0084728a61e7a2"
+        },
+        "libabsl_log_internal_nullguard.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_nullguard.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_nullguard.so.2601.0.0",
+          "sha256": "bf0051a6462ee4c04f76515929032e8cb6c1caec4d6b0d90b5b542aa05ae62c2"
+        },
+        "libabsl_cord.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_cord.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_cord.so.2601.0.0",
+          "sha256": "cd186fb6bc021016c865e0f0313add1fb341abed83ace884f8a4c3367121dd3b"
+        },
+        "libabsl_cordz_info.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_cordz_info.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_cordz_info.so.2601.0.0",
+          "sha256": "104d7eda23ffffeb49a950a3bc60a29717c255207c8140ea2038971a280b216c"
+        },
+        "libabsl_cord_internal.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_cord_internal.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_cord_internal.so.2601.0.0",
+          "sha256": "530159f01b590eed2ee868bf485ad45d1756bbb6781bbc1e4940a2631826ed6a"
+        },
+        "libabsl_throw_delegate.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_throw_delegate.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_throw_delegate.so.2601.0.0",
+          "sha256": "0bc3b163b8e40e491a9b9e160e8adfb0acc73a59b715a7f8248f553e2ce23599"
+        },
+        "libabsl_leak_check.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_leak_check.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_leak_check.so.2601.0.0",
+          "sha256": "f18c5c8a36efb55a7154bb48c85e940764312fd25c6b85fd149f81453a708f5c"
+        },
+        "libabsl_strerror.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_strerror.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_strerror.so.2601.0.0",
+          "sha256": "5edbbad32d0e10cf86f6043b22ea3cd2345b1d6fba1e81bf19204f9e264ffa85"
+        },
+        "libabsl_raw_logging_internal.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_raw_logging_internal.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_raw_logging_internal.so.2601.0.0",
+          "sha256": "2a55c0013eb7dd830c15776e6d04a09e388c6a7dd37fd977ca5ac3116b64af0b"
+        },
+        "libgflags.so.2.3": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgflags.so.2.3",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libgflags.so.2.3.0",
+          "sha256": "b4ff477de88e9f3213dc5f3b1bc3ed8c02b9d23a7b43bcaef785004d71eb4ec1"
+        },
+        "libbrotlicommon.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libbrotlicommon.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libbrotlicommon.so.1.2.0",
+          "sha256": "0d3a498fba7e059eac803b01321796746d1a1c66c693f768a4864c3d8a9348f1"
+        },
+        "libabsl_examine_stack.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_examine_stack.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_examine_stack.so.2601.0.0",
+          "sha256": "2a74e3e7ca30a0a2012ad4632b4c29929942add2c2269be77e1d0011151a14b5"
+        },
+        "libabsl_log_internal_format.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_format.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_format.so.2601.0.0",
+          "sha256": "18c257e119d949f65a86fe2236faf9579a74a622dc9ecc7f7b2e0784067b9a9e"
+        },
+        "libabsl_log_internal_structured_proto.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_structured_proto.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_structured_proto.so.2601.0.0",
+          "sha256": "70c76edf793d88944babad4112beaf95ad756475e177b8aa339b380d0d4efebe"
+        },
+        "libabsl_log_internal_log_sink_set.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_log_sink_set.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_log_sink_set.so.2601.0.0",
+          "sha256": "3f555a00fd1166a331dc241f9325e4f13e2e30a3cf339c34f308d902edb168c1"
+        },
+        "libabsl_log_internal_globals.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_globals.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_globals.so.2601.0.0",
+          "sha256": "e638937c2d55d9c9ccb6067a15489c785eb3fa80555e849640d3d29bed5c4ff6"
+        },
+        "libabsl_log_globals.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_globals.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_globals.so.2601.0.0",
+          "sha256": "e33327d3c09de0f1e536ecbcd5eeff169849909f1da36e7d9f095ea6d7be38e3"
+        },
+        "libabsl_log_internal_proto.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_proto.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_internal_proto.so.2601.0.0",
+          "sha256": "f1db9af95eda9a32b7d4191808621fa2a6f59f760cfae6919cd1657f89a1e9b4"
+        },
+        "libabsl_base.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_base.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_base.so.2601.0.0",
+          "sha256": "7e8d70373539dc7b4531b996ddf55e76725871fad529521cd024802ccae92887"
+        },
+        "libabsl_hashtablez_sampler.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_hashtablez_sampler.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_hashtablez_sampler.so.2601.0.0",
+          "sha256": "c4f37d198890a8a379478e42d53c620ca3073184b450875da0a754397a6ae07f"
+        },
+        "libabsl_int128.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_int128.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_int128.so.2601.0.0",
+          "sha256": "ffd682054863c7d859d4f7824f36030166767887ad25d91dd18cef8eaf4c335d"
+        },
+        "libabsl_kernel_timeout_internal.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_kernel_timeout_internal.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_kernel_timeout_internal.so.2601.0.0",
+          "sha256": "49c6f39d9550a4bbeb234d6ec570cdcf2ff63f7120fa1145d9fb149ad4e96729"
+        },
+        "libabsl_stacktrace.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_stacktrace.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_stacktrace.so.2601.0.0",
+          "sha256": "cfcbe18eb1c1a05f21fa1d24e3fe6c2dfa3940ddad47fe04485747937f95d58e"
+        },
+        "libabsl_tracing_internal.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_tracing_internal.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_tracing_internal.so.2601.0.0",
+          "sha256": "82fae4d24d33be9e8f80cefd2c59d932ccb74ba0dcf0fde645a68a609d895b0e"
+        },
+        "libabsl_malloc_internal.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_malloc_internal.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_malloc_internal.so.2601.0.0",
+          "sha256": "07d853b6b4348700d86fca051bc260c7d5412288f104186621d4529c7466a458"
+        },
+        "libabsl_city.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_city.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_city.so.2601.0.0",
+          "sha256": "d683c85cc550c76efc2a04db5b71d0783a5033eda69a63525600bf517487bf41"
+        },
+        "libquadmath.so.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libquadmath.so.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libquadmath.so.0.0.0",
+          "sha256": "e8746c5393bbec4a7598bfe52ad044804d1c102d5479ca1eb72610ac5cb18dc7"
+        },
+        "libabsl_crc_internal.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_crc_internal.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_crc_internal.so.2601.0.0",
+          "sha256": "20b728af0022d8e2a7701f07715ca321120bc827c7fd21371bb647f08e8bdeb9"
+        },
+        "libaws-c-compression.so.1.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-compression.so.1.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libaws-c-compression.so.1.0.0",
+          "sha256": "4ce96d0af7cb423781042f2e86f41ba70ed1e07882ed22713712fbf5db65e298"
+        },
+        "libs2n.so.1": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libs2n.so.1",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libs2n.so.1.0.0",
+          "sha256": "3899be149616b47ace2595774ffa0b598c0e1b91b2e1000350be45af518625b0"
+        },
+        "libabsl_crc_cord_state.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_crc_cord_state.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_crc_cord_state.so.2601.0.0",
+          "sha256": "27b5c44e404788c27f1332d1992cf34168a7a1fc51eef3b0de8de8c61e2fbf79"
+        },
+        "libabsl_cordz_functions.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_cordz_functions.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_cordz_functions.so.2601.0.0",
+          "sha256": "e1407862d5a8178bb8881300316434a1831c5ecc7d4fc071967b8fffdfe64ccb"
+        },
+        "libabsl_cordz_handle.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_cordz_handle.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_cordz_handle.so.2601.0.0",
+          "sha256": "7f05cd990142d4b3d9121c73dcea9b738e7d08b55972a1f05cad3d6e228a1629"
+        },
+        "libabsl_symbolize.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_symbolize.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_symbolize.so.2601.0.0",
+          "sha256": "9a116d2690d7abac5ea9cfef4cb3857f5af8e07c883d05deab36e309821a0a74"
+        },
+        "libabsl_log_sink.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_sink.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_log_sink.so.2601.0.0",
+          "sha256": "6e2c220e54e0c3ab6c561643d2340e8cf9f543882b890092ada3f2927b7dd0e6"
+        },
+        "libabsl_borrowed_fixup_buffer.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_borrowed_fixup_buffer.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_borrowed_fixup_buffer.so.2601.0.0",
+          "sha256": "d4b727b2809c714e8abb17f01767a025b5c6fb0e5dbc7dc07dfe61a1bfa1c271"
+        },
+        "libabsl_debugging_internal.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_debugging_internal.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_debugging_internal.so.2601.0.0",
+          "sha256": "86e6e5152803f43f31f643f65b461dfd170475d33dd772c49f8398b8baec621b"
+        },
+        "libabsl_exponential_biased.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_exponential_biased.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_exponential_biased.so.2601.0.0",
+          "sha256": "2ec07485df36fb17a0e899e0e18077c80cd37cd74869aebe4a610f43f9102a83"
+        },
+        "libabsl_demangle_internal.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_demangle_internal.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_demangle_internal.so.2601.0.0",
+          "sha256": "c67cc85929a81bcc795f739c4e33c0ca71984e923fca9e10ffa01d6a6864fe12"
+        },
+        "libabsl_demangle_rust.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_demangle_rust.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_demangle_rust.so.2601.0.0",
+          "sha256": "38f45e362eefaa398cecca634fdf13b625a7f107fd280f21f6590405f7f9d9ee"
+        },
+        "libabsl_decode_rust_punycode.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_decode_rust_punycode.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_decode_rust_punycode.so.2601.0.0",
+          "sha256": "de9f2cd0125ced4dd3a0e8dcf5f0db58245acc178a50730f77728f840ad1af1d"
+        },
+        "libabsl_utf8_for_code_point.so.2601.0.0": {
+          "loader_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_utf8_for_code_point.so.2601.0.0",
+          "resolved_path": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/lib/libabsl_utf8_for_code_point.so.2601.0.0",
+          "sha256": "5c5b32404229eac71755c1bb76dba639ede049939fdee8749b73a1aa0b6923a9"
+        }
+      },
+      "virtual_dependencies": [
+        "linux-vdso.so.1"
+      ]
+    }
+  },
+  "build_settings": {
+    "baseline": {
+      "BOOST_USE_STATIC": "OFF",
+      "CMAKE_BUILD_TYPE": "Release",
+      "CMAKE_CXX_COMPILER": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/bin/x86_64-conda-linux-gnu-c++",
+      "CMAKE_CXX_FLAGS": "",
+      "CMAKE_CXX_FLAGS_RELEASE": "-O3 -DNDEBUG",
+      "CMAKE_EXE_LINKER_FLAGS": "",
+      "CMAKE_PREFIX_PATH": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps",
+      "CMAKE_SHARED_LINKER_FLAGS": "",
+      "MT_ENABLE_NESTED_OPENMP": "ON",
+      "MT_ENABLE_OPENMP": "ON",
+      "WITH_GUI": "OFF"
+    },
+    "ported": {
+      "BOOST_USE_STATIC": "OFF",
+      "CMAKE_BUILD_TYPE": "Release",
+      "CMAKE_CXX_COMPILER": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps/bin/x86_64-conda-linux-gnu-c++",
+      "CMAKE_CXX_FLAGS": "",
+      "CMAKE_CXX_FLAGS_RELEASE": "-O3 -DNDEBUG",
+      "CMAKE_EXE_LINKER_FLAGS": "",
+      "CMAKE_PREFIX_PATH": "/ceph/ibmi/abi/oliver/opt/openms4-release-bc9cc12-c19e494-174b576/deps",
+      "CMAKE_SHARED_LINKER_FLAGS": "",
+      "MT_ENABLE_NESTED_OPENMP": "ON",
+      "MT_ENABLE_OPENMP": "ON",
+      "WITH_GUI": "OFF"
+    }
+  },
+  "variants": {
+    "baseline": {
+      "binary": {
+        "path": "/ceph/ibmi/abi/oliver/flashdeconv-performance-20261006/pr-develop/native-inputs-r2/baseline/bin/FLASHDeconv",
+        "sha256": "cdd7a36b08bf9cb21efff1431cc74bda38ee9788271f36591b5a788c4cef20af"
+      },
+      "libraries": {
+        "libOpenMS.so": {
+          "path": "/ceph/ibmi/abi/oliver/flashdeconv-performance-20261006/pr-develop/native-inputs-r2/baseline/lib/libOpenMS.so",
+          "sha256": "b545831342b3b195d2e36c2df3f6cdc5717c1fbad90d23167dafaa58f7d47dc8"
+        },
+        "libOpenSwathAlgo.so": {
+          "path": "/ceph/ibmi/abi/oliver/flashdeconv-performance-20261006/pr-develop/native-inputs-r2/baseline/lib/libOpenSwathAlgo.so",
+          "sha256": "12301d4985009506e45ebe421c92c13adb91709cf1ccd92a4ad646bde6865bed"
+        }
+      },
+      "source_manifest": {
+        "path": "/ceph/ibmi/abi/oliver/flashdeconv-performance-20261006/pr-develop/native-inputs-r2/baseline/source-manifest.json",
+        "sha256": "bcd5a7122a400750cf7acec089470f933e0a6e3359c38b8102c9269dd6ea9e00"
+      },
+      "source_directory": "/ceph/ibmi/abi/oliver/flashdeconv-performance-20261006/pr-develop/native-inputs-r2/baseline/source",
+      "build_receipt": {
+        "path": "/ceph/ibmi/abi/oliver/flashdeconv-performance-20261006/pr-develop/native-inputs-r2/baseline/build_receipt.json",
+        "sha256": "d18d180fdfa8cda67356c0574a69a4d7204d052cb59de82514530a907e496403"
+      },
+      "validation": {
+        "path": "/ceph/ibmi/abi/oliver/flashdeconv-performance-20261006/pr-develop/native-inputs-r2/baseline/validation.json",
+        "sha256": "1e1cd6e013771bb3cf7d13d0f941c3add3b76567dc5297874cf7971774066be9"
+      },
+      "source_files_sha256": {
+        "src/openms/include/OpenMS/ANALYSIS/TOPDOWN/SpectralDeconvolution.h": "0d8b635bf7491135a8a18f739a05de7810d2950c1819859b2a93b30efcc4786c",
+        "src/openms/include/OpenMS/FORMAT/FLASHDeconvSpectrumFile.h": "c858adfa545ac6fef15c5b53b02426b66d18ee56af5313003be828cc57682dcf",
+        "src/openms/source/ANALYSIS/TOPDOWN/FLASHDeconvAlgorithm.cpp": "54e124c24c5c1791d62f6363272a636fb49eb3f730b5901ca7503959e051d739",
+        "src/openms/source/ANALYSIS/TOPDOWN/FLASHHelperClasses.cpp": "82e5356fcc24351dc872a5b488efcbb2fa69edf93a31bd0da3784d7e4fad3b83",
+        "src/openms/source/ANALYSIS/TOPDOWN/PeakGroup.cpp": "15d9dc996877e8aae83f54119759c5f167925e3d521223788061c7fc0f1daf31",
+        "src/openms/source/ANALYSIS/TOPDOWN/SpectralDeconvolution.cpp": "4d029b14d51bebb94a8ca53ab07b2be6ad078d68cc760f70eac642dec266686d",
+        "src/openms/source/FORMAT/FLASHDeconvSpectrumFile.cpp": "75343ad8f94c1308d3ce49413b75f1da48b825a626422fe1ca9e9edfd80a5916",
+        "src/topp/FLASHDeconv.cpp": "63a79e286c89a0d0a31d604ef36ca92210770509fd1e65d40abb7435b278101c",
+        "src/tests/class_tests/openms/executables.cmake": "f1a948179758592ce79d488b10fe401bdb59ccae2088af57c80b21d60d42d661"
+      },
+      "loader_directories": [
+        "/ceph/ibmi/abi/oliver/flashdeconv-performance-20261006/pr-develop/native-inputs-r2/baseline/lib"
+      ]
+    },
+    "ported": {
+      "binary": {
+        "path": "/ceph/ibmi/abi/oliver/flashdeconv-performance-20261006/pr-develop/native-inputs-r2/ported/bin/FLASHDeconv",
+        "sha256": "75983ab721857272854204d040c06216b438368bd8d8228fe0df0ab472a471e6"
+      },
+      "libraries": {
+        "libOpenMS.so": {
+          "path": "/ceph/ibmi/abi/oliver/flashdeconv-performance-20261006/pr-develop/native-inputs-r2/ported/lib/libOpenMS.so",
+          "sha256": "98a2d7f4ec2955278e0eee5c66bd2b10cc292e8d527363067912cdd8da82af88"
+        },
+        "libOpenSwathAlgo.so": {
+          "path": "/ceph/ibmi/abi/oliver/flashdeconv-performance-20261006/pr-develop/native-inputs-r2/ported/lib/libOpenSwathAlgo.so",
+          "sha256": "12301d4985009506e45ebe421c92c13adb91709cf1ccd92a4ad646bde6865bed"
+        }
+      },
+      "source_manifest": {
+        "path": "/ceph/ibmi/abi/oliver/flashdeconv-performance-20261006/pr-develop/native-inputs-r2/ported/source-manifest.json",
+        "sha256": "1728ae563a733cbf1e544e7984a4564eda8c9494b1d507517722b61fe75e0275"
+      },
+      "source_directory": "/ceph/ibmi/abi/oliver/flashdeconv-performance-20261006/pr-develop/native-inputs-r2/ported/source",
+      "build_receipt": {
+        "path": "/ceph/ibmi/abi/oliver/flashdeconv-performance-20261006/pr-develop/native-inputs-r2/ported/build_receipt.json",
+        "sha256": "ef1feb00dfb63910125a2ed75ea22b727f77da9bf6a6926f47556f694f236d30"
+      },
+      "validation": {
+        "path": "/ceph/ibmi/abi/oliver/flashdeconv-performance-20261006/pr-develop/native-inputs-r2/ported/validation.json",
+        "sha256": "61d84a4740aea1dcd0ba5cf322d948bfcaaf503edf868bff8ca5604423aaaea1"
+      },
+      "source_files_sha256": {
+        "src/openms/include/OpenMS/ANALYSIS/TOPDOWN/SpectralDeconvolution.h": "0637ad5245bf5f3a04381a736843d0c56a9277204e6a60ff6f2df3c3a1d57cc0",
+        "src/openms/include/OpenMS/FORMAT/FLASHDeconvSpectrumFile.h": "7b0d27050466ad2fe08e888c7ef4a4fa3b43627c20a08b45ba6040dd51479a59",
+        "src/openms/source/ANALYSIS/TOPDOWN/FLASHDeconvAlgorithm.cpp": "e5c4a0295710e75db5a09996b595e5635692bfd540a159eb049fd9ac126a1d06",
+        "src/openms/source/ANALYSIS/TOPDOWN/FLASHHelperClasses.cpp": "4a2163641607d820550f3a58159f28aa43e4552645234c9036501cf46a5f23d3",
+        "src/openms/source/ANALYSIS/TOPDOWN/PeakGroup.cpp": "c3b56942849de65bea080c5ac6857a2e02e8864514b31fed59901f51cffcac40",
+        "src/openms/source/ANALYSIS/TOPDOWN/SpectralDeconvolution.cpp": "ed9514a6eee97f4c614350cb18aa49ad4152d1cc1102afe5875fbfb0b8b3e101",
+        "src/openms/source/FORMAT/FLASHDeconvSpectrumFile.cpp": "44a0d2dc47aa3d026feac4552d33a899110a62b6bbd0a8c3ce96db6e75b8bb9f",
+        "src/topp/FLASHDeconv.cpp": "1630868ac0279bc2a5053e5073bf98c596170328d17f1fad77684b6684790530",
+        "src/tests/class_tests/openms/executables.cmake": "be939778023839dfacaeb7ddb6680d297c278f5e4713acbefab2c86c65603a07",
+        "src/tests/class_tests/openms/source/FLASHDeconvAlgorithm_regression_test.cpp": "bf95aeb83ca0e32c2132f89e835b9cbb52c6a19e1e4e8ac5e542263fe912f694",
+        "src/tests/class_tests/openms/source/FLASHDeconvSpectrumFile_parallel_test.cpp": "50d80f873b36ab2e30d8806941a579abee1041ffd076a1057a690746cdc89cee"
+      },
+      "loader_directories": [
+        "/ceph/ibmi/abi/oliver/flashdeconv-performance-20261006/pr-develop/native-inputs-r2/ported/lib"
+      ]
+    }
+  },
+  "input": {
+    "accession": "PXD059108",
+    "filename": "11112024_IntactYeastX0p166mg_3SecMS2_rep2_689.mzML",
+    "bytes": 1246429459,
+    "sha256": "4d5cb22bd51627ee613c2ee374d658b238aad7a08b0ff7916da3c01467f4ea09"
+  },
+  "output_reference": {
+    "rows": {
+      "features.tsv": 12799,
+      "ms1.tsv": 134226,
+      "ms2.tsv": 75686
+    },
+    "sha256": {
+      "features.tsv": "5e56501e453fc542c470bbbdba3fa9b8b64724ff9a253b89da5416f26715c704",
+      "ms1.tsv": "36f0ec6f1097f9ea0e3c1c38c4cee1a7880e9d693a10386d70feb527d3b060cd",
+      "ms2.tsv": "1a7efc61b471cc212665252eff0f0ab455c93883c2879ca60fa6478eb6223da2"
+    },
+    "established_by": {
+      "variant": "baseline",
+      "threads": 4,
+      "repeat": 1,
+      "block": 1,
+      "variant_position": 1,
+      "step": 1
+    },
+    "scope": "Actual first baseline triplet; no FVdeploy oracle reused"
+  },
+  "measurements": [
+    {
+      "cores": 4,
+      "baseline_wall_s": 531.2951218369417,
+      "ported_wall_s": 239.77336473600008,
+      "speedup": 2.2158221052697766,
+      "n_per_cell": 1,
+      "baseline_rss_gib": 5.307811737060547,
+      "baseline_cpu_s": 1336.5,
+      "baseline_average_charged_cores": 2.5155510469945206,
+      "baseline_voluntary_switches": 3961278.0,
+      "baseline_involuntary_switches": 2846.0,
+      "baseline_external_context_available": true,
+      "ported_rss_gib": 3.344898223876953,
+      "ported_cpu_s": 919.81,
+      "ported_average_charged_cores": 3.8361642087007746,
+      "ported_voluntary_switches": 1598.0,
+      "ported_involuntary_switches": 3552.0,
+      "ported_external_context_available": true
+    },
+    {
+      "cores": 8,
+      "baseline_wall_s": 467.0139753520489,
+      "ported_wall_s": 123.98775708093308,
+      "speedup": 3.766613626595449,
+      "n_per_cell": 1,
+      "baseline_rss_gib": 5.418373107910156,
+      "baseline_cpu_s": 1923.58,
+      "baseline_average_charged_cores": 4.118891728132866,
+      "baseline_voluntary_switches": 7324026.0,
+      "baseline_involuntary_switches": 5041.0,
+      "baseline_external_context_available": true,
+      "ported_rss_gib": 4.605968475341797,
+      "ported_cpu_s": 927.21,
+      "ported_average_charged_cores": 7.478238350539426,
+      "ported_voluntary_switches": 4511.0,
+      "ported_involuntary_switches": 2663.0,
+      "ported_external_context_available": true
+    },
+    {
+      "cores": 16,
+      "baseline_wall_s": 419.31628688890487,
+      "ported_wall_s": 67.18339883489534,
+      "speedup": 6.241367572357923,
+      "n_per_cell": 1,
+      "baseline_rss_gib": 5.485904693603516,
+      "baseline_cpu_s": 3010.61,
+      "baseline_average_charged_cores": 7.179806971813718,
+      "baseline_voluntary_switches": 13639653.0,
+      "baseline_involuntary_switches": 5483.0,
+      "baseline_external_context_available": false,
+      "ported_rss_gib": 7.2283935546875,
+      "ported_cpu_s": 947.01,
+      "ported_average_charged_cores": 14.095892979860956,
+      "ported_voluntary_switches": 36767.0,
+      "ported_involuntary_switches": 2287.0,
+      "ported_external_context_available": true
+    },
+    {
+      "cores": 32,
+      "baseline_wall_s": 391.80979541200213,
+      "ported_wall_s": 39.82335133687593,
+      "speedup": 9.838694691905328,
+      "n_per_cell": 1,
+      "baseline_rss_gib": 5.4154205322265625,
+      "baseline_cpu_s": 5121.22,
+      "baseline_average_charged_cores": 13.070678834394258,
+      "baseline_voluntary_switches": 18688990.0,
+      "baseline_involuntary_switches": 6572.0,
+      "baseline_external_context_available": true,
+      "ported_rss_gib": 12.67559814453125,
+      "ported_cpu_s": 1013.25,
+      "ported_average_charged_cores": 25.443614512215678,
+      "ported_voluntary_switches": 70381.0,
+      "ported_involuntary_switches": 1969.0,
+      "ported_external_context_available": true
+    },
+    {
+      "cores": 64,
+      "baseline_wall_s": 388.99204913992435,
+      "ported_wall_s": 29.39604138606228,
+      "speedup": 13.232803833388243,
+      "n_per_cell": 1,
+      "baseline_rss_gib": 5.3752288818359375,
+      "baseline_cpu_s": 9834.56,
+      "baseline_average_charged_cores": 25.282161992114162,
+      "baseline_voluntary_switches": 18268717.0,
+      "baseline_involuntary_switches": 8331.0,
+      "baseline_external_context_available": true,
+      "ported_rss_gib": 23.265541076660156,
+      "ported_cpu_s": 1252.78,
+      "ported_average_charged_cores": 42.61730290643787,
+      "ported_voluntary_switches": 247923.0,
+      "ported_involuntary_switches": 1882.0,
+      "ported_external_context_available": true
+    }
+  ],
+  "validation_receipt_sha256": "ca781c58f5f89321c535119dedbe9d2caac04f31018e570113c2a9fa248f12b3",
+  "native_output_files_reverified": 30,
+  "source_runtime_input_protection_passed": true,
+  "recovery": {
+    "original_failure_file": "disconnected-original.json",
+    "recovered_step": 5,
+    "resume_driver_sha256": "d5abef0c47931329495d97f30e039b6dc2efddd461d7e836c705306516d2d49f",
+    "rerun_completed_cells": false,
+    "limitation": "Step5 external load/warm contexts were lost with the driver; raw native timing/output evidence is complete"
+  },
+  "local_validation_scope": "Local compact result/GNU receipts and recorded source/runtime/30-output producer proof; omitted native ELFs and full TSVs were not independently reread here",
+  "artifact_sha256": {
+    "FLASHDeconv-develop-scaling.csv": "43e0d2dc80920118b144662fbda29a2250d3feb7e0476755a142afefcaa0d7ea",
+    "FLASHDeconv-develop-scaling.svg": "4d209712e9b5757b92d44828e6a14cadaf924cc6a76e3eb63d893c0da9d0a2f9"
+  }
+}
