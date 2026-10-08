@@ -4775,6 +4775,115 @@ add_test("TOPP_ProSE_10_out" ${DIFF}
   -whitelist "IdentificationRun date" "SearchParameters id=\"SP_0\" db=" "name=\"fragment_annotation\"")
 set_tests_properties("TOPP_ProSE_10_out" PROPERTIES DEPENDS "TOPP_ProSE_10")
 
+# Tests 11-15: -percolator_in_process. Test 6's search with 5 hits per spectrum, so the target-decoy competition
+# winner has to be picked; the PSM and protein FDR then run on the Percolator q-values. FileInfo counts as in
+# Test 6 (HyperScore ULP noise, #9640), but "search engine" is asserted: it must say Percolator.
+set(PROSE_PERC_IN ${DATA_DIR_TOPP}/THIRDPARTY/DatabaseSuitability_in_spec.mzML)
+set(PROSE_PERC_ARGS -test -ini ${DATA_DIR_TOPP}/ProSE_6_fdr.ini
+  -database ${DATA_DIR_TOPP}/THIRDPARTY/DatabaseSuitability_database.fasta
+  -Search:report:top_hits 5 -percolator_in_process)
+add_test("TOPP_ProSE_11_percolator" ${TOPP_BIN_PATH}/ProSE ${PROSE_PERC_ARGS} -in ${PROSE_PERC_IN} -threads 1
+  -out_idxml ${TESTS_TEMP_DIR}/ProSE_11_percolator_out.tmp.idXML)
+set_tests_properties("TOPP_ProSE_11_percolator" PROPERTIES PASS_REGULAR_EXPRESSION "rescored 1 / 1 file")
+add_test("TOPP_ProSE_11_percolator_info" ${TOPP_BIN_PATH}/FileInfo -test
+  -in ${TESTS_TEMP_DIR}/ProSE_11_percolator_out.tmp.idXML
+  -out_tsv ${TESTS_TEMP_DIR}/ProSE_11_percolator_info.tmp.tsv)
+set_tests_properties("TOPP_ProSE_11_percolator_info" PROPERTIES DEPENDS "TOPP_ProSE_11_percolator")
+# Protein and PSM counts split as in Test 6: a decoy leak (47 -> 49 proteins) must fail.
+add_test("TOPP_ProSE_11_percolator_info_proteins" ${DIFF}
+  -in1 ${TESTS_TEMP_DIR}/ProSE_11_percolator_info.tmp.tsv
+  -in2 ${DATA_DIR_TOPP}/ProSE_11_percolator_info.tsv -absdiff 1
+  -whitelist "file name" "database" "matched spectra" "peptide hits" "modified top-hits")
+set_tests_properties("TOPP_ProSE_11_percolator_info_proteins" PROPERTIES DEPENDS "TOPP_ProSE_11_percolator_info")
+add_test("TOPP_ProSE_11_percolator_info_psms" ${DIFF}
+  -in1 ${TESTS_TEMP_DIR}/ProSE_11_percolator_info.tmp.tsv
+  -in2 ${DATA_DIR_TOPP}/ProSE_11_percolator_info.tsv -absdiff 3
+  -whitelist "file name" "database" "protein hits")
+set_tests_properties("TOPP_ProSE_11_percolator_info_psms" PROPERTIES DEPENDS "TOPP_ProSE_11_percolator_info")
+# The PEPs (MS:1001493): IDFilter keeps the hits with PEP > 0.005. These are 32 with the I-spline estimator of
+# 'percolator -Y -U', about 4 with PAVA, 8 with irls ('nonparametric') and 0 with pi0 correction. A count, not an
+# exact diff, for the reason given at Test 6.
+add_test("TOPP_ProSE_11_percolator_pep" ${TOPP_BIN_PATH}/IDFilter -test
+  -in ${TESTS_TEMP_DIR}/ProSE_11_percolator_out.tmp.idXML -remove_peptide_hits_by_metavalue MS:1001493 gt 0.005
+  -out ${TESTS_TEMP_DIR}/ProSE_11_percolator_pep.tmp.idXML)
+set_tests_properties("TOPP_ProSE_11_percolator_pep" PROPERTIES DEPENDS "TOPP_ProSE_11_percolator")
+add_test("TOPP_ProSE_11_percolator_pep_info" ${TOPP_BIN_PATH}/FileInfo -test
+  -in ${TESTS_TEMP_DIR}/ProSE_11_percolator_pep.tmp.idXML
+  -out_tsv ${TESTS_TEMP_DIR}/ProSE_11_percolator_pep_info.tmp.tsv)
+set_tests_properties("TOPP_ProSE_11_percolator_pep_info" PROPERTIES DEPENDS "TOPP_ProSE_11_percolator_pep")
+add_test("TOPP_ProSE_11_percolator_pep_info_out" ${DIFF}
+  -in1 ${TESTS_TEMP_DIR}/ProSE_11_percolator_pep_info.tmp.tsv
+  -in2 ${DATA_DIR_TOPP}/ProSE_11_percolator_pep_info.tsv -absdiff 3
+  -whitelist "file name" "database" "protein hits")
+set_tests_properties("TOPP_ProSE_11_percolator_pep_info_out" PROPERTIES DEPENDS "TOPP_ProSE_11_percolator_pep_info")
+# The result does not depend on the thread count ...
+add_test("TOPP_ProSE_11_percolator_t4" ${TOPP_BIN_PATH}/ProSE ${PROSE_PERC_ARGS} -in ${PROSE_PERC_IN} -threads 4
+  -out_idxml ${TESTS_TEMP_DIR}/ProSE_11_percolator_t4_out.tmp.idXML)
+add_test("TOPP_ProSE_11_percolator_t4_out" ${DIFF}
+  -in1 ${TESTS_TEMP_DIR}/ProSE_11_percolator_t4_out.tmp.idXML
+  -in2 ${TESTS_TEMP_DIR}/ProSE_11_percolator_out.tmp.idXML
+  -whitelist "IdentificationRun date" "SearchParameters id=\"SP_0\" db=" "search_engine_version" "InferenceEngineVersion" "name=\"fragment_annotation\"")
+set_tests_properties("TOPP_ProSE_11_percolator_t4_out" PROPERTIES DEPENDS "TOPP_ProSE_11_percolator_t4;TOPP_ProSE_11_percolator")
+# ... but on the seed (-percolator_seed reaches the cross-validation folds).
+add_test("TOPP_ProSE_11_percolator_seed2" ${TOPP_BIN_PATH}/ProSE ${PROSE_PERC_ARGS} -in ${PROSE_PERC_IN} -threads 1 -percolator_seed 2
+  -out_idxml ${TESTS_TEMP_DIR}/ProSE_11_percolator_seed2_out.tmp.idXML)
+# The producer must rescore, or a crash would pass the WILL_FAIL diff below.
+set_tests_properties("TOPP_ProSE_11_percolator_seed2" PROPERTIES PASS_REGULAR_EXPRESSION "rescored 1 / 1 file")
+add_test("TOPP_ProSE_11_percolator_seed2_out" ${DIFF}
+  -in1 ${TESTS_TEMP_DIR}/ProSE_11_percolator_seed2_out.tmp.idXML
+  -in2 ${TESTS_TEMP_DIR}/ProSE_11_percolator_out.tmp.idXML
+  -whitelist "IdentificationRun date" "SearchParameters id=\"SP_0\" db=" "search_engine_version" "InferenceEngineVersion" "name=\"fragment_annotation\"" "Percolator:seed")
+set_tests_properties("TOPP_ProSE_11_percolator_seed2_out" PROPERTIES DEPENDS "TOPP_ProSE_11_percolator_seed2;TOPP_ProSE_11_percolator" WILL_FAIL 1)
+# Multi-file: -out_merged must re-merge the rescored files, not use the search's HyperScore pool.
+add_test("TOPP_ProSE_12_percolator_merged" ${TOPP_BIN_PATH}/ProSE ${PROSE_PERC_ARGS}
+  -in ${PROSE_PERC_IN} ${PROSE_PERC_IN} -out_merged ${TESTS_TEMP_DIR}/ProSE_12_percolator_merged.tmp.idXML)
+set_tests_properties("TOPP_ProSE_12_percolator_merged" PROPERTIES PASS_REGULAR_EXPRESSION "rescored 2 / 2 file")
+add_test("TOPP_ProSE_12_percolator_merged_info" ${TOPP_BIN_PATH}/FileInfo -test
+  -in ${TESTS_TEMP_DIR}/ProSE_12_percolator_merged.tmp.idXML
+  -out_tsv ${TESTS_TEMP_DIR}/ProSE_12_percolator_merged_info.tmp.tsv)
+set_tests_properties("TOPP_ProSE_12_percolator_merged_info" PROPERTIES DEPENDS "TOPP_ProSE_12_percolator_merged")
+add_test("TOPP_ProSE_12_percolator_merged_info_proteins" ${DIFF}
+  -in1 ${TESTS_TEMP_DIR}/ProSE_12_percolator_merged_info.tmp.tsv
+  -in2 ${DATA_DIR_TOPP}/ProSE_12_percolator_merged_info.tsv -absdiff 1
+  -whitelist "file name" "database" "matched spectra" "peptide hits" "modified top-hits")
+set_tests_properties("TOPP_ProSE_12_percolator_merged_info_proteins" PROPERTIES DEPENDS "TOPP_ProSE_12_percolator_merged_info")
+add_test("TOPP_ProSE_12_percolator_merged_info_psms" ${DIFF}
+  -in1 ${TESTS_TEMP_DIR}/ProSE_12_percolator_merged_info.tmp.tsv
+  -in2 ${DATA_DIR_TOPP}/ProSE_12_percolator_merged_info.tsv -absdiff 3
+  -whitelist "file name" "database" "protein hits")
+set_tests_properties("TOPP_ProSE_12_percolator_merged_info_psms" PROPERTIES DEPENDS "TOPP_ProSE_12_percolator_merged_info")
+# Skips: no decoys, and fewer than 100 spectra.
+add_test("TOPP_ProSE_13_percolator_nodecoys" ${TOPP_BIN_PATH}/ProSE -test
+  -ini ${DATA_DIR_TOPP}/ProSE_1.ini -in ${DATA_DIR_TOPP}/SimpleSearchEngine_1.mzML
+  -database ${DATA_DIR_TOPP}/SimpleSearchEngine_1.fasta -percolator_in_process
+  -out_idxml ${TESTS_TEMP_DIR}/ProSE_13_percolator_nodecoys.tmp.idXML)
+set_tests_properties("TOPP_ProSE_13_percolator_nodecoys" PROPERTIES PASS_REGULAR_EXPRESSION "requires decoys but none found")
+add_test("TOPP_ProSE_14_percolator_small" ${TOPP_BIN_PATH}/ProSE -test
+  -ini ${DATA_DIR_TOPP}/ProSE_1.ini -in ${DATA_DIR_TOPP}/SimpleSearchEngine_1.mzML
+  -database ${DATA_DIR_TOPP}/SimpleSearchEngine_1.fasta -Search:decoys generate -Search:report:top_hits 10 -percolator_in_process
+  -out_idxml ${TESTS_TEMP_DIR}/ProSE_14_percolator_small.tmp.idXML)
+set_tests_properties("TOPP_ProSE_14_percolator_small" PROPERTIES PASS_REGULAR_EXPRESSION "need >= 100")
+# The two rescoring routes exclude each other.
+add_test("TOPP_ProSE_15_percolator_both" ${TOPP_BIN_PATH}/ProSE -test
+  -ini ${DATA_DIR_TOPP}/ProSE_1.ini -in ${DATA_DIR_TOPP}/SimpleSearchEngine_1.mzML
+  -database ${DATA_DIR_TOPP}/SimpleSearchEngine_1.fasta -percolator_in_process -percolator_executable percolator
+  -out_idxml ${TESTS_TEMP_DIR}/ProSE_15_percolator_both.tmp.idXML)
+set_tests_properties("TOPP_ProSE_15_percolator_both" PROPERTIES PASS_REGULAR_EXPRESSION "cannot be combined")
+# Test 16: -out_pin. Its columns are also the in-process Percolator's features (pinFeatureSet).
+add_test("TOPP_ProSE_16_pin" ${TOPP_BIN_PATH}/ProSE -test
+  -ini ${DATA_DIR_TOPP}/ProSE_1.ini -in ${DATA_DIR_TOPP}/SimpleSearchEngine_1.mzML
+  -database ${DATA_DIR_TOPP}/SimpleSearchEngine_1.fasta -out_pin ${TESTS_TEMP_DIR}/ProSE_16_pin.tmp.pin)
+add_test("TOPP_ProSE_16_pin_out" ${DIFF}
+  -in1 ${TESTS_TEMP_DIR}/ProSE_16_pin.tmp.pin -in2 ${DATA_DIR_TOPP}/ProSE_16_pin_out.pin)
+set_tests_properties("TOPP_ProSE_16_pin_out" PROPERTIES DEPENDS "TOPP_ProSE_16_pin")
+# Test 17: every PSM matches a target and its identical DECOY_ twin, so the file has decoy proteins but no decoy
+# PSM: the in-process route must fall back to HyperScore rather than compute q-values without decoys.
+add_test("TOPP_ProSE_17_percolator_nodecoyrows" ${TOPP_BIN_PATH}/ProSE -test
+  -ini ${DATA_DIR_TOPP}/ProSE_6_fdr.ini -in ${PROSE_PERC_IN} -database ${DATA_DIR_TOPP}/ProSE_17_twins.fasta
+  -Search:decoys auto -Search:report:top_hits 5 -percolator_in_process
+  -out_idxml ${TESTS_TEMP_DIR}/ProSE_17_percolator_nodecoyrows.tmp.idXML)
+set_tests_properties("TOPP_ProSE_17_percolator_nodecoyrows" PROPERTIES PASS_REGULAR_EXPRESSION "rescored 0 / 1 file")
+
 # Bruker .d input integration tests (DDA-PASEF with IM annotation)
 if (WITH_OPENTIMS AND OPENTIMS_DDA_TEST_DATA)
   # Create a symlink with .d suffix so FileHandler recognizes the format

@@ -107,6 +107,10 @@ Dependencies:
 
 TOPP tools:
   Changes:
+    ProSE:
+      - New -percolator_in_process: rescores each file with OpenMS' built-in Percolator instead of an
+        external executable, on the features -out_pin writes and with the settings of 'percolator -Y -U'
+        (-percolator_seed sets its seed). Off by default; -percolator_executable is unchanged.
     UniPEFF:
       - Without -dbversion, '# DbVersion=' takes the download date UniProt puts into its
         file names, e.g. 2025_07_05 for uniprotkb_proteome_UP000005640_2025_07_05.xml.gz,
