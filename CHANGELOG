@@ -17,6 +17,12 @@ PR - Pull Request (on GitHub), i.e. integration of a new feature or bugfix
 ------------------------------------------------------------------------------------------
 
 General:
+  - FLASHDeconv distributes ordinary target spectra and eligible precursor matching across
+    OpenMP workers, shares an immutable averagine model, compacts retained peak buffers,
+    and reduces scratch storage and copying while preserving ordered results.
+  - FLASHDeconv adds a bounded, ordered C++ batch writer for detailed spectrum TSV output.
+    FDR and merging retain their existing outer scheduling. SpectralDeconvolution's private
+    layout changes; rebuild dependent applications and pyOpenMS with the library.
   - Param::ParamEntry::isBool(): single definition of a boolean parameter (scalar string restricted to
     exactly "true" and "false", in either order, independent of the current value). First step of #10116;
     the flag/CTD/INI/CWL writers will be switched to it in follow-ups.

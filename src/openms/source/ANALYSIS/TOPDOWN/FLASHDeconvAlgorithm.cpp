@@ -12,10 +12,17 @@
 #include <OpenMS/ANALYSIS/TOPDOWN/PeakGroup.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/Qvalue.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/TopDownIsobaricQuantification.h>
-#include <OpenMS/PROCESSING/SPECTRAMERGING/SpectraMerger.h>
-#include <OpenMS/PROCESSING/FILTERING/ThresholdMower.h>
-#include <OpenMS/METADATA/SpectrumLookup.h>
 #include <OpenMS/MATH/STATISTICS/GaussFitter.h>
+#include <OpenMS/METADATA/SpectrumLookup.h>
+#include <OpenMS/PROCESSING/FILTERING/ThresholdMower.h>
+#include <OpenMS/PROCESSING/SPECTRAMERGING/SpectraMerger.h>
+#include <exception>
+#include <iterator>
+#include <memory>
+#include <numeric>
+#include <optional>
+#include <set>
+#include <utility>
 
 #ifdef _OPENMP
   #include <omp.h>
@@ -36,7 +43,8 @@ FLASHDeconvAlgorithm::FLASHDeconvAlgorithm(): DefaultParamHandler("FLASHDeconvAl
   defaults_.setValidStrings("report_FDR", {"true", "false"});
 
   defaults_.setValue("allowed_isotope_error", 0,
-                     "Tolerance for isotope index errors when calculating FDR. For instance, setting a value of 2 permits the inclusion of up to 2 isotope errors as valid matches. Beta version.");
+                     "Tolerance for isotope index errors when calculating FDR. For instance, setting a value of 2 permits the inclusion of up to 2 "
+                     "isotope errors as valid matches. Beta version.");
   defaults_.addTag("allowed_isotope_error", "advanced");
 
   defaults_.setValue("use_RNA_averagine", "false", "Use the RNA (nucleotide) averagine model for deconvolution.");
@@ -45,20 +53,22 @@ FLASHDeconvAlgorithm::FLASHDeconvAlgorithm(): DefaultParamHandler("FLASHDeconvAl
 
   defaults_.setValue(
     "precursor_MS1_window", 1,
-    "Number of MS1 spectra around each MS2 spectrum to search for precursor peaks when determining the MS2 precursors. For MS2 spectrum, the mass of precursor ion should be determined for better deconvolution and reliable identification. "
+    "Number of MS1 spectra around each MS2 spectrum to search for precursor peaks when determining the MS2 precursors. For MS2 spectrum, the mass of "
+    "precursor ion should be determined for better deconvolution and reliable identification. "
     "If the mass of precursor ion is not found in the immediately preceding MS1 spectrum, previous or next MS1 spectra may be used instead. "
     "This parameter determines up to how many MS1 spectra around each MS2 spectrum will be searched.");
   defaults_.setMinInt("precursor_MS1_window", 1);
   defaults_.addTag("precursor_MS1_window", "advanced");
 
-  defaults_.setValue(
-    "isolation_window", 5.0,
-    "Specify the isolation window width for precursor determination. Used when this information is absent in the mzML file.");
+  defaults_.setValue("isolation_window", 5.0,
+                     "Specify the isolation window width for precursor determination. Used when this information is absent in the mzML file.");
   defaults_.addTag("isolation_window", "advanced");
 
   defaults_.setValue("merging_method", 0,
-                     "Method for merging spectra before deconvolution. 0: No merging  1: Gaussian averaging per MS level, effective for Q-TOF datasets. For MSn (n > 1), only the spectra from the same precursor mass "
-                     "(subject to tolerance set by SD:tol) are averaged. 2: Block merging, combining all spectra into one per MS level (e.g., for NativeMS datasets).");
+                     "Method for merging spectra before deconvolution. 0: No merging  1: Gaussian averaging per MS level, effective for Q-TOF "
+                     "datasets. For MSn (n > 1), only the spectra from the same precursor mass "
+                     "(subject to tolerance set by SD:tol) are averaged. 2: Block merging, combining all spectra into one per MS level (e.g., for "
+                     "NativeMS datasets).");
   defaults_.setMinInt("merging_method", 0);
   defaults_.setMaxInt("merging_method", 2);
 
@@ -75,9 +85,9 @@ FLASHDeconvAlgorithm::FLASHDeconvAlgorithm(): DefaultParamHandler("FLASHDeconvAl
   mf_defaults.setValue("min_cos", -1.0,
                        "Cosine similarity threshold between avg. and observed isotope pattern. When negative, MS1 cosine threshold for spectral "
                        "deconvolution (set by -SD:min_cos will be used ");
-  mf_defaults.setValue(
-    "mass_error_ppm", -1.0,
-    "Specifies the mass error tolerance for feature tracing in ppm. When negative, the MS1 tolerance for deconvolution is used (e.g., 16 ppm is used when -SD:tol 16).");
+  mf_defaults.setValue("mass_error_ppm", -1.0,
+                       "Specifies the mass error tolerance for feature tracing in ppm. When negative, the MS1 tolerance for deconvolution is used "
+                       "(e.g., 16 ppm is used when -SD:tol 16).");
   mf_defaults.addTag("min_cos", "advanced");
   mf_defaults.addTag("mass_error_ppm", "advanced");
 
@@ -134,16 +144,13 @@ void FLASHDeconvAlgorithm::filterLowPeaks_(MSExperiment& map)
   Param t_filter_param = threshold_mower_filter.getParameters(); //"threshold", .00001
   t_filter_param.setValue("threshold", 1e-6);
   threshold_mower_filter.setParameters(t_filter_param);
-  threshold_mower_filter.filterPeakMap(map);
 
-#pragma omp parallel for default(none), shared(map)
-  for (int i = 0; i < (int) map.size(); i++)
-  {
-    auto& it = map[i];
-    if (it.empty()) continue;
+  const auto trim_spectrum = [](MSSpectrum& it) {
+    if (it.empty()) return;
     Size count = it.getType(false) == SpectrumSettings::SpectrumType::CENTROID ? max_peak_count_for_centroid_ : max_peak_count_for_profile_;
     it.sortByIntensity(true);
-    double threshold = it.size() < count ? 0 : it[count].getIntensity();
+    // There is no element at count when exactly count peaks remain.
+    double threshold = it.size() <= count ? 0 : it[count].getIntensity();
     threshold = std::max(threshold, (double)it.begin()->getIntensity() / 1000);
     // pop back the low intensity peaks using threshold
 
@@ -152,6 +159,76 @@ void FLASHDeconvAlgorithm::filterLowPeaks_(MSExperiment& map)
       it.pop_back();
     }
     it.sortByPosition();
+  };
+
+  // Release spare peak storage after trimming without replacing the spectrum
+  // object or its metadata. Array shrink requests leave their values intact.
+  const auto compact_spectrum = [](MSSpectrum& it) {
+    MSSpectrum::ContainerType compact_peaks(it.cbegin(), it.cend());
+    it.swap(compact_peaks);
+    for (auto& array : it.getFloatDataArrays())
+    {
+      array.shrink_to_fit();
+    }
+    for (auto& array : it.getIntegerDataArrays())
+    {
+      array.shrink_to_fit();
+    }
+    for (auto& array : it.getStringDataArrays())
+    {
+      array.shrink_to_fit();
+    }
+  };
+
+  // Array selection can throw before filtering or after peak-only trimming.
+  // Preserve the original threshold pass and use serial exception construction
+  // whenever a spectrum carries an array collection, including empty arrays.
+  const bool has_data_arrays = std::any_of(map.begin(), map.end(), [](const MSSpectrum& it) {
+    return ! it.getFloatDataArrays().empty() || ! it.getIntegerDataArrays().empty() || ! it.getStringDataArrays().empty();
+  });
+  if (has_data_arrays)
+  {
+    threshold_mower_filter.filterPeakMap(map);
+    for (auto& it : map)
+    {
+      trim_spectrum(it);
+      compact_spectrum(it);
+    }
+    OPENMS_LOG_INFO << "Done" << std::endl;
+    return;
+  }
+
+  // ThresholdMower updates its own threshold during each call. Clone the
+  // configured filter on the caller before assigning distinct spectra.
+  int worker_count = 1;
+#ifdef _OPENMP
+  worker_count = static_cast<int>(std::max<Size>(1, std::min<Size>(omp_get_max_threads(), map.size())));
+#endif
+  std::vector<ThresholdMower> filters(worker_count, threshold_mower_filter);
+  std::vector<std::exception_ptr> errors(map.size());
+#pragma omp parallel for default(none) num_threads(worker_count) shared(map, filters, errors, trim_spectrum, compact_spectrum)
+  for (int i = 0; i < (int)map.size(); i++)
+  {
+    int worker_index = 0;
+#ifdef _OPENMP
+    worker_index = omp_get_thread_num();
+#endif
+    try
+    {
+      auto& it = map[i];
+      filters[worker_index].filterSpectrum(it);
+      trim_spectrum(it);
+      compact_spectrum(it);
+    }
+    catch (...)
+    {
+      errors[i] = std::current_exception();
+    }
+  }
+  // Report the earliest input-index error after the whole workshare has joined.
+  for (const auto& error : errors)
+  {
+    if (error) { std::rethrow_exception(error); }
   }
   OPENMS_LOG_INFO << "Done" << std::endl;
 }
@@ -179,7 +256,7 @@ void FLASHDeconvAlgorithm::mergeSpectra_(MSExperiment& map, uint ms_level)
       // For ms n, first find precursors for all ms n. then make a tmp map having the precursor masses as precursor
       std::map<std::string, std::vector<Precursor>> original_precursor_map;
 #pragma omp parallel for default(none), shared(map, ms_level, original_precursor_map)
-      for (int i = 0; i < (int) map.size(); i++)
+      for (int i = 0; i < (int)map.size(); i++)
       {
         auto spec = map[i];
         if (spec.getMSLevel() != ms_level) continue;
@@ -213,7 +290,7 @@ void FLASHDeconvAlgorithm::mergeSpectra_(MSExperiment& map, uint ms_level)
 
         for (auto& native_id : native_ids)
         {
-          if (!original_precursor_map.contains(native_id)) continue;
+          if (! original_precursor_map.contains(native_id)) continue;
           mspec.setPrecursors(original_precursor_map[native_id]);
         }
       }
@@ -238,7 +315,7 @@ int FLASHDeconvAlgorithm::getScanNumber(const MSExperiment& map, Size index)
   StringUtils::split(native_id_str, ",", native_ids);
   std::string type_accession = "MS:1000768";
 
-  if (!map.getSourceFiles().empty())
+  if (! map.getSourceFiles().empty())
   {
     type_accession = map.getSourceFiles()[0].getNativeIDTypeAccession();
     if (type_accession.empty()) type_accession = "MS:1000768";
@@ -250,9 +327,7 @@ int FLASHDeconvAlgorithm::getScanNumber(const MSExperiment& map, Size index)
 }
 
 std::vector<double> FLASHDeconvAlgorithm::getTolerances() const
-{
-  return tols_;
-}
+{ return tols_; }
 
 int FLASHDeconvAlgorithm::findPrecursorScanNumber_(const MSExperiment& map, Size index, uint ms_level) const
 {
@@ -297,10 +372,40 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
 {
   startProgress(0, (SignedSize)map.size(), "running FLASHDeconv");
   std::map<double, int> rt_scan_map;
+  std::vector<int> scan_numbers(map.size());
   for (Size index = 0; index < map.size(); index++)
   {
     int scan_number = getScanNumber(map, index);
+    scan_numbers[index] = scan_number;
     rt_scan_map[map[index].getRT()] = scan_number;
+  }
+
+  // Outer parallelism is restricted to the ordinary target path.
+  // Keep merging, FDR, FLASHIda and manual precursor overrides on the serial path.
+  int worker_count = 0;
+#ifdef _OPENMP
+  const auto& worker_parameters = sd_.getParameters();
+  if (! report_decoy_ && merge_spec_ == 0 && ida_log_file_.empty() && omp_get_level() == 0 && (int)worker_parameters.getValue("precursor_charge") == 0
+      && (double)worker_parameters.getValue("precursor_mz") == 0)
+  {
+    std::vector<Size> level_counts(current_max_ms_level_ + 1, 0);
+    for (const auto& spec : map)
+    {
+      if (! spec.empty() && spec.getMSLevel() <= current_max_ms_level_) { ++level_counts[spec.getMSLevel()]; }
+    }
+    worker_count = (int)std::min((Size)omp_get_max_threads(), *std::max_element(level_counts.begin(), level_counts.end()));
+  }
+#endif
+  // Construct in stable storage rather than copying mutable SD state/pointers.
+  std::vector<SpectralDeconvolution> spectrum_workers(worker_count > 1 ? worker_count : 0);
+  // One immutable per-run copy replaces all worker model copies. No pool lock
+  // or shared_ptr reference-count operation is used during spectrum scoring.
+  const auto shared_averagine = spectrum_workers.empty() ? std::shared_ptr<const SpectralDeconvolution::PrecalculatedAveragine>()
+                                                         : std::make_shared<const SpectralDeconvolution::PrecalculatedAveragine>(sd_.getAveragine());
+  for (auto& worker : spectrum_workers)
+  {
+    worker.setParameters(sd_.getParameters());
+    worker.setSharedAveragine_(shared_averagine);
   }
 
   for (uint ms_level = 1; ms_level <= current_max_ms_level_; ms_level++)
@@ -313,11 +418,97 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
       if (ms_level > 1) { findPrecursorPeakGroupsForMSnSpectra_(map, deconvolved_spectra, ms_level); }
     }
 
+    if (! spectrum_workers.empty())
+    {
+      std::vector<Size> spectrum_indices;
+      std::vector<int> fallback_scans;
+      std::vector<const PeakGroup*> precursors;
+      const auto& precursor_groups = native_id_precursor_peak_group_map_;
+      int previous_lower_scan = 0;
+      Size progress_count = 0;
+      for (Size index = 0; index < map.size(); ++index)
+      {
+        const auto& spec = map[index];
+        if (spec.getMSLevel() == ms_level - 1) { previous_lower_scan = scan_numbers[index]; }
+        if (spec.getMSLevel() != ms_level) { continue; }
+        ++progress_count;
+        if (spec.empty()) { continue; }
+        spectrum_indices.push_back(index);
+        fallback_scans.push_back(previous_lower_scan);
+        const auto precursor = precursor_groups.find(spec.getNativeID());
+        precursors.push_back(precursor == precursor_groups.end() ? nullptr : &precursor->second);
+      }
+
+      if (spectrum_indices.size() > 1)
+      {
+        std::vector<std::optional<DeconvolvedSpectrum>> level_results(spectrum_indices.size());
+        std::vector<std::exception_ptr> errors(spectrum_indices.size());
+        const PeakGroup empty_precursor;
+        int level_workers = (int)std::min(spectrum_workers.size(), spectrum_indices.size());
+#pragma omp parallel num_threads(level_workers) default(none) \
+  shared(map, spectrum_indices, scan_numbers, fallback_scans, precursors, empty_precursor, spectrum_workers, level_results, errors, ms_level)
+        {
+          int worker_index = 0;
+#ifdef _OPENMP
+          worker_index = omp_get_thread_num();
+#endif
+          auto& worker = spectrum_workers[worker_index];
+#pragma omp for schedule(dynamic, 1)
+          for (SignedSize job = 0; job < (SignedSize)spectrum_indices.size(); ++job)
+          {
+            try
+            {
+              const Size index = spectrum_indices[job];
+              const auto& precursor = precursors[job] == nullptr ? empty_precursor : *precursors[job];
+              worker.performSpectrumDeconvolution(map[index], scan_numbers[index], precursor);
+              auto& result = worker.getDeconvolvedSpectrum();
+              if (ms_level > 1 && precursor.empty()) { result.setPrecursorScanNumber(fallback_scans[job]); }
+              // Assignment would copy: DeconvolvedSpectrum has no move assignment.
+              level_results[job].emplace(std::move(result));
+            }
+            catch (...)
+            {
+              errors[job] = std::current_exception();
+            }
+          }
+        }
+        // Commit in input order, including equal scan-number keys, after join.
+        for (const auto& error : errors)
+        {
+          if (error)
+          {
+            endProgress();
+            std::rethrow_exception(error);
+          }
+        }
+        deconvolved_spectra.reserve(deconvolved_spectra.size() + level_results.size());
+        for (auto& result : level_results)
+        {
+          deconvolved_spectra.emplace_back(std::move(*result));
+        }
+        for (Size i = 0; i < progress_count; ++i)
+        {
+          nextProgress();
+        }
+        // Sort the same scan-only keys without copying full spectra in assignments.
+        std::vector<Size> order(deconvolved_spectra.size());
+        std::iota(order.begin(), order.end(), 0);
+        std::sort(order.begin(), order.end(), [&deconvolved_spectra](Size a, Size b) { return deconvolved_spectra[a] < deconvolved_spectra[b]; });
+        std::vector<DeconvolvedSpectrum> ordered_spectra;
+        ordered_spectra.reserve(deconvolved_spectra.size());
+        for (Size index : order)
+        {
+          ordered_spectra.emplace_back(std::move(deconvolved_spectra[index]));
+        }
+        deconvolved_spectra.swap(ordered_spectra);
+        continue;
+      }
+    }
+
     for (Size index = 0; index < map.size(); index++)
     {
-      int scan_number = merge_spec_ == 0 ? getScanNumber(map, index) :
-                        (!rt_scan_map.contains(map[index].getRT()) ? getScanNumber(map, index) :
-                                                                                     rt_scan_map[map[index].getRT()]);
+      int scan_number = merge_spec_ == 0 ? getScanNumber(map, index)
+                                         : (! rt_scan_map.contains(map[index].getRT()) ? getScanNumber(map, index) : rt_scan_map[map[index].getRT()]);
       const auto& spec = map[index];
 
       if (ms_level != spec.getMSLevel()) { continue; }
@@ -326,10 +517,7 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
 
       std::string native_id = spec.getNativeID();
       PeakGroup precursor_pg;
-      if (native_id_precursor_peak_group_map_.contains(native_id))
-      {
-        precursor_pg = native_id_precursor_peak_group_map_[native_id];
-      }
+      if (native_id_precursor_peak_group_map_.contains(native_id)) { precursor_pg = native_id_precursor_peak_group_map_[native_id]; }
 
       sd_.performSpectrumDeconvolution(spec, scan_number, precursor_pg);
       auto& deconvolved_spectrum = sd_.getDeconvolvedSpectrum();
@@ -340,10 +528,7 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
         if (precursor_scan >= 0) { deconvolved_spectrum.setPrecursorScanNumber(precursor_scan); }
       }
 
-      if (report_decoy_ && !deconvolved_spectrum.empty())
-      {
-        appendDecoyPeakGroups_(deconvolved_spectrum, spec, scan_number, precursor_pg);
-      }
+      if (report_decoy_ && ! deconvolved_spectrum.empty()) { appendDecoyPeakGroups_(deconvolved_spectrum, spec, scan_number, precursor_pg); }
 
       deconvolved_spectra.push_back(deconvolved_spectrum);
     }
@@ -354,13 +539,11 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
 
 
 const FLASHHelperClasses::PrecalculatedAveragine& FLASHDeconvAlgorithm::getAveragine()
-{
-  return sd_.getAveragine();
-}
+{ return sd_.getAveragine(); }
 
 const FLASHHelperClasses::PrecalculatedAveragine& FLASHDeconvAlgorithm::getDecoyAveragine()
 {
-  if (!report_decoy_) return getAveragine();
+  if (! report_decoy_) return getAveragine();
   return sd_noise_decoy_.getAveragine();
 }
 
@@ -370,8 +553,10 @@ std::vector<int> FLASHDeconvAlgorithm::getHistogram_(const std::vector<double>& 
   std::vector<int> bins(num_bins, 0);
 
   // Populate the bins
-  for (double value : data) {
-    if (value >= min_range && value <= max_range) {
+  for (double value : data)
+  {
+    if (value >= min_range && value <= max_range)
+    {
       int bin_index = static_cast<int>((value - min_range) / bin_size);
       bins[bin_index]++;
     }
@@ -379,14 +564,17 @@ std::vector<int> FLASHDeconvAlgorithm::getHistogram_(const std::vector<double>& 
   return bins;
 }
 
-void FLASHDeconvAlgorithm::determineTolerance_(const MSExperiment& map, const Param& sd_param, const FLASHHelperClasses::PrecalculatedAveragine& avg, const uint ms_level)
+void FLASHDeconvAlgorithm::determineTolerance_(const MSExperiment& map,
+                                               const Param& sd_param,
+                                               const FLASHHelperClasses::PrecalculatedAveragine& avg,
+                                               const uint ms_level)
 {
   OPENMS_LOG_INFO << "Determining tolerance for MS" << ms_level << " ... ";
   auto sd = SpectralDeconvolution();
   auto sd_param_t = sd_param;
   sd.setAveragine(avg);
-  tols_[ms_level - 1] = 200; // maximum tolerance
-  sd_param_t.setValue("min_charge", 1); // better to include charge 1 to determine ppm error.
+  tols_[ms_level - 1] = 200;             // maximum tolerance
+  sd_param_t.setValue("min_charge", 1);  // better to include charge 1 to determine ppm error.
   sd_param_t.setValue("min_mass", 50.0); // better to include small masses to determine ppm error.
   sd_param_t.setValue("tol", tols_);
   sd.setParameters(sd_param_t);
@@ -465,10 +653,10 @@ void FLASHDeconvAlgorithm::run(MSExperiment& map,
   sd_ = SpectralDeconvolution();
   Param sd_param = param_.copy("SD:", true);
   sd_param.setValue("allowed_isotope_error", param_.getValue("allowed_isotope_error"));
-  OPENMS_LOG_INFO<< "Calculating Averagines ... " << std::flush;
+  OPENMS_LOG_INFO << "Calculating Averagines ... " << std::flush;
   sd_.setParameters(sd_param);
   sd_.calculateAveragine(use_RNA_averagine_);
-  OPENMS_LOG_INFO<< "Done" << std::endl;
+  OPENMS_LOG_INFO << "Done" << std::endl;
   const auto& avg = sd_.getAveragine();
 
   // determine tolerance in case tolerance input is negative
@@ -536,9 +724,9 @@ std::pair<int, int> FLASHDeconvAlgorithm::findScanNumberBounds_(const MSExperime
 }
 
 std::vector<DeconvolvedSpectrum> FLASHDeconvAlgorithm::collectSurveyScans_(const std::vector<DeconvolvedSpectrum>& deconvolved_spectra,
-                                                                            int b_scan_number,
-                                                                            int a_scan_number,
-                                                                            uint ms_level) const
+                                                                           int b_scan_number,
+                                                                           int a_scan_number,
+                                                                           uint ms_level) const
 {
   std::vector<DeconvolvedSpectrum> survey_scans;
 
@@ -575,9 +763,8 @@ std::pair<double, double> FLASHDeconvAlgorithm::getIsolationWindowMzRange_(const
   return {start_mz, end_mz};
 }
 
-PeakGroup FLASHDeconvAlgorithm::findBestPrecursorPeakGroup_(const std::vector<DeconvolvedSpectrum>& survey_scans,
-                                                            double start_mz,
-                                                            double end_mz) const
+PeakGroup
+FLASHDeconvAlgorithm::findBestPrecursorPeakGroup_(const std::vector<DeconvolvedSpectrum>& survey_scans, double start_mz, double end_mz) const
 {
   PeakGroup best_pg;
   double max_score = -1.0;
@@ -612,7 +799,7 @@ PeakGroup FLASHDeconvAlgorithm::findBestPrecursorPeakGroup_(const std::vector<De
       best_pg = pg;
     }
 
-    if (!best_pg.empty()) { break; }
+    if (! best_pg.empty()) { break; }
   }
 
   return best_pg;
@@ -622,6 +809,124 @@ void FLASHDeconvAlgorithm::findPrecursorPeakGroupsForMSnSpectra_(const MSExperim
                                                                  const std::vector<DeconvolvedSpectrum>& deconvolved_spectra,
                                                                  uint ms_level)
 {
+  bool parallel_registration = false;
+#ifdef _OPENMP
+  const auto& parameters = sd_.getParameters();
+  parallel_registration = ! report_decoy_ && merge_spec_ == 0 && ida_log_file_.empty() && omp_get_level() == 0 && omp_get_max_threads() > 1
+                          && (int)parameters.getValue("precursor_charge") == 0 && (double)parameters.getValue("precursor_mz") == 0;
+#endif
+  std::vector<Size> indices;
+  if (parallel_registration)
+  {
+    std::set<std::string> native_ids;
+    for (Size index = 0; index < map.size(); ++index)
+    {
+      const auto& spec = map[index];
+      if (spec.getMSLevel() != ms_level) { continue; }
+      const auto& id = spec.getNativeID();
+      // Duplicate or previously registered keys retain the serial overwrite order.
+      if (! native_ids.insert(id).second || native_id_precursor_peak_group_map_.contains(id))
+      {
+        parallel_registration = false;
+        break;
+      }
+      indices.push_back(index);
+    }
+    if (indices.size() < 2) { parallel_registration = false; }
+  }
+  if (parallel_registration)
+  {
+    struct PrecursorJob
+    {
+      Size index;
+      int before_scan;
+      int after_scan;
+      double start_mz;
+      double end_mz;
+    };
+    std::vector<PrecursorJob> jobs;
+    jobs.reserve(indices.size());
+    std::exception_ptr preparation_error;
+    // Keep scan-ID parsing and warnings on the caller, in input order.
+    for (Size index : indices)
+    {
+      try
+      {
+        const auto [before_scan, after_scan] = findScanNumberBounds_(map, index, ms_level);
+        const auto [start_mz, end_mz] = getIsolationWindowMzRange_(map[index]);
+        jobs.push_back({index, before_scan, after_scan, start_mz, end_mz});
+      }
+      catch (...)
+      {
+        preparation_error = std::current_exception();
+        break;
+      }
+    }
+    // Read the same inclusive survey range in reverse order without copying spectra.
+    const auto find_match = [&deconvolved_spectra, ms_level](const PrecursorJob& job) -> const PeakGroup* {
+      const auto begin = std::lower_bound(deconvolved_spectra.begin(), deconvolved_spectra.end(), DeconvolvedSpectrum(job.before_scan));
+      const auto after = std::lower_bound(deconvolved_spectra.begin(), deconvolved_spectra.end(), DeconvolvedSpectrum(job.after_scan));
+      if (begin == deconvolved_spectra.end() || begin > after) { return nullptr; }
+      auto survey = after == deconvolved_spectra.end() ? after : std::next(after);
+      double max_score = -1.0;
+      const PeakGroup* best = nullptr;
+      while (survey != begin)
+      {
+        --survey;
+        if (survey->getOriginalSpectrum().getMSLevel() != ms_level - 1 || survey->empty()) { continue; }
+        for (const auto& pg : *survey)
+        {
+          if (pg[0].mz > job.end_mz || pg[pg.size() - 1].mz < job.start_mz) { continue; }
+          double max_intensity = 0.0;
+          const FLASHHelperClasses::LogMzPeak* selected = nullptr;
+          const int charge = int(round(pg.getMonoMass() / job.start_mz));
+          for (const auto& peak : pg)
+          {
+            if (peak.abs_charge != charge || peak.mz < job.start_mz || peak.mz > job.end_mz || peak.intensity < max_intensity) { continue; }
+            max_intensity = peak.intensity;
+            selected = &peak;
+          }
+          if (selected == nullptr) { continue; }
+          const double score = pg.getChargeSNR(selected->abs_charge);
+          if (score < max_score) { continue; }
+          max_score = score;
+          best = &pg;
+        }
+        if (best != nullptr) { break; }
+      }
+      return best;
+    };
+    std::vector<const PeakGroup*> matches(jobs.size(), nullptr);
+    std::vector<std::exception_ptr> errors(jobs.size());
+    if (! jobs.empty())
+    {
+      int team_size = 1;
+#ifdef _OPENMP
+      team_size = (int)std::min((Size)omp_get_max_threads(), jobs.size());
+#endif
+#pragma omp parallel for schedule(dynamic, 1) num_threads(team_size) default(none) shared(jobs, matches, errors, find_match)
+      for (SignedSize job = 0; job < (SignedSize)jobs.size(); ++job)
+      {
+        try
+        {
+          matches[job] = find_match(jobs[job]);
+        }
+        catch (...)
+        {
+          errors[job] = std::current_exception();
+        }
+      }
+    }
+    // Publish the successful prefix before the earliest preparation/matching error.
+    for (Size job = 0; job < jobs.size(); ++job)
+    {
+      if (errors[job]) { std::rethrow_exception(errors[job]); }
+      if (matches[job] != nullptr) { native_id_precursor_peak_group_map_.emplace(map[jobs[job].index].getNativeID(), *matches[job]); }
+    }
+    if (preparation_error) { std::rethrow_exception(preparation_error); }
+    return;
+  }
+
   for (Size index = 0; index < map.size(); index++)
   {
     const auto& spec = map[index];
@@ -636,20 +941,21 @@ void FLASHDeconvAlgorithm::findPrecursorPeakGroupsForMSnSpectra_(const MSExperim
     auto [start_mz, end_mz] = getIsolationWindowMzRange_(spec);
     PeakGroup best_pg = findBestPrecursorPeakGroup_(survey_scans, start_mz, end_mz);
 
-    if (!best_pg.empty()) { native_id_precursor_peak_group_map_[native_id] = best_pg; }
+    if (! best_pg.empty()) { native_id_precursor_peak_group_map_[native_id] = best_pg; }
   }
 }
 
 void FLASHDeconvAlgorithm::updatePrecursorQScores_(std::vector<DeconvolvedSpectrum>& deconvolved_spectra, int ms_level)
 {
   // update precursor feature QScores and qvalues
-  std::map<int, DeconvolvedSpectrum> scan_fullscan;
+  // Lower-level owners stay stable while only current-level precursor fields change.
+  std::map<int, const DeconvolvedSpectrum*> scan_fullscan;
 
   for (auto& dspec : deconvolved_spectra)
   {
     if ((int)dspec.getOriginalSpectrum().getMSLevel() != ms_level - 1) continue;
     int scan = dspec.getScanNumber();
-    scan_fullscan[scan] = dspec;
+    scan_fullscan[scan] = &dspec;
   }
 
   for (auto& dspec : deconvolved_spectra)
@@ -660,9 +966,9 @@ void FLASHDeconvAlgorithm::updatePrecursorQScores_(std::vector<DeconvolvedSpectr
     auto precursor_pg = dspec.getPrecursorPeakGroup();
 
     int pscan = precursor_pg.getScanNumber();
-    if (!scan_fullscan.contains(pscan)) continue;
+    if (! scan_fullscan.contains(pscan)) continue;
 
-    auto fullscan = scan_fullscan[pscan];
+    const auto& fullscan = *scan_fullscan[pscan];
 
     auto iter = std::lower_bound(fullscan.begin(), fullscan.end(), precursor_pg);
 
@@ -674,7 +980,10 @@ void FLASHDeconvAlgorithm::updatePrecursorQScores_(std::vector<DeconvolvedSpectr
       precursor_pg.setQscore(iter->getQscore());
       if (iter->getFeatureIndex() > 0) precursor_pg.setQscore2D(iter->getQscore2D());
     }
-    else { precursor_pg.setFeatureIndex(0); }
+    else
+    {
+      precursor_pg.setFeatureIndex(0);
+    }
     dspec.setPrecursorPeakGroup(precursor_pg);
   }
 }
@@ -704,7 +1013,8 @@ void FLASHDeconvAlgorithm::runFeatureFinding_(std::vector<DeconvolvedSpectrum>& 
 
   if (report_decoy_)
   {
-    const auto& decoy_deconvolved_features = mass_tracer.findFeaturesAndUpdateQscore2D(sd_.getAveragine(), deconvolved_spectra, (int)current_min_ms_level_, true);
+    const auto& decoy_deconvolved_features
+      = mass_tracer.findFeaturesAndUpdateQscore2D(sd_.getAveragine(), deconvolved_spectra, (int)current_min_ms_level_, true);
     deconvolved_features.insert(deconvolved_features.end(), decoy_deconvolved_features.begin(), decoy_deconvolved_features.end());
   }
 

@@ -8,32 +8,49 @@
 
 #include <OpenMS/ANALYSIS/TOPDOWN/FLASHHelperClasses.h>
 #include <OpenMS/CHEMISTRY/ModificationsDB.h>
+#include <exception>
+#include <typeinfo>
 #include <utility>
+#ifdef _OPENMP
+  #include <omp.h>
+#endif
 
 namespace OpenMS
 {
-  FLASHHelperClasses::PrecalculatedAveragine::PrecalculatedAveragine(const double min_mass, const double max_mass, const double delta, CoarseIsotopePatternGenerator& generator,
-                                                                     const bool use_RNA_averagine, const double decoy_iso_distance) :
+  FLASHHelperClasses::PrecalculatedAveragine::PrecalculatedAveragine(const double min_mass,
+                                                                     const double max_mass,
+                                                                     const double delta,
+                                                                     CoarseIsotopePatternGenerator& generator,
+                                                                     const bool use_RNA_averagine,
+                                                                     const double decoy_iso_distance):
       mass_interval_(delta),
       min_mass_(min_mass)
   {
+    std::vector<double> masses;
     int i = 0;
-    int max_left_count = 0;
-    int max_right_count = 0;
+    // Preserve the original mass grid, including non-aligned bounds.
     while (true)
     {
       double mass = i * mass_interval_;
       i++;
-      if (mass < min_mass)
-      {
-        continue;
-      }
-      if (mass > max_mass)
-      {
-        break;
-      }
+      if (mass < min_mass) { continue; }
+      if (mass > max_mass) { break; }
+      masses.push_back(mass);
+    }
 
-      auto iso = use_RNA_averagine ? generator.estimateFromRNAMonoWeight(mass) : generator.estimateFromPeptideMonoWeight(mass);
+    const Size bin_count = masses.size();
+    apex_index_.resize(bin_count);
+    right_count_from_apex_.resize(bin_count);
+    left_count_from_apex_.resize(bin_count);
+    average_mono_mass_difference_.resize(bin_count);
+    abundant_mono_mass_difference_.resize(bin_count);
+    isotopes_.resize(bin_count);
+    snr_mul_factor_.resize(bin_count);
+    std::vector<std::exception_ptr> errors(bin_count);
+
+    const auto calculate_bin = [&](const Size index, CoarseIsotopePatternGenerator& local_generator) {
+      const double mass = masses[index];
+      auto iso = use_RNA_averagine ? local_generator.estimateFromRNAMonoWeight(mass) : local_generator.estimateFromPeptideMonoWeight(mass);
 
       if (decoy_iso_distance > 0)
       {
@@ -61,10 +78,7 @@ namespace OpenMS
       for (Size k = 0; k < iso.size(); k++)
       {
         total_pwr += iso[k].getIntensity() * iso[k].getIntensity();
-        if (most_abundant_int >= iso[k].getIntensity())
-        {
-          continue;
-        }
+        if (most_abundant_int >= iso[k].getIntensity()) { continue; }
         most_abundant_int = iso[k].getIntensity();
         most_abundant_index_ = k;
       }
@@ -79,19 +93,13 @@ namespace OpenMS
         double rint = iso[right_count].getIntensity();
 
         bool trim_left = true;
-        if (lint < rint)
-        {
-          pwr += lint * lint;
-        }
+        if (lint < rint) { pwr += lint * lint; }
         else
         {
           pwr += rint * rint;
           trim_left = false;
         }
-        if (total_pwr - pwr < total_pwr * min_pwr)
-        {
-          break;
-        }
+        if (total_pwr - pwr < total_pwr * min_pwr) { break; }
 
         trim_count++;
         if (trim_left)
@@ -120,16 +128,66 @@ namespace OpenMS
       left_count = left_count < min_left_right_count ? min_left_right_count : left_count;
       right_count = right_count < min_left_right_count ? min_left_right_count : right_count;
 
-      max_left_count = std::max(max_left_count, left_count);
-      max_right_count = std::max(max_right_count, right_count);
+      apex_index_[index] = most_abundant_index_;
+      right_count_from_apex_[index] = right_count;
+      left_count_from_apex_[index] = left_count;
+      average_mono_mass_difference_[index] = iso.averageMass() - iso[0].getMZ();
+      abundant_mono_mass_difference_[index] = iso.getMostAbundant().getMZ() - iso[0].getMZ();
+      isotopes_[index] = iso;
+      snr_mul_factor_[index] = intensity_sum * intensity_sum;
+    };
 
-      apex_index_.push_back(most_abundant_index_);
-      right_count_from_apex_.push_back(max_right_count);
-      left_count_from_apex_.push_back(max_left_count);
-      average_mono_mass_difference_.push_back(iso.averageMass() - iso[0].getMZ());
-      abundant_mono_mass_difference_.push_back(iso.getMostAbundant().getMZ() - iso[0].getMZ());
-      isotopes_.push_back(iso);
-      snr_mul_factor_.push_back(intensity_sum * intensity_sum);
+    // A concrete worker copy would slice an overridden generator::run().
+    // Keep derived generators on the caller thread with their original state.
+    if (typeid(generator) != typeid(CoarseIsotopePatternGenerator))
+    {
+      for (Size index = 0; index < bin_count; ++index)
+      {
+        calculate_bin(index, generator);
+      }
+    }
+    else
+    {
+      int worker_count = 1;
+#ifdef _OPENMP
+      if (omp_get_level() == 0)
+      {
+        worker_count = static_cast<int>(std::min(bin_count, static_cast<Size>(omp_get_max_threads())));
+        worker_count = std::max(1, worker_count);
+      }
+#endif
+      // Copy configurable generators on the caller: an allocation failure must
+      // not escape an OpenMP region. Each worker then owns its generator state.
+      std::vector<CoarseIsotopePatternGenerator> generators(worker_count, generator);
+#pragma omp parallel for num_threads(worker_count) schedule(static) if (worker_count > 1)
+      for (SignedSize index = 0; index < static_cast<SignedSize>(bin_count); ++index)
+      {
+        int worker = 0;
+#ifdef _OPENMP
+        worker = omp_get_thread_num();
+#endif
+        auto& local_generator = generators[worker];
+        try
+        {
+          calculate_bin(static_cast<Size>(index), local_generator);
+        }
+        catch (...)
+        {
+          errors[index] = std::current_exception();
+        }
+      }
+    }
+
+    // Rethrow the first failing mass bin and retain the ordered prefix maxima.
+    int max_left_count = 0;
+    int max_right_count = 0;
+    for (Size index = 0; index < bin_count; ++index)
+    {
+      if (errors[index]) { std::rethrow_exception(errors[index]); }
+      max_left_count = std::max(max_left_count, left_count_from_apex_[index]);
+      max_right_count = std::max(max_right_count, right_count_from_apex_[index]);
+      left_count_from_apex_[index] = max_left_count;
+      right_count_from_apex_[index] = max_right_count;
     }
   }
 

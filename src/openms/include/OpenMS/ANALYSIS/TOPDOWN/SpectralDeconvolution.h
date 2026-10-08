@@ -17,6 +17,7 @@
 #include <OpenMS/KERNEL/MSSpectrum.h>
 #include <boost/dynamic_bitset.hpp>
 #include <iostream>
+#include <memory>
 
 namespace OpenMS
 {
@@ -130,6 +131,24 @@ namespace OpenMS
     void updateMembers_() override;
 
   private:
+    friend class FLASHDeconvAlgorithm;
+
+    /**
+      @brief Attach an immutable, lifetime-owned model to a fresh outer worker.
+      @param[in] avg Nonnull const heap model, kept alive through all worker calls.
+      @throws Exception::InvalidParameter if avg is null.
+      @note An existing owned model is retained. Caller must not mutate any
+      separate alias of the supplied model while it is shared. The factory
+      creates a const heap object and only publishes it before the team starts.
+    */
+    void setSharedAveragine_(std::shared_ptr<const PrecalculatedAveragine> avg);
+
+    /// Select the active model without reference-count operations in hot loops.
+    const PrecalculatedAveragine& activeAveragine_() const noexcept
+    {
+      return shared_avg_ ? *shared_avg_ : avg_;
+    }
+
     /// FLASHDeconv parameters
 
     /// allowed isotope error in deconvolved mass to calculate qvalue
@@ -169,7 +188,9 @@ namespace OpenMS
     PeakGroup::TargetDecoyType target_decoy_type_ = PeakGroup::TargetDecoyType::target;
 
     /// precalculated averagine distributions for fast averagine generation
-    FLASHHelperClasses::PrecalculatedAveragine avg_;
+    FLASHHelperClasses::PrecalculatedAveragine avg_{};
+    /// Optional immutable per-run model owner; empty in legacy callers.
+    std::shared_ptr<const PrecalculatedAveragine> shared_avg_;
 
     /// mass bins that are targeted for FLASHIda global targeting mode
     boost::dynamic_bitset<> target_mass_bins_;
