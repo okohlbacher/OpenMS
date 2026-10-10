@@ -10,6 +10,12 @@
 #include <OpenMS/DATASTRUCTURES/DateTime.h>
 #include <OpenMS/FORMAT/MzPeakFile.h>
 
+#ifdef OPENMS_WITH_MZPEAK
+  #include <mzpeak/open.h>
+  #include <mzpeak/spectra.h>
+  #include <mzpeak/spectrum.h>
+#endif
+
 #include <deque>
 #include <functional>
 #include <OpenMS/FORMAT/OPTIONS/PeakFileOptions.h>
@@ -204,7 +210,7 @@ namespace
   struct SpectrumMeta
   {
     int ms_level = 0;
-    double retention_time = 0.0; ///< seconds (mzpeak stores RT in seconds)
+    double retention_time = 0.0; ///< seconds (the format stores minutes; converted on read)
     std::vector<double> mz_delta_model;
     std::string native_id;
     std::string representation;           ///< MS:1000127 centroid / MS:1000128 profile
@@ -661,7 +667,8 @@ namespace
 
         if (time_field && ! time_field->IsNull(r) && time_field->type_id() == arrow::Type::DOUBLE)
         {
-          m.retention_time = std::static_pointer_cast<arrow::DoubleArray>(time_field)->Value(r);
+          // The format stores minutes (spec: the time unit MUST be minutes); OpenMS uses seconds.
+          m.retention_time = std::static_pointer_cast<arrow::DoubleArray>(time_field)->Value(r) * 60.0;
         }
 
         if (model_values)
@@ -844,6 +851,101 @@ namespace
     if (! sm.native_id.empty()) spec.setMetaValue("mzpeak_native_id", sm.native_id);
     spec.setNativeID("index=" + OpenMS::StringUtils::toStr(idx));
   }
+
+#ifdef OPENMS_WITH_MZPEAK
+  // openms-mzpeak reads every layout and encoding the specification defines
+  // (point and chunked, delta, Numpress, coordinate grid, null marking) and the
+  // flat, split metadata tables current writers produce. These helpers turn its
+  // per-spectrum record into the SpectrumMeta this file already maps onto an
+  // MSSpectrum, so both read paths fill a spectrum the same way.
+  CvParam fromLibraryCv_(const MzPeak::CvParam& p)
+  {
+    CvParam out;
+    out.accession = p.accession.value_or("");
+    out.name = p.name.value_or("");
+    out.value = p.value.value_or("");
+    out.unit = p.unit.value_or("");
+    return out;
+  }
+
+  SpectrumMeta fromLibraryMeta_(const MzPeak::SpectrumMetadata& md)
+  {
+    SpectrumMeta sm;
+    sm.ms_level = md.ms_level.value_or(0);
+    sm.retention_time = md.retention_time.value_or(0.0); // the library reports seconds
+    sm.native_id = md.id;
+    sm.representation = md.representation;
+    sm.polarity = md.polarity.value_or(0);
+    for (const auto& p : md.parameters)
+      sm.parameters.push_back(fromLibraryCv_(p));
+    for (const auto& pr : md.precursors)
+    {
+      PrecursorData pd;
+      const auto& w = pr.isolation_window;
+      if (w.target_mz)
+      {
+        pd.has_isolation = true;
+        pd.isolation_target_mz = *w.target_mz;
+        pd.isolation_lower_offset = w.lower_offset.value_or(0.0f);
+        pd.isolation_upper_offset = w.upper_offset.value_or(0.0f);
+      }
+      for (const auto& a : pr.activation_parameters)
+        pd.activation.push_back(fromLibraryCv_(a));
+      // PrecursorData carries one selected ion, as the point reader does.
+      if (! pr.selected_ions.empty())
+      {
+        const auto& si = pr.selected_ions.front();
+        if (si.selected_ion_mz)
+        {
+          pd.has_selected_ion = true;
+          pd.selected_ion_mz = *si.selected_ion_mz;
+        }
+        if (si.charge_state)
+        {
+          pd.has_charge = true;
+          pd.charge = *si.charge_state;
+        }
+        if (si.intensity)
+        {
+          pd.has_intensity = true;
+          pd.intensity = *si.intensity;
+        }
+      }
+      sm.precursors.push_back(std::move(pd));
+    }
+    return sm;
+  }
+
+  /// One spectrum from the library: metadata always, peaks unless @p metadata_only.
+  MSSpectrum spectrumFromLibrary_(const MzPeak::Spectrum& s, bool metadata_only)
+  {
+    const MzPeak::SpectrumMetadata& md = s.metadata();
+    MSSpectrum spec;
+    if (! metadata_only)
+    {
+      const std::vector<double>& mz = s.mz();
+      const std::vector<float>& intensity = s.intensity();
+      spec.reserve(mz.size());
+      for (std::size_t k = 0; k < mz.size(); ++k)
+        spec.push_back(Peak1D(mz[k], intensity[k]));
+    }
+    applySpectrumMeta_(fromLibraryMeta_(md), md.index, spec);
+    spec.sortByPosition();
+    return spec;
+  }
+
+  MzPeak::Index openWithLibrary_(const std::string& filename)
+  {
+    try
+    {
+      return MzPeak::open(filename);
+    }
+    catch (const std::exception& e)
+    {
+      throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename, std::string("openms-mzpeak: ") + e.what());
+    }
+  }
+#endif
 
   /// Decode all point-layout spectra from a data/peaks table and add them to
   /// @p exp. Rows are grouped by spectrum_index. When @p reconstruct is true
@@ -1200,7 +1302,7 @@ namespace
     std::uint64_t index = 0;
     std::string id;
     std::uint8_t ms_level = 0;
-    double time = 0.0; ///< RT in seconds
+    double time = 0.0; ///< RT in minutes, as the format requires
     std::int8_t polarity = 0;
     std::string representation; ///< MS:1000127 centroid / MS:1000128 profile
     std::uint64_t n_points = 0;
@@ -1969,6 +2071,11 @@ struct MzPeakFile::OnDiscState
   std::vector<std::tuple<uint64_t, uint64_t, int>> peaks_rg_index;
   bool data_rg_built = false;
   bool peaks_rg_built = false;
+#ifdef OPENMS_WITH_MZPEAK
+  // Declared index first so the spectra, which read through it, die first.
+  std::unique_ptr<MzPeak::Index> lib_index;
+  std::unique_ptr<MzPeak::Spectra> lib_spectra; // neither copyable nor movable: built in place
+#endif
 };
 
 MzPeakFile::MzPeakFile() = default;
@@ -1987,6 +2094,13 @@ void MzPeakFile::openFile(const std::string& filename)
   auto state = std::make_unique<OnDiscState>();
   state->filename = filename;
 
+#ifdef OPENMS_WITH_MZPEAK
+  state->lib_index.reset(new MzPeak::Index(openWithLibrary_(filename)));
+  state->lib_spectra.reset(new MzPeak::Spectra(state->lib_index->spectra()));
+  on_disc_ = std::move(state);
+  return;
+#endif
+
   // 1. Parse the index JSON (always small — just JSON, not peak data).
   std::string index_json = readEntryBytes_(filename, "mzpeak_index.json", state->temp_dir);
   try
@@ -1998,7 +2112,7 @@ void MzPeakFile::openFile(const std::string& filename)
       std::string entity = f.value("entity_type", "");
       std::string kind = f.value("data_kind", "");
       if (entity != "spectrum") continue;
-      if (kind == "data arrays") state->data_entry = name;
+      if (kind == "data_arrays" || kind == "data arrays") state->data_entry = name;
       else if (kind == "peaks")
         state->peaks_entry = name;
       else if (kind == "metadata")
@@ -2049,11 +2163,28 @@ void MzPeakFile::openFile(const std::string& filename)
 }
 
 Size MzPeakFile::getNrSpectra() const
-{ return on_disc_ ? static_cast<Size>(on_disc_->meta.size()) : Size(0); }
+{
+  if (! on_disc_) return Size(0);
+#ifdef OPENMS_WITH_MZPEAK
+  if (on_disc_->lib_spectra) return static_cast<Size>(on_disc_->lib_spectra->size());
+#endif
+  return static_cast<Size>(on_disc_->meta.size());
+}
 
 MSSpectrum MzPeakFile::getSpectrum(Size index)
 {
   if (! on_disc_) throw Exception::IllegalArgument(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "no file open; call openFile() first");
+
+#ifdef OPENMS_WITH_MZPEAK
+  if (on_disc_->lib_spectra)
+  {
+    if (index >= on_disc_->lib_spectra->size())
+      throw Exception::InvalidParameter(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION,
+                                        "spectrum index out of range: " + OpenMS::StringUtils::toStr(index));
+    auto s = (*on_disc_->lib_spectra)[index];
+    return spectrumFromLibrary_(s, false);
+  }
+#endif
 
   auto it = on_disc_->meta.find(static_cast<uint64_t>(index));
   if (it == on_disc_->meta.end())
@@ -2148,6 +2279,34 @@ void MzPeakFile::load(const std::string& filename, MapType& map) const
 
   map.clear(true);
 
+#ifdef OPENMS_WITH_MZPEAK
+  {
+    MzPeak::Index index = openWithLibrary_(filename);
+    MzPeak::Spectra spectra = index.spectra();
+    {
+      // Run-level metadata is best-effort, as on the point path.
+      std::unique_ptr<TempDir> temp_dir;
+      try
+      {
+        nlohmann::json idx = nlohmann::json::parse(readEntryBytes_(filename, "mzpeak_index.json", temp_dir));
+        if (idx.contains("metadata")) applyRunMetadata_(idx.at("metadata"), map);
+      }
+      catch (const std::exception&)
+      {
+      }
+    }
+    // Every spectrum the metadata lists, in index order, including those with no
+    // peaks: dropping them would shift a consumer's scan-cycle detection.
+    for (std::size_t i = 0; i < spectra.size(); ++i)
+    {
+      auto s = spectra[i];
+      map.addSpectrum(spectrumFromLibrary_(s, false));
+    }
+    map.updateRanges();
+    return;
+  }
+#endif
+
   // Keep a single TempDir alive for all archive-entry reads (ZipRandomAccessFile
   // may extract entries to disk on some platforms).
   std::unique_ptr<TempDir> temp_dir;
@@ -2169,7 +2328,7 @@ void MzPeakFile::load(const std::string& filename, MapType& map) const
       std::string entity = f.value("entity_type", "");
       std::string kind = f.value("data_kind", "");
       if (entity != "spectrum") continue; // chromatograms ignored in this plan
-      if (kind == "data arrays") data_entry = name;
+      if (kind == "data_arrays" || kind == "data arrays") data_entry = name;
       else if (kind == "peaks")
         peaks_entry = name;
       else if (kind == "metadata")
@@ -2276,7 +2435,7 @@ void MzPeakFile::store(const std::string& filename, const MapType& map) const
     // Prefer the spectrum native id; fall back to the stable "index=i" form.
     row.id = spec.getNativeID().empty() ? ("index=" + OpenMS::StringUtils::toStr(i)) : std::string(spec.getNativeID());
     row.ms_level = static_cast<std::uint8_t>(spec.getMSLevel());
-    row.time = spec.getRT();
+    row.time = spec.getRT() / 60.0; // the format stores minutes; OpenMS RT is seconds
     // Representation accession: profile MS:1000128, centroid MS:1000127.
     row.representation = centroid ? "MS:1000127" : "MS:1000128";
     // Scan polarity as the mzPeak signed int8 (+1 positive, -1 negative).
@@ -2335,7 +2494,7 @@ void MzPeakFile::store(const std::string& filename, const MapType& map) const
   // ------------------------------------------------------------------
   nlohmann::json idx;
   nlohmann::json files = nlohmann::json::array();
-  files.push_back({{"name", "spectra_data.parquet"}, {"entity_type", "spectrum"}, {"data_kind", "data arrays"}});
+  files.push_back({{"name", "spectra_data.parquet"}, {"entity_type", "spectrum"}, {"data_kind", "data_arrays"}});
   if (any_centroid) { files.push_back({{"name", "spectra_peaks.parquet"}, {"entity_type", "spectrum"}, {"data_kind", "peaks"}}); }
   files.push_back({{"name", "spectra_metadata.parquet"}, {"entity_type", "spectrum"}, {"data_kind", "metadata"}});
   idx["files"] = std::move(files);
@@ -2366,6 +2525,59 @@ void MzPeakFile::transform(const std::string& filename_in, Interfaces::IMSDataCo
 {
   if (! File::exists(filename_in)) { throw Exception::FileNotFound(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename_in); }
 
+#ifdef OPENMS_WITH_MZPEAK
+  {
+    MzPeak::Index index = openWithLibrary_(filename_in);
+    MzPeak::Spectra spectra = index.spectra();
+    auto passes = [&](int ms_level, double rt) {
+      if (options_.hasMSLevels() && ! options_.containsMSLevel(ms_level)) return false;
+      if (options_.hasRTRange() && ! options_.getRTRange().encloses(DPosition<1>(rt))) return false;
+      return true;
+    };
+    if (! skip_first_pass)
+    {
+      Size n_spectra = 0;
+      for (std::size_t i = 0; i < spectra.size(); ++i)
+      {
+        auto s = spectra[i];
+        const MzPeak::SpectrumMetadata& md = s.metadata(); // no peak decode
+        if (passes(md.ms_level.value_or(0), md.retention_time.value_or(0.0))) ++n_spectra;
+      }
+      consumer->setExpectedSize(n_spectra, 0);
+      MSExperiment tmp_exp;
+      {
+        // Run-level metadata is best-effort, as on the point path.
+        std::unique_ptr<TempDir> temp_dir;
+        try
+        {
+          nlohmann::json idx = nlohmann::json::parse(readEntryBytes_(filename_in, "mzpeak_index.json", temp_dir));
+          if (idx.contains("metadata")) applyRunMetadata_(idx.at("metadata"), tmp_exp);
+        }
+        catch (const std::exception&)
+        {
+        }
+      }
+      consumer->setExperimentalSettings(tmp_exp);
+    }
+    const bool metadata_only = options_.getMetadataOnly() || ! options_.getFillData();
+    for (std::size_t i = 0; i < spectra.size(); ++i)
+    {
+      auto s = spectra[i];
+      const MzPeak::SpectrumMetadata& md = s.metadata();
+      if (! passes(md.ms_level.value_or(0), md.retention_time.value_or(0.0))) continue;
+      MSSpectrum spec = spectrumFromLibrary_(s, metadata_only);
+      if (! metadata_only && options_.hasMZRange() && ! spec.empty())
+      {
+        const DRange<1>& mzr = options_.getMZRange();
+        spec.erase(std::remove_if(spec.begin(), spec.end(), [&mzr](const Peak1D& pk) { return ! mzr.encloses(DPosition<1>(pk.getMZ())); }),
+                   spec.end());
+      }
+      consumer->consumeSpectrum(spec);
+    }
+    return;
+  }
+#endif
+
   // ------------------------------------------------------------------
   // 1. Parse mzpeak_index.json to locate data / peaks / metadata entries.
   // ------------------------------------------------------------------
@@ -2384,7 +2596,7 @@ void MzPeakFile::transform(const std::string& filename_in, Interfaces::IMSDataCo
       std::string entity = f.value("entity_type", "");
       std::string kind = f.value("data_kind", "");
       if (entity != "spectrum") continue;
-      if (kind == "data arrays") data_entry = name;
+      if (kind == "data_arrays" || kind == "data arrays") data_entry = name;
       else if (kind == "peaks")
         peaks_entry = name;
       else if (kind == "metadata")
