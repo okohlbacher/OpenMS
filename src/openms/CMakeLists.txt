@@ -260,6 +260,21 @@ if(WITH_ONNX)
 endif()
 
 # Parquet support requires Arrow core + compute (filter expressions) + Parquet.
+# mzPeak reader library (openms-mzpeak). Off by default; enable with
+# -DOPENMS_WITH_MZPEAK=ON -DMZPEAK_SOURCE_DIR=<checkout of openms-mzpeak>.
+option(OPENMS_WITH_MZPEAK "Read mzPeak archives through the openms-mzpeak library" OFF)
+if(OPENMS_WITH_MZPEAK)
+  if(NOT EXISTS "${MZPEAK_SOURCE_DIR}/CMakeLists.txt")
+    message(FATAL_ERROR "OPENMS_WITH_MZPEAK needs MZPEAK_SOURCE_DIR pointing at openms-mzpeak (no CMakeLists.txt there).")
+  endif()
+  add_subdirectory("${MZPEAK_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/mzpeak" EXCLUDE_FROM_ALL)
+  list(APPEND OPENMS_DEP_PRIVATE_LIBRARIES mzpeak)
+  # OpenMS is a static library, so its private dependencies appear in its exported link
+  # interface; the mzpeak targets must be in the same export set.
+  install(TARGETS mzpeak numpress EXPORT OpenMSTargets
+          ARCHIVE DESTINATION lib LIBRARY DESTINATION lib RUNTIME DESTINATION bin)
+endif()
+
 list(APPEND OPENMS_DEP_PRIVATE_LIBRARIES
      ${OPENMS_ARROW_TARGET}
      ${OPENMS_ARROW_COMPUTE_TARGET}
