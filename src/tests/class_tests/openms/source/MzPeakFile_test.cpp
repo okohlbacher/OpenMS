@@ -42,7 +42,7 @@ START_SECTION((~MzPeakFile()))
 delete ptr;
 END_SECTION
 
-START_SECTION(void load(const String& filename, MapType& map))
+START_SECTION(void load(const std::string& filename, MapType& map))
 {
   // ----------------------------------------------------------------------
   // Missing file must raise FileNotFound.
@@ -247,7 +247,7 @@ START_SECTION([EXTRA] load via generic FileHandler API)
 }
 END_SECTION
 
-START_SECTION(void store(const String& filename, const MapType& map))
+START_SECTION(void store(const std::string& filename, const MapType& map))
 {
   // ----------------------------------------------------------------------
   // Round trip: load the bundled fixture, store it to a fresh .mzpeak, reload,
@@ -259,7 +259,7 @@ START_SECTION(void store(const String& filename, const MapType& map))
   MzPeakFile().load(OPENMS_GET_TEST_DATA_PATH("small.mzpeak"), src);
   TEST_EQUAL(src.size(), 48)
 
-  String tmp;
+  std::string tmp;
   NEW_TMP_FILE_EXT(tmp, ".mzpeak")
   MzPeakFile().store(tmp, src);
 
@@ -374,7 +374,7 @@ START_SECTION([EXTRA] store via generic FileHandler API)
   MSExperiment src;
   MzPeakFile().load(OPENMS_GET_TEST_DATA_PATH("small.mzpeak"), src);
 
-  String tmp;
+  std::string tmp;
   NEW_TMP_FILE_EXT(tmp, ".mzpeak")
   FileHandler fh;
   fh.storeExperiment(tmp, src);
@@ -499,7 +499,7 @@ START_SECTION([EXTRA] mzML->mzpeak->mzML cross-validation (INT-07))
     if (! src[i].empty()) ++src_nonempty;
 
   // 2. mzML -> mzpeak.
-  String tmp_mzpeak;
+  std::string tmp_mzpeak;
   NEW_TMP_FILE_EXT(tmp_mzpeak, ".mzpeak")
   MzPeakFile().store(tmp_mzpeak, src);
 
@@ -510,7 +510,7 @@ START_SECTION([EXTRA] mzML->mzpeak->mzML cross-validation (INT-07))
   TEST_EQUAL(mid.size(), src_nonempty)
 
   // 4. mzpeak -> mzML -> MSExperiment (rt).
-  String tmp_mzml;
+  std::string tmp_mzml;
   NEW_TMP_FILE_EXT(tmp_mzml, ".mzML")
   MzMLFile().store(tmp_mzml, mid);
   MSExperiment rt;
@@ -568,7 +568,7 @@ END_SECTION
 // On-disc streaming interface
 // ==========================================================================
 
-START_SECTION((void openFile(const String& filename)))
+START_SECTION((void openFile(const std::string& filename)))
 {
   // Missing file must raise FileNotFound.
   MzPeakFile f;

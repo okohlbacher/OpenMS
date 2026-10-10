@@ -12,6 +12,7 @@
 #include <OpenMS/INTERFACES/IMSDataConsumer.h>
 #include <OpenMS/KERNEL/MSExperiment.h>
 #include <OpenMS/KERNEL/MSSpectrum.h>
+#include <OpenMS/CONCEPT/Types.h>
 #include <memory>
 
 namespace OpenMS
@@ -92,7 +93,7 @@ public:
   /**
     @brief Load an mzPeak file into an MSExperiment.
   */
-  void load(const String& filename, MapType& map) const;
+  void load(const std::string& filename, MapType& map) const;
 
   /**
     @brief Store an MSExperiment in mzPeak format.
@@ -109,7 +110,7 @@ public:
     reader-side cast bug fixed in this commit read them back as empty -- the
     columns were written correctly all along.
   */
-  void store(const String& filename, const MapType& map) const;
+  void store(const std::string& filename, const MapType& map) const;
 
   /**
     @brief Stream the contents of an mzPeak file into a data consumer.
@@ -125,7 +126,7 @@ public:
     @param skip_first_pass When true, the first pass (setExpectedSize /
                            setExperimentalSettings) is skipped.
   */
-  void transform(const String& filename_in, Interfaces::IMSDataConsumer* consumer, bool skip_full_count = false, bool skip_first_pass = false) const;
+  void transform(const std::string& filename_in, Interfaces::IMSDataConsumer* consumer, bool skip_full_count = false, bool skip_first_pass = false) const;
   //@}
 
   /** @name On-disc random-access interface
@@ -148,7 +149,7 @@ public:
     @throw Exception::FileNotFound if the file does not exist.
     @throw Exception::ParseError   if the archive is malformed.
   */
-  void openFile(const String& filename);
+  void openFile(const std::string& filename);
 
   /// Returns the number of spectra in the currently open file, or 0 if no file is open.
   Size getNrSpectra() const;
