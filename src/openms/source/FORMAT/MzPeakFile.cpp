@@ -28,6 +28,8 @@
 #include <OpenMS/METADATA/Software.h>
 #include <OpenMS/METADATA/SourceFile.h>
 #include <OpenMS/SYSTEM/File.h>
+#include <OpenMS/SYSTEM/TempFiles.h>
+#include <OpenMS/DATASTRUCTURES/StringUtils.h>
 #include <algorithm>
 #include <arrow/api.h>
 #include <arrow/io/api.h>
@@ -172,10 +174,10 @@ namespace
   /// MzMLHandler consumes its XML cvParam @c value attribute.
   struct CvParam
   {
-    String accession;
-    String name;
-    String value; ///< stringified union value ("" if absent)
-    String unit;  ///< unit accession ("" if absent)
+    std::string accession;
+    std::string name;
+    std::string value; ///< stringified union value ("" if absent)
+    std::string unit;  ///< unit accession ("" if absent)
   };
 
   /// One precursor (RDR-10c): an isolation window (target m/z + offsets),
@@ -204,15 +206,15 @@ namespace
     int ms_level = 0;
     double retention_time = 0.0; ///< seconds (mzpeak stores RT in seconds)
     std::vector<double> mz_delta_model;
-    String native_id;
-    String representation;           ///< MS:1000127 centroid / MS:1000128 profile
+    std::string native_id;
+    std::string representation;           ///< MS:1000127 centroid / MS:1000128 profile
     int polarity = 0;                ///< +1 positive, -1 negative, 0 unknown
     std::vector<CvParam> parameters; ///< per-spectrum flat CV params
     std::vector<PrecursorData> precursors;
   };
 
   /// Read a whole Parquet table from a named archive entry via Arrow.
-  std::shared_ptr<arrow::Table> readTableFromArchive_(const String& archive, const String& entry, std::unique_ptr<File::TempDir>& temp_dir)
+  std::shared_ptr<arrow::Table> readTableFromArchive_(const std::string& archive, const std::string& entry, std::unique_ptr<TempDir>& temp_dir)
   {
     auto raf_result = ZipRandomAccessFile::Open(archive, entry, temp_dir);
     if (! raf_result.ok())
@@ -241,7 +243,7 @@ namespace
   }
 
   /// Read raw bytes of a (small) archive entry into a string (for JSON members).
-  std::string readEntryBytes_(const String& archive, const String& entry, std::unique_ptr<File::TempDir>& temp_dir)
+  std::string readEntryBytes_(const std::string& archive, const std::string& entry, std::unique_ptr<TempDir>& temp_dir)
   {
     auto raf_result = ZipRandomAccessFile::Open(archive, entry, temp_dir);
     if (! raf_result.ok())
@@ -314,7 +316,7 @@ namespace
   class PointBatchStream_
   {
   public:
-    PointBatchStream_(const String& archive, const String& entry, std::unique_ptr<File::TempDir>& temp_dir)
+    PointBatchStream_(const std::string& archive, const std::string& entry, std::unique_ptr<TempDir>& temp_dir)
       : archive_(archive)
     {
       auto raf_result = ZipRandomAccessFile::Open(archive, entry, temp_dir);
@@ -394,7 +396,7 @@ namespace
       return first;
     }
 
-    String archive_;
+    std::string archive_;
     std::unique_ptr<parquet::arrow::FileReader> reader_;
     int n_rg_ = 0;
     int rg_ = 0;
@@ -403,9 +405,9 @@ namespace
 
   /// Stringify one element of a mzPeak value union
   /// struct<integer,float,string,boolean>. mzPeak stores a CvParam value in
-  /// exactly one populated sub-field; we normalise it to a String so the CV
+  /// exactly one populated sub-field; we normalise it to a std::string so the CV
   /// dispatch can apply typed setters uniformly. Returns "" if all are null.
-  String valueUnionToString_(const std::shared_ptr<arrow::StructArray>& value_struct, int64_t row)
+  std::string valueUnionToString_(const std::shared_ptr<arrow::StructArray>& value_struct, int64_t row)
   {
     if (! value_struct || value_struct->IsNull(row)) return "";
 
@@ -413,22 +415,22 @@ namespace
     {
       if (! f->IsNull(row) && f->type_id() == arrow::Type::LARGE_STRING)
       {
-        return String(std::static_pointer_cast<arrow::LargeStringArray>(f)->GetString(row));
+        return std::string(std::static_pointer_cast<arrow::LargeStringArray>(f)->GetString(row));
       }
     }
     if (auto f = value_struct->GetFieldByName("float"))
     {
-      if (! f->IsNull(row) && f->type_id() == arrow::Type::DOUBLE) { return String(std::static_pointer_cast<arrow::DoubleArray>(f)->Value(row)); }
+      if (! f->IsNull(row) && f->type_id() == arrow::Type::DOUBLE) { return OpenMS::StringUtils::toStr(std::static_pointer_cast<arrow::DoubleArray>(f)->Value(row)); }
     }
     if (auto f = value_struct->GetFieldByName("integer"))
     {
-      if (! f->IsNull(row) && f->type_id() == arrow::Type::INT64) { return String(std::static_pointer_cast<arrow::Int64Array>(f)->Value(row)); }
+      if (! f->IsNull(row) && f->type_id() == arrow::Type::INT64) { return OpenMS::StringUtils::toStr(std::static_pointer_cast<arrow::Int64Array>(f)->Value(row)); }
     }
     if (auto f = value_struct->GetFieldByName("boolean"))
     {
       if (! f->IsNull(row) && f->type_id() == arrow::Type::BOOL)
       {
-        return std::static_pointer_cast<arrow::BooleanArray>(f)->Value(row) ? String("true") : String("false");
+        return std::static_pointer_cast<arrow::BooleanArray>(f)->Value(row) ? std::string("true") : std::string("false");
       }
     }
     return "";
@@ -436,13 +438,13 @@ namespace
 
   /// Read a string sub-field of a struct array at @p row, accepting either
   /// arrow string or large_string. Returns "" if absent/null.
-  String structString_(const std::shared_ptr<arrow::StructArray>& s, const String& field, int64_t row)
+  std::string structString_(const std::shared_ptr<arrow::StructArray>& s, const std::string& field, int64_t row)
   {
     if (! s) return "";
     auto f = s->GetFieldByName(field);
     if (! f || f->IsNull(row)) return "";
-    if (f->type_id() == arrow::Type::LARGE_STRING) { return String(std::static_pointer_cast<arrow::LargeStringArray>(f)->GetString(row)); }
-    if (f->type_id() == arrow::Type::STRING) { return String(std::static_pointer_cast<arrow::StringArray>(f)->GetString(row)); }
+    if (f->type_id() == arrow::Type::LARGE_STRING) { return std::string(std::static_pointer_cast<arrow::LargeStringArray>(f)->GetString(row)); }
+    if (f->type_id() == arrow::Type::STRING) { return std::string(std::static_pointer_cast<arrow::StringArray>(f)->GetString(row)); }
     return "";
   }
 
@@ -704,7 +706,7 @@ namespace
   /// Spectrum-context CV dispatch (parent_tag "spectrum"/"scan" in mzML).
   void applyCVParamToSpectrum_(const CvParam& p, MSSpectrum& spec)
   {
-    const String& a = p.accession;
+    const std::string& a = p.accession;
     if (a.empty()) // no accession (e.g. Thermo trailer) -> keep name->value
     {
       if (! p.name.empty()) spec.setMetaValue(p.name, p.value);
@@ -724,7 +726,7 @@ namespace
   /// energy onto an OpenMS Precursor (parent_tag "activation" in mzML).
   void applyActivationCVParam_(const CvParam& p, Precursor& prec)
   {
-    const String& a = p.accession;
+    const std::string& a = p.accession;
     if (a == "MS:1000133") { prec.getActivationMethods().insert(Precursor::ActivationMethod::CID); }
     else if (a == "MS:1000134") { prec.getActivationMethods().insert(Precursor::ActivationMethod::PD); }
     else if (a == "MS:1000135") { prec.getActivationMethods().insert(Precursor::ActivationMethod::PSD); }
@@ -739,11 +741,11 @@ namespace
     else if (a == "MS:1002472") { prec.getActivationMethods().insert(Precursor::ActivationMethod::TRAP); }
     else if (a == "MS:1000045") // collision energy
     {
-      if (! p.value.empty()) prec.setActivationEnergy(p.value.toDouble());
+      if (! p.value.empty()) prec.setActivationEnergy(OpenMS::StringUtils::toDouble(p.value));
     }
     else if (a == "MS:1000509") // activation energy
     {
-      if (! p.value.empty()) prec.setActivationEnergy(p.value.toDouble());
+      if (! p.value.empty()) prec.setActivationEnergy(OpenMS::StringUtils::toDouble(p.value));
     }
     else if (! a.empty()) { prec.setMetaValue(a, p.value); } // keep otherwise
   }
@@ -840,7 +842,7 @@ namespace
       applyCVParamToSpectrum_(p, spec);
     buildPrecursors_(sm.precursors, spec);
     if (! sm.native_id.empty()) spec.setMetaValue("mzpeak_native_id", sm.native_id);
-    spec.setNativeID("index=" + String(idx));
+    spec.setNativeID("index=" + OpenMS::StringUtils::toStr(idx));
   }
 
   /// Decode all point-layout spectra from a data/peaks table and add them to
@@ -895,7 +897,7 @@ namespace
 
       if (auto it = meta.find(cur); it != meta.end()) applySpectrumMeta_(it->second, cur, spec);
       else
-        spec.setNativeID("index=" + String(cur)); // no metadata entry — keep at least the index id
+        spec.setNativeID("index=" + OpenMS::StringUtils::toStr(cur)); // no metadata entry — keep at least the index id
 
       spec.sortByPosition();
       exp.addSpectrum(std::move(spec));
@@ -908,18 +910,18 @@ namespace
 
   /// Convenience accessors for nlohmann JSON CvParam tuples ({accession, name,
   /// value, unit}); value may be a string/number/null.
-  String jsonAccession_(const nlohmann::json& p)
-  { return p.value("accession", String()); }
-  String jsonName_(const nlohmann::json& p)
-  { return p.value("name", String()); }
-  String jsonParamValue_(const nlohmann::json& p)
+  std::string jsonAccession_(const nlohmann::json& p)
+  { return p.value("accession", std::string()); }
+  std::string jsonName_(const nlohmann::json& p)
+  { return p.value("name", std::string()); }
+  std::string jsonParamValue_(const nlohmann::json& p)
   {
     if (! p.contains("value") || p.at("value").is_null()) return "";
     const auto& v = p.at("value");
-    if (v.is_string()) return String(v.get<std::string>());
-    if (v.is_number_integer()) return String(v.get<long long>());
-    if (v.is_number_float()) return String(v.get<double>());
-    if (v.is_boolean()) return v.get<bool>() ? String("true") : String("false");
+    if (v.is_string()) return std::string(v.get<std::string>());
+    if (v.is_number_integer()) return OpenMS::StringUtils::toStr(v.get<long long>());
+    if (v.is_number_float()) return OpenMS::StringUtils::toStr(v.get<double>());
+    if (v.is_boolean()) return v.get<bool>() ? std::string("true") : std::string("false");
     return "";
   }
 
@@ -927,8 +929,8 @@ namespace
   /// SourceFile IS-A CVTermList; unrecognised accessions are kept via addCVTerm.
   void applySourceFileParam_(const nlohmann::json& p, SourceFile& sf)
   {
-    String a = jsonAccession_(p);
-    String value = jsonParamValue_(p);
+    std::string a = jsonAccession_(p);
+    std::string value = jsonParamValue_(p);
     if (a == "MS:1000569") { sf.setChecksum(value, SourceFile::ChecksumType::SHA1); }
     else if (a == "MS:1000568") { sf.setChecksum(value, SourceFile::ChecksumType::MD5); }
     else if (a == "MS:1000563") { sf.setFileType(jsonName_(p)); } // Thermo RAW format
@@ -954,9 +956,9 @@ namespace
       {
         // ISO 8601 (e.g. 2005-07-20T19:44:22Z); DateTime::set tolerates the 'Z'.
         DateTime dt;
-        String iso = run.value("start_time", String());
-        iso.substitute("Z", "");
-        iso.substitute("T", " ");
+        std::string iso = run.value("start_time", std::string());
+        OpenMS::StringUtils::substitute(iso, "Z", "");
+        OpenMS::StringUtils::substitute(iso, "T", " ");
         try
         {
           dt.set(iso);
@@ -966,7 +968,7 @@ namespace
         { /* leave default date if unparseable */
         }
       }
-      if (run.contains("id")) exp.setMetaValue("mzpeak_run_id", run.value("id", String()));
+      if (run.contains("id")) exp.setMetaValue("mzpeak_run_id", run.value("id", std::string()));
     }
 
     // ---- instrument_configuration_list -> Instrument ---------------------
@@ -981,8 +983,8 @@ namespace
       {
         for (const auto& p : ic.at("parameters"))
         {
-          String a = jsonAccession_(p);
-          String value = jsonParamValue_(p);
+          std::string a = jsonAccession_(p);
+          std::string value = jsonParamValue_(p);
           if (a == "MS:1000529") { instrument.setMetaValue("instrument serial number", value); }
           else if (! jsonName_(p).empty() && value.empty())
           {
@@ -1001,16 +1003,16 @@ namespace
         std::vector<IonDetector> detectors;
         for (const auto& c : ic.at("components"))
         {
-          String ctype = c.value("component_type", String());
+          std::string ctype = c.value("component_type", std::string());
           int order = c.value("order", 0);
-          auto first_acc = [&](String& acc, String& nm) {
+          auto first_acc = [&](std::string& acc, std::string& nm) {
             if (c.contains("parameters") && ! c.at("parameters").empty())
             {
               acc = jsonAccession_(c.at("parameters").front());
               nm = jsonName_(c.at("parameters").front());
             }
           };
-          String acc, nm;
+          std::string acc, nm;
           first_acc(acc, nm);
           if (ctype == "ionsource")
           {
@@ -1052,8 +1054,8 @@ namespace
         for (const auto& sfj : fd.at("source_files"))
         {
           SourceFile sf;
-          sf.setNameOfFile(sfj.value("name", String()));
-          sf.setPathToFile(sfj.value("location", String()));
+          sf.setNameOfFile(sfj.value("name", std::string()));
+          sf.setPathToFile(sfj.value("location", std::string()));
           if (sfj.contains("parameters"))
           {
             for (const auto& p : sfj.at("parameters"))
@@ -1070,8 +1072,8 @@ namespace
     {
       const auto& sj = md.at("sample_list").front();
       Sample sample;
-      sample.setName(sj.value("name", String()));
-      if (sj.contains("id")) sample.setNumber(sj.value("id", String()));
+      sample.setName(sj.value("name", std::string()));
+      if (sj.contains("id")) sample.setNumber(sj.value("id", std::string()));
       exp.setSample(sample);
     }
 
@@ -1081,13 +1083,13 @@ namespace
     {
       const auto& swj = md.at("software_list").front();
       Software sw;
-      sw.setName(swj.value("id", String()));
-      sw.setVersion(swj.value("version", String()));
+      sw.setName(swj.value("id", std::string()));
+      sw.setVersion(swj.value("version", std::string()));
       if (swj.contains("parameters"))
       {
         for (const auto& p : swj.at("parameters"))
         {
-          String a = jsonAccession_(p);
+          std::string a = jsonAccession_(p);
           if (! a.empty()) sw.addCVTerm(CVTerm(a, jsonName_(p), "MS", jsonParamValue_(p)));
         }
       }
@@ -1104,7 +1106,7 @@ namespace
   // ==========================================================================
 
   /// Throw a uniform ParseError on a failed Arrow status during write.
-  void checkArrowStatus_(const arrow::Status& status, const String& what)
+  void checkArrowStatus_(const arrow::Status& status, const std::string& what)
   {
     if (! status.ok()) { throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "mzPeak store: " + what, status.ToString()); }
   }
@@ -1122,7 +1124,7 @@ namespace
   /// SortingColumn on the first column, store_schema) and optional file-level
   /// key-value metadata. Column 0 is used as the sort key (the `point` struct
   /// for data/peaks tables and the `spectrum` struct for the metadata table).
-  void writeTableWithProps_(const String& path, const std::shared_ptr<arrow::Table>& table, const std::map<std::string, std::string>& file_kv)
+  void writeTableWithProps_(const std::string& path, const std::shared_ptr<arrow::Table>& table, const std::map<std::string, std::string>& file_kv)
   {
     auto outfile_result = arrow::io::FileOutputStream::Open(std::string(path));
     checkArrowStatus_(outfile_result.status(), "open output file " + path);
@@ -1163,7 +1165,7 @@ namespace
   /// uint64, mz float64, intensity float32}) to a Parquet file at @p path.
   /// Matches @c pointStruct_ / @c addSpectraFromTable_ in the load path: a
   /// single struct column whose three children carry the literal values.
-  void writePointTable_(const String& path, const PointColumns& cols, const std::map<std::string, std::string>& file_kv)
+  void writePointTable_(const std::string& path, const PointColumns& cols, const std::map<std::string, std::string>& file_kv)
   {
     arrow::UInt64Builder index_builder;
     arrow::DoubleBuilder mz_builder;
@@ -1196,11 +1198,11 @@ namespace
   struct MetaRow
   {
     std::uint64_t index = 0;
-    String id;
+    std::string id;
     std::uint8_t ms_level = 0;
     double time = 0.0; ///< RT in seconds
     std::int8_t polarity = 0;
-    String representation; ///< MS:1000127 centroid / MS:1000128 profile
+    std::string representation; ///< MS:1000127 centroid / MS:1000128 profile
     std::uint64_t n_points = 0;
     std::uint64_t n_peaks = 0;
   };
@@ -1218,8 +1220,8 @@ namespace
     /// Activation CvParams: {accession, name, has_float_value, float_val}
     struct ActParam
     {
-      String accession;
-      String name;
+      std::string accession;
+      std::string name;
       bool has_float = false;
       double float_val = 0.0;
     };
@@ -1234,7 +1236,7 @@ namespace
 
   /// Map an OpenMS ActivationMethod to its PSI-MS accession and name.
   /// Returns {"", ""} for unknown methods.
-  std::pair<String, String> activationMethodCV_(Precursor::ActivationMethod method)
+  std::pair<std::string, std::string> activationMethodCV_(Precursor::ActivationMethod method)
   {
     switch (method)
     {
@@ -1347,14 +1349,14 @@ namespace
       if (! map.getDateTime().isNull())
       {
         // Convert DateTime to ISO 8601 string: "YYYY-MM-DD HH:MM:SS" -> replace space with T, append Z
-        String dt_str = map.getDateTime().get();
-        dt_str.substitute(" ", "T");
+        std::string dt_str = map.getDateTime().get();
+        OpenMS::StringUtils::substitute(dt_str, " ", "T");
         run_obj["start_time"] = std::string(dt_str) + "Z";
         has_run = true;
       }
       if (map.metaValueExists("mzpeak_run_id"))
       {
-        run_obj["id"] = std::string(static_cast<String>(map.getMetaValue("mzpeak_run_id")));
+        run_obj["id"] = std::string(static_cast<std::string>(map.getMetaValue("mzpeak_run_id")));
         has_run = true;
       }
       if (has_run)
@@ -1484,7 +1486,7 @@ namespace
   /// plus `precursor` and `selected_ion` struct columns (round-trip path).
   /// The precursor/selected_ion schemas mirror the mzpeak-lib reference writer
   /// exactly so that readPrecursors_() can join them by source_index.
-  void writeMetadataTable_(const String& path, const std::vector<MetaRow>& rows, const std::vector<PrecursorOut>& prec_rows)
+  void writeMetadataTable_(const std::string& path, const std::vector<MetaRow>& rows, const std::vector<PrecursorOut>& prec_rows)
   {
     // ---- spectrum column ------------------------------------------------
     arrow::UInt64Builder index_b;
@@ -1953,12 +1955,12 @@ namespace
 
 struct MzPeakFile::OnDiscState
 {
-  String filename;
-  String data_entry;
-  String peaks_entry;
-  String meta_entry;
+  std::string filename;
+  std::string data_entry;
+  std::string peaks_entry;
+  std::string meta_entry;
   std::map<uint64_t, SpectrumMeta> meta;
-  std::unique_ptr<File::TempDir> temp_dir;
+  std::unique_ptr<TempDir> temp_dir;
   std::shared_ptr<arrow::io::RandomAccessFile> data_raf;
   std::unique_ptr<parquet::arrow::FileReader> data_reader;
   std::shared_ptr<arrow::io::RandomAccessFile> peaks_raf;
@@ -1977,7 +1979,7 @@ MzPeakFile::~MzPeakFile() = default;
 // On-disc streaming interface.
 // ==========================================================================
 
-void MzPeakFile::openFile(const String& filename)
+void MzPeakFile::openFile(const std::string& filename)
 {
   if (! File::exists(filename)) { throw Exception::FileNotFound(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename); }
 
@@ -2026,7 +2028,7 @@ void MzPeakFile::openFile(const String& filename)
   //    are kept alive so row-group reads in getSpectrum() seek rather than
   //    re-decompress the whole file.
   auto openReader_
-    = [&](const String& entry, std::shared_ptr<arrow::io::RandomAccessFile>& raf_out, std::unique_ptr<parquet::arrow::FileReader>& reader_out) {
+    = [&](const std::string& entry, std::shared_ptr<arrow::io::RandomAccessFile>& raf_out, std::unique_ptr<parquet::arrow::FileReader>& reader_out) {
         if (entry.empty()) return;
         auto raf_result = ZipRandomAccessFile::Open(filename, entry, state->temp_dir);
         if (! raf_result.ok())
@@ -2055,7 +2057,7 @@ MSSpectrum MzPeakFile::getSpectrum(Size index)
 
   auto it = on_disc_->meta.find(static_cast<uint64_t>(index));
   if (it == on_disc_->meta.end())
-    throw Exception::InvalidParameter(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "spectrum index out of range: " + String(index));
+    throw Exception::InvalidParameter(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "spectrum index out of range: " + OpenMS::StringUtils::toStr(index));
 
   const SpectrumMeta& sm = it->second;
 
@@ -2100,7 +2102,7 @@ MSSpectrum MzPeakFile::getSpectrum(Size index)
       auto status = reader->ReadRowGroups(matching_rgs, &table);
       if (! status.ok())
         throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, on_disc_->filename,
-                                    "Failed to read row groups for spectrum " + String(index) + ": " + status.ToString());
+                                    "Failed to read row groups for spectrum " + OpenMS::StringUtils::toStr(index) + ": " + status.ToString());
 
       auto pts = pointStruct_(table);
       if (pts)
@@ -2140,7 +2142,7 @@ MSSpectrum MzPeakFile::getSpectrum(Size index)
   return spec;
 }
 
-void MzPeakFile::load(const String& filename, MapType& map) const
+void MzPeakFile::load(const std::string& filename, MapType& map) const
 {
   if (! File::exists(filename)) { throw Exception::FileNotFound(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename); }
 
@@ -2148,16 +2150,16 @@ void MzPeakFile::load(const String& filename, MapType& map) const
 
   // Keep a single TempDir alive for all archive-entry reads (ZipRandomAccessFile
   // may extract entries to disk on some platforms).
-  std::unique_ptr<File::TempDir> temp_dir;
+  std::unique_ptr<TempDir> temp_dir;
 
   // ------------------------------------------------------------------
   // 1. Parse mzpeak_index.json to locate the data / peaks / metadata members.
   // ------------------------------------------------------------------
   std::string index_json = readEntryBytes_(filename, "mzpeak_index.json", temp_dir);
 
-  String data_entry;     // profile data arrays
-  String peaks_entry;    // centroid peaks
-  String metadata_entry; // per-spectrum metadata
+  std::string data_entry;     // profile data arrays
+  std::string peaks_entry;    // centroid peaks
+  std::string metadata_entry; // per-spectrum metadata
   try
   {
     nlohmann::json idx = nlohmann::json::parse(index_json);
@@ -2236,7 +2238,7 @@ void MzPeakFile::load(const String& filename, MapType& map) const
   map.updateRanges();
 }
 
-void MzPeakFile::store(const String& filename, const MapType& map) const
+void MzPeakFile::store(const std::string& filename, const MapType& map) const
 {
   // ------------------------------------------------------------------
   // 1. Split spectra into profile (-> data arrays) and centroid (-> peaks),
@@ -2272,7 +2274,7 @@ void MzPeakFile::store(const String& filename, const MapType& map) const
     MetaRow row;
     row.index = static_cast<std::uint64_t>(i);
     // Prefer the spectrum native id; fall back to the stable "index=i" form.
-    row.id = spec.getNativeID().empty() ? ("index=" + String(i)) : String(spec.getNativeID());
+    row.id = spec.getNativeID().empty() ? ("index=" + OpenMS::StringUtils::toStr(i)) : std::string(spec.getNativeID());
     row.ms_level = static_cast<std::uint8_t>(spec.getMSLevel());
     row.time = spec.getRT();
     // Representation accession: profile MS:1000128, centroid MS:1000127.
@@ -2301,12 +2303,12 @@ void MzPeakFile::store(const String& filename, const MapType& map) const
   // ------------------------------------------------------------------
   // 2. Write the Parquet members into a temp dir.
   // ------------------------------------------------------------------
-  File::TempDir temp_dir;
-  const String dir = temp_dir.getPath();
-  const String data_path = dir + "/spectra_data.parquet";
-  const String peaks_path = dir + "/spectra_peaks.parquet";
-  const String meta_path = dir + "/spectra_metadata.parquet";
-  const String index_path = dir + "/mzpeak_index.json";
+  TempDir temp_dir;
+  const std::string dir = temp_dir.getPath();
+  const std::string data_path = dir + "/spectra_data.parquet";
+  const std::string peaks_path = dir + "/spectra_peaks.parquet";
+  const std::string meta_path = dir + "/spectra_metadata.parquet";
+  const std::string index_path = dir + "/mzpeak_index.json";
 
   // The spectrum_array_index JSON is required by the Rust reference reader to
   // locate the column layout (prefix "point", mz/intensity array type info).
@@ -2360,19 +2362,19 @@ void MzPeakFile::store(const String& filename, const MapType& map) const
   ZipArchiveFile::zipDirectory(dir, filename);
 }
 
-void MzPeakFile::transform(const String& filename_in, Interfaces::IMSDataConsumer* consumer, bool /* skip_full_count */, bool skip_first_pass) const
+void MzPeakFile::transform(const std::string& filename_in, Interfaces::IMSDataConsumer* consumer, bool /* skip_full_count */, bool skip_first_pass) const
 {
   if (! File::exists(filename_in)) { throw Exception::FileNotFound(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename_in); }
 
   // ------------------------------------------------------------------
   // 1. Parse mzpeak_index.json to locate data / peaks / metadata entries.
   // ------------------------------------------------------------------
-  std::unique_ptr<File::TempDir> temp_dir;
+  std::unique_ptr<TempDir> temp_dir;
   std::string index_json = readEntryBytes_(filename_in, "mzpeak_index.json", temp_dir);
 
-  String data_entry;
-  String peaks_entry;
-  String metadata_entry;
+  std::string data_entry;
+  std::string peaks_entry;
+  std::string metadata_entry;
   try
   {
     nlohmann::json idx = nlohmann::json::parse(index_json);
@@ -2488,10 +2490,10 @@ void MzPeakFile::transform(const String& filename_in, Interfaces::IMSDataConsume
 
     // spectrum_index carried on each built spectrum via NativeID "index=N".
     auto idx_of = [](const MSSpectrum& s) -> std::uint64_t {
-      const String& id = s.getNativeID();
+      const std::string& id = s.getNativeID();
       auto pos = id.find("index=");
-      return pos == String::npos ? std::numeric_limits<std::uint64_t>::max()
-                                 : static_cast<std::uint64_t>(String(id.substr(pos + 6)).toInt());
+      return pos == std::string::npos ? std::numeric_limits<std::uint64_t>::max()
+                                 : static_cast<std::uint64_t>(OpenMS::StringUtils::toInt64(std::string(id.substr(pos + 6))));
     };
     auto refill = [&](Side& sd) {
       while (sd.buf.empty() && ! sd.done)
@@ -2556,7 +2558,7 @@ void MzPeakFile::transform(const String& filename_in, Interfaces::IMSDataConsume
         applyCVParamToSpectrum_(p, spec);
       buildPrecursors_(sm.precursors, spec);
       if (! sm.native_id.empty()) spec.setMetaValue("mzpeak_native_id", sm.native_id);
-      spec.setNativeID("index=" + String(idx));
+      spec.setNativeID("index=" + OpenMS::StringUtils::toStr(idx));
       tmp.addSpectrum(std::move(spec));
     }
     tmp.sortSpectra(false);

@@ -7,6 +7,7 @@
 // --------------------------------------------------------------------------
 
 #include <OpenMS/FORMAT/FileHandler.h>
+#include <OpenMS/FORMAT/ZipArchiveFile.h>
 #include <OpenMS/FORMAT/FileNameUtils.h>
 #include <OpenMS/ANALYSIS/MAPMATCHING/TransformationDescription.h>
 #include <OpenMS/CONCEPT/LogStream.h>
@@ -382,8 +383,8 @@ namespace OpenMS
       // .mzpeak: a ZIP archive that CONTAINS a member named "mzpeak_index.json".
       // The first archive member is "spectra_data.parquet" (binary), so check
       // membership of the index rather than the first-member content.
-      const std::vector<String> zip_entries = ZipArchiveFile::listEntries(filename);
-      for (const String& entry : zip_entries)
+      const std::vector<std::string> zip_entries = ZipArchiveFile::listEntries(filename);
+      for (const std::string& entry : zip_entries)
       {
         if (entry == "mzpeak_index.json")
         {
