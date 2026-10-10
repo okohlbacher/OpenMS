@@ -95,7 +95,7 @@ START_SECTION(void load(const std::string& filename, MapType& map))
   if (prof)
   {
     TEST_EQUAL(prof->getMSLevel(), 1)
-    TEST_REAL_SIMILAR(prof->getRT(), 0.004935)
+    TEST_REAL_SIMILAR(prof->getRT(), 0.2961) // stored as 0.004935 min
     TEST_EQUAL(prof->size(), 13589)
     TEST_EQUAL(prof->empty(), false)
 
@@ -137,7 +137,7 @@ START_SECTION(void load(const std::string& filename, MapType& map))
   if (cent)
   {
     TEST_EQUAL(cent->getMSLevel(), 2)
-    TEST_REAL_SIMILAR(cent->getRT(), 0.011218333333)
+    TEST_REAL_SIMILAR(cent->getRT(), 0.67309999998) // stored as 0.011218333333 min
     TEST_EQUAL(cent->size(), 485)
     TEST_EQUAL(cent->empty(), false)
 
@@ -492,11 +492,17 @@ START_SECTION([EXTRA] mzML->mzpeak->mzML cross-validation (INT-07))
   MzMLFile().load(OPENMS_GET_TEST_DATA_PATH("MzMLFile_1.mzML"), src);
   TEST_EQUAL(src.size() > 0, true)
 
-  // Count source spectra that carry at least one peak (empty spectra are
-  // not representable in the mzpeak point tables and will be dropped).
+  // The openms-mzpeak reader returns every spectrum the metadata lists,
+  // including those with no peaks; the point reader drops spectra that have no
+  // rows in the point tables.
+#ifdef OPENMS_WITH_MZPEAK
+  const bool keeps_empty = true;
+#else
+  const bool keeps_empty = false;
+#endif
   Size src_nonempty = 0;
   for (Size i = 0; i < src.size(); ++i)
-    if (! src[i].empty()) ++src_nonempty;
+    if (keeps_empty || ! src[i].empty()) ++src_nonempty;
 
   // 2. mzML -> mzpeak.
   std::string tmp_mzpeak;
@@ -524,7 +530,7 @@ START_SECTION([EXTRA] mzML->mzpeak->mzML cross-validation (INT-07))
   // Build a lookup of non-empty source spectra by RT.
   std::vector<const MSSpectrum*> src_nonempty_specs;
   for (Size i = 0; i < src.size(); ++i)
-    if (! src[i].empty()) src_nonempty_specs.push_back(&src[i]);
+    if (keeps_empty || ! src[i].empty()) src_nonempty_specs.push_back(&src[i]);
 
   // rt is sorted by RT ascending; src_nonempty_specs follow the original
   // mzML order (also RT-ascending for MzMLFile_1.mzML).
@@ -537,7 +543,7 @@ START_SECTION([EXTRA] mzML->mzpeak->mzML cross-validation (INT-07))
 
     TEST_EQUAL(r.getMSLevel(), s.getMSLevel())
 
-    // RT: mzML (seconds) → OpenMS (seconds) → mzpeak (seconds) → mzML (seconds)
+    // RT: mzML (seconds) → OpenMS (seconds) → mzpeak (minutes) → mzML (seconds)
     // chain is lossless; allow 1e-5 s for float serialisation rounding.
     TOLERANCE_ABSOLUTE(1e-5)
     TEST_REAL_SIMILAR(r.getRT(), s.getRT())

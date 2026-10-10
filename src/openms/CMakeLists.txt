@@ -268,6 +268,9 @@ if(OPENMS_WITH_MZPEAK)
     message(FATAL_ERROR "OPENMS_WITH_MZPEAK needs MZPEAK_SOURCE_DIR pointing at openms-mzpeak (no CMakeLists.txt there).")
   endif()
   add_subdirectory("${MZPEAK_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/mzpeak" EXCLUDE_FROM_ALL)
+  # OpenMS builds with hidden visibility; the library is a separate shared object, so
+  # without this it would export nothing (as for the other external libraries).
+  set_target_properties(mzpeak numpress PROPERTIES CXX_VISIBILITY_PRESET default VISIBILITY_INLINES_HIDDEN OFF)
   list(APPEND OPENMS_DEP_PRIVATE_LIBRARIES mzpeak)
   # OpenMS is a static library, so its private dependencies appear in its exported link
   # interface; the mzpeak targets must be in the same export set.
@@ -489,6 +492,12 @@ endif()
 # Requires Boost >= 1.81 (BOOST_PROCESS_USE_STD_FS was introduced in 1.78)
 target_compile_definitions(OpenMS PRIVATE BOOST_PROCESS_USE_STD_FS)
 
+if (OPENMS_WITH_MZPEAK)
+    # Only MzPeakFile.cpp branches on it; a target-wide definition would change the
+    # compile flags of every OpenMS source. Consumers (tests) see it through INTERFACE.
+    set_source_files_properties(source/FORMAT/MzPeakFile.cpp PROPERTIES COMPILE_DEFINITIONS OPENMS_WITH_MZPEAK=1)
+    target_compile_definitions(OpenMS INTERFACE OPENMS_WITH_MZPEAK=1)
+endif()
 if (WITH_OPENTIMS)
     target_compile_definitions(OpenMS PUBLIC WITH_OPENTIMS=1)
 endif()
