@@ -103,7 +103,11 @@ public:
     bundled (STORED) into a ZIP archive. The output round-trips through load()
     to an equivalent experiment (spectrum count, ms_level, type, RT, peaks).
 
-    @note Run-level metadata and precursor facets are not yet emitted.
+    @note Run-level metadata is not yet emitted. Precursor facets @em are:
+    store() writes @c precursor and @c selected_ion columns and they survive a
+    load() round-trip. This note previously claimed otherwise, because the
+    reader-side cast bug fixed in this commit read them back as empty -- the
+    columns were written correctly all along.
   */
   void store(const String& filename, const MapType& map) const;
 
