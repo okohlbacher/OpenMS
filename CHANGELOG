@@ -342,6 +342,8 @@ TOPP tools:
         identical unidentified consensus features, which made -out_qpx fail with duplicate QPX
         feature rows.
     FileInfo:
+      - FIX: the consensusXML statistics (-s) for qualities were computed over twice the number of
+        consensus features, half of the values zero; they now cover each feature once.
       - FIX: crashed on an idXML or mzIdentML with a peptide identification without hits; such
         spectra are now skipped as unidentified.
   - FIX: '-write_cwl' and '-write_nested_cwl' no longer abort every TOPP tool in builds without
