@@ -9,6 +9,9 @@
 #include <OpenMS/CONCEPT/Exception.h>
 #include <OpenMS/DATASTRUCTURES/DateTime.h>
 #include <OpenMS/FORMAT/MzPeakFile.h>
+
+#include <deque>
+#include <functional>
 #include <OpenMS/FORMAT/OPTIONS/PeakFileOptions.h>
 #include <OpenMS/FORMAT/ZipArchiveFile.h>
 #include <OpenMS/FORMAT/ZipRandomAccessFile.h>
@@ -288,6 +291,116 @@ namespace
     return std::static_pointer_cast<arrow::StructArray>(arr);
   }
 
+  /// Pull-based reader over a point-layout Parquet entry, ROW GROUP AT A TIME.
+  ///
+  /// readTableFromArchive_() calls ReadTable(), which pulls the entire Parquet
+  /// file into memory; transform() then built every spectrum into an
+  /// MSExperiment before emitting any. Two O(file) materialisations, measured
+  /// at ~11x file size (a 2.11 GB .mzpeak peaked at 23.7 GB), which defeats the
+  /// point of handing the caller an IMSDataConsumer at all.
+  ///
+  /// The one subtlety is that a spectrum's rows can straddle a row-group
+  /// boundary: the tables are sorted by spectrum_index, so one spectrum's rows
+  /// are contiguous, but the last spectrum in a row group may continue into the
+  /// next. Returning that batch as-is would split one spectrum into two partial
+  /// ones. So the trailing run sharing the final spectrum_index is held back
+  /// and prepended to the next row group; next() therefore only ever yields
+  /// COMPLETE spectra. Carry-over is bounded by a single spectrum, not by the
+  /// file.
+  ///
+  /// Pull-based rather than callback-based so that two entries can be merged in
+  /// lockstep -- see transform(), where a run with both profile and centroid
+  /// tables has to interleave them by retention time.
+  class PointBatchStream_
+  {
+  public:
+    PointBatchStream_(const String& archive, const String& entry, std::unique_ptr<File::TempDir>& temp_dir)
+      : archive_(archive)
+    {
+      auto raf_result = ZipRandomAccessFile::Open(archive, entry, temp_dir);
+      if (! raf_result.ok())
+      {
+        throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, archive,
+                                    "Failed to open mzPeak archive entry '" + entry + "': " + raf_result.status().ToString());
+      }
+      auto reader_result = parquet::arrow::OpenFile(raf_result.ValueOrDie(), arrow::default_memory_pool());
+      if (! reader_result.ok())
+      {
+        throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, archive,
+                                    "Failed to open Parquet reader for '" + entry + "': " + reader_result.status().ToString());
+      }
+      reader_ = std::move(reader_result.ValueOrDie());
+      n_rg_ = reader_->num_row_groups();
+    }
+
+    /// Next batch of complete spectra, or nullptr when exhausted.
+    std::shared_ptr<arrow::Table> next()
+    {
+      while (rg_ < n_rg_)
+      {
+        std::shared_ptr<arrow::Table> chunk;
+        auto st = reader_->RowGroup(rg_)->ReadTable(&chunk);
+        if (! st.ok())
+        {
+          throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, archive_,
+                                      "Failed to read row group: " + st.ToString());
+        }
+        ++rg_;
+        if (carry_)
+        {
+          auto cat = arrow::ConcatenateTables({carry_, chunk});
+          if (! cat.ok())
+          {
+            throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, archive_,
+                                        "Failed to join a spectrum across row groups: " + cat.status().ToString());
+          }
+          chunk = cat.ValueOrDie();
+          carry_.reset();
+        }
+        if (chunk->num_rows() == 0) continue;
+
+        int64_t split = chunk->num_rows();
+        if (rg_ < n_rg_) split = firstRowOfLastSpectrum_(chunk);
+
+        if (split <= 0)
+        {
+          carry_ = chunk; // whole batch is one unfinished spectrum
+          continue;
+        }
+        if (split < chunk->num_rows()) carry_ = chunk->Slice(split);
+        return split == chunk->num_rows() ? chunk : chunk->Slice(0, split);
+      }
+      if (carry_ && carry_->num_rows() > 0)
+      {
+        auto out = carry_;
+        carry_.reset();
+        return out;
+      }
+      return nullptr;
+    }
+
+  private:
+    static int64_t firstRowOfLastSpectrum_(const std::shared_ptr<arrow::Table>& chunk)
+    {
+      auto pts = pointStruct_(chunk);
+      auto si_field = pts ? pts->GetFieldByName("spectrum_index") : nullptr;
+      if (! si_field || si_field->type_id() != arrow::Type::UINT64) return chunk->num_rows();
+      auto si = std::static_pointer_cast<arrow::UInt64Array>(si_field);
+      const int64_t n = si->length();
+      if (n == 0) return chunk->num_rows();
+      const std::uint64_t last = si->Value(n - 1);
+      int64_t first = n;
+      while (first > 0 && si->Value(first - 1) == last) --first;
+      return first;
+    }
+
+    String archive_;
+    std::unique_ptr<parquet::arrow::FileReader> reader_;
+    int n_rg_ = 0;
+    int rg_ = 0;
+    std::shared_ptr<arrow::Table> carry_;
+  };
+
   /// Stringify one element of a mzPeak value union
   /// struct<integer,float,string,boolean>. mzPeak stores a CvParam value in
   /// exactly one populated sub-field; we normalise it to a String so the CV
@@ -333,22 +446,42 @@ namespace
     return "";
   }
 
+  /// Cast an Arrow array to a concrete array type without dynamic_cast.
+  ///
+  /// std::dynamic_pointer_cast on Arrow types fails outright when Arrow is
+  /// built with hidden symbol visibility -- the conda-forge default, and so
+  /// what most binary distributions ship. libOpenMS and libarrow then hold
+  /// distinct typeinfo for the same class, every cast returns null, and the
+  /// caller silently reads nothing: precursors, CV params and the profile
+  /// mz_delta_model all vanish from an otherwise valid file, with no error.
+  /// Measured on a real 155 MB Lumos .mzpeak: 42,092 precursor rows present in
+  /// the Parquet, 0 reaching the MSSpectrum.
+  ///
+  /// readSpectraMeta_() already sidestepped this by checking type_id() and
+  /// using static_pointer_cast; this generalises that to every call site.
+  template <typename ArrayT>
+  std::shared_ptr<ArrayT> arrowAs_(const std::shared_ptr<arrow::Array>& a)
+  {
+    if (! a || a->type_id() != ArrayT::TypeClass::type_id) return nullptr;
+    return std::static_pointer_cast<ArrayT>(a);
+  }
+
   /// Decode a CvParam list column (a large_list<struct<value, accession, name,
   /// unit>>) at the given outer @p row into a flat vector<CvParam>. Mirrors the
   /// mzpeak reader's parameter-facet decode. Empty/null lists yield {}.
   std::vector<CvParam> readCvParamList_(const std::shared_ptr<arrow::Array>& list_field, int64_t row)
   {
     std::vector<CvParam> out;
-    auto large_list = std::dynamic_pointer_cast<arrow::LargeListArray>(list_field);
+    auto large_list = arrowAs_<arrow::LargeListArray>(list_field);
     if (! large_list || large_list->IsNull(row)) return out;
 
-    auto items = std::dynamic_pointer_cast<arrow::StructArray>(large_list->values());
+    auto items = arrowAs_<arrow::StructArray>(large_list->values());
     if (! items) return out;
 
     int64_t offset = large_list->value_offset(row);
     int64_t length = large_list->value_length(row);
 
-    auto value_struct = std::dynamic_pointer_cast<arrow::StructArray>(items->GetFieldByName("value"));
+    auto value_struct = arrowAs_<arrow::StructArray>(items->GetFieldByName("value"));
 
     out.reserve(static_cast<std::size_t>(length));
     for (int64_t k = 0; k < length; ++k)
@@ -382,21 +515,21 @@ namespace
     {
       for (const auto& chunk : prec_col->chunks())
       {
-        auto prec = std::dynamic_pointer_cast<arrow::StructArray>(chunk);
+        auto prec = arrowAs_<arrow::StructArray>(chunk);
         if (! prec) continue;
 
-        auto si = std::dynamic_pointer_cast<arrow::UInt64Array>(prec->GetFieldByName("source_index"));
-        auto pi = std::dynamic_pointer_cast<arrow::UInt64Array>(prec->GetFieldByName("precursor_index"));
-        auto iso = std::dynamic_pointer_cast<arrow::StructArray>(prec->GetFieldByName("isolation_window"));
-        auto act = std::dynamic_pointer_cast<arrow::StructArray>(prec->GetFieldByName("activation"));
+        auto si = arrowAs_<arrow::UInt64Array>(prec->GetFieldByName("source_index"));
+        auto pi = arrowAs_<arrow::UInt64Array>(prec->GetFieldByName("precursor_index"));
+        auto iso = arrowAs_<arrow::StructArray>(prec->GetFieldByName("isolation_window"));
+        auto act = arrowAs_<arrow::StructArray>(prec->GetFieldByName("activation"));
         if (! si || ! pi) continue;
 
         std::shared_ptr<arrow::FloatArray> tgt, lo, hi;
         if (iso)
         {
-          tgt = std::dynamic_pointer_cast<arrow::FloatArray>(iso->GetFieldByName("MS_1000827_isolation_window_target_mz"));
-          lo = std::dynamic_pointer_cast<arrow::FloatArray>(iso->GetFieldByName("MS_1000828_isolation_window_lower_offset"));
-          hi = std::dynamic_pointer_cast<arrow::FloatArray>(iso->GetFieldByName("MS_1000829_isolation_window_upper_offset"));
+          tgt = arrowAs_<arrow::FloatArray>(iso->GetFieldByName("MS_1000827_isolation_window_target_mz"));
+          lo = arrowAs_<arrow::FloatArray>(iso->GetFieldByName("MS_1000828_isolation_window_lower_offset"));
+          hi = arrowAs_<arrow::FloatArray>(iso->GetFieldByName("MS_1000829_isolation_window_upper_offset"));
         }
         auto act_params = act ? act->GetFieldByName("parameters") : nullptr;
 
@@ -422,14 +555,14 @@ namespace
     {
       for (const auto& chunk : si_col->chunks())
       {
-        auto sion = std::dynamic_pointer_cast<arrow::StructArray>(chunk);
+        auto sion = arrowAs_<arrow::StructArray>(chunk);
         if (! sion) continue;
 
-        auto si = std::dynamic_pointer_cast<arrow::UInt64Array>(sion->GetFieldByName("source_index"));
-        auto pi = std::dynamic_pointer_cast<arrow::UInt64Array>(sion->GetFieldByName("precursor_index"));
-        auto mz = std::dynamic_pointer_cast<arrow::DoubleArray>(sion->GetFieldByName("MS_1000744_selected_ion_mz_unit_MS_1000040"));
-        auto charge = std::dynamic_pointer_cast<arrow::Int32Array>(sion->GetFieldByName("MS_1000041_charge_state"));
-        auto inten = std::dynamic_pointer_cast<arrow::FloatArray>(sion->GetFieldByName("MS_1000042_intensity_unit_MS_1000131"));
+        auto si = arrowAs_<arrow::UInt64Array>(sion->GetFieldByName("source_index"));
+        auto pi = arrowAs_<arrow::UInt64Array>(sion->GetFieldByName("precursor_index"));
+        auto mz = arrowAs_<arrow::DoubleArray>(sion->GetFieldByName("MS_1000744_selected_ion_mz_unit_MS_1000040"));
+        auto charge = arrowAs_<arrow::Int32Array>(sion->GetFieldByName("MS_1000041_charge_state"));
+        auto inten = arrowAs_<arrow::FloatArray>(sion->GetFieldByName("MS_1000042_intensity_unit_MS_1000131"));
         if (! si || ! pi) continue;
 
         for (int64_t r = 0; r < sion->length(); ++r)
@@ -488,12 +621,12 @@ namespace
       auto polarity_field = spectrum->GetFieldByName("MS_1000465_scan_polarity");
       auto params_field = spectrum->GetFieldByName("parameters");
 
-      auto large_list = std::dynamic_pointer_cast<arrow::LargeListArray>(model_field);
-      auto list = std::dynamic_pointer_cast<arrow::ListArray>(model_field);
+      auto large_list = arrowAs_<arrow::LargeListArray>(model_field);
+      auto list = arrowAs_<arrow::ListArray>(model_field);
       std::shared_ptr<arrow::DoubleArray> model_values;
-      if (large_list) model_values = std::dynamic_pointer_cast<arrow::DoubleArray>(large_list->values());
+      if (large_list) model_values = arrowAs_<arrow::DoubleArray>(large_list->values());
       else if (list)
-        model_values = std::dynamic_pointer_cast<arrow::DoubleArray>(list->values());
+        model_values = arrowAs_<arrow::DoubleArray>(list->values());
 
       for (int64_t r = 0; r < spectrum->length(); ++r)
       {
@@ -1795,7 +1928,14 @@ namespace
         out.emplace_back(uint64_t(0), std::numeric_limits<uint64_t>::max(), rg);
         continue;
       }
-      auto typed = std::dynamic_pointer_cast<parquet::Int64Statistics>(stats);
+      // physical_type(), not dynamic_pointer_cast, for the same reason as
+      // arrowAs_ above: libparquet exports no typeinfo either, so the cast
+      // always failed and every row group fell through to the
+      // "might contain anything" sentinel below -- silently disabling the
+      // row-group statistics seek this whole function exists to provide.
+      std::shared_ptr<parquet::Int64Statistics> typed;
+      if (stats->physical_type() == parquet::Type::INT64)
+        typed = std::static_pointer_cast<parquet::Int64Statistics>(stats);
       if (! typed)
       {
         out.emplace_back(uint64_t(0), std::numeric_limits<uint64_t>::max(), rg);
@@ -2301,6 +2441,88 @@ void MzPeakFile::transform(const String& filename_in, Interfaces::IMSDataConsume
   // ------------------------------------------------------------------
   const bool metadata_only = options_.getMetadataOnly() || ! options_.getFillData();
 
+  // Emit one spectrum through the active filters. Shared by the streaming and
+  // the materialising paths below so the two cannot drift.
+  auto dispatch = [&](MSSpectrum& spec) {
+    if (options_.hasMSLevels() && ! options_.containsMSLevel(spec.getMSLevel())) return;
+    if (options_.hasRTRange() && ! options_.getRTRange().encloses(DPosition<1>(spec.getRT()))) return;
+    if (! metadata_only && options_.hasMZRange() && ! spec.empty())
+    {
+      const DRange<1>& mzr = options_.getMZRange();
+      spec.erase(std::remove_if(spec.begin(), spec.end(),
+                                [&mzr](const Peak1D& pk) { return ! mzr.encloses(DPosition<1>(pk.getMZ())); }),
+                 spec.end());
+    }
+    consumer->consumeSpectrum(spec);
+  };
+
+  // STREAMING PATH.
+  //
+  // Both point tables (profile spectra in data-arrays, centroid in peaks) are
+  // streamed row group by row group and merged by spectrum_index, so memory
+  // tracks a couple of row groups rather than the whole file. A real Thermo
+  // run has BOTH tables (profile MS1 + centroid MS2), so the common case is
+  // the merge, not the single-stream case.
+  //
+  // Ordering: spectrum_index is assigned in acquisition order and RT increases
+  // with it, so ascending spectrum_index is the same order the materialising
+  // path produced with sortSpectra() by RT. The merge below always emits the
+  // smaller pending index first, reproducing that order without buffering
+  // either table whole.
+  //
+  // metadata_only keeps the materialising path -- it builds from the small
+  // metadata map, not the big point tables, so there is nothing to stream.
+  if (! metadata_only && (! data_entry.empty() || ! peaks_entry.empty()))
+  {
+    struct Side {
+      std::unique_ptr<PointBatchStream_> stream;
+      bool reconstruct;
+      std::deque<MSSpectrum> buf;
+      bool done = false;
+    };
+    std::vector<Side> sides;
+    if (! data_entry.empty())
+      sides.push_back({std::make_unique<PointBatchStream_>(filename_in, data_entry, temp_dir), true, {}, false});
+    if (! peaks_entry.empty())
+      sides.push_back({std::make_unique<PointBatchStream_>(filename_in, peaks_entry, temp_dir), false, {}, false});
+
+    // spectrum_index carried on each built spectrum via NativeID "index=N".
+    auto idx_of = [](const MSSpectrum& s) -> std::uint64_t {
+      const String& id = s.getNativeID();
+      auto pos = id.find("index=");
+      return pos == String::npos ? std::numeric_limits<std::uint64_t>::max()
+                                 : static_cast<std::uint64_t>(String(id.substr(pos + 6)).toInt());
+    };
+    auto refill = [&](Side& sd) {
+      while (sd.buf.empty() && ! sd.done)
+      {
+        auto batch = sd.stream->next();
+        if (! batch) { sd.done = true; break; }
+        MSExperiment part;
+        addSpectraFromTable_(batch, meta, sd.reconstruct, part);
+        for (Size i = 0; i < part.size(); ++i) sd.buf.push_back(std::move(part[i]));
+      }
+    };
+
+    for (;;)
+    {
+      int pick = -1;
+      std::uint64_t best = std::numeric_limits<std::uint64_t>::max();
+      for (size_t k = 0; k < sides.size(); ++k)
+      {
+        refill(sides[k]);
+        if (sides[k].buf.empty()) continue;
+        std::uint64_t idx = idx_of(sides[k].buf.front());
+        if (pick < 0 || idx < best) { best = idx; pick = static_cast<int>(k); }
+      }
+      if (pick < 0) break;
+      MSSpectrum spec = std::move(sides[pick].buf.front());
+      sides[pick].buf.pop_front();
+      dispatch(spec);
+    }
+    return;
+  }
+
   MSExperiment tmp;
   if (! metadata_only)
   {
@@ -2343,25 +2565,7 @@ void MzPeakFile::transform(const String& filename_in, Interfaces::IMSDataConsume
   // ------------------------------------------------------------------
   // 5. Apply filters and dispatch to consumer.
   // ------------------------------------------------------------------
-  for (Size i = 0; i < tmp.size(); ++i)
-  {
-    MSSpectrum& spec = tmp[i];
-
-    // MS-level filter
-    if (options_.hasMSLevels() && ! options_.containsMSLevel(spec.getMSLevel())) continue;
-
-    // RT filter
-    if (options_.hasRTRange() && ! options_.getRTRange().encloses(DPosition<1>(spec.getRT()))) continue;
-
-    // m/z range filter: remove peaks outside the requested range
-    if (! metadata_only && options_.hasMZRange() && ! spec.empty())
-    {
-      const DRange<1>& mzr = options_.getMZRange();
-      spec.erase(std::remove_if(spec.begin(), spec.end(), [&mzr](const Peak1D& pk) { return ! mzr.encloses(DPosition<1>(pk.getMZ())); }), spec.end());
-    }
-
-    consumer->consumeSpectrum(spec);
-  }
+  for (Size i = 0; i < tmp.size(); ++i) dispatch(tmp[i]);
 }
 
 } // namespace OpenMS
