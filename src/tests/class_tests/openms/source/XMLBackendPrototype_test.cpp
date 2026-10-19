@@ -86,6 +86,58 @@ START_SECTION(Independent encoding overrides for sequential buffers and files)
 }
 END_SECTION
 
+START_SECTION(Iterative traversal preserves callback order)
+{
+  class Events : public Internal::XMLHandler
+  {
+  public:
+    Events() : XMLHandler("events", "1.0") {}
+    std::u16string events;
+    void onStartElement(const char16_t* name, const Internal::XMLAttributes&) override
+    { events += u"+" + std::u16string(name) + u";"; }
+    void onEndElement(const char16_t* name) override
+    { events += u"-" + std::u16string(name) + u";"; }
+    void onCharacters(const char16_t* text, Size length) override
+    { events += u"T" + std::u16string(text, length) + u";"; }
+  } handler;
+  Reader().parseBuffer_("<root>A<a>B<![CDATA[C]]></a><b/>D</root>", &handler);
+  TEST_TRUE(handler.events == u"+root;TA;+a;TB;TC;-a;+b;-b;TD;-root;")
+}
+END_SECTION
+
+START_SECTION(Deep documents use bounded traversal stack and soft exits remain local)
+{
+  class Counts : public Internal::XMLHandler
+  {
+  public:
+    Counts() : XMLHandler("deep", "1.0") {}
+    Size starts = 0;
+    Size ends = 0;
+    bool stop = false;
+    void onStartElement(const char16_t*, const Internal::XMLAttributes&) override
+    {
+      ++starts;
+      if (stop && starts == 2) throw EndParsingSoftly(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION);
+    }
+    void onEndElement(const char16_t*) override { ++ends; }
+    void onCharacters(const char16_t*, Size) override {}
+  } handler;
+  constexpr Size depth = 20000;
+  std::string xml;
+  xml.reserve(depth * 7);
+  for (Size i = 0; i < depth; ++i) xml += "<n>";
+  for (Size i = 0; i < depth; ++i) xml += "</n>";
+  Reader().parseBuffer_(xml, &handler);
+  TEST_EQUAL(handler.starts, depth)
+  TEST_EQUAL(handler.ends, depth)
+  Counts stopped;
+  stopped.stop = true;
+  Reader().parseBuffer_("<root><a/><b/></root>", &stopped);
+  TEST_EQUAL(stopped.starts, 2)
+  TEST_EQUAL(stopped.ends, 0)
+}
+END_SECTION
+
 START_SECTION(Malformed XML produces ParseError)
 {
   Handler handler;

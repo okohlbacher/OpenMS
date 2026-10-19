@@ -15,7 +15,6 @@
 #include <OpenMS/FORMAT/HANDLERS/XMLHandler.h>
 #include <OpenMS/FORMAT/HANDLERS/XMLAttributes.h>
 #include <pugixml.hpp>
-#include <functional>
 #include <array>
 #include <cstring>
 #include <xercesc/util/BinInputStream.hpp>
@@ -139,30 +138,50 @@ private:
         throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "",
             std::string("pugixml: ") + status.description() + " at byte " + std::to_string(status.offset));
       }
-      std::function<void(pugi::xml_node)> visit = [&](pugi::xml_node node)
-      {
-        if (node.type() == pugi::node_element)
-        {
-          auto name = utf16(node.name());
-          XMLAttributes::Values attributes;
-          for (auto attr : node.attributes()) attributes.emplace_back(utf16(attr.name()), utf16(attr.value()));
-          handler->onStartElement(name.c_str(), XMLAttributes(attributes));
-          for (auto child : node.children()) visit(child);
-          handler->onEndElement(name.c_str());
-        }
-        else if (node.type() == pugi::node_pcdata || node.type() == pugi::node_cdata)
-        {
-          const char* value = node.value();
-          if (!handler->tryOnCharactersUTF8(value, std::strlen(value)))
-          {
-            auto text = utf16(value);
-            handler->onCharacters(text.c_str(), text.size());
-          }
-        }
-      };
       try
       {
-        for (auto child : document.children()) visit(child);
+        // Walk parent/sibling links instead of consuming one C++ stack frame per
+        // XML level. Element exits occur only after all their children are visited.
+        auto node = document.first_child();
+        while (node)
+        {
+          if (node.type() == pugi::node_element)
+          {
+            auto name = utf16(node.name());
+            XMLAttributes::Values attributes;
+            for (auto attr : node.attributes()) attributes.emplace_back(utf16(attr.name()), utf16(attr.value()));
+            handler->onStartElement(name.c_str(), XMLAttributes(attributes));
+            if (auto child = node.first_child())
+            {
+              node = child;
+              continue;
+            }
+          }
+          else if (node.type() == pugi::node_pcdata || node.type() == pugi::node_cdata)
+          {
+            const char* value = node.value();
+            if (!handler->tryOnCharactersUTF8(value, std::strlen(value)))
+            {
+              auto text = utf16(value);
+              handler->onCharacters(text.c_str(), text.size());
+            }
+          }
+          while (node)
+          {
+            if (node.type() == pugi::node_element)
+            {
+              auto name = utf16(node.name());
+              handler->onEndElement(name.c_str());
+            }
+            if (auto sibling = node.next_sibling())
+            {
+              node = sibling;
+              break;
+            }
+            node = node.parent();
+            if (node == document) node = {};
+          }
+        }
       }
       catch (const XMLHandler::EndParsingSoftly&)
       {
