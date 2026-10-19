@@ -7,6 +7,7 @@
 #include <OpenMS/FORMAT/HANDLERS/MzMLSpectrumDecoder.h>
 #include <OpenMS/KERNEL/MSSpectrum.h>
 #include <future>
+#include <fstream>
 
 using namespace OpenMS;
 
@@ -16,6 +17,8 @@ namespace
   {
   public:
     using XMLFile::parseBuffer_;
+    using XMLFile::parse_;
+    using XMLFile::enforceEncoding_;
   };
 
   class Handler : public Internal::XMLHandler
@@ -46,6 +49,40 @@ START_SECTION((Unicode attributes, text, entities and CDATA))
   TEST_TRUE(handler.attribute == u"Grüße \U0001F600")
   TEST_TRUE(handler.text == u"A&BC")
   TEST_TRUE(handler.unicode_attribute == u"UTF8-name")
+}
+END_SECTION
+
+START_SECTION(Independent encoding overrides for sequential buffers and files)
+{
+  Reader latin1;
+  Reader utf8;
+  latin1.enforceEncoding_("ISO-8859-1");
+  utf8.enforceEncoding_("UTF-8");
+  const std::string latin1_xml = "<root label=\"\xe9\">caf\xe9 &#x1F600;</root>";
+  const std::string utf8_xml = "<root label=\"β\">Grüße \U0001F600</root>";
+  Handler latin1_buffer;
+  Handler utf8_buffer;
+  latin1.parseBuffer_(latin1_xml, &latin1_buffer);
+  utf8.parseBuffer_(utf8_xml, &utf8_buffer);
+  TEST_TRUE(latin1_buffer.attribute == u"é")
+  TEST_TRUE(latin1_buffer.text == u"café \U0001F600")
+  TEST_TRUE(utf8_buffer.attribute == u"β")
+  TEST_TRUE(utf8_buffer.text == u"Grüße \U0001F600")
+
+  std::string latin1_path;
+  std::string utf8_path;
+  NEW_TMP_FILE(latin1_path)
+  NEW_TMP_FILE(utf8_path)
+  { std::ofstream output(latin1_path, std::ios::binary); output << latin1_xml; }
+  { std::ofstream output(utf8_path, std::ios::binary); output << utf8_xml; }
+  Handler latin1_file;
+  Handler utf8_file;
+  latin1.parse_(latin1_path, &latin1_file);
+  utf8.parse_(utf8_path, &utf8_file);
+  TEST_TRUE(latin1_file.attribute == latin1_buffer.attribute)
+  TEST_TRUE(latin1_file.text == latin1_buffer.text)
+  TEST_TRUE(utf8_file.attribute == utf8_buffer.attribute)
+  TEST_TRUE(utf8_file.text == utf8_buffer.text)
 }
 END_SECTION
 
