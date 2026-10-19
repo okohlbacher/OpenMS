@@ -7,7 +7,11 @@
 // --------------------------------------------------------------------------
 
 #include <OpenMS/FORMAT/HANDLERS/IndexedMzMLDecoder.h>
-#include <OpenMS/CONCEPT/Init.h>
+#include <expat.h>
+#include <memory>
+#include <exception>
+#include <cstring>
+#include <string_view>
 
 #include <OpenMS/SYSTEM/File.h>
 
@@ -16,12 +20,6 @@
 
 #include <fstream>
 #include <iostream>
-
-#include <xercesc/framework/MemBufInputSource.hpp>
-#include <xercesc/parsers/XercesDOMParser.hpp>
-#include <xercesc/dom/DOMElement.hpp>
-#include <xercesc/dom/DOMNodeList.hpp>
-#include <xercesc/util/XMLString.hpp>
 
 namespace OpenMS
 {
@@ -107,7 +105,7 @@ namespace OpenMS
 
     // allocate enough memory in buffer (+1 for string termination)
     std::streampos readl = length - indexoffset;
-    char* buffer = new(std::nothrow) char[readl + std::streampos(1)];
+    std::unique_ptr<char[]> buffer(new(std::nothrow) char[readl + std::streampos(1)]);
 
     // catch case where not enough memory is available
     if (buffer == nullptr)
@@ -121,17 +119,16 @@ namespace OpenMS
 
     // read into memory
     f.seekg(-readl, f.end);
-    f.read(buffer, readl);
+    f.read(buffer.get(), readl);
     buffer[readl] = '\0';
 
     //-------------------------------------------------------------
     // Add a sane start element and then give it to a DOM parser
     //-------------------------------------------------------------
     // http://stackoverflow.com/questions/4691039/making-xerces-parse-a-string-insted-of-a-file
-    std::string tmp_fixed_xml = "<indexedmzML>" +  std::string(buffer) + "\n";
+    std::string tmp_fixed_xml = "<indexedmzML>" +  std::string(buffer.get()) + "\n";
     int res = domParseIndexedEnd_(tmp_fixed_xml, spectra_offsets, chromatograms_offsets);
 
-    delete[] buffer;
 
     return res;
   }
@@ -206,135 +203,110 @@ namespace OpenMS
 
   int IndexedMzMLDecoder::domParseIndexedEnd_(const std::string& in, OffsetVector& spectra_offsets, OffsetVector& chromatograms_offsets)
   {
-
-    /*
-
-     We parse something like 
-     
-      <indexedmzML>
-        <indexList count="1">
-          <index name="chromatogram">
-            <offset idRef="1">9752</offset>
-          </index>
-        </indexList>
-        <indexListOffset>26795</indexListOffset>
-      <fileChecksum>0</fileChecksum>
-      </indexedmzML>
-
-    */
-
-    //-------------------------------------------------------------
-    // Create parser from input string using MemBufInputSource
-    //-------------------------------------------------------------
-    // Xerces has to be initialised; CONCEPT/Init.cpp does so on loading the library, but a
-    // static library (WebAssembly) links that object file only if something else calls into it
-    static const bool xerces_initialized = (Internal::xercesInitialize(), true);
-    (void)xerces_initialized;
-    xercesc::MemBufInputSource myxml_buf(
-        reinterpret_cast<const unsigned char*>(in.c_str()), in.length(), "myxml (in memory)");
-    xercesc::XercesDOMParser parser;
-    parser.setDoNamespaces(false);
-    parser.setDoSchema(false);
-    parser.setLoadExternalDTD(false);
-    parser.parse(myxml_buf);
-
-    //-------------------------------------------------------------
-    // Start parsing
-    // see http://www.yolinux.com/TUTORIALS/XML-Xerces-C.html
-    //-------------------------------------------------------------
-
-    // no need to free this pointer - owned by the parent parser object
-    xercesc::DOMDocument* doc =  parser.getDocument();
-    // Get the top-level element ("indexedmzML")
-    xercesc::DOMElement* elementRoot = doc->getDocumentElement();
-    if (!elementRoot)
+    struct Footer
     {
-      std::cerr << "IndexedMzMLDecoder::domParseIndexedEnd Error: " <<
-        "No root element found:" << std::endl << std::endl << in << std::endl;
-      return -1;
-    }
-
-    // Extract the indexList tag (there should only be one)
-    XMLCh* x_tag = xercesc::XMLString::transcode("indexList");
-    xercesc::DOMNodeList* li = elementRoot->getElementsByTagName(x_tag);
-    xercesc::XMLString::release(&x_tag);
-    if (li->getLength() != 1)
-    {
-      std::cerr << "IndexedMzMLDecoder::domParseIndexedEnd Error: "
-        << "no indexList element found:" << std::endl << std::endl << in << std::endl;
-      return -1;
-    }
-    xercesc::DOMNode* indexListNode = li->item(0);
-
-    XMLCh* x_idref_tag = xercesc::XMLString::transcode("idRef");
-    XMLCh* x_name_tag = xercesc::XMLString::transcode("name");
-
-    xercesc::DOMNodeList* index_elems = indexListNode->getChildNodes();
-    const  XMLSize_t nodeCount_ = index_elems->getLength();
-
-    // Iterate through indexList elements (only two elements should be present
-    // which should be either spectrum or chromatogram offsets)
-    for (XMLSize_t j = 0; j < nodeCount_; ++j)
-    {
-      xercesc::DOMNode* currentNode = index_elems->item(j);
-      if (currentNode->getNodeType() && // true is not NULL
-          currentNode->getNodeType() == xercesc::DOMNode::ELEMENT_NODE) // is element
+      XML_Parser parser;
+      std::exception_ptr exception;
+      OffsetVector spectra, chromatograms, entries;
+      std::string index_name, id, offset;
+      Size depth = 0, list_depth = 0, index_depth = 0, offset_depth = 0, lists = 0;
+      bool invalid_index = false, has_spectra = false, has_chromatograms = false;
+      static const char* attribute(const XML_Char** attributes, const char* name)
       {
-        std::vector<std::pair<std::string, std::streampos> > result;
-
-        // Iterate through children
-        // NOTE: Using xercesc::DOMNodeList and "item" is a very bad idea since
-        //       each "item" call has complexity of O(n), see the
-        //       implementation in DOMNodeListImpl.cpp :
-        //       https://svn.apache.org/repos/asf/xerces/c/trunk/src/xercesc/dom/impl/DOMNodeListImpl.cpp
-        //
-        for (xercesc::DOMNode* currentONode = currentNode->getFirstChild(); currentONode != nullptr;
-             currentONode = currentONode->getNextSibling())
+        for (Size i = 0; attributes[i]; i += 2)
         {
-          if (currentONode->getNodeType() && // true is not NULL
-              currentONode->getNodeType() == xercesc::DOMNode::ELEMENT_NODE) // is element
+          if (std::strcmp(attributes[i], name) == 0) return attributes[i + 1];
+        }
+        return "";
+      }
+      void capture() noexcept
+      {
+        if (!exception) exception = std::current_exception();
+        XML_StopParser(parser, XML_FALSE);
+      }
+      static void XMLCALL start(void* opaque, const XML_Char* name, const XML_Char** attributes) noexcept
+      {
+        auto& s = *static_cast<Footer*>(opaque);
+        if (s.exception) return;
+        try
+        {
+          ++s.depth;
+          if (std::string_view(name) == "indexList" && s.depth > 1)
           {
-            xercesc::DOMElement* currentElement = dynamic_cast<xercesc::DOMElement*>(currentONode);
-
-            char* x_name = xercesc::XMLString::transcode(currentElement->getAttribute(x_idref_tag));
-            char* x_offset = xercesc::XMLString::transcode(currentONode->getTextContent());
-
-            std::streampos thisOffset = OpenMS::IndexedMzMLUtils::stringToStreampos(std::string(x_offset) );
-            result.emplace_back(std::string(x_name), thisOffset);
-
-            xercesc::XMLString::release(&x_name);
-            xercesc::XMLString::release(&x_offset);
+            ++s.lists;
+            s.list_depth = s.depth;
+          }
+          else if (s.list_depth && s.depth == s.list_depth + 1)
+          {
+            s.index_depth = s.depth;
+            s.index_name = attribute(attributes, "name");
+            s.entries.clear();
+          }
+          else if (s.index_depth && s.depth == s.index_depth + 1)
+          {
+            s.offset_depth = s.depth;
+            s.id = attribute(attributes, "idRef");
+            s.offset.clear();
           }
         }
-
-        // should be either spectrum or chromatogram ...
-        xercesc::DOMElement* currentElement = dynamic_cast<xercesc::DOMElement*>(currentNode);
-        char* x_indexName = xercesc::XMLString::transcode(currentElement->getAttribute(x_name_tag));
-        std::string name(x_indexName);
-        xercesc::XMLString::release(&x_indexName);
-
-        if (name == "spectrum")
-        {
-          spectra_offsets = result;
-        }
-        else if (name == "chromatogram")
-        {
-          chromatograms_offsets = result;
-        }
-        else
-        {
-          std::cerr << "IndexedMzMLDecoder::domParseIndexedEnd Error: expected only " <<
-            "'spectrum' or 'chromatogram' below indexList but found instead '" <<
-            name << "'." << std::endl;
-          xercesc::XMLString::release(&x_idref_tag);
-          xercesc::XMLString::release(&x_name_tag);
-          return -1;
-        }
+        catch (...) { s.capture(); }
       }
+      static void XMLCALL end(void* opaque, const XML_Char*) noexcept
+      {
+        auto& s = *static_cast<Footer*>(opaque);
+        if (s.exception) return;
+        try
+        {
+          if (s.depth == s.offset_depth)
+          {
+            s.entries.emplace_back(s.id, IndexedMzMLUtils::stringToStreampos(s.offset));
+            s.offset_depth = 0;
+          }
+          if (s.depth == s.index_depth)
+          {
+            if (s.index_name == "spectrum") { s.spectra = std::move(s.entries); s.has_spectra = true; }
+            else if (s.index_name == "chromatogram") { s.chromatograms = std::move(s.entries); s.has_chromatograms = true; }
+            else { s.invalid_index = true; }
+            s.index_depth = 0;
+          }
+          if (s.depth == s.list_depth) s.list_depth = 0;
+          --s.depth;
+        }
+        catch (...) { s.capture(); }
+      }
+      static void XMLCALL text(void* opaque, const XML_Char* value, int length) noexcept
+      {
+        auto& s = *static_cast<Footer*>(opaque);
+        if (s.exception) return;
+        try { if (s.offset_depth) s.offset.append(value, static_cast<Size>(length)); }
+        catch (...) { s.capture(); }
+      }
+    };
+    std::unique_ptr<XML_ParserStruct, decltype(&XML_ParserFree)> parser(XML_ParserCreate(nullptr), XML_ParserFree);
+    if (!parser) throw std::bad_alloc();
+    Footer footer{};
+    footer.parser = parser.get();
+    XML_SetUserData(parser.get(), &footer);
+    XML_SetElementHandler(parser.get(), Footer::start, Footer::end);
+    XML_SetCharacterDataHandler(parser.get(), Footer::text);
+    XML_SetParamEntityParsing(parser.get(), XML_PARAM_ENTITY_PARSING_NEVER);
+    XML_SetExternalEntityRefHandler(parser.get(), [](XML_Parser, const XML_Char*, const XML_Char*, const XML_Char*, const XML_Char*) -> int { return XML_STATUS_ERROR; });
+    for (Size offset = 0;;)
+    {
+      const auto count = std::min<Size>(65536, in.size() - offset);
+      const bool final = offset + count == in.size();
+      const auto status = XML_Parse(parser.get(), in.data() + offset, static_cast<int>(count), final);
+      if (footer.exception) std::rethrow_exception(footer.exception);
+      if (status == XML_STATUS_ERROR)
+      {
+        throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "", XML_ErrorString(XML_GetErrorCode(parser.get())));
+      }
+      if (final) break;
+      offset += count;
     }
-    xercesc::XMLString::release(&x_idref_tag);
-    xercesc::XMLString::release(&x_name_tag);
-
+    if (footer.lists != 1 || footer.invalid_index) return -1;
+    if (footer.has_spectra) spectra_offsets = std::move(footer.spectra);
+    if (footer.has_chromatograms) chromatograms_offsets = std::move(footer.chromatograms);
     return 0;
   }
 

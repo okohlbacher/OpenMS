@@ -8,6 +8,8 @@
 #include <OpenMS/FORMAT/XMLFile.h>
 #include <OpenMS/FORMAT/HANDLERS/XMLHandler.h>
 #include <OpenMS/FORMAT/HANDLERS/XMLAttributes.h>
+#include <OpenMS/FORMAT/HANDLERS/MzMLSpectrumDecoder.h>
+#include <OpenMS/FORMAT/HANDLERS/IndexedMzMLDecoder.h>
 #include <OpenMS/test_config.h>
 
 #include <atomic>
@@ -26,6 +28,16 @@ namespace
     using XMLFile::parseBuffer_;
     using XMLFile::enforceEncoding_;
     using XMLFile::save_;
+  };
+
+  struct FragmentReader : MzMLSpectrumDecoder
+  {
+    using MzMLSpectrumDecoder::BinaryData;
+    using MzMLSpectrumDecoder::domParseString_;
+  };
+  struct FooterReader : IndexedMzMLDecoder
+  {
+    using IndexedMzMLDecoder::domParseIndexedEnd_;
   };
 
   struct Handler : XMLHandler
@@ -153,6 +165,52 @@ START_SECTION((plain, gzip, bzip2 and ZIP inputs))
 }
 END_SECTION
 
+START_SECTION((Expat indexed fragments preserve metadata and accept large binary text))
+{
+  FragmentReader reader;
+  std::vector<FragmentReader::BinaryData> arrays;
+  const std::string binary(13 * 1024 * 1024, 'A');
+  const auto id = reader.domParseString_("<spectrum id='scan=\xc3\xa4&amp;1' defaultArrayLength='1277952'><binaryDataArrayList><binaryDataArray>"
+    "<cvParam accession='MS:1000523' value=''/><cvParam accession='MS:1000514' value=''/>"
+    "<binary>" + binary + "</binary></binaryDataArray></binaryDataArrayList></spectrum>", arrays);
+  TEST_EQUAL(id, "scan=\xc3\xa4&1")
+  TEST_EQUAL(arrays.size(), 1)
+  ABORT_IF(arrays.empty())
+  TEST_EQUAL(arrays[0].size, 1277952)
+  TEST_EQUAL(arrays[0].base64, binary)
+  std::vector<FragmentReader::BinaryData> framed;
+  TEST_EQUAL(reader.domParseString_("<spectrum id='frame' defaultArrayLength='0'/></spectrumList><chromatogramList>", framed), "frame")
+  TEST_EXCEPTION(Exception::ParseError, reader.domParseString_("<spectrum defaultArrayLength='0'><binaryDataArray/></spectrum>", arrays))
+  TEST_EXCEPTION(Exception::ParseError, reader.domParseString_("<spectrum defaultArrayLength='0'><binaryDataArray><binary><bad/></binary></binaryDataArray></spectrum>", arrays))
+  TEST_EXCEPTION(Exception::ParseError, reader.domParseString_("<spectrum defaultArrayLength='0'><binaryDataArray><binary><![CDATA[AAAA]]></binary></binaryDataArray></spectrum>", arrays))
+  TEST_EXCEPTION(Exception::ParseError, reader.domParseString_("<spectrum defaultArrayLength='0'><binaryDataArray><binary>AAAA<!--bad--></binary></binaryDataArray></spectrum>", arrays))
+  TEST_EXCEPTION(Exception::ParseError, reader.domParseString_("<spectrum defaultArrayLength='0'><broken></spectrum>", arrays))
+  TEST_EXCEPTION(Exception::ParseError, reader.domParseString_("<spectrum/>", arrays))
+}
+END_SECTION
+
+START_SECTION((Expat index footer handles Unicode, entities, offset conversion and failures))
+{
+  FooterReader reader;
+  IndexedMzMLDecoder::OffsetVector spectra, chromatograms;
+  const std::string footer = "<indexedmzML><indexList count='2'><index name='spectrum'>"
+    "<offset idRef='scan=\xc3\xa4&amp;1'>123456789012</offset></index>"
+    "<index name='chromatogram'><offset idRef='TIC'>42</offset></index>"
+    "</indexList><indexListOffset>1</indexListOffset></indexedmzML>";
+  TEST_EQUAL(reader.domParseIndexedEnd_(footer, spectra, chromatograms), 0)
+  TEST_EQUAL(spectra.size(), 1)
+  TEST_EQUAL(chromatograms.size(), 1)
+  ABORT_IF(spectra.empty() || chromatograms.empty())
+  TEST_EQUAL(spectra[0].first, "scan=\xc3\xa4&1")
+  TEST_EQUAL(spectra[0].second, std::streampos(123456789012LL))
+  TEST_EQUAL(chromatograms[0].second, std::streampos(42))
+  TEST_EQUAL(reader.domParseIndexedEnd_("<root><indexList/><indexList/></root>", spectra, chromatograms), -1)
+  TEST_EQUAL(reader.domParseIndexedEnd_("<root><indexList><index name='invalid'/></indexList></root>", spectra, chromatograms), -1)
+  TEST_EXCEPTION(Exception::ConversionError, reader.domParseIndexedEnd_("<root><indexList><index name='spectrum'><offset>bad</offset></index></indexList></root>", spectra, chromatograms))
+  TEST_EXCEPTION(Exception::ParseError, reader.domParseIndexedEnd_("<root><indexList></root>", spectra, chromatograms))
+}
+END_SECTION
+
 START_SECTION((independent concurrent parser instances))
 {
   std::atomic<bool> correct{true};
@@ -169,6 +227,14 @@ START_SECTION((independent concurrent parser instances))
           Handler handler;
           reader.parseBuffer_("<root>parallel \xf0\x9f\xa7\xaa</root>", &handler);
           if (handler.text != u"parallel \U0001f9ea") correct = false;
+          FragmentReader fragments;
+          std::vector<FragmentReader::BinaryData> arrays;
+          if (fragments.domParseString_("<spectrum id='thread' defaultArrayLength='1'><binaryDataArray><binary>AAAA</binary></binaryDataArray></spectrum>", arrays) != "thread" ||
+              arrays.size() != 1 || arrays[0].base64 != "AAAA") correct = false;
+          FooterReader footer;
+          IndexedMzMLDecoder::OffsetVector spectra, chromatograms;
+          if (footer.domParseIndexedEnd_("<root><indexList><index name='spectrum'><offset idRef='thread'>42</offset></index></indexList></root>", spectra, chromatograms) != 0 ||
+              spectra.size() != 1 || spectra[0].second != std::streampos(42)) correct = false;
         }
       }
       catch (...) { correct = false; }

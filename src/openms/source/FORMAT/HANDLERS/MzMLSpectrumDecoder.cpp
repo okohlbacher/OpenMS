@@ -17,6 +17,10 @@
 #include <xercesc/dom/DOMNodeList.hpp>
 
 #include <memory>
+#include <expat.h>
+#include <exception>
+#include <string_view>
+#include <cstring>
 #include <xercesc/util/XMLString.hpp>
 
 namespace OpenMS
@@ -527,67 +531,135 @@ namespace OpenMS
 
   std::string MzMLSpectrumDecoder::domParseString_(const std::string& in, std::vector<BinaryData>& data)
   {
-    // PRECONDITON is below (since we first need to do XML parsing before validating)
-    // initializer list of XMLCh (= usually some type that fits utf16) from ASCII chars
-    static constexpr XMLCh id_tag[] = {'i','d', 0};
-    static constexpr XMLCh default_array_length_tag[] = { 'd','e','f','a','u','l','t','A','r','r','a','y','L','e','n','g','t','h', 0};
-    static constexpr XMLCh binary_data_array_tag[] = { 'b','i','n','a','r','y','D','a','t','a','A','r','r','a','y', 0};
-
-    //-------------------------------------------------------------
-    // Create parser from input string using MemBufInputSource
-    //-------------------------------------------------------------
-    // Xerces has to be initialised; CONCEPT/Init.cpp does so on loading the library, but a
-    // static library (WebAssembly) links that object file only if something else calls into it
-    static const bool xerces_initialized = (Internal::xercesInitialize(), true);
-    (void)xerces_initialized;
-    xercesc::MemBufInputSource myxml_buf(reinterpret_cast<const unsigned char*>(in.c_str()), in.length(), "myxml (in memory)");
-    std::unique_ptr<xercesc::XercesDOMParser> parser = std::make_unique<xercesc::XercesDOMParser>(); // make sure it is deleted even in case of exceptions
-    parser->setDoNamespaces(false);
-    parser->setDoSchema(false);
-    parser->setLoadExternalDTD(false);
-    parser->parse(myxml_buf);
-
-    //-------------------------------------------------------------
-    // Start parsing
-    // see http://www.yolinux.com/TUTORIALS/XML-Xerces-C.html
-    //-------------------------------------------------------------
-
-    // no need to free this pointer - owned by the parent parser object
-    xercesc::DOMDocument* doc =  parser->getDocument();
-    // Get the top-level element (needs to be <spectrum> or <chromatogram>)
-    xercesc::DOMElement* elementRoot = doc->getDocumentElement();
-    if (!elementRoot)
+    // The public method name is retained; Expat streams the bounded fragment
+    // directly into BinaryData rather than constructing a temporary DOM tree.
+    struct Fragment
     {
-      throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, in, "No root element");
-    }
+      XML_Parser parser;
+      std::vector<BinaryData>& data;
+      std::exception_ptr exception;
+      std::string id;
+      Size depth = 0, array_depth = 0, binary_depth = 0;
+      int length = 0;
+      bool binary_seen = false, root_complete = false;
 
-    OPENMS_PRECONDITION(xercesc::XMLString::equals(elementRoot->getTagName(), CONST_XMLCH("spectrum")) || xercesc::XMLString::equals(elementRoot->getTagName(), CONST_XMLCH("chromatogram")),
-          ("The input needs to contain a <spectrum> or <chromatogram> tag as root element. Got instead '" +
-          StringUtils::toStr(Internal::unique_xerces_ptr(xercesc::XMLString::transcode(elementRoot->getTagName())).get()) + std::string("'.")).c_str())
-
-    // defaultArrayLength is a required attribute for the spectrum and the
-    // chromatogram tag (but still check for it first to be safe).
-    if (elementRoot->getAttributeNode(default_array_length_tag) == nullptr)
+      static const char* attribute(const XML_Char** attributes, const char* name)
+      {
+        for (Size i = 0; attributes[i]; i += 2)
+        {
+          if (std::strcmp(attributes[i], name) == 0) return attributes[i + 1];
+        }
+        return "";
+      }
+      void capture() noexcept
+      {
+        if (!exception) exception = std::current_exception();
+        XML_StopParser(parser, XML_FALSE);
+      }
+      [[noreturn]] static void invalid(const char* message)
+      {
+        throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "", message);
+      }
+      static void XMLCALL start(void* opaque, const XML_Char* name, const XML_Char** attributes) noexcept
+      {
+        auto& s = *static_cast<Fragment*>(opaque);
+        if (s.exception) return;
+        try
+        {
+          ++s.depth;
+          const std::string_view tag(name);
+          if (s.depth == 1)
+          {
+            if (tag != "spectrum" && tag != "chromatogram") invalid("Expected spectrum or chromatogram root element");
+            const char* size = attribute(attributes, "defaultArrayLength");
+            if (!*size) invalid("Root element does not contain defaultArrayLength XML tag");
+            s.length = StringUtils::toInt32(size);
+            s.id = attribute(attributes, "id");
+          }
+          if (s.binary_depth) invalid("Invalid XML: binary must contain only text");
+          if (tag == "binaryDataArray")
+          {
+            if (s.array_depth) invalid("Nested binaryDataArray element");
+            s.array_depth = s.depth;
+            s.binary_seen = false;
+            s.data.emplace_back();
+            s.data.back().size = s.length;
+          }
+          else if (s.array_depth && s.depth == s.array_depth + 1)
+          {
+            if (tag == "binary") { s.binary_depth = s.depth; s.binary_seen = true; }
+            else if (tag == "cvParam")
+            {
+              Internal::MzMLHandlerHelper::handleBinaryDataArrayCVParam(s.data,
+                attribute(attributes, "accession"), attribute(attributes, "value"),
+                attribute(attributes, "name"), attribute(attributes, "unitAccession"));
+            }
+            else if (tag == "userParam") { std::cout << " unhandled userParam\n"; }
+            else if (tag == "referenceableParamGroupRef") { std::cout << " unhandled referenceableParamGroupRef\n"; }
+          }
+        }
+        catch (...) { s.capture(); }
+      }
+      static void XMLCALL end(void* opaque, const XML_Char*) noexcept
+      {
+        auto& s = *static_cast<Fragment*>(opaque);
+        if (s.exception) return;
+        try
+        {
+          if (s.depth == s.binary_depth) s.binary_depth = 0;
+          if (s.depth == s.array_depth)
+          {
+            if (!s.binary_seen) invalid("Invalid XML: binary element missing inside binaryDataArray");
+            s.array_depth = 0;
+          }
+          --s.depth;
+          if (s.depth == 0)
+          {
+            // Indexed offsets may include the parent's closing tags after the
+            // requested subtree; stop only after its complete root element.
+            s.root_complete = true;
+            XML_StopParser(s.parser, XML_FALSE);
+          }
+        }
+        catch (...) { s.capture(); }
+      }
+      static void XMLCALL text(void* opaque, const XML_Char* value, int length) noexcept
+      {
+        auto& s = *static_cast<Fragment*>(opaque);
+        if (s.exception) return;
+        try { if (s.binary_depth) s.data.back().base64.append(value, static_cast<Size>(length)); }
+        catch (...) { s.capture(); }
+      }
+      static void XMLCALL nontext(void* opaque) noexcept
+      {
+        auto& s = *static_cast<Fragment*>(opaque);
+        if (s.exception) return;
+        try { if (s.binary_depth) invalid("Invalid XML: binary must contain only text"); }
+        catch (...) { s.capture(); }
+      }
+    };
+    std::unique_ptr<XML_ParserStruct, decltype(&XML_ParserFree)> parser(XML_ParserCreate(nullptr), XML_ParserFree);
+    if (!parser) throw std::bad_alloc();
+    Fragment fragment{parser.get(), data, {}, {}};
+    XML_SetUserData(parser.get(), &fragment);
+    XML_SetElementHandler(parser.get(), Fragment::start, Fragment::end);
+    XML_SetCharacterDataHandler(parser.get(), Fragment::text);
+    XML_SetStartCdataSectionHandler(parser.get(), Fragment::nontext);
+    XML_SetCommentHandler(parser.get(), [](void* state, const XML_Char*) { Fragment::nontext(state); });
+    XML_SetProcessingInstructionHandler(parser.get(), [](void* state, const XML_Char*, const XML_Char*) { Fragment::nontext(state); });
+    XML_SetParamEntityParsing(parser.get(), XML_PARAM_ENTITY_PARSING_NEVER);
+    XML_SetExternalEntityRefHandler(parser.get(), [](XML_Parser, const XML_Char*, const XML_Char*, const XML_Char*, const XML_Char*) -> int { return XML_STATUS_ERROR; });
+    for (Size offset = 0;;)
     {
-      throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION,
-          in, "Root element does not contain defaultArrayLength XML tag.");
+      const auto count = std::min<Size>(65536, in.size() - offset);
+      const bool final = offset + count == in.size();
+      const auto status = XML_Parse(parser.get(), in.data() + offset, static_cast<int>(count), final);
+      if (fragment.exception) std::rethrow_exception(fragment.exception);
+      if (status == XML_STATUS_ERROR && !fragment.root_complete) Fragment::invalid(XML_ErrorString(XML_GetErrorCode(parser.get())));
+      if (fragment.root_complete || final) break;
+      offset += count;
     }
-    int default_array_length = xercesc::XMLString::parseInt(elementRoot->getAttribute(default_array_length_tag));
-    OpenMS::Internal::StringManager sm;
-    std::string id = sm.convert(elementRoot->getAttribute(id_tag));
-
-    // Extract the binaryDataArray elements (there may be multiple) and process them
-    xercesc::DOMNodeList* li = elementRoot->getElementsByTagName(binary_data_array_tag);
-    for (Size i = 0; i < li->getLength(); i++)
-    {
-      // Will append one single BinaryData object to data      
-      handleBinaryDataArray_(li->item(i), data);
-      
-      // Set the size correctly (otherwise MzMLHandlerHelper complains).
-      data.back().size = default_array_length;
-    }
-
-    return id;
+    return fragment.id;
   }
 
   void MzMLSpectrumDecoder::domParseSpectrum(const std::string& in, OpenMS::Interfaces::SpectrumPtr& sptr)
