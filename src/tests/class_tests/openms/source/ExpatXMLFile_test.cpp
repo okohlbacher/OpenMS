@@ -13,6 +13,7 @@
 #include <OpenMS/test_config.h>
 
 #include <atomic>
+#include <cstdio>
 #include <fstream>
 #include <thread>
 #include <vector>
@@ -158,6 +159,7 @@ START_SECTION((plain, gzip, bzip2 and ZIP inputs))
     Handler parsed;
     reader.parse_(filename, &parsed);
     TEST_TRUE(parsed.text == u"compressed text")
+    std::remove(filename.c_str());
   }
   Handler zipped;
   reader.parse_(OPENMS_GET_TEST_DATA_PATH("Deisotoper_input1.mzML.zip"), &zipped);
