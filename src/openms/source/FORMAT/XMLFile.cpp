@@ -82,7 +82,7 @@ private:
       enforced_encoding_ = encoding;
     }
 
-    void parse(xercesc::InputSource* const source, XMLHandler* handler)
+    void parse(xercesc::InputSource* const source, XMLHandler* handler, Size known_size = 0)
     {
       // Deliberately DOM-backed event delivery: this prototype measures the whole-file
       // memory cost of pugixml rather than claiming to supply streaming parsing.
@@ -110,6 +110,8 @@ private:
         throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "", "Cannot open XML input stream");
       }
       std::vector<char> input;
+      // Avoid geometric spare capacity when the uncompressed byte count is known.
+      input.reserve(known_size);
       std::array<XMLByte, 65536> chunk;
       XMLSize_t count;
       while ((count = stream->readBytes(chunk.data(), chunk.size())) != 0)
@@ -199,6 +201,7 @@ private:
       }
 
       unique_ptr<xercesc::InputSource> source;
+      Size known_size = 0;
 
       char g1 = 0x1f;
       char g2 = 0;
@@ -214,6 +217,7 @@ private:
       else
       {
         source.reset(new xercesc::LocalFileInputSource(sm.convert(filename).c_str()));
+        known_size = File::fileSize(filename);
       }
       // what if no encoding given http://xerces.apache.org/xerces-c/apiDocs-3/classInputSource.html
       if (!enforced_encoding_.empty())
@@ -222,7 +226,7 @@ private:
         source->setEncoding(s_enc);
       }
       
-      parse(source.get(), handler);
+      parse(source.get(), handler, known_size);
     }
 
     void XMLFile::parseBuffer_(const std::string & buffer, XMLHandler * handler)
@@ -260,7 +264,7 @@ private:
         source->setEncoding(s_enc);
       }
       
-      parse(source.get(), handler);
+      parse(source.get(), handler, buffer.size());
     }
 
     void XMLFile::save_(const std::string & filename, XMLHandler * handler) const
