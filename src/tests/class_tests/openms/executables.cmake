@@ -248,6 +248,7 @@ set(format_executables_list
   MzMLFile_test
   ImzMLFile_test
   ImzMLFile_all_modes_test
+  XMLBackendPrototype_test
   MzMLSpectrumDecoder_test
   MzMLSqliteHandler_test
   MzMLSqliteSwathHandler_test

@@ -13,7 +13,11 @@
 #include <OpenMS/CONCEPT/Macros.h>
 
 #include <OpenMS/FORMAT/HANDLERS/XMLHandler.h>
-#include <OpenMS/FORMAT/HANDLERS/SAX2HandlerAdapter.h>
+#include <OpenMS/FORMAT/HANDLERS/XMLAttributes.h>
+#include <pugixml.hpp>
+#include <functional>
+#include <array>
+#include <xercesc/util/BinInputStream.hpp>
 #include <OpenMS/SYSTEM/File.h>
 #include <OpenMS/FORMAT/VALIDATORS/XMLValidator.h>
 
@@ -80,39 +84,82 @@ private:
 
     void parse(xercesc::InputSource* const source, XMLHandler* handler)
     {
-      unique_ptr<xercesc::SAX2XMLReader> parser(xercesc::XMLReaderFactory::createXMLReader());
-
-      parser->setFeature(xercesc::XMLUni::fgSAX2CoreNameSpaces, false);
-      parser->setFeature(xercesc::XMLUni::fgSAX2CoreNameSpacePrefixes, false);
-
-      // XMLHandler exposes only Xerces-free callbacks; bridge it to the SAX parser.
-      SAX2HandlerAdapter adapter(*handler);
-      parser->setContentHandler(&adapter);
-      parser->setErrorHandler(&adapter);
-
-
-      // try to parse file
+      // Deliberately DOM-backed event delivery: this prototype measures the whole-file
+      // memory cost of pugixml rather than claiming to supply streaming parsing.
+      // ponytail: the DOM is O(file size); use a streaming backend for bounded-memory loads.
+      auto utf16 = [](const char* value)
+      {
+        const auto wide = pugi::as_wide(value);
+        std::u16string result;
+        for (auto ch : wide)
+        {
+          const auto cp = static_cast<uint32_t>(ch);
+          if constexpr (sizeof(wchar_t) == 2) result.push_back(static_cast<char16_t>(cp));
+          else if (cp <= 0xffff) result.push_back(static_cast<char16_t>(cp));
+          else
+          {
+            result.push_back(static_cast<char16_t>(0xd800 + ((cp - 0x10000) >> 10)));
+            result.push_back(static_cast<char16_t>(0xdc00 + ((cp - 0x10000) & 0x3ff)));
+          }
+        }
+        return result;
+      };
+      unique_ptr<xercesc::BinInputStream> stream(source->makeStream());
+      if (!stream)
+      {
+        throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "", "Cannot open XML input stream");
+      }
+      std::vector<char> input;
+      std::array<XMLByte, 65536> chunk;
+      XMLSize_t count;
+      while ((count = stream->readBytes(chunk.data(), chunk.size())) != 0)
+      {
+        input.insert(input.end(), chunk.begin(), chunk.begin() + count);
+      }
+      pugi::xml_document document;
+      // Keep whitespace text and CDATA so handler character data is preserved.
+      pugi::xml_encoding encoding = pugi::encoding_auto;
+      if (source->getEncoding())
+      {
+        const std::string requested = StringManager::convert(reinterpret_cast<const char16_t*>(source->getEncoding()));
+        if (requested == "UTF-8" || requested == "utf-8") encoding = pugi::encoding_utf8;
+        else if (requested == "UTF-16" || requested == "utf-16") encoding = pugi::encoding_utf16;
+        else if (requested == "ISO-8859-1") encoding = pugi::encoding_latin1;
+        else
+        {
+          throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "", "Unsupported pugixml encoding override: " + requested);
+        }
+      }
+      const auto status = document.load_buffer_inplace(input.data(), input.size(), pugi::parse_default | pugi::parse_ws_pcdata, encoding);
+      if (!status)
+      {
+        throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "",
+            std::string("pugixml: ") + status.description() + " at byte " + std::to_string(status.offset));
+      }
+      std::function<void(pugi::xml_node)> visit = [&](pugi::xml_node node)
+      {
+        if (node.type() == pugi::node_element)
+        {
+          auto name = utf16(node.name());
+          XMLAttributes::Values attributes;
+          for (auto attr : node.attributes()) attributes.emplace_back(utf16(attr.name()), utf16(attr.value()));
+          handler->onStartElement(name.c_str(), XMLAttributes(attributes));
+          for (auto child : node.children()) visit(child);
+          handler->onEndElement(name.c_str());
+        }
+        else if (node.type() == pugi::node_pcdata || node.type() == pugi::node_cdata)
+        {
+          auto text = utf16(node.value());
+          handler->onCharacters(text.c_str(), text.size());
+        }
+      };
       try
       {
-        parser->parse(*source);
+        for (auto child : document.children()) visit(child);
       }
-      catch (const xercesc::XMLException& toCatch)
+      catch (const XMLHandler::EndParsingSoftly&)
       {
-        throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "",std::string("XMLException: ") + StringManager().convert(toCatch.getMessage()));
-      }
-      catch (const xercesc::SAXException& toCatch)
-      {
-        throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "",std::string("SAXException: ") + StringManager().convert(toCatch.getMessage()));
-      }
-      catch (const XMLHandler::EndParsingSoftly& /*toCatch*/)
-      {
-        // nothing to do here, as this exception is used to softly abort the
-        // parsing for whatever reason.
-      }
-      catch (...)
-      {
-        // re-throw
-        throw;
+        // Early callback termination works, but the DOM has already been built.
       }
     }
 

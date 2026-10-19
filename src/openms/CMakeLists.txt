@@ -76,9 +76,12 @@ set(OPENMS_DEP_LIBRARIES)
 ## Note: Evergreen is PRIVATE because it's only used internally by BayesianProteinInferenceAlgorithm
 ## Note: LibSVM::LibSVM is PRIVATE because LIBSVM types are not exposed in the public API;
 ##       they are fully encapsulated by the SimpleSVM wrapper (Pimpl) (see #8547).
+find_package(pugixml CONFIG REQUIRED)
+
 set(OPENMS_DEP_PRIVATE_LIBRARIES
   Boost::boost
   CURL::libcurl
+  pugixml::pugixml
   XercesC::XercesC
   $<$<BOOL:${WITH_HDF5}>:HDF5::HDF5>
   ${LPTARGET}

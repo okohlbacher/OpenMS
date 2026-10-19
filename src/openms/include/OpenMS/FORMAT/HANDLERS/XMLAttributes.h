@@ -9,13 +9,16 @@
 #pragma once
 
 #include <OpenMS/CONCEPT/Types.h>
+#include <string>
+#include <vector>
+#include <utility>
 
 namespace OpenMS::Internal
 {
   /**
     @brief Xerces-free, lightweight view over the attribute list of an XML element.
 
-    Wraps a live @c xercesc::Attributes (owned by the SAX parser and valid only
+    Wraps a live @c xercesc::Attributes or a native UTF-16 attribute vector (valid only
     for the duration of the @c startElement callback). It exposes only the small
     surface the OpenMS handlers actually use (value-by-name, index-by-name,
     value-by-index), so that Xerces types never appear in a public header.
@@ -46,6 +49,10 @@ namespace OpenMS::Internal
     {
     }
 
+    /// Non-owning attribute storage for the pugixml proof of concept.
+    using Values = std::vector<std::pair<std::u16string, std::u16string>>;
+    explicit XMLAttributes(const Values& values) noexcept : attributes_(&values), native_(true) {}
+
     /// Value of the attribute named @p qname (UTF-16 code units), or @c nullptr if absent.
     const char16_t* value(const char16_t* qname) const;
 
@@ -63,6 +70,7 @@ namespace OpenMS::Internal
 
   private:
     const void* attributes_;
+    bool native_ = false;
   };
 
 } // namespace OpenMS::Internal

@@ -28,24 +28,43 @@ namespace OpenMS::Internal
 
   const char16_t* XMLAttributes::value(const char16_t* qname) const
   {
+    if (native_)
+    {
+      for (const auto& item : *static_cast<const Values*>(attributes_))
+      {
+        if (item.first == qname) return item.second.c_str();
+      }
+      return nullptr;
+    }
     return reinterpret_cast<const char16_t*>(attrs(attributes_)->getValue(reinterpret_cast<const ::XMLCh*>(qname)));
   }
 
   const char16_t* XMLAttributes::value(const char* qname) const
   {
     ::XMLCh* transcoded = xercesc::XMLString::transcode(qname);
-    const ::XMLCh* val = attrs(attributes_)->getValue(transcoded);
+    const char16_t* val = value(reinterpret_cast<const char16_t*>(transcoded));
     xercesc::XMLString::release(&transcoded);
-    return reinterpret_cast<const char16_t*>(val);
+    return val;
   }
 
   SignedSize XMLAttributes::index(const char16_t* qname) const
   {
+    if (native_)
+    {
+      const auto& values = *static_cast<const Values*>(attributes_);
+      for (Size i = 0; i < values.size(); ++i) if (values[i].first == qname) return i;
+      return -1;
+    }
     return static_cast<SignedSize>(attrs(attributes_)->getIndex(reinterpret_cast<const ::XMLCh*>(qname)));
   }
 
   const char16_t* XMLAttributes::valueByIndex(Size i) const
   {
+    if (native_)
+    {
+      const auto& values = *static_cast<const Values*>(attributes_);
+      return i < values.size() ? values[i].second.c_str() : nullptr;
+    }
     return reinterpret_cast<const char16_t*>(attrs(attributes_)->getValue(static_cast<XMLSize_t>(i)));
   }
 
