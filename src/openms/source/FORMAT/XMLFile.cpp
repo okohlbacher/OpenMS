@@ -17,6 +17,7 @@
 #include <pugixml.hpp>
 #include <functional>
 #include <array>
+#include <cstring>
 #include <xercesc/util/BinInputStream.hpp>
 #include <OpenMS/SYSTEM/File.h>
 #include <OpenMS/FORMAT/VALIDATORS/XMLValidator.h>
@@ -151,8 +152,12 @@ private:
         }
         else if (node.type() == pugi::node_pcdata || node.type() == pugi::node_cdata)
         {
-          auto text = utf16(node.value());
-          handler->onCharacters(text.c_str(), text.size());
+          const char* value = node.value();
+          if (!handler->tryOnCharactersUTF8(value, std::strlen(value)))
+          {
+            auto text = utf16(value);
+            handler->onCharacters(text.c_str(), text.size());
+          }
         }
       };
       try
