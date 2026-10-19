@@ -11,6 +11,8 @@
 #include <xercesc/sax2/Attributes.hpp>
 #include <string_view>
 #include <xercesc/util/XMLString.hpp>
+#include <xercesc/util/TransService.hpp>
+#include <cstring>
 
 namespace OpenMS::Internal
 {
@@ -39,6 +41,12 @@ namespace OpenMS::Internal
 
   const char16_t* XMLAttributes::value(const char* qname) const
   {
+    if (pairs_)
+    {
+      // Expat names are UTF-8 regardless of the process locale.
+      const xercesc::TranscodeFromStr name(reinterpret_cast<const XMLByte*>(qname), std::strlen(qname), "UTF-8");
+      return value(reinterpret_cast<const char16_t*>(name.str()));
+    }
     ::XMLCh* transcoded = xercesc::XMLString::transcode(qname);
     const char16_t* val = value(reinterpret_cast<const char16_t*>(transcoded));
     xercesc::XMLString::release(&transcoded);

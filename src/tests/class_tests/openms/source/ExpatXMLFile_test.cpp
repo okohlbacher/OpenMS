@@ -35,6 +35,7 @@ namespace
     std::vector<std::u16string> tags;
     std::vector<std::u16string> end_tags;
     bool attributes_ok = false;
+    bool unicode_attribute_ok = false;
     bool abort = false;
     bool fail = false;
     std::string document;
@@ -50,6 +51,9 @@ namespace
           attributes.index(u"a") == 0 && attributes.index(u"missing") < 0 &&
           attributes.value("missing") == nullptr && attributes.valueByIndex(99) == nullptr &&
           std::u16string(attributes.valueByIndex(0)) == u"\u00e4\U0001f9ea&";
+        const char16_t* unicode_value = attributes.value("\xc3\xa4");
+        unicode_attribute_ok = unicode_value && std::u16string(unicode_value) == u"unicode" &&
+          attributes.value(u"\u00e4") && std::u16string(attributes.value(u"\u00e4")) == u"unicode";
       }
     }
     void onEndElement(const char16_t* name) override { end_tags.emplace_back(name); }
@@ -65,10 +69,11 @@ START_SECTION((qualified names, attribute access, entities and Unicode across in
   Reader reader;
   Handler handler;
   const std::string padding(65500, 'x');
-  reader.parseBuffer_("<?xml version='1.0'?><root xmlns:p='urn:test'><p:child a='\xc3\xa4\xf0\x9f\xa7\xaa&amp;'>" + padding + "\xc3\xa4\xf0\x9f\xa7\xaa&amp;<![CDATA[<tail>]]></p:child></root>", &handler);
+  reader.parseBuffer_("<?xml version='1.0'?><root xmlns:p='urn:test'><p:child a='\xc3\xa4\xf0\x9f\xa7\xaa&amp;' \xc3\xa4='unicode'>" + padding + "\xc3\xa4\xf0\x9f\xa7\xaa&amp;<![CDATA[<tail>]]></p:child></root>", &handler);
   TEST_EQUAL(handler.tags.size(), 2)
   TEST_TRUE(handler.tags[1] == u"p:child")
   TEST_TRUE(handler.attributes_ok)
+  TEST_TRUE(handler.unicode_attribute_ok)
   TEST_TRUE(handler.end_tags == std::vector<std::u16string>({u"p:child", u"root"}))
   TEST_TRUE(handler.text == std::u16string(65500, u'x') + u"\u00e4\U0001f9ea&<tail>")
 }
