@@ -33,6 +33,7 @@ namespace
     Handler() : XMLHandler("ExpatXMLFile_test", "") {}
     std::u16string text;
     std::vector<std::u16string> tags;
+    std::vector<std::u16string> end_tags;
     bool attributes_ok = false;
     bool abort = false;
     bool fail = false;
@@ -51,6 +52,7 @@ namespace
           std::u16string(attributes.valueByIndex(0)) == u"\u00e4\U0001f9ea&";
       }
     }
+    void onEndElement(const char16_t* name) override { end_tags.emplace_back(name); }
     void onCharacters(const char16_t* value, Size length) override { text.append(value, length); }
     void writeTo(std::ostream& stream) override { stream << document; }
   };
@@ -67,6 +69,7 @@ START_SECTION((qualified names, attribute access, entities and Unicode across in
   TEST_EQUAL(handler.tags.size(), 2)
   TEST_TRUE(handler.tags[1] == u"p:child")
   TEST_TRUE(handler.attributes_ok)
+  TEST_TRUE(handler.end_tags == std::vector<std::u16string>({u"p:child", u"root"}))
   TEST_TRUE(handler.text == std::u16string(65500, u'x') + u"\u00e4\U0001f9ea&<tail>")
 }
 END_SECTION
@@ -77,6 +80,7 @@ START_SECTION((malformed XML and callback exception propagation))
   Handler handler;
   TEST_EXCEPTION(Exception::ParseError, reader.parseBuffer_("<root><child></root>", &handler))
   TEST_EXCEPTION(Exception::ParseError, reader.parseBuffer_("", &handler))
+  TEST_EXCEPTION(Exception::ParseError, reader.parseBuffer_("<root>\xff</root>", &handler))
   handler.fail = true;
   TEST_EXCEPTION(Exception::InvalidValue, reader.parseBuffer_("<root/>", &handler))
   handler.fail = false;
@@ -99,6 +103,27 @@ START_SECTION((explicit encoding is applied per reader))
   reader.enforceEncoding_("UTF-8");
   reader.parseBuffer_("<root>\xc3\xa4</root>", &utf8);
   TEST_TRUE(utf8.text == u"\u00e4")
+}
+END_SECTION
+
+START_SECTION((UTF-16 declaration and entity policy))
+{
+  Reader reader;
+  Handler unicode;
+  const std::u16string document = u"<?xml version='1.0' encoding='UTF-16'?><root>\u00e4\U0001f9ea</root>";
+  std::string encoded = "\xff\xfe";
+  for (char16_t unit : document)
+  {
+    encoded.push_back(static_cast<char>(unit & 0xff));
+    encoded.push_back(static_cast<char>(unit >> 8));
+  }
+  reader.parseBuffer_(encoded, &unicode);
+  TEST_TRUE(unicode.text == u"\u00e4\U0001f9ea")
+  Handler internal;
+  reader.parseBuffer_("<!DOCTYPE root [<!ENTITY text 'internal'>]><root>&text;</root>", &internal);
+  TEST_TRUE(internal.text == u"internal")
+  Handler external;
+  TEST_EXCEPTION(Exception::ParseError, reader.parseBuffer_("<!DOCTYPE root [<!ENTITY text SYSTEM 'must-not-open'>]><root>&text;</root>", &external))
 }
 END_SECTION
 
