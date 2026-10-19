@@ -10,6 +10,8 @@
 
 #include <xercesc/sax2/Attributes.hpp>
 #include <xercesc/util/XMLString.hpp>
+#include <xercesc/util/TransService.hpp>
+#include <cstring>
 
 namespace OpenMS::Internal
 {
@@ -41,10 +43,9 @@ namespace OpenMS::Internal
 
   const char16_t* XMLAttributes::value(const char* qname) const
   {
-    ::XMLCh* transcoded = xercesc::XMLString::transcode(qname);
-    const char16_t* val = value(reinterpret_cast<const char16_t*>(transcoded));
-    xercesc::XMLString::release(&transcoded);
-    return val;
+    // Narrow OpenMS names are UTF-8, irrespective of the process locale.
+    const xercesc::TranscodeFromStr transcoded(reinterpret_cast<const XMLByte*>(qname), std::strlen(qname), "UTF-8");
+    return value(reinterpret_cast<const char16_t*>(transcoded.str()));
   }
 
   SignedSize XMLAttributes::index(const char16_t* qname) const

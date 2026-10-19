@@ -23,12 +23,14 @@ namespace
   public:
     Handler() : XMLHandler("prototype", "1.0") {}
     std::u16string attribute;
+    std::u16string unicode_attribute;
     std::u16string text;
     Size elements = 0;
     void onStartElement(const char16_t*, const Internal::XMLAttributes& attrs) override
     {
       ++elements;
       if (const auto* value = attrs.value("label")) attribute = value;
+      if (const auto* value = attrs.value("β")) unicode_attribute = value;
     }
     void onEndElement(const char16_t*) override {}
     void onCharacters(const char16_t* chars, Size length) override { text.append(chars, length); }
@@ -39,10 +41,11 @@ START_TEST(XMLBackendPrototype, "$Id$")
 START_SECTION((Unicode attributes, text, entities and CDATA))
 {
   Handler handler;
-  Reader().parseBuffer_("<root label=\"Grüße &#x1F600;\">A&amp;<![CDATA[B]]><child/>C</root>", &handler);
+  Reader().parseBuffer_("<root label=\"Grüße &#x1F600;\" β=\"UTF8-name\">A&amp;<![CDATA[B]]><child/>C</root>", &handler);
   TEST_EQUAL(handler.elements, 2)
   TEST_TRUE(handler.attribute == u"Grüße \U0001F600")
   TEST_TRUE(handler.text == u"A&BC")
+  TEST_TRUE(handler.unicode_attribute == u"UTF8-name")
 }
 END_SECTION
 
