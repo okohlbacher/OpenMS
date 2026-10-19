@@ -27,6 +27,16 @@ namespace OpenMS::Internal
     {
       return static_cast<const xercesc::Attributes*>(handle);
     }
+
+    bool equalsASCII(const char16_t* wide, const char* ascii)
+    {
+      while (*ascii && *wide == static_cast<unsigned char>(*ascii))
+      {
+        ++wide;
+        ++ascii;
+      }
+      return *ascii == 0 && *wide == 0;
+    }
   }
 
   const char16_t* XMLAttributes::value(const char16_t* qname) const
@@ -43,6 +53,20 @@ namespace OpenMS::Internal
   {
     if (pairs_)
     {
+      bool ascii = true;
+      for (const auto* ch = qname; *ch; ++ch)
+      {
+        if (static_cast<unsigned char>(*ch) > 127) { ascii = false; break; }
+      }
+      if (ascii)
+      {
+        // XML vocabulary names are usually ASCII; avoid allocating a transcoder.
+        for (Size i = 0; pairs_[2 * i]; ++i)
+        {
+          if (equalsASCII(pairs_[2 * i], qname)) return pairs_[2 * i + 1];
+        }
+        return nullptr;
+      }
       // Expat names are UTF-8 regardless of the process locale.
       const xercesc::TranscodeFromStr name(reinterpret_cast<const XMLByte*>(qname), std::strlen(qname), "UTF-8");
       return value(reinterpret_cast<const char16_t*>(name.str()));
