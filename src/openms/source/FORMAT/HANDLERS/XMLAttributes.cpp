@@ -9,6 +9,7 @@
 #include <OpenMS/FORMAT/HANDLERS/XMLAttributes.h>
 
 #include <xercesc/sax2/Attributes.hpp>
+#include <string_view>
 #include <xercesc/util/XMLString.hpp>
 
 namespace OpenMS::Internal
@@ -28,24 +29,45 @@ namespace OpenMS::Internal
 
   const char16_t* XMLAttributes::value(const char16_t* qname) const
   {
+    if (pairs_)
+    {
+      const auto i = index(qname);
+      return i < 0 ? nullptr : pairs_[2 * i + 1];
+    }
     return reinterpret_cast<const char16_t*>(attrs(attributes_)->getValue(reinterpret_cast<const ::XMLCh*>(qname)));
   }
 
   const char16_t* XMLAttributes::value(const char* qname) const
   {
     ::XMLCh* transcoded = xercesc::XMLString::transcode(qname);
-    const ::XMLCh* val = attrs(attributes_)->getValue(transcoded);
+    const char16_t* val = value(reinterpret_cast<const char16_t*>(transcoded));
     xercesc::XMLString::release(&transcoded);
-    return reinterpret_cast<const char16_t*>(val);
+    return val;
   }
 
   SignedSize XMLAttributes::index(const char16_t* qname) const
   {
+    if (pairs_)
+    {
+      for (SignedSize i = 0; pairs_[2 * i]; ++i)
+      {
+        if (std::u16string_view(pairs_[2 * i]) == qname) return i;
+      }
+      return -1;
+    }
     return static_cast<SignedSize>(attrs(attributes_)->getIndex(reinterpret_cast<const ::XMLCh*>(qname)));
   }
 
   const char16_t* XMLAttributes::valueByIndex(Size i) const
   {
+    if (pairs_)
+    {
+      for (Size j = 0; pairs_[2 * j]; ++j)
+      {
+        if (i == j) return pairs_[2 * j + 1];
+      }
+      return nullptr;
+    }
     return reinterpret_cast<const char16_t*>(attrs(attributes_)->getValue(static_cast<XMLSize_t>(i)));
   }
 

@@ -15,7 +15,7 @@ namespace OpenMS::Internal
   /**
     @brief Xerces-free, lightweight view over the attribute list of an XML element.
 
-    Wraps a live @c xercesc::Attributes (owned by the SAX parser and valid only
+    Wraps a live @c xercesc::Attributes or UTF-16 name/value pairs (owned by the adapter and valid only
     for the duration of the @c startElement callback). It exposes only the small
     surface the OpenMS handlers actually use (value-by-name, index-by-name,
     value-by-index), so that Xerces types never appear in a public header.
@@ -38,11 +38,17 @@ namespace OpenMS::Internal
       @brief Wrap a live attribute list (non-owning).
 
       Takes an opaque handle so this header need not name any Xerces type. The
-      only caller is the internal SAX2HandlerAdapter, which passes the address of
+      caller is the internal SAX2HandlerAdapter, which passes the address of
       the live @c xercesc::Attributes (recovered internally in @c XMLAttributes.cpp).
     */
     explicit XMLAttributes(const void* attributes) noexcept :
       attributes_(attributes)
+    {
+    }
+
+    /// Wrap alternating UTF-16 name/value pointers terminated by nullptr (Expat adapter).
+    explicit XMLAttributes(const char16_t* const* pairs) noexcept :
+      attributes_(nullptr), pairs_(pairs)
     {
     }
 
@@ -63,6 +69,7 @@ namespace OpenMS::Internal
 
   private:
     const void* attributes_;
+    const char16_t* const* pairs_ = nullptr;
   };
 
 } // namespace OpenMS::Internal

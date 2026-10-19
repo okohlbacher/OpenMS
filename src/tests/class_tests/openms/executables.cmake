@@ -307,6 +307,7 @@ set(format_executables_list
   UnimodXMLFile_test
   XMassFile_test
   XMLFile_test
+  ExpatXMLFile_test
   XMLHandler_test
   XMLValidator_test
   XQuestResultXMLFile_test

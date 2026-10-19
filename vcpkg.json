@@ -50,6 +50,7 @@
     "coinutils",
     "curl",
     "eigen3",
+    "expat",
     "libsvm",
     "libxml2",
     "libzip",

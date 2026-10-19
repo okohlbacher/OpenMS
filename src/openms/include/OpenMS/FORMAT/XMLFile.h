@@ -21,13 +21,14 @@ namespace OpenMS
     class XMLHandler;
 
     /**
-      @brief Base class for loading and storing XML files via Xerces, with optional schema validation and transparent gzip / bzip2 / zip decompression on load.
+      @brief Base class for loading XML through Expat and storing XML, with optional schema validation and transparent gzip / bzip2 / zip decompression on load.
 
       Concrete file-format classes derive from @c XMLFile and provide an
       @ref XMLHandler subclass that drives the SAX parser. The base class hides the
-      Xerces setup, the compression-magic detection on the input side, the suffix-based
+      Expat setup, the compression-magic detection on the input side, the suffix-based
       compression selection on the output side, and the optional encoding override used
-      for non-conforming XML producers (e.g. X!Tandem).
+      for non-conforming XML producers (e.g. X!Tandem). Xerces remains in use for
+      schema validation, DOM paths, transcoding helpers and input stream adapters.
 
       Compression is detected on @ref parse_ by reading the first two bytes of the file
       and matching one of three magic numbers: @c "BZ" (bzip2), @c 0x1F8B (gzip),
@@ -82,7 +83,7 @@ protected:
         gzip (@c 0x1F8B), or zip (@c "PK") and wraps the file in a
         @ref CompressedInputSource accordingly; any other magic falls through to a
         plain @c LocalFileInputSource. If @ref enforceEncoding_ has set
-        @c enforced_encoding_, the override is applied to the source before parsing.
+        @c enforced_encoding_, the override is supplied to Expat before parsing.
 
         On exit (success or exception), @c handler->reset() is called via an RAII guard
         so the handler can be reused on subsequent calls.
@@ -100,7 +101,7 @@ protected:
 
         Wraps @p buffer in a @c xercesc::MemBufInputSource (with the literal id
         @c "inMemory"). If @ref enforceEncoding_ has set @c enforced_encoding_, the
-        override is applied to the source before parsing. The RAII handler reset described
+        override is supplied to Expat before parsing. The RAII handler reset described
         for @ref parse_ also applies here.
 
         @note The buffer must be plain text; gzip / bzip2 / zip buffers are not supported on this path (only on @ref parse_).
@@ -135,9 +136,9 @@ protected:
         @brief Set or clear the XML-encoding override applied to subsequent @ref parse_ / @ref parseBuffer_ calls.
 
         Stores @p encoding in @ref enforced_encoding_. Pass an empty string to disable the
-        override and let Xerces use the encoding declared inside the XML.
+        override and let Expat use the encoding declared inside the XML.
 
-        @param[in] encoding Encoding name (e.g. @c "ISO-8859-1") to apply to the @c InputSource before parsing; empty string disables the override so Xerces consults the XML declaration instead.
+        @param[in] encoding Encoding name (e.g. @c "ISO-8859-1") to apply to the @c InputSource before parsing; empty string disables the override so Expat consults the XML declaration instead.
       */
       void enforceEncoding_(const std::string& encoding);
     };

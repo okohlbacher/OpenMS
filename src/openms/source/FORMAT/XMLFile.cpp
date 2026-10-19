@@ -13,7 +13,8 @@
 #include <OpenMS/CONCEPT/Macros.h>
 
 #include <OpenMS/FORMAT/HANDLERS/XMLHandler.h>
-#include <OpenMS/FORMAT/HANDLERS/SAX2HandlerAdapter.h>
+#include <OpenMS/FORMAT/HANDLERS/XMLAttributes.h>
+#include <expat.h>
 #include <OpenMS/SYSTEM/File.h>
 #include <OpenMS/FORMAT/VALIDATORS/XMLValidator.h>
 
@@ -23,8 +24,7 @@
 #include <xercesc/framework/LocalFileInputSource.hpp>
 #include <xercesc/framework/MemBufInputSource.hpp>
 
-#include <xercesc/sax2/SAX2XMLReader.hpp>
-#include <xercesc/sax2/XMLReaderFactory.hpp>
+#include <xercesc/util/BinInputStream.hpp>
 
 #include <zlib.h>
 #include <bzlib.h>
@@ -34,6 +34,10 @@
 #include <streambuf>
 
 #include <memory>
+#include <array>
+#include <exception>
+#include <string_view>
+#include <vector>
 #include <xercesc/util/XMLString.hpp>
 
 using namespace std;
@@ -78,41 +82,136 @@ private:
       enforced_encoding_ = encoding;
     }
 
-    void parse(xercesc::InputSource* const source, XMLHandler* handler)
+    namespace
     {
-      unique_ptr<xercesc::SAX2XMLReader> parser(xercesc::XMLReaderFactory::createXMLReader());
+      static_assert(sizeof(XML_Char) == 1, "This adapter requires UTF-8 Expat callbacks.");
 
-      parser->setFeature(xercesc::XMLUni::fgSAX2CoreNameSpaces, false);
-      parser->setFeature(xercesc::XMLUni::fgSAX2CoreNameSpacePrefixes, false);
+      // Expat validates UTF-8 before callbacks; OpenMS handlers still consume UTF-16.
+      std::u16string utf16(std::string_view text)
+      {
+        std::u16string result;
+        result.reserve(text.size());
+        for (Size i = 0; i < text.size();)
+        {
+          unsigned char lead = static_cast<unsigned char>(text[i++]);
+          unsigned code = lead;
+          unsigned continuation = 0;
+          if (lead >= 0xf0) { code &= 0x07; continuation = 3; }
+          else if (lead >= 0xe0) { code &= 0x0f; continuation = 2; }
+          else if (lead >= 0xc0) { code &= 0x1f; continuation = 1; }
+          for (unsigned j = 0; j < continuation; ++j)
+          {
+            code = (code << 6) | (static_cast<unsigned char>(text[i++]) & 0x3f);
+          }
+          if (code > 0xffff)
+          {
+            code -= 0x10000;
+            result.push_back(static_cast<char16_t>(0xd800 + (code >> 10)));
+            result.push_back(static_cast<char16_t>(0xdc00 + (code & 0x3ff)));
+          }
+          else result.push_back(static_cast<char16_t>(code));
+        }
+        return result;
+      }
 
-      // XMLHandler exposes only Xerces-free callbacks; bridge it to the SAX parser.
-      SAX2HandlerAdapter adapter(*handler);
-      parser->setContentHandler(&adapter);
-      parser->setErrorHandler(&adapter);
+      struct ExpatCallbacks
+      {
+        XML_Parser parser;
+        XMLHandler& handler;
+        std::exception_ptr exception;
 
+        template <typename Callback>
+        void invoke(Callback&& callback) noexcept
+        {
+          // Never unwind a C++ exception through Expat's C stack.
+          if (exception) return;
+          try { callback(); }
+          catch (...)
+          {
+            exception = std::current_exception();
+            XML_StopParser(parser, XML_FALSE);
+          }
+        }
 
-      // try to parse file
+        static void XMLCALL start(void* data, const XML_Char* name, const XML_Char** attributes) noexcept
+        {
+          auto& self = *static_cast<ExpatCallbacks*>(data);
+          self.invoke([&]
+          {
+            const auto tag = utf16(name);
+            std::vector<std::u16string> strings;
+            for (Size i = 0; attributes[i]; ++i) strings.push_back(utf16(attributes[i]));
+            std::vector<const char16_t*> pairs;
+            pairs.reserve(strings.size() + 1);
+            for (const auto& value : strings) pairs.push_back(value.c_str());
+            pairs.push_back(nullptr);
+            self.handler.onStartElement(tag.c_str(), XMLAttributes(pairs.data()));
+          });
+        }
+
+        static void XMLCALL end(void* data, const XML_Char* name) noexcept
+        {
+          auto& self = *static_cast<ExpatCallbacks*>(data);
+          self.invoke([&]
+          {
+            const auto tag = utf16(name);
+            self.handler.onEndElement(tag.c_str());
+          });
+        }
+
+        static void XMLCALL characters(void* data, const XML_Char* text, int length) noexcept
+        {
+          auto& self = *static_cast<ExpatCallbacks*>(data);
+          self.invoke([&]
+          {
+            const auto value = utf16(std::string_view(text, static_cast<Size>(length)));
+            self.handler.onCharacters(value.c_str(), value.size());
+          });
+        }
+      };
+    }
+
+    void parse(xercesc::InputSource* source, XMLHandler* handler, const std::string& encoding)
+    {
+      // Reuse the existing bounded-memory plain/compressed streams. Xerces remains
+      // a dependency for these stream adapters, DOM readers and XSD validation.
+      unique_ptr<XML_ParserStruct, decltype(&XML_ParserFree)> parser(
+        XML_ParserCreate(encoding.empty() ? nullptr : encoding.c_str()), XML_ParserFree);
+      if (!parser) throw std::bad_alloc();
+      ExpatCallbacks callbacks{parser.get(), *handler, {}};
+      XML_SetUserData(parser.get(), &callbacks);
+      XML_SetElementHandler(parser.get(), ExpatCallbacks::start, ExpatCallbacks::end);
+      XML_SetCharacterDataHandler(parser.get(), ExpatCallbacks::characters);
+      // Ordinary OpenMS SAX reads use qualified names without namespace expansion.
+      // External entities are rejected; parameter entity parsing is disabled.
+      XML_SetParamEntityParsing(parser.get(), XML_PARAM_ENTITY_PARSING_NEVER);
+      XML_SetExternalEntityRefHandler(parser.get(), [](XML_Parser, const XML_Char*, const XML_Char*, const XML_Char*, const XML_Char*) -> int { return XML_STATUS_ERROR; });
       try
       {
-        parser->parse(*source);
+        unique_ptr<xercesc::BinInputStream> stream(source->makeStream());
+        if (!stream) throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "", "Cannot open XML input stream");
+        std::array<XMLByte, 65536> buffer;
+        for (;;)
+        {
+          const auto length = stream->readBytes(buffer.data(), buffer.size());
+          const auto status = XML_Parse(parser.get(), reinterpret_cast<const char*>(buffer.data()), static_cast<int>(length), length == 0);
+          if (callbacks.exception) std::rethrow_exception(callbacks.exception);
+          if (status == XML_STATUS_ERROR)
+          {
+            handler->fatalError(XMLHandler::LOAD, XML_ErrorString(XML_GetErrorCode(parser.get())),
+                                static_cast<UInt>(XML_GetCurrentLineNumber(parser.get())),
+                                static_cast<UInt>(XML_GetCurrentColumnNumber(parser.get()) + 1));
+          }
+          if (length == 0) break;
+        }
       }
-      catch (const xercesc::XMLException& toCatch)
+      catch (const xercesc::XMLException& error)
       {
-        throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "",std::string("XMLException: ") + StringManager().convert(toCatch.getMessage()));
+        throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "", StringManager::convert(error.getMessage()));
       }
-      catch (const xercesc::SAXException& toCatch)
+      catch (const XMLHandler::EndParsingSoftly&)
       {
-        throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "",std::string("SAXException: ") + StringManager().convert(toCatch.getMessage()));
-      }
-      catch (const XMLHandler::EndParsingSoftly& /*toCatch*/)
-      {
-        // nothing to do here, as this exception is used to softly abort the
-        // parsing for whatever reason.
-      }
-      catch (...)
-      {
-        // re-throw
-        throw;
+        // Expected early termination (metadata/size-only reads).
       }
     }
 
@@ -145,10 +244,10 @@ private:
       std::string bz;
       {
         std::ifstream file(filename.c_str());
-        char tmp_bz[3];
+        char tmp_bz[3] = {};
         file.read(tmp_bz, 2);
         tmp_bz[2] = '\0';
-        bz =std::string(tmp_bz);
+        bz = std::string(tmp_bz, 2);
       }
 
       unique_ptr<xercesc::InputSource> source;
@@ -168,14 +267,7 @@ private:
       {
         source.reset(new xercesc::LocalFileInputSource(sm.convert(filename).c_str()));
       }
-      // what if no encoding given http://xerces.apache.org/xerces-c/apiDocs-3/classInputSource.html
-      if (!enforced_encoding_.empty())
-      {
-        static const XMLCh* s_enc = xercesc::XMLString::transcode(enforced_encoding_.c_str());
-        source->setEncoding(s_enc);
-      }
-      
-      parse(source.get(), handler);
+      parse(source.get(), handler, enforced_encoding_);
     }
 
     void XMLFile::parseBuffer_(const std::string & buffer, XMLHandler * handler)
@@ -206,14 +298,7 @@ private:
         auto fake_id = sm.convert("inMemory");
         source.reset(new xercesc::MemBufInputSource(reinterpret_cast<const unsigned char *>(buffer.c_str()), buffer.size(), fake_id.c_str()));
       }
-      // what if no encoding given http://xerces.apache.org/xerces-c/apiDocs-3/classInputSource.html
-      if (!enforced_encoding_.empty())
-      {
-        static const XMLCh* s_enc = xercesc::XMLString::transcode(enforced_encoding_.c_str());
-        source->setEncoding(s_enc);
-      }
-      
-      parse(source.get(), handler);
+      parse(source.get(), handler, enforced_encoding_);
     }
 
     void XMLFile::save_(const std::string & filename, XMLHandler * handler) const
