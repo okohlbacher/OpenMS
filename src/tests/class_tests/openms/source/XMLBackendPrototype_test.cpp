@@ -52,6 +52,23 @@ START_SECTION((Unicode attributes, text, entities and CDATA))
 }
 END_SECTION
 
+START_SECTION(Native ASCII lookup matches full names and retains UTF8 fallback)
+{
+  const Internal::XMLAttributes::Values values{{u"id", u"one"}, {u"idRef", u"two"},
+                                              {u"β", u"unicode"}, {u"naïve", u"accent"}};
+  const Internal::XMLAttributes attributes(values);
+  TEST_TRUE(attributes.value("id") == attributes.value(u"id"))
+  TEST_TRUE(attributes.value("idRef") == attributes.value(u"idRef"))
+  TEST_TRUE(attributes.value("idR") == nullptr)
+  TEST_TRUE(attributes.value("idReference") == nullptr)
+  TEST_TRUE(attributes.value("") == nullptr)
+  TEST_TRUE(attributes.value("missing") == nullptr)
+  TEST_TRUE(attributes.value("β") == attributes.value(u"β"))
+  TEST_TRUE(attributes.value("naïve") == attributes.value(u"naïve"))
+  TEST_TRUE(attributes.value("βmissing") == nullptr)
+}
+END_SECTION
+
 START_SECTION(Independent encoding overrides for sequential buffers and files)
 {
   Reader latin1;

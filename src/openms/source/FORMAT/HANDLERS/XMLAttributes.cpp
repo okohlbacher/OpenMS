@@ -26,6 +26,16 @@ namespace OpenMS::Internal
     {
       return static_cast<const xercesc::Attributes*>(handle);
     }
+
+    bool equalsASCII(const char16_t* wide, const char* ascii)
+    {
+      while (*ascii && *wide == static_cast<unsigned char>(*ascii))
+      {
+        ++wide;
+        ++ascii;
+      }
+      return *ascii == 0 && *wide == 0;
+    }
   }
 
   const char16_t* XMLAttributes::value(const char16_t* qname) const
@@ -43,7 +53,24 @@ namespace OpenMS::Internal
 
   const char16_t* XMLAttributes::value(const char* qname) const
   {
-    // Narrow OpenMS names are UTF-8, irrespective of the process locale.
+    if (native_)
+    {
+      bool ascii = true;
+      for (const auto* ch = qname; *ch; ++ch)
+      {
+        if (static_cast<unsigned char>(*ch) > 127) { ascii = false; break; }
+      }
+      if (ascii)
+      {
+        // XML vocabulary names are usually ASCII; compare without allocating a transcoder.
+        for (const auto& item : *static_cast<const Values*>(attributes_))
+        {
+          if (equalsASCII(item.first.c_str(), qname)) return item.second.c_str();
+        }
+        return nullptr;
+      }
+    }
+    // Arbitrary narrow names retain explicit UTF-8 conversion and Xerces-backed behavior.
     const xercesc::TranscodeFromStr transcoded(reinterpret_cast<const XMLByte*>(qname), std::strlen(qname), "UTF-8");
     return value(reinterpret_cast<const char16_t*>(transcoded.str()));
   }
