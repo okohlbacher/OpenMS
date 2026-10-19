@@ -460,8 +460,53 @@ namespace OpenMS
   std::string MzMLSpectrumDecoder::domParseString_(const std::string& in, std::vector<BinaryData>& data)
   {
     // Only the requested spectrum/chromatogram fragment is materialized, never the whole mzML.
+    // Indexed readers delimit records by the next record offset. The last record
+    // can therefore be followed by ancestor closing tags. Frame exactly one root,
+    // then let pugixml strictly parse that root (never recover malformed contents).
+    Size fragment_end = in.size();
+    Size depth = 0;
+    for (Size pos = 0; pos < in.size();)
+    {
+      pos = in.find('<', pos);
+      if (pos == std::string::npos) break;
+      const char* terminator = nullptr;
+      Size prefix = 0;
+      if (in.compare(pos, 4, "<!--") == 0) { terminator = "-->"; prefix = 4; }
+      else if (in.compare(pos, 9, "<![CDATA[") == 0) { terminator = "]]>"; prefix = 9; }
+      else if (in.compare(pos, 2, "<?") == 0) { terminator = "?>"; prefix = 2; }
+      if (terminator)
+      {
+        const auto end = in.find(terminator, pos + prefix);
+        if (end == std::string::npos) break;
+        pos = end + std::char_traits<char>::length(terminator);
+        continue;
+      }
+      const bool closing = pos + 1 < in.size() && in[pos + 1] == '/';
+      char quote = 0;
+      Size end = pos + 1;
+      for (; end < in.size(); ++end)
+      {
+        const char ch = in[end];
+        if (quote) { if (ch == quote) quote = 0; }
+        else if (ch == '\'' || ch == '"') quote = ch;
+        else if (ch == '>') break;
+      }
+      if (end == in.size()) break;
+      if (closing)
+      {
+        if (depth == 0) break;
+        --depth;
+      }
+      else if (in[end - 1] != '/') ++depth;
+      if (depth == 0)
+      {
+        fragment_end = end + 1;
+        break;
+      }
+      pos = end + 1;
+    }
     pugi::xml_document document;
-    const auto status = document.load_buffer(in.data(), in.size(), pugi::parse_default | pugi::parse_comments);
+    const auto status = document.load_buffer(in.data(), fragment_end, pugi::parse_default | pugi::parse_comments);
     if (!status)
     {
       throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "",

@@ -59,6 +59,22 @@ START_SECTION(Malformed XML produces ParseError)
 }
 END_SECTION
 
+START_SECTION(Indexed fragments with trailing ancestor markup)
+{
+  MzMLSpectrumDecoder decoder;
+  MSSpectrum spectrum;
+  const std::string fragment = "<spectrum id=\"framed\" defaultArrayLength=\"0\"><binaryDataArrayList>"
+      "<binaryDataArray><cvParam accession=\"MS:1000523\"/><cvParam accession=\"MS:1000514\"/><binary/></binaryDataArray>"
+      "<binaryDataArray><cvParam accession=\"MS:1000523\"/><cvParam accession=\"MS:1000515\"/><binary/></binaryDataArray>"
+      "</binaryDataArrayList><!-- </spectrum> is only comment text --></spectrum>";
+  decoder.domParseSpectrum(fragment + "</spectrumList><chromatogramList count=\"1\">", spectrum);
+  TEST_EQUAL(spectrum.getNativeID(), "framed")
+  TEST_EQUAL(spectrum.size(), 0)
+  TEST_EXCEPTION(Exception::ParseError,
+      decoder.domParseSpectrum("<spectrum defaultArrayLength=\"0\"><bad></spectrum></spectrumList>", spectrum))
+}
+END_SECTION
+
 START_SECTION(Independent documents and decoders on concurrent workers)
 {
   std::vector<std::future<bool>> workers;
