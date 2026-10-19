@@ -164,6 +164,7 @@ private:
           auto& self = *static_cast<ExpatCallbacks*>(data);
           self.invoke([&]
           {
+            if (self.handler.tryOnCharactersUTF8(text, static_cast<Size>(length))) return;
             const auto value = utf16(std::string_view(text, static_cast<Size>(length)));
             self.handler.onCharacters(value.c_str(), value.size());
           });
