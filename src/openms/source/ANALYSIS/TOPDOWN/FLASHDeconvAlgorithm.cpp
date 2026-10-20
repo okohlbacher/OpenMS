@@ -639,6 +639,7 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
             }
           }
         }
+        FLASHTrace::heapSnapshot(ms_level == 1 ? "mem.after_ms1_wave" : "mem.after_ms2_wave");
         FLASHTrace::Scope trace_commit("level_commit", ms_level);
         if (ms_level == 1) { discardStreamedMS1(); }
         // Commit in input order, including equal scan-number keys, after join.
@@ -816,6 +817,7 @@ void FLASHDeconvAlgorithm::run(MSExperiment& map,
                                std::vector<DeconvolvedSpectrum>& deconvolved_spectra,
                                std::vector<FLASHHelperClasses::MassFeature>& deconvolved_features)
 {
+  FLASHTrace::heapSnapshot("mem.after_load");
   {
     FLASHTrace::Scope trace_filter("filter");
     updateMSLevels_(map);
@@ -867,6 +869,7 @@ void FLASHDeconvAlgorithm::run(MSExperiment& map,
     runFeatureFinding_(deconvolved_spectra, deconvolved_features);
   }
 
+  FLASHTrace::heapSnapshot("mem.after_feature_tracing");
   {
     FLASHTrace::Scope trace_q("qvalues");
     noise_decoy_weight_ = Qvalue::updatePeakGroupQvalues(deconvolved_spectra);

@@ -617,6 +617,7 @@ protected:
       }
     }
 
+    FLASHTrace::heapSnapshot("mem.after_output");
     // Experiment (FD_OPT=pfree): release results and input in parallel instead of in the serial destructors.
     if (FLASHTrace::opt("pfree"))
     {

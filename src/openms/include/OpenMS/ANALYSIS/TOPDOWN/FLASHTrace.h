@@ -17,6 +17,9 @@
 #include <vector>
 #include <sys/syscall.h>
 #include <unistd.h>
+#if defined(__GLIBC__)
+  #include <malloc.h>
+#endif
 
 namespace OpenMS::FLASHTrace
 {
@@ -111,4 +114,17 @@ namespace OpenMS::FLASHTrace
     Scope(const Scope&) = delete;
     Scope& operator=(const Scope&) = delete;
   };
+  /// heap snapshot (glibc mallinfo2: a = bytes in use, b = free bytes retained in arenas); takes arena locks,
+  /// so call only between parallel phases
+  inline void heapSnapshot(const char* name)
+  {
+#if defined(__GLIBC__)
+    if (! enabled()) return;
+    const struct mallinfo2 mi = mallinfo2();
+    const double t = wallNow();
+    buffer().push_back({name, t, t, 0, 0, (int64_t)(mi.uordblks + mi.hblkhd), (int64_t)mi.fordblks});
+#else
+    (void)name;
+#endif
+  }
 } // namespace OpenMS::FLASHTrace
