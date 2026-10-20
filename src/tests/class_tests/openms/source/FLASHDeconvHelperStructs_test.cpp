@@ -81,20 +81,20 @@ START_SECTION(([FLASHDeconvHelperStructs::LogMzPeak] LogMzPeak(const Peak1D &pea
 {
   // Test positive mode
   LogMzPeak tmp_peak(tmp_p1, true);
-  TEST_REAL_SIMILAR(tmp_peak.mz, 1125.5118055019082);
-  TEST_REAL_SIMILAR(tmp_peak.intensity, 443505.625);
-  TEST_REAL_SIMILAR(tmp_peak.logMz, 7.0250977989903145);
-  TEST_EQUAL(tmp_peak.is_positive, true);
-  TEST_EQUAL(tmp_peak.abs_charge, 0);
-  TEST_EQUAL(tmp_peak.isotopeIndex, 0);
+  TEST_REAL_SIMILAR(tmp_peak.getMZ(), 1125.5118055019082);
+  TEST_REAL_SIMILAR(tmp_peak.getIntensity(), 443505.625);
+  TEST_REAL_SIMILAR(tmp_peak.getLogMz(), 7.0250977989903145);
+  TEST_EQUAL(tmp_peak.isPositive(), true);
+  TEST_EQUAL(tmp_peak.getAbsCharge(), 0);
+  TEST_EQUAL(tmp_peak.getIsotopeIndex(), 0);
 
   // Test negative mode
   LogMzPeak tmp_peak_neg(tmp_p1, false);
-  TEST_REAL_SIMILAR(tmp_peak_neg.mz, 1125.5118055019082);
-  TEST_REAL_SIMILAR(tmp_peak_neg.intensity, 443505.625);
-  TEST_EQUAL(tmp_peak_neg.is_positive, false);
+  TEST_REAL_SIMILAR(tmp_peak_neg.getMZ(), 1125.5118055019082);
+  TEST_REAL_SIMILAR(tmp_peak_neg.getIntensity(), 443505.625);
+  TEST_EQUAL(tmp_peak_neg.isPositive(), false);
   // logMz should be different for negative mode due to charge mass difference
-  TEST_NOT_EQUAL(tmp_peak_neg.logMz, tmp_peak.logMz);
+  TEST_NOT_EQUAL(tmp_peak_neg.getLogMz(), tmp_peak.getLogMz());
 }
 END_SECTION
 
@@ -102,32 +102,32 @@ LogMzPeak test_peak(tmp_p1, true);
 START_SECTION(([FLASHDeconvHelperStructs::LogMzPeak] LogMzPeak(const LogMzPeak &)))
 {
   LogMzPeak tmp_p(test_peak);
-  TEST_REAL_SIMILAR(test_peak.mz, tmp_p.mz);
-  TEST_REAL_SIMILAR(test_peak.intensity, tmp_p.intensity);
-  TEST_REAL_SIMILAR(test_peak.logMz, tmp_p.logMz);
+  TEST_REAL_SIMILAR(test_peak.getMZ(), tmp_p.getMZ());
+  TEST_REAL_SIMILAR(test_peak.getIntensity(), tmp_p.getIntensity());
+  TEST_REAL_SIMILAR(test_peak.getLogMz(), tmp_p.getLogMz());
 }
 END_SECTION
 
 START_SECTION(([FLASHDeconvHelperStructs::LogMzPeak] double getUnchargedMass()))
 {
   // Test with charge set
-  test_peak.abs_charge = 2;
+  test_peak.setAbsCharge(2);
   TEST_REAL_SIMILAR(test_peak.getUnchargedMass(), 2249.0090580702745);
 
   // Test when abs_charge is 0 - should return 0.0
   LogMzPeak zero_charge_peak(tmp_p1, true);
-  zero_charge_peak.abs_charge = 0;
+  zero_charge_peak.setAbsCharge(0);
   TEST_REAL_SIMILAR(zero_charge_peak.getUnchargedMass(), 0.0);
 
   // Test when mass is already set (mass > 0) - should return mass directly
   LogMzPeak preset_mass_peak(tmp_p1, true);
-  preset_mass_peak.abs_charge = 2;
-  preset_mass_peak.mass = 5000.0;
+  preset_mass_peak.setAbsCharge(2);
+  preset_mass_peak.setMass(5000.0);
   TEST_REAL_SIMILAR(preset_mass_peak.getUnchargedMass(), 5000.0);
 
   // Test negative mode
   LogMzPeak neg_peak(tmp_p1, false);
-  neg_peak.abs_charge = 2;
+  neg_peak.setAbsCharge(2);
   double neg_mass = neg_peak.getUnchargedMass();
   // Negative mode should give different mass due to -PROTON_MASS_U
   TEST_NOT_EQUAL(neg_mass, test_peak.getUnchargedMass());
@@ -135,7 +135,7 @@ START_SECTION(([FLASHDeconvHelperStructs::LogMzPeak] double getUnchargedMass()))
 END_SECTION
 
 LogMzPeak test_peak2(test_peak);
-test_peak2.logMz = 8.;
+test_peak2.setLogMz(8.);
 START_SECTION(([FLASHDeconvHelperStructs::LogMzPeak] bool operator<(const LogMzPeak &a) const))
 {
   // Test when logMz values are different
@@ -145,10 +145,10 @@ START_SECTION(([FLASHDeconvHelperStructs::LogMzPeak] bool operator<(const LogMzP
   // Test when logMz values are equal - falls back to intensity comparison
   LogMzPeak peak_a(tmp_p1, true);
   LogMzPeak peak_b(tmp_p1, true);
-  peak_a.logMz = 5.0;
-  peak_b.logMz = 5.0;
-  peak_a.intensity = 100.0f;
-  peak_b.intensity = 200.0f;
+  peak_a.setLogMz(5.0);
+  peak_b.setLogMz(5.0);
+  peak_a.setIntensity(100.0f);
+  peak_b.setIntensity(200.0f);
   TEST_EQUAL(peak_a < peak_b, true);
   TEST_EQUAL(peak_b < peak_a, false);
 }
@@ -163,10 +163,10 @@ START_SECTION(([FLASHDeconvHelperStructs::LogMzPeak] bool operator>(const LogMzP
   // Test when logMz values are equal - falls back to intensity comparison
   LogMzPeak peak_a(tmp_p1, true);
   LogMzPeak peak_b(tmp_p1, true);
-  peak_a.logMz = 5.0;
-  peak_b.logMz = 5.0;
-  peak_a.intensity = 200.0f;
-  peak_b.intensity = 100.0f;
+  peak_a.setLogMz(5.0);
+  peak_b.setLogMz(5.0);
+  peak_a.setIntensity(200.0f);
+  peak_b.setIntensity(100.0f);
   TEST_EQUAL(peak_a > peak_b, true);
   TEST_EQUAL(peak_b > peak_a, false);
 }
@@ -181,15 +181,15 @@ START_SECTION(([FLASHDeconvHelperStructs::LogMzPeak] bool operator==(const LogMz
   // Test inequality when logMz same but intensity different
   LogMzPeak peak_a(tmp_p1, true);
   LogMzPeak peak_b(tmp_p1, true);
-  peak_a.logMz = 5.0;
-  peak_b.logMz = 5.0;
-  peak_a.intensity = 100.0f;
-  peak_b.intensity = 200.0f;
+  peak_a.setLogMz(5.0);
+  peak_b.setLogMz(5.0);
+  peak_a.setIntensity(100.0f);
+  peak_b.setIntensity(200.0f);
   TEST_EQUAL(peak_a == peak_b, false);
 
   // Test inequality when intensity same but logMz different
-  peak_b.intensity = 100.0f;
-  peak_b.logMz = 6.0;
+  peak_b.setIntensity(100.0f);
+  peak_b.setLogMz(6.0);
   TEST_EQUAL(peak_a == peak_b, false);
 }
 END_SECTION

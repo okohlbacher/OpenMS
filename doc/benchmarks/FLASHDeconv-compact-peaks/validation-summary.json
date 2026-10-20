@@ -1,0 +1,216 @@
+{
+  "schema": "compact-validation-summary-r1",
+  "passed": true,
+  "scope": "Completed source/build/C++/Python acceptance evidence only. Complete-file native timings and RSS belong to their separately closed native cohort; no native result is synthesized here.",
+  "variant": "compact-inline32-r2",
+  "tested_source_manifest_sha256": "7d25df7e092ca2b80e7aa95e3e900fac5c3e4c607a1edfe293b6072bb585a962",
+  "native_stage_identity_sha256": "886e58da1bb70d522f16837711f531d3cf88dec6c09c0c9c85d8d3b56fefa298",
+  "baseline_identity_sha256": "25e18ba19461ff6b9e9ae3078adc1a39305807e8f69d9ecf541bb54dc3de3faf",
+  "baseline_code": "7d42c66d6e5cff8db76c2448ca9d7f65a61fac73",
+  "documentation_HEAD": "92c66f1f07c15cf791c020f90d4a92acef92449e",
+  "class_layout_changed": true,
+  "public_cpp_api_changed": true,
+  "python_property_names_unchanged": true,
+  "charge_domain": [
+    0,
+    200
+  ],
+  "isotope_domain": [
+    -65535,
+    65535
+  ],
+  "includes_renewal_or_scheduling_optimizations": false,
+  "identities": {
+    "compact_binary": {
+      "sha256": "c02784cbca5cfd7ae45ac8162bffe1f9fe5232a7ff499b24e8007670ade46ebc"
+    },
+    "compact_library": {
+      "sha256": "11f785918a7eefe1bde92a3c2f04ed2384b9cfbd4202a9b1c82c2b22081377d4"
+    },
+    "swath": {
+      "sha256": "12301d4985009506e45ebe421c92c13adb91709cf1ccd92a4ad646bde6865bed"
+    },
+    "build_receipt_sha256": "0527c558c97be65cc9504b81410bdc86c8aa30b025bddf39f153bfabf7d6c51e",
+    "build_approval_sha256": "bd59ec248812c7080854c70e8537f70f503d6c361872382a3dda91105b82d946",
+    "builder_sha256": "9c497cadde3c1d1bfb3406890ed52acc6d086a9f399eadd4a986c1e9a860b96b",
+    "preprocess_closure_sha256": "4c2d6bc2c1b35de95dcb525efb1de61bf2b57a2ce785c3b99c6f8b011666f054",
+    "linked_cap64_object_census_sha256": "df4f67e7f8d0f601d289a2ccc5d03660c2b8f6813f4880713bea3f307d0fb562",
+    "cpp_gate_receipt_sha256": "e754c4c32e30ee46d750a1285cf4da2ee989c7779d8c5140cec071d50bfdc359",
+    "python_gate_receipt_sha256": "026ca97cf837529547f58539ded6a645985cb8619fc3dd0ae46528a19216a966",
+    "python_include_audit_sha256": "0d851f05b70bccbb41cb8a71622b7318ac9237e0f9ad6cb7811d92c440e6dde7"
+  },
+  "cpp_build": {
+    "host": "ibminode06",
+    "complete_linked_library_recipes_preprocessed": 760,
+    "actual_library_header_consumers": 11,
+    "fresh_translation_units": 22,
+    "focused_tests_passed": 13,
+    "focused_test_names": [
+      "FLASHDeconvFeatureFile_test",
+      "FLASHDeconvSpectrumFile_test",
+      "FLASHHelperClasses_test",
+      "FLASHDeconvAlgorithm_test",
+      "FLASHDeconvHelperStructs_test",
+      "PeakGroup_test",
+      "SpectralDeconvolution_test",
+      "CoarseIsotopeDistribution_test",
+      "MassFeatureTrace_test",
+      "TOPP_FLASHDeconv_1",
+      "FLASHDeconvAlgorithm_regression_test",
+      "FLASHDeconvSpectrumFile_parallel_test",
+      "BuildInfo_test"
+    ],
+    "small_complete_export_files_reverified": 24,
+    "small_conditions": [
+      {
+        "threads": 1,
+        "report_FDR": false,
+        "reference_and_compact_bytes_identical": true,
+        "exports": {
+          "ms1.tsv": {
+            "sha256": "1f87ea62208479291d93e9e402ac3ea950095487906bf24d3bc9ed1e3630b7b7",
+            "bytes": 130248,
+            "rows": 34
+          },
+          "ms2.tsv": {
+            "sha256": "c7f2cca9b7289ebd4e7b504328ee3743d37a843db657f48db482666cb8399085",
+            "bytes": 678,
+            "rows": 0
+          },
+          "features.tsv": {
+            "sha256": "c3897beffa47dccd28056cfeb3f64f225872399d330c34048020db4ab0572f69",
+            "bytes": 286,
+            "rows": 0
+          }
+        }
+      },
+      {
+        "threads": 1,
+        "report_FDR": true,
+        "reference_and_compact_bytes_identical": true,
+        "exports": {
+          "ms1.tsv": {
+            "sha256": "fee9e43847da7b5ad0d534fdc229baca442154713d63b25595f7608e3090a961",
+            "bytes": 130654,
+            "rows": 34
+          },
+          "ms2.tsv": {
+            "sha256": "676ee6c47db4eaf2290f681f781b0701a6c17585beddb15ab7d7112606450faf",
+            "bytes": 717,
+            "rows": 0
+          },
+          "features.tsv": {
+            "sha256": "3473d1137043d39ab5eb4613f25f8d922c0f1f0ab860425b60eaf99935dc9a3a",
+            "bytes": 294,
+            "rows": 0
+          }
+        }
+      },
+      {
+        "threads": 4,
+        "report_FDR": false,
+        "reference_and_compact_bytes_identical": true,
+        "exports": {
+          "ms1.tsv": {
+            "sha256": "1f87ea62208479291d93e9e402ac3ea950095487906bf24d3bc9ed1e3630b7b7",
+            "bytes": 130248,
+            "rows": 34
+          },
+          "ms2.tsv": {
+            "sha256": "c7f2cca9b7289ebd4e7b504328ee3743d37a843db657f48db482666cb8399085",
+            "bytes": 678,
+            "rows": 0
+          },
+          "features.tsv": {
+            "sha256": "c3897beffa47dccd28056cfeb3f64f225872399d330c34048020db4ab0572f69",
+            "bytes": 286,
+            "rows": 0
+          }
+        }
+      },
+      {
+        "threads": 4,
+        "report_FDR": true,
+        "reference_and_compact_bytes_identical": true,
+        "exports": {
+          "ms1.tsv": {
+            "sha256": "fee9e43847da7b5ad0d534fdc229baca442154713d63b25595f7608e3090a961",
+            "bytes": 130654,
+            "rows": 34
+          },
+          "ms2.tsv": {
+            "sha256": "676ee6c47db4eaf2290f681f781b0701a6c17585beddb15ab7d7112606450faf",
+            "bytes": 717,
+            "rows": 0
+          },
+          "features.tsv": {
+            "sha256": "3473d1137043d39ab5eb4613f25f8d922c0f1f0ab860425b60eaf99935dc9a3a",
+            "bytes": 294,
+            "rows": 0
+          }
+        }
+      }
+    ],
+    "protected_inputs_before_after_equal": true,
+    "runtime_closure_before_after_equal": true,
+    "layout": {
+      "cap64": {
+        "sizeof_PG": 296,
+        "alignof_PG": 8,
+        "sizeof_SD": 2520,
+        "alignof_SD": 8,
+        "sizeof_DS": 1376,
+        "alignof_DS": 8,
+        "sizeof_LogMzPeak": 48,
+        "alignof_LogMzPeak": 8
+      },
+      "new": {
+        "sizeof_PG": 296,
+        "alignof_PG": 8,
+        "sizeof_SD": 2520,
+        "alignof_SD": 8,
+        "sizeof_DS": 1376,
+        "alignof_DS": 8,
+        "sizeof_LogMzPeak": 32,
+        "alignof_LogMzPeak": 8
+      }
+    },
+    "layout_scope": "Measured on this GNU/Linux ABI; outer shell equality does not establish ABI compatibility.",
+    "consumer_scope": "All actually linked library recipes were preprocessed, then header consumers, configured FLASHDeconv client and affected test clients rebuilt; not a full all-target OpenMS build."
+  },
+  "cpp_public_facade_oracle": {
+    "passed": true,
+    "packed_states": 3216,
+    "normalized_value_copy_sort_peaks": 65536,
+    "performance_measurement": false,
+    "fixture_sha256": "a5a27f28e7197b7c40698a56fdd19a7414521456ee8e7daea676078b0ff8adf7"
+  },
+  "python": {
+    "whole_updated_bind_analysis_compiled": true,
+    "exact_LogMzPeak_binding_runtime_tests": 12,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "binding_source_sha256": "d5fa7355b5536d83bf0c09232619080781cd6a6127ec77db5d6355e6b66a1667",
+    "python_test_source_sha256": "4973286485714aa9bae1faff736d910d8f170a995aadba281f059458fd606f95",
+    "binding_block_sha256": "2ea08042871ab4eae7654b2819fde87d45448802c25247c5d94c9307853eb81c",
+    "native_module_sha256": "bf6b37befbad469eceffe8dce6e4dd4bb352b4a53565c50767851804169a03d2",
+    "full_pyopenms_wheel_built": false,
+    "include_audit_scope": "Recorded successful R2 dependency audit: fallback /usr/include consumed only Python3.12 headers; no host libc or C++ header consumed. Whole binding compile and exact minimal LogMzPeak runtime module passed; no full pyOpenMS wheel claim."
+  },
+  "evidence_scope": {
+    "local_capture_files_hash_verified": 139,
+    "local_source_relation": "18 source files checked;16 byte-identical to immutable R2,2 final whitespace-only deltas explicitly recorded in source-provenance.json.",
+    "remote_binary_and_objects": "Producer-recorded identities and protected hashes; large remote binaries/objects were not locally rehashed.",
+    "hardware_cache_counters_available": false
+  },
+  "limitations": [
+    "C++ public-field migration, ABI and integer domains change deliberately. Rebuild all consumers; mixed old/new peak binaries are unsupported.",
+    "All floating fields retain their original precision and independent semantics; existing floating-to-int finite/range assumptions elsewhere remain.",
+    "min_charge/max_charge are guarded before their abs conversions; manual precursor_charge retains its pre-existing path.",
+    "Source exception containment and actual ordinary/FDR1/4 runs are covered; not every out-of-domain isotope failure was forced through every OpenMP branch.",
+    "No complete wheel runtime/packaging test or new Windows/macOS build is claimed.",
+    "Payload stride48B\u219232B alone establishes no RSS, cache-miss, bandwidth or wall-time improvement.",
+    "No40-byte reordered wide-integer control was measured; packing and reorder contributions are not isolated."
+  ]
+}

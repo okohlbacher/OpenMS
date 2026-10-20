@@ -1,0 +1,22 @@
+{
+  "native-comparison.svg": {
+    "original_sha256": "accad67464005eb7b51341a7e25fb12d37dbb913cc2aa522c414951734bbc873",
+    "published_sha256": "012b41ff22d0a39fa3bbce13ce793e4542546897b220312bbc42c9224dab5b40",
+    "change": "LF line endings / trailing whitespace only; CSV cell values or whitespace-stripped SVG exactly preserved"
+  },
+  "relative-scaling.svg": {
+    "original_sha256": "1975447b7c85b234db0c9f5163ff2ec2e1cc1dcba52f1b49e0fc5a3ad8199e34",
+    "published_sha256": "615f55bf32b0724ee1551b3949917f61413f7b6632f32dff5327cf57c5f53224",
+    "change": "LF line endings / trailing whitespace only; CSV cell values or whitespace-stripped SVG exactly preserved"
+  },
+  "native-comparison.csv": {
+    "original_sha256": "c250dbe7acde2d681427a7b1c5ed336f0f7aa0eac09a67388231201844884e73",
+    "published_sha256": "182b66543aa9bd52ab7275767dadbea14726f5e9a1c11a41b8e5d1bbd2e7b23f",
+    "change": "LF line endings / trailing whitespace only; CSV cell values or whitespace-stripped SVG exactly preserved"
+  },
+  "independent-native-comparison.csv": {
+    "original_sha256": "289c05b5e374bdee8afad7fa75acc1315e37d1fa77be2165ccc75aae743d169b",
+    "published_sha256": "1028ddf07d78f359135e37ab499bbf44240ebce4e692b11e61b215281c91bd52",
+    "change": "LF line endings / trailing whitespace only; CSV cell values or whitespace-stripped SVG exactly preserved"
+  }
+}

@@ -44,12 +44,12 @@ PeakGroup createTestPeakGroup(double mono_mass, int min_charge, int max_charge, 
   for (int z = min_charge; z <= max_charge; ++z)
   {
     FLASHHelperClasses::LogMzPeak lp;
-    lp.mz = mono_mass / z + (is_positive ? Constants::PROTON_MASS_U : -Constants::PROTON_MASS_U);
-    lp.intensity = 1000.0f * z;
-    lp.abs_charge = z;
-    lp.is_positive = is_positive;
-    lp.isotopeIndex = 0;
-    lp.mass = mono_mass;
+    lp.setMZ(mono_mass / z + (is_positive ? Constants::PROTON_MASS_U : -Constants::PROTON_MASS_U));
+    lp.setIntensity(1000.0f * z);
+    lp.setAbsCharge(z);
+    lp.setPositive(is_positive);
+    lp.setIsotopeIndex(0);
+    lp.setMass(mono_mass);
     pg.push_back(lp);
   }
 

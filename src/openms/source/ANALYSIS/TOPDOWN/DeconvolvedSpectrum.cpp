@@ -73,8 +73,8 @@ namespace OpenMS
 
       for (auto& p : pg)
       {
-        min_iso = min_iso < 0 ? p.isotopeIndex : std::min(min_iso, p.isotopeIndex);
-        max_iso = std::max(max_iso, p.isotopeIndex);
+        min_iso = min_iso < 0 ? p.getIsotopeIndex() : std::min(min_iso, p.getIsotopeIndex());
+        max_iso = std::max(max_iso, p.getIsotopeIndex());
       }
       val << z1 << ":" << z2 << "," << min_iso << ":" << max_iso << ";";
 
@@ -82,7 +82,7 @@ namespace OpenMS
       {
         for (auto& p : pg)
         {
-          deconvolved_mzs.insert(p.mz);
+          deconvolved_mzs.insert(p.getMZ());
         }
       }
     }

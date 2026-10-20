@@ -1,0 +1,959 @@
+{
+  "passed": true,
+  "scope": "Recorded-only independent audit of final report tables,23native cells/69 exports, links, source identities, units and publication transformations; no experiments.",
+  "report_sha256": "686d37ce39dc44f8c847e56f10fe029e169e1ecb1a1b9486018dc7ee4fa378e4",
+  "report_provenance_sha256": "7b437a085535b921be0ec5a3f55bc866282becf5cb382e0d39fef08746e931eb",
+  "checks": [
+    {
+      "passed": true,
+      "check": "Report source-bound digest"
+    },
+    {
+      "passed": true,
+      "check": "Source provenance fresh-control"
+    },
+    {
+      "passed": true,
+      "check": "Source provenance caps"
+    },
+    {
+      "passed": true,
+      "check": "Source provenance cap-completion"
+    },
+    {
+      "passed": true,
+      "check": "Source provenance chunks"
+    },
+    {
+      "passed": true,
+      "check": "Source provenance noise-removal"
+    },
+    {
+      "passed": true,
+      "check": "Source provenance matrix"
+    },
+    {
+      "passed": true,
+      "check": "Source provenance mc-screen"
+    },
+    {
+      "passed": true,
+      "check": "Source provenance cap-diagnostic"
+    },
+    {
+      "passed": true,
+      "check": "Source provenance template"
+    },
+    {
+      "passed": true,
+      "check": "Source provenance assembler"
+    },
+    {
+      "passed": true,
+      "check": "Source provenance reviews/claude-design-r1/outcome.json"
+    },
+    {
+      "passed": true,
+      "check": "Source provenance reviews/kimi-design-r1/outcome.json"
+    },
+    {
+      "passed": true,
+      "check": "Source provenance reviews/claude-recruit-r1/outcome.json"
+    },
+    {
+      "passed": true,
+      "check": "Source provenance reviews/kimi-recruit-r1/outcome.json"
+    },
+    {
+      "passed": true,
+      "check": "Source provenance reviews/adversarial-reconciliation-r2.json"
+    },
+    {
+      "passed": true,
+      "check": "Source provenance reviews/contention64-adversarial-verification-r1.json"
+    },
+    {
+      "passed": true,
+      "check": "Source provenance reviews/cap64-joined-grid-and-plot-independent-verification-r1.json"
+    },
+    {
+      "passed": true,
+      "check": "Source provenance reviews/matrix-n0-and-final-plot-independent-verification-r1.json"
+    },
+    {
+      "passed": true,
+      "check": "Source provenance reviews/n0-strace64-independent-verification-r1.json"
+    },
+    {
+      "passed": true,
+      "check": "Source provenance report-template-and-mc-review-r1.json"
+    },
+    {
+      "passed": true,
+      "check": "Source provenance cap64-local-integration-r1.json"
+    },
+    {
+      "passed": true,
+      "check": "Source provenance final-code-source-check-r1.json"
+    },
+    {
+      "passed": true,
+      "check": "Source provenance cap192-diagnostic-independent-audit-r1/audit.json"
+    },
+    {
+      "passed": true,
+      "check": "Source provenance selection-r1.json"
+    },
+    {
+      "passed": true,
+      "check": "Published asset native-comparison.csv"
+    },
+    {
+      "passed": true,
+      "check": "Published asset thread-states64.png"
+    },
+    {
+      "passed": true,
+      "check": "Published asset exact-allocation-callsite-proof.json"
+    },
+    {
+      "passed": true,
+      "check": "Published asset cap192-phases.csv"
+    },
+    {
+      "passed": true,
+      "check": "Published asset thread-states64.svg"
+    },
+    {
+      "passed": true,
+      "check": "Published asset thread-samples.csv"
+    },
+    {
+      "passed": true,
+      "check": "Published asset cap192-worker-identity-maps.csv"
+    },
+    {
+      "passed": true,
+      "check": "Published asset thread-activity64.png"
+    },
+    {
+      "passed": true,
+      "check": "Published asset native-comparison.svg"
+    },
+    {
+      "passed": true,
+      "check": "Published asset selection-r1.json"
+    },
+    {
+      "passed": true,
+      "check": "Published asset memory-ledger-interpretation-r1.json"
+    },
+    {
+      "passed": true,
+      "check": "Published asset cap192-waves.csv"
+    },
+    {
+      "passed": true,
+      "check": "Published asset phase-events.csv"
+    },
+    {
+      "passed": true,
+      "check": "Published asset memory-ledger-worker-counters-r1.csv"
+    },
+    {
+      "passed": true,
+      "check": "Published asset cap192-independent-audit.json"
+    },
+    {
+      "passed": true,
+      "check": "Published asset gdb-thread-census.csv"
+    },
+    {
+      "passed": true,
+      "check": "Published asset native-comparison-provenance.json"
+    },
+    {
+      "passed": true,
+      "check": "Published asset native-comparison.png"
+    },
+    {
+      "passed": true,
+      "check": "Published asset thread-activity64.svg"
+    },
+    {
+      "passed": true,
+      "check": "Published asset measurements-all.csv"
+    },
+    {
+      "passed": true,
+      "check": "Relative report link FLASHDeconv-ms1-20261020/native-comparison.png"
+    },
+    {
+      "passed": true,
+      "check": "Relative report link FLASHDeconv-ms1-20261020/thread-activity64.png"
+    },
+    {
+      "passed": true,
+      "check": "Relative report link FLASHDeconv-ms1-20261020/thread-states64.png"
+    },
+    {
+      "passed": true,
+      "check": "Relative report link FLASHDeconv-ms1-20261020/measurements-all.csv"
+    },
+    {
+      "passed": true,
+      "check": "Relative report link FLASHDeconv-ms1-20261020/native-comparison-provenance.json"
+    },
+    {
+      "passed": true,
+      "check": "Relative report link FLASHDeconv-ms1-20261020/phase-events.csv"
+    },
+    {
+      "passed": true,
+      "check": "Relative report link FLASHDeconv-ms1-20261020/exact-allocation-callsite-proof.json"
+    },
+    {
+      "passed": true,
+      "check": "Relative report link FLASHDeconv-ms1-20261020/provenance.json"
+    },
+    {
+      "passed": true,
+      "check": "fresh-control closed native n1 export census"
+    },
+    {
+      "passed": true,
+      "check": "No repeated native role/core cell ('bcdf', 16)"
+    },
+    {
+      "passed": true,
+      "check": "No repeated native role/core cell ('bcdf', 32)"
+    },
+    {
+      "passed": true,
+      "check": "No repeated native role/core cell ('bcdf', 64)"
+    },
+    {
+      "passed": true,
+      "check": "No repeated native role/core cell ('bcdf', 128)"
+    },
+    {
+      "passed": true,
+      "check": "No repeated native role/core cell ('bcdf', 192)"
+    },
+    {
+      "passed": true,
+      "check": "caps closed native n1 export census"
+    },
+    {
+      "passed": true,
+      "check": "No repeated native role/core cell ('cap64', 64)"
+    },
+    {
+      "passed": true,
+      "check": "No repeated native role/core cell ('cap64', 192)"
+    },
+    {
+      "passed": true,
+      "check": "No repeated native role/core cell ('cap32', 64)"
+    },
+    {
+      "passed": true,
+      "check": "No repeated native role/core cell ('cap32', 192)"
+    },
+    {
+      "passed": true,
+      "check": "cap-completion closed native n1 export census"
+    },
+    {
+      "passed": true,
+      "check": "No repeated native role/core cell ('cap64', 16)"
+    },
+    {
+      "passed": true,
+      "check": "No repeated native role/core cell ('cap64', 32)"
+    },
+    {
+      "passed": true,
+      "check": "No repeated native role/core cell ('cap64', 128)"
+    },
+    {
+      "passed": true,
+      "check": "chunks closed native n1 export census"
+    },
+    {
+      "passed": true,
+      "check": "No repeated native role/core cell ('chunk4', 64)"
+    },
+    {
+      "passed": true,
+      "check": "No repeated native role/core cell ('chunk16', 64)"
+    },
+    {
+      "passed": true,
+      "check": "noise-removal closed native n1 export census"
+    },
+    {
+      "passed": true,
+      "check": "No repeated native role/core cell ('lazy-noise', 64)"
+    },
+    {
+      "passed": true,
+      "check": "No repeated native role/core cell ('lazy-noise', 192)"
+    },
+    {
+      "passed": true,
+      "check": "matrix closed native n1 export census"
+    },
+    {
+      "passed": true,
+      "check": "No repeated native role/core cell ('matrix', 16)"
+    },
+    {
+      "passed": true,
+      "check": "No repeated native role/core cell ('matrix', 32)"
+    },
+    {
+      "passed": true,
+      "check": "No repeated native role/core cell ('matrix', 64)"
+    },
+    {
+      "passed": true,
+      "check": "No repeated native role/core cell ('matrix', 128)"
+    },
+    {
+      "passed": true,
+      "check": "No repeated native role/core cell ('matrix', 192)"
+    },
+    {
+      "passed": true,
+      "check": "mc-screen closed native n1 export census"
+    },
+    {
+      "passed": true,
+      "check": "No repeated native role/core cell ('mc', 64)"
+    },
+    {
+      "passed": true,
+      "check": "No repeated native role/core cell ('mc', 192)"
+    },
+    {
+      "passed": true,
+      "check": "Exactly23 unique native cells and69 scientific exports"
+    },
+    {
+      "passed": true,
+      "check": "Report CSV23rows"
+    },
+    {
+      "passed": true,
+      "check": "CSV wall/RSS ('bcdf', '16')"
+    },
+    {
+      "passed": true,
+      "check": "CSV user_s ('bcdf', '16')"
+    },
+    {
+      "passed": true,
+      "check": "CSV system_s ('bcdf', '16')"
+    },
+    {
+      "passed": true,
+      "check": "CSV voluntary_switches ('bcdf', '16')"
+    },
+    {
+      "passed": true,
+      "check": "CSV involuntary_switches ('bcdf', '16')"
+    },
+    {
+      "passed": true,
+      "check": "CSV wall/RSS ('bcdf', '32')"
+    },
+    {
+      "passed": true,
+      "check": "CSV user_s ('bcdf', '32')"
+    },
+    {
+      "passed": true,
+      "check": "CSV system_s ('bcdf', '32')"
+    },
+    {
+      "passed": true,
+      "check": "CSV voluntary_switches ('bcdf', '32')"
+    },
+    {
+      "passed": true,
+      "check": "CSV involuntary_switches ('bcdf', '32')"
+    },
+    {
+      "passed": true,
+      "check": "CSV wall/RSS ('bcdf', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV user_s ('bcdf', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV system_s ('bcdf', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV voluntary_switches ('bcdf', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV involuntary_switches ('bcdf', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV wall/RSS ('bcdf', '128')"
+    },
+    {
+      "passed": true,
+      "check": "CSV user_s ('bcdf', '128')"
+    },
+    {
+      "passed": true,
+      "check": "CSV system_s ('bcdf', '128')"
+    },
+    {
+      "passed": true,
+      "check": "CSV voluntary_switches ('bcdf', '128')"
+    },
+    {
+      "passed": true,
+      "check": "CSV involuntary_switches ('bcdf', '128')"
+    },
+    {
+      "passed": true,
+      "check": "CSV wall/RSS ('bcdf', '192')"
+    },
+    {
+      "passed": true,
+      "check": "CSV user_s ('bcdf', '192')"
+    },
+    {
+      "passed": true,
+      "check": "CSV system_s ('bcdf', '192')"
+    },
+    {
+      "passed": true,
+      "check": "CSV voluntary_switches ('bcdf', '192')"
+    },
+    {
+      "passed": true,
+      "check": "CSV involuntary_switches ('bcdf', '192')"
+    },
+    {
+      "passed": true,
+      "check": "CSV wall/RSS ('cap64', '16')"
+    },
+    {
+      "passed": true,
+      "check": "CSV user_s ('cap64', '16')"
+    },
+    {
+      "passed": true,
+      "check": "CSV system_s ('cap64', '16')"
+    },
+    {
+      "passed": true,
+      "check": "CSV voluntary_switches ('cap64', '16')"
+    },
+    {
+      "passed": true,
+      "check": "CSV involuntary_switches ('cap64', '16')"
+    },
+    {
+      "passed": true,
+      "check": "CSV wall/RSS ('cap64', '32')"
+    },
+    {
+      "passed": true,
+      "check": "CSV user_s ('cap64', '32')"
+    },
+    {
+      "passed": true,
+      "check": "CSV system_s ('cap64', '32')"
+    },
+    {
+      "passed": true,
+      "check": "CSV voluntary_switches ('cap64', '32')"
+    },
+    {
+      "passed": true,
+      "check": "CSV involuntary_switches ('cap64', '32')"
+    },
+    {
+      "passed": true,
+      "check": "CSV wall/RSS ('cap64', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV user_s ('cap64', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV system_s ('cap64', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV voluntary_switches ('cap64', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV involuntary_switches ('cap64', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV wall/RSS ('cap64', '128')"
+    },
+    {
+      "passed": true,
+      "check": "CSV user_s ('cap64', '128')"
+    },
+    {
+      "passed": true,
+      "check": "CSV system_s ('cap64', '128')"
+    },
+    {
+      "passed": true,
+      "check": "CSV voluntary_switches ('cap64', '128')"
+    },
+    {
+      "passed": true,
+      "check": "CSV involuntary_switches ('cap64', '128')"
+    },
+    {
+      "passed": true,
+      "check": "CSV wall/RSS ('cap64', '192')"
+    },
+    {
+      "passed": true,
+      "check": "CSV user_s ('cap64', '192')"
+    },
+    {
+      "passed": true,
+      "check": "CSV system_s ('cap64', '192')"
+    },
+    {
+      "passed": true,
+      "check": "CSV voluntary_switches ('cap64', '192')"
+    },
+    {
+      "passed": true,
+      "check": "CSV involuntary_switches ('cap64', '192')"
+    },
+    {
+      "passed": true,
+      "check": "CSV wall/RSS ('matrix', '16')"
+    },
+    {
+      "passed": true,
+      "check": "CSV user_s ('matrix', '16')"
+    },
+    {
+      "passed": true,
+      "check": "CSV system_s ('matrix', '16')"
+    },
+    {
+      "passed": true,
+      "check": "CSV voluntary_switches ('matrix', '16')"
+    },
+    {
+      "passed": true,
+      "check": "CSV involuntary_switches ('matrix', '16')"
+    },
+    {
+      "passed": true,
+      "check": "CSV wall/RSS ('matrix', '32')"
+    },
+    {
+      "passed": true,
+      "check": "CSV user_s ('matrix', '32')"
+    },
+    {
+      "passed": true,
+      "check": "CSV system_s ('matrix', '32')"
+    },
+    {
+      "passed": true,
+      "check": "CSV voluntary_switches ('matrix', '32')"
+    },
+    {
+      "passed": true,
+      "check": "CSV involuntary_switches ('matrix', '32')"
+    },
+    {
+      "passed": true,
+      "check": "CSV wall/RSS ('matrix', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV user_s ('matrix', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV system_s ('matrix', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV voluntary_switches ('matrix', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV involuntary_switches ('matrix', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV wall/RSS ('matrix', '128')"
+    },
+    {
+      "passed": true,
+      "check": "CSV user_s ('matrix', '128')"
+    },
+    {
+      "passed": true,
+      "check": "CSV system_s ('matrix', '128')"
+    },
+    {
+      "passed": true,
+      "check": "CSV voluntary_switches ('matrix', '128')"
+    },
+    {
+      "passed": true,
+      "check": "CSV involuntary_switches ('matrix', '128')"
+    },
+    {
+      "passed": true,
+      "check": "CSV wall/RSS ('matrix', '192')"
+    },
+    {
+      "passed": true,
+      "check": "CSV user_s ('matrix', '192')"
+    },
+    {
+      "passed": true,
+      "check": "CSV system_s ('matrix', '192')"
+    },
+    {
+      "passed": true,
+      "check": "CSV voluntary_switches ('matrix', '192')"
+    },
+    {
+      "passed": true,
+      "check": "CSV involuntary_switches ('matrix', '192')"
+    },
+    {
+      "passed": true,
+      "check": "CSV wall/RSS ('cap32', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV user_s ('cap32', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV system_s ('cap32', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV voluntary_switches ('cap32', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV involuntary_switches ('cap32', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV wall/RSS ('cap32', '192')"
+    },
+    {
+      "passed": true,
+      "check": "CSV user_s ('cap32', '192')"
+    },
+    {
+      "passed": true,
+      "check": "CSV system_s ('cap32', '192')"
+    },
+    {
+      "passed": true,
+      "check": "CSV voluntary_switches ('cap32', '192')"
+    },
+    {
+      "passed": true,
+      "check": "CSV involuntary_switches ('cap32', '192')"
+    },
+    {
+      "passed": true,
+      "check": "CSV wall/RSS ('chunk16', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV user_s ('chunk16', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV system_s ('chunk16', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV voluntary_switches ('chunk16', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV involuntary_switches ('chunk16', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV wall/RSS ('chunk4', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV user_s ('chunk4', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV system_s ('chunk4', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV voluntary_switches ('chunk4', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV involuntary_switches ('chunk4', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV wall/RSS ('lazy-noise', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV user_s ('lazy-noise', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV system_s ('lazy-noise', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV voluntary_switches ('lazy-noise', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV involuntary_switches ('lazy-noise', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV wall/RSS ('lazy-noise', '192')"
+    },
+    {
+      "passed": true,
+      "check": "CSV user_s ('lazy-noise', '192')"
+    },
+    {
+      "passed": true,
+      "check": "CSV system_s ('lazy-noise', '192')"
+    },
+    {
+      "passed": true,
+      "check": "CSV voluntary_switches ('lazy-noise', '192')"
+    },
+    {
+      "passed": true,
+      "check": "CSV involuntary_switches ('lazy-noise', '192')"
+    },
+    {
+      "passed": true,
+      "check": "CSV wall/RSS ('mc', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV user_s ('mc', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV system_s ('mc', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV voluntary_switches ('mc', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV involuntary_switches ('mc', '64')"
+    },
+    {
+      "passed": true,
+      "check": "CSV wall/RSS ('mc', '192')"
+    },
+    {
+      "passed": true,
+      "check": "CSV user_s ('mc', '192')"
+    },
+    {
+      "passed": true,
+      "check": "CSV system_s ('mc', '192')"
+    },
+    {
+      "passed": true,
+      "check": "CSV voluntary_switches ('mc', '192')"
+    },
+    {
+      "passed": true,
+      "check": "CSV involuntary_switches ('mc', '192')"
+    },
+    {
+      "passed": true,
+      "check": "Markdown table Requested cores"
+    },
+    {
+      "passed": true,
+      "check": "Markdown nativeCPU/charged-core table"
+    },
+    {
+      "passed": true,
+      "check": "Markdown M wall/RSS/reduction table"
+    },
+    {
+      "passed": true,
+      "check": "Markdown table Additional screen"
+    },
+    {
+      "passed": true,
+      "check": "Markdown table Phase"
+    },
+    {
+      "passed": true,
+      "check": "Headline same-count ratio/wall/RSS reductions"
+    },
+    {
+      "passed": true,
+      "check": "Best-count comparison explicitly small/asynchronous"
+    },
+    {
+      "passed": true,
+      "check": "MC versus cap-only delta 64"
+    },
+    {
+      "passed": true,
+      "check": "MC versus cap-only delta 192"
+    },
+    {
+      "passed": true,
+      "check": "Unmodified source asset native-comparison.png"
+    },
+    {
+      "passed": true,
+      "check": "Normalization input/output digest native-comparison.svg"
+    },
+    {
+      "passed": true,
+      "check": "Only declared LF/trailing-whitespace transformation native-comparison.svg"
+    },
+    {
+      "passed": true,
+      "check": "Normalization input/output digest native-comparison.csv"
+    },
+    {
+      "passed": true,
+      "check": "Only declared LF/trailing-whitespace transformation native-comparison.csv"
+    },
+    {
+      "passed": true,
+      "check": "Unmodified source asset native-comparison-provenance.json"
+    },
+    {
+      "passed": true,
+      "check": "Unmodified source asset thread-activity64.png"
+    },
+    {
+      "passed": true,
+      "check": "Normalization input/output digest thread-activity64.svg"
+    },
+    {
+      "passed": true,
+      "check": "Only declared LF/trailing-whitespace transformation thread-activity64.svg"
+    },
+    {
+      "passed": true,
+      "check": "Unmodified source asset thread-states64.png"
+    },
+    {
+      "passed": true,
+      "check": "Normalization input/output digest thread-states64.svg"
+    },
+    {
+      "passed": true,
+      "check": "Only declared LF/trailing-whitespace transformation thread-states64.svg"
+    },
+    {
+      "passed": true,
+      "check": "Unmodified source asset thread-samples.csv"
+    },
+    {
+      "passed": true,
+      "check": "Unmodified source asset gdb-thread-census.csv"
+    },
+    {
+      "passed": true,
+      "check": "Normalization input/output digest phase-events.csv"
+    },
+    {
+      "passed": true,
+      "check": "Only declared LF/trailing-whitespace transformation phase-events.csv"
+    },
+    {
+      "passed": true,
+      "check": "Unmodified source asset exact-allocation-callsite-proof.json"
+    },
+    {
+      "passed": true,
+      "check": "Normalization input/output digest cap192-phases.csv"
+    },
+    {
+      "passed": true,
+      "check": "Only declared LF/trailing-whitespace transformation cap192-phases.csv"
+    },
+    {
+      "passed": true,
+      "check": "Normalization input/output digest cap192-waves.csv"
+    },
+    {
+      "passed": true,
+      "check": "Only declared LF/trailing-whitespace transformation cap192-waves.csv"
+    },
+    {
+      "passed": true,
+      "check": "Normalization input/output digest cap192-worker-identity-maps.csv"
+    },
+    {
+      "passed": true,
+      "check": "Only declared LF/trailing-whitespace transformation cap192-worker-identity-maps.csv"
+    },
+    {
+      "passed": true,
+      "check": "Unmodified source asset cap192-independent-audit.json"
+    }
+  ],
+  "material_findings": [],
+  "native_cells": 23,
+  "producer_scientific_exports": 69,
+  "main_plot_cells": 15,
+  "main_plot_exports": 45,
+  "table_only_screen_cells": 8,
+  "table_only_screen_exports": 24,
+  "source_note": "All seven native journals checked against copied raw GNU/results and protected before/after/source/runtime/scientific proofs. Full remote inputs/ELFs/TSVs remain producer-hashed.",
+  "claim_review": [
+    "New baseline correctly identified as BCDFd076 derived from873, not Methods FVdeploy.",
+    "Main curves have no newT1 efficiency inference; counts16through192 and cap64 phase semantics explicit.",
+    "Small one-run differences and mixed MC outcomes not presented as confirmed gains.",
+    "Arrival tail distinct from pure barrier time, processCPUcharge distinct from useful occupancy.",
+    "Sampled35 allocation contexts not interpreted as runtime fractions.",
+    "N0 total mprotect-count prediction reported failed; trace times excluded from native curves.",
+    "No measured cache, bandwidth, IPC, false-sharing, runqueue or context-switch causal claim.",
+    "RSS labels lifetime highwater, with diagnostic timing/ownership limits explicit.",
+    "Native23-cell data scope exceeds unchanged21-row plotCSV by exactly two MC table-only cells."
+  ]
+}

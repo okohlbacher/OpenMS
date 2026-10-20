@@ -10,6 +10,7 @@
 #include <OpenMS/ANALYSIS/TOPDOWN/DeconvolvedSpectrum.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/FLASHHelperClasses.h>
 #include <OpenMS/config.h>
+#include <fstream>
 #include <iomanip>
 
 namespace OpenMS
@@ -63,6 +64,41 @@ namespace OpenMS
                                        double tol,
                                        bool write_detail,
                                        bool record_decoy, double noise_decoy_weight);
+
+    /**
+      @brief Write detailed spectrum TSVs using bounded, ordered spectrum buffers.
+
+      FDR, minimal output, nested callers, failed streams and single-worker runs
+      use the original serial writer. Up to 64 workers dynamically format waves
+      containing at most four spectra per worker (256 spectra). This is a spectrum
+      count bound, not a byte budget. Each spectrum retains its original
+      stringstream lifetime and const peak-group semantics. Per-MS indices and stream writes
+      are committed on the caller thread in input order. On failure, later jobs
+      within the current wave may already have completed their local formatting.
+      This API does not make concurrent independent writer calls thread-safe.
+
+      @param[in] spectra Spectra to write without mutating their peak groups.
+      @param[in,out] streams Output streams indexed by MS level minus one.
+      @param[in] output_files Output names; an empty name disables its MS-level stream.
+      @param[in] file_name Input name recorded in each TSV row.
+      @param[in] avg Target averagine.
+      @param[in] decoy_avg Noise-decoy averagine for the serial fallback.
+      @param[in] tols Per-MS tolerances in ppm.
+      @param[in] write_detail Whether to write detailed peak fields.
+      @param[in] report_decoy Whether to report decoys (always serial).
+      @param[in] noise_decoy_weight Original noise-decoy sampling weight.
+      @throws Exception::InvalidParameter If output slots or tolerances are missing.
+    */
+    static void writeDeconvolvedMassesParallel(const std::vector<DeconvolvedSpectrum>& spectra,
+                                               std::vector<std::ofstream>& streams,
+                                               const StringList& output_files,
+                                               const std::string& file_name,
+                                               const FLASHHelperClasses::PrecalculatedAveragine& avg,
+                                               const FLASHHelperClasses::PrecalculatedAveragine& decoy_avg,
+                                               const DoubleList& tols,
+                                               bool write_detail,
+                                               bool report_decoy,
+                                               double noise_decoy_weight);
 
     /**
      *

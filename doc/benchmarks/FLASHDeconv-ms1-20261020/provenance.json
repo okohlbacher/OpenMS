@@ -1,0 +1,204 @@
+{
+  "passed": true,
+  "replicates": 1,
+  "selected": "cap64",
+  "code_commit": "7d42c66d6e5cff8db76c2448ca9d7f65a61fac73",
+  "sources": {
+    "fresh-control": {
+      "path": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/ms1-20261020/evidence/native-control-capture-r1/native-control-r1/manifest.json",
+      "sha256": "bd5279bc58bfb09fc8f6b4f1ad5f69846c8c57834a17aa8d2601c58657faf68e"
+    },
+    "caps": {
+      "path": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/ms1-20261020/evidence/native-caps-chunks-capture-r1/native-caps-r1/manifest.json",
+      "sha256": "8cc42c33ac65b3f92a837bce84dcbea88e6790c213b050441592279c583a6897"
+    },
+    "cap-completion": {
+      "path": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/ms1-20261020/evidence/cap-completion-capture-r1/native-cap-completion-r1/manifest.json",
+      "sha256": "91d71bc00b5c62e9b9a31f88bd649c81dc17c69c36efcd754be23a9cdc4c3bc6"
+    },
+    "chunks": {
+      "path": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/ms1-20261020/evidence/native-caps-chunks-capture-r1/native-chunks-r1/manifest.json",
+      "sha256": "8a2d5c61a24755e48856d02b52c4e5fb5070b75a4e46394d289c9bac2f91aa02"
+    },
+    "noise-removal": {
+      "path": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/ms1-20261020/evidence/memory-screens-and-gates-capture-r1/native-lazy-noise-r1/manifest.json",
+      "sha256": "d85042d3cadebfffcb529622d6b5fabd26e231372b7948bd85e232739468eca3"
+    },
+    "matrix": {
+      "path": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/ms1-20261020/evidence/matrix-grid-capture-r1/native-matrix-grid-r1/manifest.json",
+      "sha256": "c352c86e655e32716aa9a13800442b04998dec6ae7ebee674bc238a1893002c7"
+    },
+    "mc-screen": {
+      "path": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/ms1-20261020/evidence/mc-native-screen-capture-r1/native-mc-screen-r1/manifest.json",
+      "sha256": "45d67e1a9536389d32171f20912b5c442a1e17d6fc5633adcca2b53edfd8e042"
+    },
+    "cap-diagnostic": {
+      "path": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/ms1-20261020/evidence/cap192-diagnostic-and-mc-gates-capture-r1/cap64-pg192-diagnostic-r1/manifest.json",
+      "sha256": "fac0889fec26320815a52bd7dd11b8c642a04dce10d055803f0586aef1a38d5f"
+    },
+    "template": {
+      "path": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/ms1-20261020/report-template-r1.md.in",
+      "sha256": "b611559bcc0503ef6a0c787f593b3f15d650290dd915c6818ead6af5d2ef8b9d"
+    },
+    "assembler": {
+      "path": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/ms1-20261020/assemble_report_r2.py",
+      "sha256": "8f93746aad31b1b2b14803ed1e8ed60e0b3124e334acab714ffdd7d9e6623e11"
+    },
+    "reviews/claude-design-r1/outcome.json": {
+      "path": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/ms1-20261020/reviews/claude-design-r1/outcome.json",
+      "sha256": "e74cb502b7e24c5a2185874092f9c3b287f9002d5cf6eb5ec7f9aaed3ac9cef0"
+    },
+    "reviews/kimi-design-r1/outcome.json": {
+      "path": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/ms1-20261020/reviews/kimi-design-r1/outcome.json",
+      "sha256": "1485e40d65faaaeae067249ed191f96997bbd8e300575affb373709070fbd34d"
+    },
+    "reviews/claude-recruit-r1/outcome.json": {
+      "path": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/ms1-20261020/reviews/claude-recruit-r1/outcome.json",
+      "sha256": "319ee75295148212f668c74caddaf1c707c16d0bae887889ae86029b4114d718"
+    },
+    "reviews/kimi-recruit-r1/outcome.json": {
+      "path": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/ms1-20261020/reviews/kimi-recruit-r1/outcome.json",
+      "sha256": "c75db6a39161c969a0ca3c08217d45077d5ba7cea8535bed402f5ea09e702f13"
+    },
+    "reviews/adversarial-reconciliation-r2.json": {
+      "path": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/ms1-20261020/reviews/adversarial-reconciliation-r2.json",
+      "sha256": "acd2c051fc63b654017d87ec4571227ed970efd44f455dc874c2e77f35358d69"
+    },
+    "reviews/contention64-adversarial-verification-r1.json": {
+      "path": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/ms1-20261020/reviews/contention64-adversarial-verification-r1.json",
+      "sha256": "841a5fc9bac425cadb04a40113cc86f5371fefec9041ef46f2ee2bb6d1df43f4"
+    },
+    "reviews/cap64-joined-grid-and-plot-independent-verification-r1.json": {
+      "path": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/ms1-20261020/reviews/cap64-joined-grid-and-plot-independent-verification-r1.json",
+      "sha256": "d41773556924655cdbbce097188895a569ae3cde93f54cd719ad41d9c0eae71d"
+    },
+    "reviews/matrix-n0-and-final-plot-independent-verification-r1.json": {
+      "path": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/ms1-20261020/reviews/matrix-n0-and-final-plot-independent-verification-r1.json",
+      "sha256": "035aa7d313e032e7c478ec1874adfe59593aa34397d0196dee0c13f2ae3af593"
+    },
+    "reviews/n0-strace64-independent-verification-r1.json": {
+      "path": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/ms1-20261020/reviews/n0-strace64-independent-verification-r1.json",
+      "sha256": "8ae00ec7ffd37c1dec75bd883eb906510b64f7602cd659186669f1a88560e885"
+    },
+    "report-template-and-mc-review-r1.json": {
+      "path": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/ms1-20261020/report-template-and-mc-review-r1.json",
+      "sha256": "1bf6f97a131f4d96f3cf5f1c116575372ef8a0dc2433e89b24096def7770d8b2"
+    },
+    "cap64-local-integration-r1.json": {
+      "path": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/ms1-20261020/cap64-local-integration-r1.json",
+      "sha256": "9293417f05a0161604d6f1e38dd17362fb1d5b2504dec24a85299bd391e66c60"
+    },
+    "final-code-source-check-r1.json": {
+      "path": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/ms1-20261020/final-code-source-check-r1.json",
+      "sha256": "ff7b2cb6051a37dd7cc5605c56e54ab80d31ce8a43db2a66b682a22fb27537d9"
+    },
+    "cap192-diagnostic-independent-audit-r1/audit.json": {
+      "path": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/ms1-20261020/cap192-diagnostic-independent-audit-r1/audit.json",
+      "sha256": "9e16c9e26a787785fbc7f04c5178eb57c11c8e44b7750dc33a958c89293ee76e"
+    },
+    "selection-r1.json": {
+      "path": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/ms1-20261020/selection-r1.json",
+      "sha256": "7bfa0f3f48599e3c26113b3529223e08afc5e32dd6a8dd78dc38e326e6cdd71d"
+    },
+    "reviews/final-report-independent-verification-r1.json": {
+      "path": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/ms1-20261020/reviews/final-report-independent-verification-r1.json",
+      "sha256": "f1bd3a4fc1cc4a52dd4a152386749cef783b84053ba167c515a702890249c490"
+    },
+    "final-report-interpretation-audit-r1.json": {
+      "path": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/ms1-20261020/final-report-interpretation-audit-r1.json",
+      "sha256": "4cea2b221ceace17011a0985e026c05a6d161d464599dc9a269769a99e988224"
+    },
+    "reviews/actual-mc-native-recorded-audit-r1.json": {
+      "path": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/ms1-20261020/reviews/actual-mc-native-recorded-audit-r1.json",
+      "sha256": "ef682a26b854ae84b3ca86a095a3a378a3d5c279ce891678d7d00a37d8838d66"
+    }
+  },
+  "publication_normalizations": {
+    "native-comparison.csv": {
+      "original_sha256": "ae9b997f0996be1447391edd931124174fbc4cc55c0c2e33c612b640a18c0a79",
+      "published_sha256": "eb1ecf0866bf9696b9d93c0c422ca15d0f3513065673433131d872b7134a5388",
+      "scope": "Publication copy only: LF line endings; SVG trailing whitespace removed. Frozen producer outputs remain unchanged."
+    },
+    "cap192-phases.csv": {
+      "original_sha256": "9d8d989df75d7174f86026bb558ea8fde696cf2720f2d3e575fadbd53dbda636",
+      "published_sha256": "269cd4e3c88b26cf556d986fedd5c838b5f17b8bee8f0f421ce3db1554aae9cc",
+      "scope": "Publication copy only: LF line endings; SVG trailing whitespace removed. Frozen producer outputs remain unchanged."
+    },
+    "thread-states64.svg": {
+      "original_sha256": "31c6cb454083a9dd9ef5071b28753f0524cae67001e6a52e1e1265d66605b90e",
+      "published_sha256": "f407216a79546f80749c5648c53a67fe47bb3cf19929529c08bca5f02e9cd53e",
+      "scope": "Publication copy only: LF line endings; SVG trailing whitespace removed. Frozen producer outputs remain unchanged."
+    },
+    "cap192-worker-identity-maps.csv": {
+      "original_sha256": "cfc7323362d5b117e54f275a28c5a98ada438033b8c321f080e59a19658f072a",
+      "published_sha256": "3ac7586c886d153176309ac42b00e61531bfe9fee393c73f96a3a24c584cf4c6",
+      "scope": "Publication copy only: LF line endings; SVG trailing whitespace removed. Frozen producer outputs remain unchanged."
+    },
+    "native-comparison.svg": {
+      "original_sha256": "9d037431f8f9e790d16e29e99cfaca97859076cffaf0502180daed45d67263eb",
+      "published_sha256": "31a1d085cd163cacd906f6750fcd1dda1232fd69e125d0b1370a2dcf42118cad",
+      "scope": "Publication copy only: LF line endings; SVG trailing whitespace removed. Frozen producer outputs remain unchanged."
+    },
+    "cap192-waves.csv": {
+      "original_sha256": "d8771ff7ca157e2bf0bb3ccd9790ad0be0500e84c8906f0be2eea58fdc854a9d",
+      "published_sha256": "a82184e7999654e68fa07757aaf11dacf1f8f56836561267d4c5bd959734ee28",
+      "scope": "Publication copy only: LF line endings; SVG trailing whitespace removed. Frozen producer outputs remain unchanged."
+    },
+    "phase-events.csv": {
+      "original_sha256": "c6983f3a4bb237b445f0ee7a1de0eaa27919bd8a4de878a68a5075771c63168a",
+      "published_sha256": "768fa9d8dbef8dc9da6b8bccb14341a99c49501b977c519fc000aa0a5b9c59bc",
+      "scope": "Publication copy only: LF line endings; SVG trailing whitespace removed. Frozen producer outputs remain unchanged."
+    },
+    "thread-activity64.svg": {
+      "original_sha256": "e1d9a0e15a3ad215886c525ffee5744d6f23b750423ce9a36ae8348e810c2628",
+      "published_sha256": "755a7da9dbef8f8d9980ddb2a81e80cc05f08765350c6d5ac6da8a031a02565e",
+      "scope": "Publication copy only: LF line endings; SVG trailing whitespace removed. Frozen producer outputs remain unchanged."
+    }
+  },
+  "reference": {
+    "rows": {
+      "features.tsv": 12799,
+      "ms1.tsv": 134226,
+      "ms2.tsv": 75686
+    },
+    "sha256": {
+      "features.tsv": "5e56501e453fc542c470bbbdba3fa9b8b64724ff9a253b89da5416f26715c704",
+      "ms1.tsv": "36f0ec6f1097f9ea0e3c1c38c4cee1a7880e9d693a10386d70feb527d3b060cd",
+      "ms2.tsv": "1a7efc61b471cc212665252eff0f0ab455c93883c2879ca60fa6478eb6223da2"
+    },
+    "scope": "Fresh latest1 scientific oracle; timings belong to the explicit new journal"
+  },
+  "report_sha256": "1a7c4ef5aedc85d53556035de15166a83de964187a6f0c741af410ca199abaee",
+  "assets": {
+    "final-interpretation-audit.json": "4cea2b221ceace17011a0985e026c05a6d161d464599dc9a269769a99e988224",
+    "native-comparison.csv": "eb1ecf0866bf9696b9d93c0c422ca15d0f3513065673433131d872b7134a5388",
+    "thread-states64.png": "c382e7062c988a5744a3ef7b72de8998180b49d12d0e477238048827b2812ef1",
+    "exact-allocation-callsite-proof.json": "f63498382c60e2b5aa9ca1133c33629d3c51605c843377e0896dc261d99e34cc",
+    "selected-source-check.json": "ff7b2cb6051a37dd7cc5605c56e54ab80d31ce8a43db2a66b682a22fb27537d9",
+    "cap192-phases.csv": "269cd4e3c88b26cf556d986fedd5c838b5f17b8bee8f0f421ce3db1554aae9cc",
+    "thread-states64.svg": "f407216a79546f80749c5648c53a67fe47bb3cf19929529c08bca5f02e9cd53e",
+    "thread-samples.csv": "343578d04866108137049b3e82d1b9a7fb797c41b1671bf2db97e90eb8e78023",
+    "cap192-worker-identity-maps.csv": "3ac7586c886d153176309ac42b00e61531bfe9fee393c73f96a3a24c584cf4c6",
+    "thread-activity64.png": "42ede156aeda367c73c6b5058990b897a30258472b8a1ba0c581c156416a533d",
+    "native-comparison.svg": "31a1d085cd163cacd906f6750fcd1dda1232fd69e125d0b1370a2dcf42118cad",
+    "selection-r1.json": "7bfa0f3f48599e3c26113b3529223e08afc5e32dd6a8dd78dc38e326e6cdd71d",
+    "memory-ledger-interpretation-r1.json": "d30de64dab1dc0275a40ba23161a4cb672030a8a5f11b41551ca4aa81ac4f9ca",
+    "cap192-waves.csv": "a82184e7999654e68fa07757aaf11dacf1f8f56836561267d4c5bd959734ee28",
+    "phase-events.csv": "768fa9d8dbef8dc9da6b8bccb14341a99c49501b977c519fc000aa0a5b9c59bc",
+    "mc-screen-audit.json": "ef682a26b854ae84b3ca86a095a3a378a3d5c279ce891678d7d00a37d8838d66",
+    "memory-ledger-worker-counters-r1.csv": "0325eb6624766013ea2332be8c7a9acbed2c27c5f5ec0ca025bbb4599790028e",
+    "cap192-independent-audit.json": "9e16c9e26a787785fbc7f04c5178eb57c11c8e44b7750dc33a958c89293ee76e",
+    "final-numerical-audit.json": "f1bd3a4fc1cc4a52dd4a152386749cef783b84053ba167c515a702890249c490",
+    "gdb-thread-census.csv": "859aaf5bcd9a0cf3a0f06cbe7575e69cdd7fa9945f5810be0ec35b6f2df9d1d4",
+    "native-comparison-provenance.json": "06564358070842b626e55041e2b4699f1e575218f39d1595cc3e11d0d04fc452",
+    "native-comparison.png": "df1133192da6bcf37a93cf4026f17cfcf67c598cbcc332a97c15b7752d4fd682",
+    "thread-activity64.svg": "755a7da9dbef8f8d9980ddb2a81e80cc05f08765350c6d5ac6da8a031a02565e",
+    "measurements-all.csv": "53543d125ea8489b82d2f838b672ea5bca788c9dc2b96b19063caac31889e5b3"
+  },
+  "reviewed_r1_equivalence": {
+    "passed": true,
+    "reviewed_report_path": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/ms1-20261020/report-final-r1/FLASHDeconv-ms1-20261020.md",
+    "reviewed_report_sha256": "686d37ce39dc44f8c847e56f10fe029e169e1ecb1a1b9486018dc7ee4fa378e4",
+    "transformation": "Only insert spaces in two MC comparison labels: at64 to at 64; at192 to at 192. Full text equality asserted after these replacements. All numbers and claims unchanged."
+  }
+}
