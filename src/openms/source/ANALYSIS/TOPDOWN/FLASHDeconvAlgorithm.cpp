@@ -23,6 +23,8 @@
 #include <atomic>
 #include <exception>
 #include <iterator>
+#include <mutex>
+#include <limits>
 #include <memory>
 #include <numeric>
 #include <optional>
@@ -145,6 +147,8 @@ void FLASHDeconvAlgorithm::updateMSLevels_(MSExperiment& map)
 namespace
 {
   Size ms1Cap_(); // defined with runSpectralDeconvolution_
+  /// arrival counter value that marks the streamed arrival phase as closed
+  constexpr Size streamClosed_() { return std::numeric_limits<Size>::max() / 2; }
 
   ThresholdMower makeLowPeakFilter_()
   {
@@ -355,7 +359,8 @@ void FLASHDeconvAlgorithm::discardStreamedMS1()
   streamed_ms1_valid_ = false;
 }
 
-void FLASHDeconvAlgorithm::deconvolveMS1Streaming(const std::function<const MSSpectrum*(Size)>& next_spectrum, const std::function<std::string()>& accession)
+void FLASHDeconvAlgorithm::deconvolveMS1Streaming(const std::function<const MSSpectrum*(Size)>& next_spectrum, const std::function<std::string()>& accession,
+                                                  const std::function<Size()>& loaded_total)
 {
   FLASHTrace::Scope trace_stream("stream.ms1");
   discardStreamedMS1();
@@ -393,7 +398,15 @@ void FLASHDeconvAlgorithm::deconvolveMS1Streaming(const std::function<const MSSp
   std::atomic<Size> next_index {0};
   std::atomic<bool> failed {false};
   const PeakGroup empty_precursor;
-#pragma omp parallel num_threads(worker_count) default(none) shared(workers, per_worker, next_index, failed, next_spectrum, accession, empty_precursor)
+  // FD_OPT=lpt: spectra are taken in arrival order while the file is read; once loading has finished
+  // (loaded_total() > 0), the arrival counter is closed and the remaining MS1 spectra are taken
+  // largest first, which shortens the tail of long spectra.
+  const bool lpt_tail = FLASHTrace::opt("lpt") && static_cast<bool>(loaded_total);
+  std::once_flag lpt_once;
+  std::vector<Size> lpt_order;
+  std::atomic<Size> lpt_position {0};
+#pragma omp parallel num_threads(worker_count) default(none) \
+  shared(workers, per_worker, next_index, failed, next_spectrum, accession, empty_precursor, lpt_tail, lpt_once, lpt_order, lpt_position, loaded_total)
   {
     int w = 0;
 #ifdef _OPENMP
@@ -402,11 +415,30 @@ void FLASHDeconvAlgorithm::deconvolveMS1Streaming(const std::function<const MSSp
     std::optional<ThresholdMower> filter;
     while (true)
     {
-      const Size index = next_index.fetch_add(1);
+      Size index = 0;
       const MSSpectrum* input = nullptr;
       try
       {
         if (! filter) { filter.emplace(makeLowPeakFilter_()); }
+        if (lpt_tail && next_index.load(std::memory_order_relaxed) < streamClosed_() && loaded_total() > 0)
+        {
+          std::call_once(lpt_once, [&] {
+            const Size frontier = std::min(next_index.exchange(streamClosed_()), loaded_total());
+            for (Size i = frontier; i < loaded_total(); ++i)
+            {
+              if (next_spectrum(i)->getMSLevel() == 1) { lpt_order.push_back(i); }
+            }
+            std::stable_sort(lpt_order.begin(), lpt_order.end(), [&](Size a, Size b) { return next_spectrum(a)->size() > next_spectrum(b)->size(); });
+          });
+        }
+        index = next_index.fetch_add(1);
+        if (index >= streamClosed_())
+        {
+          std::call_once(lpt_once, [] {}); // wait until the order is built
+          const Size position = lpt_position.fetch_add(1);
+          if (position >= lpt_order.size()) { break; }
+          index = lpt_order[position];
+        }
         input = next_spectrum(index);
       }
       catch (...)

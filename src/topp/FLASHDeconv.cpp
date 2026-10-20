@@ -103,6 +103,12 @@ namespace
       available_.wait(lock, [&] { return i < spectra_.size() || finished_; });
       return i < spectra_.size() ? &spectra_[i] : nullptr;
     }
+    /// number of spectra once loading has finished, 0 before
+    Size loadedTotal()
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      return finished_ ? spectra_.size() : 0;
+    }
     std::string accession()
     {
       std::lock_guard<std::mutex> lock(mutex_);
@@ -413,7 +419,7 @@ protected:
       });
       try
       {
-        fd.deconvolveMS1Streaming([&](Size i) { return consumer.get(i); }, [&] { return consumer.accession(); });
+        fd.deconvolveMS1Streaming([&](Size i) { return consumer.get(i); }, [&] { return consumer.accession(); }, [&] { return consumer.loadedTotal(); });
       }
       catch (...)
       {

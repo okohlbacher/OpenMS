@@ -85,7 +85,8 @@ namespace OpenMS
       @p accession() returns the native ID type accession used for scan numbers. A later run() on the
       assembled experiment reuses these results instead of recomputing MS1. Call setParameters() first.
     */
-    void deconvolveMS1Streaming(const std::function<const MSSpectrum*(Size)>& next_spectrum, const std::function<std::string()>& accession);
+    void deconvolveMS1Streaming(const std::function<const MSSpectrum*(Size)>& next_spectrum, const std::function<std::string()>& accession,
+                                const std::function<Size()>& loaded_total = {});
 
     /// Drop results of deconvolveMS1Streaming (e.g. when the assembled experiment differs from the stream).
     void discardStreamedMS1();
