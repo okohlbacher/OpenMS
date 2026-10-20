@@ -177,7 +177,7 @@ START_SECTION(([EXTRA] Footer cursor handles large indices empty indices and mal
   {
     std::ofstream output(filename);
     output << "<indexList><index name='spectrum'>";
-    for (int i = 0; i < 5000; ++i)
+    for (int i = 0; i < 70000; ++i)
     {
       output << "<offset idRef='s" << i << "'>" << 100 + i << "</offset>\n";
     }
@@ -186,12 +186,12 @@ START_SECTION(([EXTRA] Footer cursor handles large indices empty indices and mal
   IndexedMzMLDecoder decoder;
   IndexedMzMLDecoder::OffsetVector spectra, chromatograms{{"old", 1}};
   TEST_EQUAL(decoder.parseOffsets(filename, 0, spectra, chromatograms), 0)
-  TEST_EQUAL(spectra.size(), 5000)
+  TEST_EQUAL(spectra.size(), 70000)
   TEST_TRUE(chromatograms.empty())
-  if (spectra.size() == 5000)
+  if (spectra.size() == 70000)
   {
-    TEST_STRING_EQUAL(spectra.back().first, "s4999")
-    TEST_EQUAL(spectra.back().second, 5099)
+    TEST_STRING_EQUAL(spectra.back().first, "s69999")
+    TEST_EQUAL(spectra.back().second, 70099)
   }
   for (const std::string& footer : {
     std::string("<indexList/><indexList/></indexedmzML>"),
@@ -239,6 +239,40 @@ START_SECTION(([EXTRA] Footer cursor preserves DOM error precedence and permissi
   { std::ofstream output(filename); output << "<indexList/></indexedmzML>"; }
   TEST_EQUAL(decoder.parseOffsets(filename, 0, spectra, chromatograms), 0)
   TEST_EQUAL(chromatograms.size(), 1)
+END_SECTION
+
+START_SECTION(([EXTRA] Small DOM and large reader paths agree on failure and alias semantics))
+  std::string filename;
+  NEW_TMP_FILE(filename)
+  for (const Size padding : {Size(0), Size(2 * 1024 * 1024)})
+  {
+    IndexedMzMLDecoder decoder;
+    IndexedMzMLDecoder::OffsetVector spectra{{"sentinel", 7}}, chromatograms{{"sentinel", 8}};
+    auto write = [&](const std::string& footer)
+    {
+      std::ofstream output(filename);
+      output << std::string(padding, ' ') << footer;
+    };
+    write("<indexList><index name='spectrum'><offset>1</offset></index>"
+          "<index name='unknown'/></indexList></indexedmzML>");
+    TEST_EQUAL(decoder.parseOffsets(filename, 0, spectra, chromatograms), -1)
+    TEST_STRING_EQUAL(spectra[0].first, "sentinel")
+    TEST_STRING_EQUAL(chromatograms[0].first, "sentinel")
+    write("<indexList><index name='spectrum'><offset>1</offset></index>"
+          "<index name='chromatogram'><offset>abc</offset></index></indexList></indexedmzML>");
+    TEST_EXCEPTION(Exception::ConversionError, decoder.parseOffsets(filename, 0, spectra, chromatograms))
+    TEST_STRING_EQUAL(spectra[0].first, "sentinel")
+    TEST_STRING_EQUAL(chromatograms[0].first, "sentinel")
+    write("<indexList><index name='spectrum'><offset>abc</offset></index></indexList>"
+          "<fileChecksum></indexedmzML>");
+    TEST_EQUAL(decoder.parseOffsets(filename, 0, spectra, chromatograms), -1)
+    write("<indexList><index name='chromatogram'><offset>2</offset></index>"
+          "<foo name='spectrum'><bar idRef='last'>3</bar></foo></indexList></indexedmzML>");
+    TEST_EQUAL(decoder.parseOffsets(filename, 0, spectra, spectra), 0)
+    TEST_EQUAL(spectra.size(), 1)
+    TEST_STRING_EQUAL(spectra[0].first, "last")
+    TEST_EQUAL(spectra[0].second, 3)
+  }
 END_SECTION
 
 /////////////////////////////////////////////////////////////

@@ -160,6 +160,64 @@ namespace OpenMS
   {
 
     if (in.size() > static_cast<Size>(std::numeric_limits<int>::max())) { return -1; }
+    // Keep the existing DOM path for small footers. On Linux, replacing even
+    // small DOMs changes allocator reuse and can slow large-spectrum reads.
+    // Bound that fast path to 2 MiB; larger indices use bounded-node traversal.
+    constexpr Size small_footer_limit = 2 * 1024 * 1024;
+    if (in.size() <= small_footer_limit)
+    {
+      std::unique_ptr<xmlDoc, decltype(&xmlFreeDoc)> document(
+        xmlReadMemory(in.data(), static_cast<int>(in.size()), "index.xml", nullptr,
+                      XML_PARSE_NONET | XML_PARSE_NO_XXE | XML_PARSE_NOENT | XML_PARSE_NOERROR | XML_PARSE_NOWARNING), xmlFreeDoc);
+      xmlNode* root = document ? xmlDocGetRootElement(document.get()) : nullptr;
+      if (!root) { return -1; }
+      xmlNode* list = nullptr;
+      for (xmlNode* node = root->children; node; node = node->next)
+      {
+        if (node->type == XML_ELEMENT_NODE && xmlStrEqual(node->name, BAD_CAST "indexList"))
+        {
+          if (list) { return -1; }
+          list = node;
+        }
+      }
+      if (!list) { return -1; }
+      auto property = [](xmlNode* node, const char* key)
+      {
+        xmlChar* value = xmlGetProp(node, BAD_CAST key);
+        std::string result = value ? reinterpret_cast<const char*>(value) : "";
+        xmlFree(value);
+        return result;
+      };
+      OffsetVector spectra, chromatograms;
+      bool found_spectra = false, found_chromatograms = false, last_was_spectra = false;
+      for (xmlNode* index = list->children; index; index = index->next)
+      {
+        if (index->type != XML_ELEMENT_NODE) { continue; }
+        OffsetVector result;
+        for (xmlNode* offset = index->children; offset; offset = offset->next)
+        {
+          if (offset->type != XML_ELEMENT_NODE) { continue; }
+          xmlChar* content = xmlNodeGetContent(offset);
+          std::string text = content ? reinterpret_cast<const char*>(content) : "";
+          xmlFree(content);
+          result.emplace_back(property(offset, "idRef"), IndexedMzMLUtils::stringToStreampos(text));
+        }
+        const auto name = property(index, "name");
+        if (name == "spectrum") { spectra = std::move(result); found_spectra = true; last_was_spectra = true; }
+        else if (name == "chromatogram") { chromatograms = std::move(result); found_chromatograms = true; last_was_spectra = false; }
+        else { return -1; }
+      }
+      if (&spectra_offsets == &chromatograms_offsets && found_spectra && last_was_spectra)
+      {
+        spectra_offsets = std::move(spectra);
+      }
+      else
+      {
+        if (found_spectra) { spectra_offsets = std::move(spectra); }
+        if (found_chromatograms) { chromatograms_offsets = std::move(chromatograms); }
+      }
+      return 0;
+    }
     // A DOM for a large index leaves freed nodes in each worker's allocator
     // arena. Read forward and expand only one offset at a time instead.
     std::unique_ptr<xmlTextReader, decltype(&xmlFreeTextReader)> reader(
@@ -175,18 +233,20 @@ namespace OpenMS
     };
     OffsetVector spectra, chromatograms, offsets;
     std::string index_name;
-    bool found_list = false, in_list = false, found_spectra = false, found_chromatograms = false;
+    bool found_list = false, in_list = false, found_spectra = false, found_chromatograms = false, last_was_spectra = false;
     auto finish_index = [&]()
     {
       if (index_name == "spectrum")
       {
         spectra = std::move(offsets);
         found_spectra = true;
+        last_was_spectra = true;
       }
       else if (index_name == "chromatogram")
       {
         chromatograms = std::move(offsets);
         found_chromatograms = true;
+        last_was_spectra = false;
       }
       else { return false; }
       offsets.clear();
@@ -238,8 +298,15 @@ namespace OpenMS
     }
     if (status < 0 || !found_list) { return -1; }
     if (conversion_error) { std::rethrow_exception(conversion_error); }
-    if (found_spectra) { spectra_offsets = std::move(spectra); }
-    if (found_chromatograms) { chromatograms_offsets = std::move(chromatograms); }
+    if (&spectra_offsets == &chromatograms_offsets && found_spectra && last_was_spectra)
+    {
+      spectra_offsets = std::move(spectra);
+    }
+    else
+    {
+      if (found_spectra) { spectra_offsets = std::move(spectra); }
+      if (found_chromatograms) { chromatograms_offsets = std::move(chromatograms); }
+    }
     return 0;
   }
 
