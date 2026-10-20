@@ -1,0 +1,7 @@
+• ## Findings
+
+  No actionable findings identified in the supplied packet.
+
+  - **Introduced regressions:** None found. The namespace mode is threaded consistently through buffer, plain-file, and compressed-file parsing; generic readers default to legacy SAX1 qualified-name handling, while `ImzMLFile::loadImpl_` explicitly opts into SAX2 namespace validation.
+  - **Inherited limitations:** None newly identified in this packet. Acceptance of undeclared prefixes or malformed namespace URIs by generic readers is intentional legacy compatibility behavior, not an introduced validation defect.
+

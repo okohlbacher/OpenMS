@@ -1,0 +1,5 @@
+[1/5] Linking CXX executable xml_schema_validation_probe
+[2/5] Building CXX object CMakeFiles/xml_conformance_probe.dir/conformance_probe.cpp.o
+[3/5] Linking CXX executable xml_conformance_probe
+[4/5] Building CXX object CMakeFiles/xml_parser_benchmark.dir/benchmark.cpp.o
+[5/5] Linking CXX executable xml_parser_benchmark

@@ -1,0 +1,2013 @@
+{
+  "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "python": "3.15.0 (main, Oct  9 2026, 11:16:41) [Clang 21.0.0 (clang-2100.3.34.2)]",
+  "cpu_count": 16,
+  "binary": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-optimized-build/xml_parser_benchmark",
+  "binary_sha256": "b1072ea244c5332aca467ed9f9bc457412b5b07f15c23de7e641da9329609730",
+  "backends": {
+    "xerces": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/xerces/lib",
+    "libxml2-poc": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/libxml2/lib",
+    "libxml2-full": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib"
+  },
+  "libraries": {
+    "xerces": {
+      "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/xerces/lib/libOpenSwathAlgo.dylib": "c37b9cd6f4268731899609f3232e1523fbaa5714ce3db16e926e81bf765ba42d",
+      "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/xerces/lib/libOpenMS.dylib": "881fd6b7448017068404312a6d5d8afdc9ca026a60cfb1576460df966e6eed56"
+    },
+    "libxml2-poc": {
+      "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/libxml2/lib/libOpenSwathAlgo.dylib": "c37b9cd6f4268731899609f3232e1523fbaa5714ce3db16e926e81bf765ba42d",
+      "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/libxml2/lib/libOpenMS.dylib": "9cfa3f9d8d8349541f6326561d997b633d8ccc51c6f4a9a98883f3f6542507a2"
+    },
+    "libxml2-full": {
+      "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib/libOpenMS_CLI.dylib": "45da2b8c96e6764090986c83c74014e4fcf1aa3d544e83e9addaf2be4153f5c1",
+      "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib/libeol-bspline.a": "2d31e40075ea7eca2f346d54196a0beb6b225f2157a114941e1eefc018855d51",
+      "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib/libOpenSwathAlgo.dylib": "c37b9cd6f4268731899609f3232e1523fbaa5714ce3db16e926e81bf765ba42d",
+      "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib/libOpenMS_Percolator.a": "740d7d2f2b344f3892927a9370d7bc8c5cb58853e174e3b4868ef15fad7b9771",
+      "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib/libOpenMS.dylib": "a18d98d23cf2e046cade59da6138f2f85c7bc1b2ed4347d258a23f3339e7efee",
+      "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib/libOpenMSTestFramework.a": "7dd517a85ec5b173499f0807a59078d6da5507d392c9e6c8fc6f9ea4df229527",
+      "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib/libIsoSpec.a": "963cc0449a472e78a4efc6d55c41ee2d2215ef87740802c88efeb2c7131b63ac",
+      "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib/libSQLiteCpp.a": "ea55bc19e3a6c0421d4877ddd4b7a554cf8ca7c013b876689db882634ddc436b",
+      "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib/libsqlite3.a": "32444ba0c506918014bfac389b516fe25f392a1371161096a2fdfd7fbb82298b"
+    }
+  },
+  "inputs": {
+    "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML": {
+      "bytes": 1126185409,
+      "sha256": "8f2c671efe432f61f21e682c8fd5a58dc4fd9f83ee2bb2020f38e8d0cc61abf7"
+    },
+    "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML": {
+      "bytes": 1126185409,
+      "sha256": "b864ae517f17976e50f3ffcbb2d205db6532f28b76b27b44d93dbe3b3600b81d"
+    }
+  },
+  "parameters": {
+    "binary": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-optimized-build/xml_parser_benchmark",
+    "backend": [
+      "xerces=/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/xerces/lib",
+      "libxml2-poc=/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/libxml2/lib",
+      "libxml2-full=/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib"
+    ],
+    "input": [
+      "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML"
+    ],
+    "workers": "1",
+    "modes": "stream,indexed-metadata",
+    "repetitions": 5,
+    "queries": 2048,
+    "timeout": 600,
+    "startup_retries": 1,
+    "output": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/encoding-followup/macos/benchmarks.json"
+  },
+  "launcher_sha256": "06f066400360e17bc2f9ac6f6ced695c6521ddc06db337cd55c06991b7d60108",
+  "records": [
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/libxml2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 115212288,
+      "seconds": 2.039879083,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.8649995,
+          "read_seconds": 0.172370916
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.189257792000035,
+      "max_rss_bytes": 115933184,
+      "user_seconds": 2.046172,
+      "system_seconds": 0.098677,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-poc",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 0
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/xerces/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 123011072,
+      "seconds": 1.412683541,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.136900625,
+          "read_seconds": 0.2733235
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.5544818339999438,
+      "max_rss_bytes": 123830272,
+      "user_seconds": 1.423528,
+      "system_seconds": 0.093262,
+      "removed_stale_kmp": false,
+      "backend": "xerces",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 4
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108462080,
+      "seconds": 1.546378917,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.374077167,
+          "read_seconds": 0.169872292
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.6531633750000765,
+      "max_rss_bytes": 109182976,
+      "user_seconds": 1.493214,
+      "system_seconds": 0.145306,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-full",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 0
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/xerces/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 121208832,
+      "seconds": 1.402773167,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.125416291,
+          "read_seconds": 0.274932584
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.514632708000022,
+      "max_rss_bytes": 121929728,
+      "user_seconds": 1.412756,
+      "system_seconds": 0.08623399999999999,
+      "removed_stale_kmp": false,
+      "backend": "xerces",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 0
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/libxml2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 58310656,
+      "seconds": 3.175036542,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 3.175001541
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.296481541999924,
+      "max_rss_bytes": 59113472,
+      "user_seconds": 3.1955459999999998,
+      "system_seconds": 0.07445199999999999,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-poc",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 3
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/xerces/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 121798656,
+      "seconds": 1.444567583,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.155884459,
+          "read_seconds": 0.286260708
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.556548125000063,
+      "max_rss_bytes": 122535936,
+      "user_seconds": 1.450739,
+      "system_seconds": 0.08912199999999999,
+      "removed_stale_kmp": false,
+      "backend": "xerces",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 1
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/xerces/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 58130432,
+      "seconds": 2.431538166,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.431500834
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.5478435839999065,
+      "max_rss_bytes": 58949632,
+      "user_seconds": 2.452378,
+      "system_seconds": 0.076012,
+      "removed_stale_kmp": false,
+      "backend": "xerces",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 2
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108478464,
+      "seconds": 2.095461291,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.924634084,
+          "read_seconds": 0.168381
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.214893333999953,
+      "max_rss_bytes": 109199360,
+      "user_seconds": 2.046046,
+      "system_seconds": 0.140188,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-full",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 3
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/libxml2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 112885760,
+      "seconds": 1.467527667,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.295708,
+          "read_seconds": 0.169502458
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.5848086669999475,
+      "max_rss_bytes": 113672192,
+      "user_seconds": 1.483643,
+      "system_seconds": 0.08587299999999999,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-poc",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 3
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/xerces/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 121208832,
+      "seconds": 1.428118833,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.140964833,
+          "read_seconds": 0.284562125
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.5358809169999859,
+      "max_rss_bytes": 121929728,
+      "user_seconds": 1.439993,
+      "system_seconds": 0.08622099999999999,
+      "removed_stale_kmp": false,
+      "backend": "xerces",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 4
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108085248,
+      "seconds": 1.593650666,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.417752208,
+          "read_seconds": 0.1731825
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.707971165999993,
+      "max_rss_bytes": 108822528,
+      "user_seconds": 1.540511,
+      "system_seconds": 0.144888,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-full",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 1
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 54280192,
+      "seconds": 2.718936625,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.718887792
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.8218522079999957,
+      "max_rss_bytes": 54984704,
+      "user_seconds": 2.673311,
+      "system_seconds": 0.134852,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-full",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 0
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/libxml2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 115081216,
+      "seconds": 1.463613916,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.29176225,
+          "read_seconds": 0.169324
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.5884802919999856,
+      "max_rss_bytes": 115802112,
+      "user_seconds": 1.478573,
+      "system_seconds": 0.086743,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-poc",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 1
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/libxml2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 112443392,
+      "seconds": 1.498995875,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.323133208,
+          "read_seconds": 0.173320084
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.625006290999977,
+      "max_rss_bytes": 113213440,
+      "user_seconds": 1.5053349999999999,
+      "system_seconds": 0.089262,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-poc",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 4
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 54083584,
+      "seconds": 3.301932458,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 3.301890167
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.4176744170000575,
+      "max_rss_bytes": 54788096,
+      "user_seconds": 3.254303,
+      "system_seconds": 0.134929,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-full",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 0
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/libxml2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 112787456,
+      "seconds": 2.053309625,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.880555041,
+          "read_seconds": 0.170177167
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.1783274580000125,
+      "max_rss_bytes": 113508352,
+      "user_seconds": 2.067523,
+      "system_seconds": 0.091557,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-poc",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 1
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 53886976,
+      "seconds": 2.723059875,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.72302475
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.821510541999942,
+      "max_rss_bytes": 54738944,
+      "user_seconds": 2.680094,
+      "system_seconds": 0.133717,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-full",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 4
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108773376,
+      "seconds": 2.128618333,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.951383541,
+          "read_seconds": 0.17476125
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.2352072089998956,
+      "max_rss_bytes": 109494272,
+      "user_seconds": 2.07797,
+      "system_seconds": 0.14449199999999998,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-full",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 4
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/libxml2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 58425344,
+      "seconds": 2.651018917,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.650982708
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.7584763749999865,
+      "max_rss_bytes": 59195392,
+      "user_seconds": 2.668284,
+      "system_seconds": 0.075025,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-poc",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 1
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/xerces/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 57901056,
+      "seconds": 2.481486292,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.481447292
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.5902810000000045,
+      "max_rss_bytes": 58621952,
+      "user_seconds": 2.499792,
+      "system_seconds": 0.077343,
+      "removed_stale_kmp": false,
+      "backend": "xerces",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 3
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 54034432,
+      "seconds": 3.274349084,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 3.274314625
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.3805783330000168,
+      "max_rss_bytes": 54870016,
+      "user_seconds": 3.236749,
+      "system_seconds": 0.128763,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-full",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 4
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/libxml2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 57966592,
+      "seconds": 2.625907333,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.625872334
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.749486124999976,
+      "max_rss_bytes": 58687488,
+      "user_seconds": 2.650602,
+      "system_seconds": 0.07351099999999999,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-poc",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 2
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108724224,
+      "seconds": 2.158031791,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.984128917,
+          "read_seconds": 0.171320875
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.2792849159999378,
+      "max_rss_bytes": 109477888,
+      "user_seconds": 2.102512,
+      "system_seconds": 0.146924,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-full",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 2
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/libxml2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 58408960,
+      "seconds": 2.641620958,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.641586833
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.743295332999992,
+      "max_rss_bytes": 59162624,
+      "user_seconds": 2.660116,
+      "system_seconds": 0.075343,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-poc",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 3
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/libxml2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 58327040,
+      "seconds": 3.19082375,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 3.190787833
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.308696665999946,
+      "max_rss_bytes": 59031552,
+      "user_seconds": 3.212884,
+      "system_seconds": 0.076042,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-poc",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 1
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 53968896,
+      "seconds": 3.311589,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 3.311548125
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.41150704100005,
+      "max_rss_bytes": 54788096,
+      "user_seconds": 3.264243,
+      "system_seconds": 0.13318,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-full",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 2
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 107970560,
+      "seconds": 1.600250167,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.424750416,
+          "read_seconds": 0.172860792
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.7239676669998971,
+      "max_rss_bytes": 108675072,
+      "user_seconds": 1.549514,
+      "system_seconds": 0.14441199999999998,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-full",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 2
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/xerces/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 58638336,
+      "seconds": 2.469397167,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.469361459
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.5843284580000727,
+      "max_rss_bytes": 59441152,
+      "user_seconds": 2.488146,
+      "system_seconds": 0.077801,
+      "removed_stale_kmp": false,
+      "backend": "xerces",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 0
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/libxml2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 112721920,
+      "seconds": 2.055621834,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.879874125,
+          "read_seconds": 0.173190041
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.174735499999997,
+      "max_rss_bytes": 113442816,
+      "user_seconds": 2.068839,
+      "system_seconds": 0.086826,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-poc",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 2
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/libxml2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 112869376,
+      "seconds": 2.047545791,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.872645917,
+          "read_seconds": 0.172334833
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.164019584000016,
+      "max_rss_bytes": 113623040,
+      "user_seconds": 2.059276,
+      "system_seconds": 0.086674,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-poc",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 4
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/xerces/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 58081280,
+      "seconds": 2.506907042,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.506870459
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.6164300000000367,
+      "max_rss_bytes": 58802176,
+      "user_seconds": 2.523521,
+      "system_seconds": 0.078694,
+      "removed_stale_kmp": false,
+      "backend": "xerces",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 2
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/xerces/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 58359808,
+      "seconds": 2.519461375,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.519425458
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.6399071670000467,
+      "max_rss_bytes": 59195392,
+      "user_seconds": 2.538371,
+      "system_seconds": 0.077526,
+      "removed_stale_kmp": false,
+      "backend": "xerces",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 1
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108675072,
+      "seconds": 1.589360875,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.409560666,
+          "read_seconds": 0.177243459
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.703899917000058,
+      "max_rss_bytes": 109395968,
+      "user_seconds": 1.538492,
+      "system_seconds": 0.14607299999999998,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-full",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 4
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 54149120,
+      "seconds": 3.331796083,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 3.331761583
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.4449319170000763,
+      "max_rss_bytes": 54968320,
+      "user_seconds": 3.289194,
+      "system_seconds": 0.136357,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-full",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 3
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/xerces/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 58802176,
+      "seconds": 2.588725833,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.588679708
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.696400249999897,
+      "max_rss_bytes": 59523072,
+      "user_seconds": 2.600479,
+      "system_seconds": 0.08223699999999999,
+      "removed_stale_kmp": false,
+      "backend": "xerces",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 4
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/xerces/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 121372672,
+      "seconds": 1.465164875,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.178343625,
+          "read_seconds": 0.2842575
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.5873102090000657,
+      "max_rss_bytes": 122109952,
+      "user_seconds": 1.472818,
+      "system_seconds": 0.098786,
+      "removed_stale_kmp": false,
+      "backend": "xerces",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 1
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/libxml2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 58277888,
+      "seconds": 3.242624208,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 3.242586167
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.36979016600003,
+      "max_rss_bytes": 59064320,
+      "user_seconds": 3.264344,
+      "system_seconds": 0.076379,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-poc",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 4
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/xerces/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 120995840,
+      "seconds": 1.446796375,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.163888625,
+          "read_seconds": 0.280357667
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.5550863749999735,
+      "max_rss_bytes": 121733120,
+      "user_seconds": 1.46057,
+      "system_seconds": 0.086625,
+      "removed_stale_kmp": false,
+      "backend": "xerces",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 0
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/xerces/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 58736640,
+      "seconds": 2.528651583,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.528614792
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.6468158329998914,
+      "max_rss_bytes": 59523072,
+      "user_seconds": 2.538449,
+      "system_seconds": 0.078303,
+      "removed_stale_kmp": false,
+      "backend": "xerces",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 4
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108576768,
+      "seconds": 1.612948125,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.433753583,
+          "read_seconds": 0.176626209
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.7332910000000084,
+      "max_rss_bytes": 109297664,
+      "user_seconds": 1.562575,
+      "system_seconds": 0.146391,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-full",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 3
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/libxml2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 112197632,
+      "seconds": 1.509615292,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.331245542,
+          "read_seconds": 0.175769166
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.62689725000007,
+      "max_rss_bytes": 112902144,
+      "user_seconds": 1.525266,
+      "system_seconds": 0.087249,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-poc",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 0
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 54067200,
+      "seconds": 2.759199167,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.759161375
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.8738062079999054,
+      "max_rss_bytes": 54870016,
+      "user_seconds": 2.719543,
+      "system_seconds": 0.133041,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-full",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 1
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 54116352,
+      "seconds": 3.348893125,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 3.348853541
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.458154499999978,
+      "max_rss_bytes": 54951936,
+      "user_seconds": 3.299491,
+      "system_seconds": 0.134568,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-full",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 1
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/libxml2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 112721920,
+      "seconds": 2.105310792,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.927251167,
+          "read_seconds": 0.17552525
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.222218041000019,
+      "max_rss_bytes": 113459200,
+      "user_seconds": 2.114423,
+      "system_seconds": 0.08956599999999999,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-poc",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 3
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 54099968,
+      "seconds": 2.806204875,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.806170292
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.9302099579999776,
+      "max_rss_bytes": 54919168,
+      "user_seconds": 2.765349,
+      "system_seconds": 0.134978,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-full",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 2
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 53821440,
+      "seconds": 2.776921458,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.776887084
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.8755824999999504,
+      "max_rss_bytes": 54525952,
+      "user_seconds": 2.7374549999999997,
+      "system_seconds": 0.132026,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-full",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 3
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/xerces/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 58245120,
+      "seconds": 2.532391792,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.53235525
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.65724812499991,
+      "max_rss_bytes": 59080704,
+      "user_seconds": 2.548057,
+      "system_seconds": 0.080036,
+      "removed_stale_kmp": false,
+      "backend": "xerces",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 0
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/xerces/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 121094144,
+      "seconds": 1.462797709,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.175000708,
+          "read_seconds": 0.285169833
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.5725962910000817,
+      "max_rss_bytes": 121815040,
+      "user_seconds": 1.476349,
+      "system_seconds": 0.088326,
+      "removed_stale_kmp": false,
+      "backend": "xerces",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 3
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/libxml2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 58408960,
+      "seconds": 3.277328375,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 3.277291375
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.389331416999994,
+      "max_rss_bytes": 59179008,
+      "user_seconds": 3.300061,
+      "system_seconds": 0.076331,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-poc",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 2
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/xerces/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 58048512,
+      "seconds": 2.526280625,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.526245125
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.64160783300008,
+      "max_rss_bytes": 58769408,
+      "user_seconds": 2.545598,
+      "system_seconds": 0.077459,
+      "removed_stale_kmp": false,
+      "backend": "xerces",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 1
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108740608,
+      "seconds": 2.2435585,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 2.061294209,
+          "read_seconds": 0.179716375
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.366784415999973,
+      "max_rss_bytes": 109543424,
+      "user_seconds": 2.163363,
+      "system_seconds": 0.14740799999999998,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-full",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 0
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/xerces/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 121585664,
+      "seconds": 1.500552875,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.20174,
+          "read_seconds": 0.296166958
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.6218617920000042,
+      "max_rss_bytes": 122322944,
+      "user_seconds": 1.507856,
+      "system_seconds": 0.094799,
+      "removed_stale_kmp": false,
+      "backend": "xerces",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 2
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/xerces/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 122535936,
+      "seconds": 1.500403583,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.198597875,
+          "read_seconds": 0.299207584
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.622939333999966,
+      "max_rss_bytes": 123305984,
+      "user_seconds": 1.5037639999999999,
+      "system_seconds": 0.097466,
+      "removed_stale_kmp": false,
+      "backend": "xerces",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 3
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/libxml2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 58507264,
+      "seconds": 2.934456917,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.93441775
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.059375040999953,
+      "max_rss_bytes": 59211776,
+      "user_seconds": 2.84597,
+      "system_seconds": 0.08538,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-poc",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 4
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/libxml2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 58490880,
+      "seconds": 2.862414209,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.862363458
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.974984291999931,
+      "max_rss_bytes": 59195392,
+      "user_seconds": 2.879973,
+      "system_seconds": 0.080042,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-poc",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 0
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/xerces/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 58540032,
+      "seconds": 2.728980041,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.728940542
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.8429609999999457,
+      "max_rss_bytes": 59260928,
+      "user_seconds": 2.709527,
+      "system_seconds": 0.093489,
+      "removed_stale_kmp": false,
+      "backend": "xerces",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 3
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/xerces/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 121585664,
+      "seconds": 1.501565541,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.198556542,
+          "read_seconds": 0.30024375
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.6229959999999437,
+      "max_rss_bytes": 122306560,
+      "user_seconds": 1.507542,
+      "system_seconds": 0.100741,
+      "removed_stale_kmp": false,
+      "backend": "xerces",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 2
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108756992,
+      "seconds": 2.332891625,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 2.129338916,
+          "read_seconds": 0.200399584
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.4535017089999656,
+      "max_rss_bytes": 109527040,
+      "user_seconds": 2.246973,
+      "system_seconds": 0.17712899999999998,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-full",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 1
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/libxml2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 58638336,
+      "seconds": 3.864594084,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 3.864555041
+        }
+      ],
+      "ok": true,
+      "process_seconds": 4.009323792000032,
+      "max_rss_bytes": 59342848,
+      "user_seconds": 3.727871,
+      "system_seconds": 0.209623,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-poc",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 0
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/libxml2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 113344512,
+      "seconds": 1.90410775,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.710075542,
+          "read_seconds": 0.191292875
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.037747166000031,
+      "max_rss_bytes": 114065408,
+      "user_seconds": 1.629721,
+      "system_seconds": 0.12761699999999998,
+      "removed_stale_kmp": false,
+      "backend": "libxml2-poc",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 2
+    }
+  ],
+  "failures": [],
+  "summary": [
+    {
+      "backend": "libxml2-full",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "repetitions": 5,
+      "seconds_median": 1.593650666,
+      "seconds_min": 1.546378917,
+      "seconds_max": 1.612948125,
+      "rss_mib_median": 104.125,
+      "rss_mib_max": 104.328125,
+      "hash_per_worker": "8044413199707015275",
+      "resident_rss_mib_median": 103.4375,
+      "job_open_seconds_median": 1.417752208,
+      "job_read_seconds_median": 0.1731825,
+      "aggregate_spectra_per_second": 1285.0997045295999
+    },
+    {
+      "backend": "libxml2-full",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "mode": "stream",
+      "workers": 1,
+      "repetitions": 5,
+      "seconds_median": 2.759199167,
+      "seconds_min": 2.718936625,
+      "seconds_max": 2.806204875,
+      "rss_mib_median": 52.328125,
+      "rss_mib_max": 52.4375,
+      "hash_per_worker": "4299646233721013837",
+      "resident_rss_mib_median": 51.5625,
+      "job_open_seconds_median": 0,
+      "job_read_seconds_median": 2.759161375,
+      "aggregate_mib_per_second": 389.2484866333566
+    },
+    {
+      "backend": "libxml2-full",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "repetitions": 5,
+      "seconds_median": 2.158031791,
+      "seconds_min": 2.095461291,
+      "seconds_max": 2.332891625,
+      "rss_mib_median": 104.421875,
+      "rss_mib_max": 104.46875,
+      "hash_per_worker": "8044413199707015275",
+      "resident_rss_mib_median": 103.703125,
+      "job_open_seconds_median": 1.984128917,
+      "job_read_seconds_median": 0.17476125,
+      "aggregate_spectra_per_second": 949.0128961682196
+    },
+    {
+      "backend": "libxml2-full",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "mode": "stream",
+      "workers": 1,
+      "repetitions": 5,
+      "seconds_median": 3.311589,
+      "seconds_min": 3.274349084,
+      "seconds_max": 3.348893125,
+      "rss_mib_median": 52.328125,
+      "rss_mib_max": 52.421875,
+      "hash_per_worker": "4299646233721013837",
+      "resident_rss_mib_median": 51.578125,
+      "job_open_seconds_median": 0,
+      "job_read_seconds_median": 3.311548125,
+      "aggregate_mib_per_second": 324.3198658030233
+    },
+    {
+      "backend": "libxml2-poc",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "repetitions": 5,
+      "seconds_median": 1.498995875,
+      "seconds_min": 1.463613916,
+      "seconds_max": 1.90410775,
+      "rss_mib_median": 108.40625,
+      "rss_mib_max": 110.4375,
+      "hash_per_worker": "8044413199707015275",
+      "resident_rss_mib_median": 107.65625,
+      "job_open_seconds_median": 1.323133208,
+      "job_read_seconds_median": 0.173320084,
+      "aggregate_spectra_per_second": 1366.247922463429
+    },
+    {
+      "backend": "libxml2-poc",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "mode": "stream",
+      "workers": 1,
+      "repetitions": 5,
+      "seconds_median": 2.651018917,
+      "seconds_min": 2.625907333,
+      "seconds_max": 2.934456917,
+      "rss_mib_median": 56.453125,
+      "rss_mib_max": 56.46875,
+      "hash_per_worker": "4299646233721013837",
+      "resident_rss_mib_median": 55.71875,
+      "job_open_seconds_median": 0,
+      "job_read_seconds_median": 2.650982708,
+      "aggregate_mib_per_second": 405.1325674017316
+    },
+    {
+      "backend": "libxml2-poc",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "repetitions": 5,
+      "seconds_median": 2.053309625,
+      "seconds_min": 2.039879083,
+      "seconds_max": 2.105310792,
+      "rss_mib_median": 108.25,
+      "rss_mib_max": 110.5625,
+      "hash_per_worker": "8044413199707015275",
+      "resident_rss_mib_median": 107.5625,
+      "job_open_seconds_median": 1.879874125,
+      "job_read_seconds_median": 0.172370916,
+      "aggregate_spectra_per_second": 997.4141138115009
+    },
+    {
+      "backend": "libxml2-poc",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "mode": "stream",
+      "workers": 1,
+      "repetitions": 5,
+      "seconds_median": 3.242624208,
+      "seconds_min": 3.175036542,
+      "seconds_max": 3.864594084,
+      "rss_mib_median": 56.375,
+      "rss_mib_max": 56.59375,
+      "hash_per_worker": "4299646233721013837",
+      "resident_rss_mib_median": 55.625,
+      "job_open_seconds_median": 0,
+      "job_read_seconds_median": 3.242586167,
+      "aggregate_mib_per_second": 331.21756675504594
+    },
+    {
+      "backend": "xerces",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "repetitions": 5,
+      "seconds_median": 1.465164875,
+      "seconds_min": 1.402773167,
+      "seconds_max": 1.500552875,
+      "rss_mib_median": 116.65625,
+      "rss_mib_max": 118.09375,
+      "hash_per_worker": "8044413199707015275",
+      "resident_rss_mib_median": 115.953125,
+      "job_open_seconds_median": 1.178343625,
+      "job_read_seconds_median": 0.2842575,
+      "aggregate_spectra_per_second": 1397.7949068701228
+    },
+    {
+      "backend": "xerces",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "mode": "stream",
+      "workers": 1,
+      "repetitions": 5,
+      "seconds_median": 2.519461375,
+      "seconds_min": 2.469397167,
+      "seconds_max": 2.728980041,
+      "rss_mib_median": 56.515625,
+      "rss_mib_max": 56.765625,
+      "hash_per_worker": "4299646233721013837",
+      "resident_rss_mib_median": 55.828125,
+      "job_open_seconds_median": 0,
+      "job_read_seconds_median": 2.519425458,
+      "aggregate_mib_per_second": 426.28718611523385
+    },
+    {
+      "backend": "xerces",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "repetitions": 5,
+      "seconds_median": 1.446796375,
+      "seconds_min": 1.428118833,
+      "seconds_max": 1.501565541,
+      "rss_mib_median": 116.28125,
+      "rss_mib_max": 116.859375,
+      "hash_per_worker": "8044413199707015275",
+      "resident_rss_mib_median": 115.59375,
+      "job_open_seconds_median": 1.163888625,
+      "job_read_seconds_median": 0.285169833,
+      "aggregate_spectra_per_second": 1415.5412851376545
+    },
+    {
+      "backend": "xerces",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "mode": "stream",
+      "workers": 1,
+      "repetitions": 5,
+      "seconds_median": 2.526280625,
+      "seconds_min": 2.431538166,
+      "seconds_max": 2.532391792,
+      "rss_mib_median": 56.21875,
+      "rss_mib_max": 56.765625,
+      "hash_per_worker": "4299646233721013837",
+      "resident_rss_mib_median": 55.4375,
+      "job_open_seconds_median": 0,
+      "job_read_seconds_median": 2.526245125,
+      "aggregate_mib_per_second": 425.1364988696646
+    }
+  ]
+}

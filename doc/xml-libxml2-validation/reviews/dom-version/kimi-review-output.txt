@@ -1,0 +1,21 @@
+• ## Review: version-fallback fix in legacy DOM writer
+
+  ### Scope verified
+  The production change is a single expression in `buildAnalysisSoftwareList_` (src/openms/source/FORMAT/HANDLERS/MzIdentMLDOMHandler.cpp:3013–3015): `version` now falls back to `"unknown"` when `cpro_id_` is empty **or** the front protein's `getSearchEngineVersion()` is empty. Logic is symmetric with the adjacent `engine` fallback and matches the stated intent (the reader at lines ~712–719 drops any `AnalysisSoftware` with empty name **or** empty version, so an empty version attribute previously produced a file that round-trip-read as having *no* software entry).
+
+  ### Findings
+
+  **No blocking or correctness defects found in this diff.** The condition, fallback value, and the two new round-trip assertions (explicit `2.1.0` preserved; empty version → `unknown`; exactly one `AnalysisSoftware` in both cases) are consistent with the changed behavior and with the reader's `!swname.empty() && !swversion.empty()` gate.
+
+  **[Low — behavioral note, intended but worth recording]** `MzIdentMLDOMHandler.cpp:3013` — `"unknown"` is indistinguishable from a genuine version string on re-ingestion. Any downstream consumer re-reading this file (including this same DOM reader, which will now populate `as_map_` with `{"Mascot", "unknown"}`) cannot tell the version was absent in the source data. This is the deliberate trade-off of the fix (empty version = element silently dropped vs. fabricated placeholder), but it is a one-way data-fidelity loss. Minimal mitigation if ever needed: none available without schema-visible distinction; documenting the sentinel in the writer header would suffice. Not a regression — previously the metadata was lost entirely.
+
+  **[Info — test coverage gap, non-blocking]** `MzIdentMLFile_test.cpp` (new block) — the two asserted paths cover `{engine=Mascot, version=2.1.0}` and `{engine=Mascot, version=""}`. The third branch of the touched expression family, empty `getSearchEngine()` → `"TOPP software"` (and empty `cpro_id_` → both fallbacks), remains unasserted. Cheap follow-up: one more writer construction with `protein.setSearchEngine("")` asserting `engine == u"TOPP software"`. Absence of this test does not affect the correctness of this fix.
+
+  ### Pre-existing limitations (not introduced here, unchanged by this diff)
+  - Only `cpro_id_->front()` contributes software metadata; additional `ProteinIdentification` entries with distinct engines/versions are silently ignored (`buildAnalysisSoftwareList_`).
+  - If engine is empty but version is set, the emitted pair is `{"TOPP software", <version>}` — a mismatched attribution; this fallback structure predates the change.
+  - The documented wrong `AnalysisProtocolCollection` builder and the public `store()` streaming-writer path are untouched, as stated.
+
+  ### Conclusion
+  The diff is minimal, matches the described intent, and the focused test asserts the exact regression surface (element count, engine preservation, explicit-version preservation, empty-version fallback). No new regressions identified; the single low-severity note concerns an accepted semantic property of the fix, not a defect. Ship-ready subject to the in-progress full 747-test run completing clean.
+

@@ -1,0 +1,131 @@
+-- Building OpenMS 3.7.0
+--   [CMake is not tracking Git commits and branching ('-D GIT_TRACKING=Off')]
+-- Dependency provider: system packages and CMAKE_PREFIX_PATH (the CMake presets, see 'cmake --list-presets', build the dependency set CI tests with vcpkg)
+-- OpenMP support requested: ON
+-- Architecture: 64 bit
+-- Processor is : arm64
+-- Position-independent code (-fPIC) is supported and will be applied to targets
+-- Compiler checks for conversion: OFF
+-- Package type is 'none'
+-- Looking for LIBXML_SAX1_ENABLED
+-- Looking for LIBXML_SAX1_ENABLED - found
+-- Looking for LIBXML_PUSH_ENABLED
+-- Looking for LIBXML_PUSH_ENABLED - found
+-- Looking for LIBXML_SCHEMAS_ENABLED
+-- Looking for LIBXML_SCHEMAS_ENABLED - found
+-- Looking for LIBXML_THREAD_ENABLED
+-- Looking for LIBXML_THREAD_ENABLED - found
+-- Looking for LIBXML_ICONV_ENABLED
+-- Looking for LIBXML_ICONV_ENABLED - found
+-- Looking for LIBXML_ICU_ENABLED
+-- Looking for LIBXML_ICU_ENABLED - not found
+-- Found Boost version 1.92.0
+-- LP solver: COIN-OR
+-- Using zstd target: zstd::libzstd
+-- Found Eigen3 version in range 3.4.0...<6: 5.0.1
+CMake Warning at /opt/homebrew/lib/cmake/Arrow/Findlz4Alt.cmake:29 (find_package):
+  By not providing "Findlz4.cmake" in CMAKE_MODULE_PATH this project has
+  asked CMake to find a package configuration file provided by "lz4", but
+  CMake did not find one.
+
+  Could not find a package configuration file provided by "lz4" with any of
+  the following names:
+
+    lz4.cps
+    lz4Config.cmake
+    lz4-config.cmake
+
+  Add the installation prefix of "lz4" to CMAKE_PREFIX_PATH or set "lz4_DIR"
+  to a directory containing one of the above files.  If "lz4" provides a
+  separate development package or SDK, be sure it has been installed.
+Call Stack (most recent call first):
+  /opt/homebrew/share/cmake/Modules/CMakeFindDependencyMacro.cmake:93 (find_package)
+  /opt/homebrew/share/cmake/Modules/CMakeFindDependencyMacro.cmake:125 (__find_dependency_common)
+  /opt/homebrew/lib/cmake/Arrow/ArrowConfig.cmake:108 (find_dependency)
+  /opt/homebrew/lib/cmake/Arrow/ArrowConfig.cmake:132 (arrow_find_dependencies)
+  cmake/cmake_findExternalLibs.cmake:273 (find_package)
+  CMakeLists.txt:709 (include)
+
+
+-- Arrow version: 26.0.0
+-- Found the Arrow shared library: /opt/homebrew/lib/libarrow.2600.0.0.dylib
+-- Found the Arrow import library: ARROW_IMPORT_LIB-NOTFOUND
+-- Found the Arrow static library: /opt/homebrew/lib/libarrow.a
+CMake Warning at /opt/homebrew/lib/cmake/Parquet/FindThriftAlt.cmake:42 (find_package):
+  By not providing "FindThrift.cmake" in CMAKE_MODULE_PATH this project has
+  asked CMake to find a package configuration file provided by "Thrift", but
+  CMake did not find one.
+
+  Could not find a package configuration file provided by "Thrift" with any
+  of the following names:
+
+    Thrift.cps
+    thrift.cps
+    ThriftConfig.cmake
+    thrift-config.cmake
+
+  Add the installation prefix of "Thrift" to CMAKE_PREFIX_PATH or set
+  "Thrift_DIR" to a directory containing one of the above files.  If "Thrift"
+  provides a separate development package or SDK, be sure it has been
+  installed.
+Call Stack (most recent call first):
+  /opt/homebrew/share/cmake/Modules/CMakeFindDependencyMacro.cmake:93 (find_package)
+  /opt/homebrew/share/cmake/Modules/CMakeFindDependencyMacro.cmake:125 (__find_dependency_common)
+  /opt/homebrew/lib/cmake/Arrow/ArrowConfig.cmake:108 (find_dependency)
+  /opt/homebrew/lib/cmake/Parquet/ParquetConfig.cmake:62 (arrow_find_dependencies)
+  cmake/cmake_findExternalLibs.cmake:277 (find_package)
+  CMakeLists.txt:709 (include)
+
+
+-- Parquet version: 26.0.0
+-- Found the Parquet shared library: /opt/homebrew/lib/libparquet.2600.0.0.dylib
+-- Found the Parquet import library: PARQUET_IMPORT_LIB-NOTFOUND
+-- Found the Parquet static library: /opt/homebrew/lib/libparquet.a
+-- Using Arrow Compute library from find_library: /opt/homebrew/lib/libarrow_compute.dylib
+-- Using Arrow target: Arrow::arrow_static
+-- Using Arrow Compute target: /opt/homebrew/lib/libarrow_compute.dylib
+-- Using Parquet target: Parquet::parquet_static
+-- Using Arrow Dataset target: ArrowDataset::arrow_dataset_static
+-- Arrow is linked statically: added LibXml2 to its link interface
+-- Adding library OpenSwathAlgo
+-- Adding library OpenSwathAlgo - SUCCESS
+-- Option USE_EXTERNAL_JSON: OFF
+-- Using the multi-header code from /Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/extern/nlohmann_json/include/
+-- Option USE_EXTERNAL_SQLITECPP: OFF
+-- Using Stack Protection hardening
+-- CMAKE_CXX_COMPILER '/usr/bin/c++' 'AppleClang' '21.0.0.21000334'
+-- CMAKE_CXX_FLAGS                ' -Wall -Wextra -Wpedantic -Wswitch-enum -Wshadow -Wno-long-long'
+-- CMAKE_CXX_FLAGS_RELEASE        '-O3 -DNDEBUG'
+-- Compile sqlite3 from source in subdirectory
+-- SQLITECPP_RUN_CPPLINT OFF
+-- SQLITECPP_RUN_CPPCHECK OFF
+-- SQLITECPP_RUN_DOXYGEN OFF
+-- SQLITECPP_BUILD_EXAMPLES OFF
+-- SQLITECPP_BUILD_TESTS OFF
+-- Option USE_EXTERNAL_SIMDE: OFF
+-- Option USE_EXTERNAL_ISOSPEC: OFF
+-- Option USE_EXTERNAL_EOLBSPLINE: OFF
+-- Info: CF_OPENMS_DATA_PATH: /Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/share/OpenMS
+-- Info: CF_OPENMS_DOC_PATH: /Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/doc
+-- Adding library OpenMS
+-- Adding library OpenMS - SUCCESS
+-- Adding library OpenMS_CLI
+-- Adding library OpenMS_CLI - SUCCESS
+-- TOPP tool registry: 153 tools -> /Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/share/OpenMS/TOOLS/OpenMS.tsv
+-- Percolator_subprocess_parity_test: subprocess sections skipped (percolator binary not on PATH nor in THIRDPARTY)
+-- PercolatorAdapter_parity_test: subprocess sections skipped (percolator binary not on PATH nor in THIRDPARTY)
+-- Documentation is not built (-D ENABLE_DOCS=Off).
+-- THIRD-PARTY-NOTICES.txt: 13 license, copyright and notice files
+-- 
+-- -----------------------------------------------------------------
+-- 
+-- You have successfully configured OpenMS.
+-- 
+-- For a full list of make targets execute:
+-- 'make targets'
+-- 
+-- -----------------------------------------------------------------
+-- 
+-- Configuring done (4.4s)
+-- Generating done (1.4s)
+-- Build files have been written to: /Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build

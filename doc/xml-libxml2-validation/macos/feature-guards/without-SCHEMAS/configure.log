@@ -1,0 +1,23 @@
+-- The CXX compiler identification is AppleClang 21.0.0.21000334
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Looking for LIBXML_SAX1_ENABLED
+-- Looking for LIBXML_SAX1_ENABLED - found
+-- Looking for LIBXML_PUSH_ENABLED
+-- Looking for LIBXML_PUSH_ENABLED - found
+-- Looking for LIBXML_SCHEMAS_ENABLED
+-- Looking for LIBXML_SCHEMAS_ENABLED - not found
+-- Looking for LIBXML_THREAD_ENABLED
+-- Looking for LIBXML_THREAD_ENABLED - found
+-- Looking for LIBXML_ICONV_ENABLED
+-- Looking for LIBXML_ICONV_ENABLED - found
+-- Looking for LIBXML_ICU_ENABLED
+-- Looking for LIBXML_ICU_ENABLED - found
+CMake Error at CMakeLists.txt:18 (message):
+  OpenMS requires libxml2 built with SCHEMAS support
+
+
+-- Configuring incomplete, errors occurred!

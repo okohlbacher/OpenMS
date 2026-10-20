@@ -1,0 +1,33 @@
+• # Adversarial Follow-up Review — 11-File Correction Diff
+
+  ## Resolution verification (all confirmed against supplied source)
+
+  | Original finding | Resolution verified |
+  |---|---|
+  | M1 libxml2 features | `cmake_findExternalLibs.cmake:24-43` — SAX1/PUSH/SCHEMAS/THREAD hard-fail, ICONV/ICU warning; macro names match `xmlversion.h`; cache unset forces recheck. Correct. |
+  | M2 Windows python3 | `action.yml:246-249` — task-scoped `python` on Windows, `python3` elsewhere. Correct. |
+  | L1 comment/PI DOM accumulation | `XMLFile.cpp:227-230` — both callbacks nulled after `xmlSAXVersion`, both SAX1/SAX2 paths; 20k-node probe test added (`XMLParserBackend_test.cpp:129-152`). Correct. |
+  | L2 XMLAttributes storage | Pointer view + both rvalue ctors deleted (`XMLAttributes.h:29-32`), all derefs updated, copy/assign semantics pinned by static_asserts and aliasing test. Correct. |
+  | L3 guard coverage | Walk-based scan with pre-descent pruning, nested CMake/find_dependency regex, Docker/CI/pyproject recipes, non-UTF8 tolerance; 6 new guard tests cover each path. Correct. |
+  | L4 DOM 10MB cap | `MzIdentMLDOMHandler.cpp:307-309` — HUGE with explicit `xmlCtxtSetMaxAmplification(5)` set *before* `xmlCtxtReadFile` (amplification field is not reset by option parsing); 10,000,001-char text+attribute probe and amp-chain probe both present. Correct. |
+  | L5 diagnostics | Context-local `xmlCtxtSetErrorHandler` (2.13 API, consistent with `find_package(LibXml2 2.13 REQUIRED)`), filename + line/column in both SAX and DOM paths; positive tests assert content. Correct. |
+  | L6 strict SAX2 coverage | Warning-only namespace test asserts parse continuation and routed warning text (`XMLParserBackend_test.cpp:153-177`). Correct. |
+
+  ## New findings
+
+  **None.** Line-by-line re-review of the full diff and supplied context found no new concrete defects: no error-code downgrades, regexes verified against each guard test case (including `CMAKE_DISABLE_FIND_PACKAGE_XercesC` non-match, `libxerces-c3.2` version-suffix match, `#`-comment stripping order after the product-source check), pruning predicate semantics match the visited-set test, and the `XMLAttributes` deleted-overload set is complete (braced-init temporaries now fail at compile time rather than dangling).
+
+  ## Residual pre-existing limitations (not introduced by this diff)
+
+  - **Low — `tools/ci/check_no_xerces.py:34-36`** — package-recipe coverage is limited to the enumerated channels (Dockerfile*, `.github` YAML, `tools/ci/*.sh`, `src/pyOpenMS/pyproject.toml`). A reintroduction via another channel (e.g., a conda recipe, a non-`.sh` CI script) is not detected. Trigger: add `xerces-c` to an unlisted recipe. Impact: guard silent. Minimal fix: extend `is_package_recipe` or add a denylist-glob test; not a regression — base scanned nothing outside two CMake files.
+  - **Low — `tools/ci/check_no_xerces.py:25`** — `xml-parser-benchmark` is deliberately pruned; that optional tree may retain Xerces references. Documented scope decision; the linked-library check still catches it if it propagates into `libOpenMS`.
+  - **Informational — `cmake_findExternalLibs.cmake:38-41`** — the feature probe fails closed: a probe failure from include-path misconfiguration reports "requires libxml2 built with X" rather than "probe failed". Diagnostic-only, configure-time, no runtime impact.
+
+  ## Verification limits (not findings, per instructions)
+
+  - Windows runner path unverified: `python` selection, `dumpbin` availability to the Git Bash "Verify Xerces removal" step (the guard intentionally fails if the inspector is missing — `test_dependency_inspector_failure_is_reported`), and vcpkg Windows libxml2 feature macros. First Windows CI run is the test; `egor-tensin/vs-shell` persists MSVC env to later steps, so dumpbin is expected on PATH, but this is unproven.
+  - Linux/macOS candidate builds were underway at packet time; the only prior failure (file-URL-with-spaces) is unchanged-test, control-confirmed pre-existing.
+  - No Docker/CI execution performed here; guard logic verified statically against its own test suite only.
+
+  **Recommendation:** diff is sound; proceed to the pending Windows/Linux test gate before push.
+

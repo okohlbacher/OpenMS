@@ -1,0 +1,29 @@
+{
+  "binary_sha256": "0ed004e196076eda161763229aec3a1e6e96df63cd42184fcdf8f702b27565ac",
+  "results": [
+    {
+      "case": "huge-array",
+      "returncode": 0,
+      "stderr": "",
+      "valid": true,
+      "file": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/huge-array.mzML",
+      "schema": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/share/OpenMS/SCHEMAS/mzML_idx_1_10.xsd"
+    },
+    {
+      "case": "anyuri-windows",
+      "returncode": 1,
+      "stderr": "Validation error in file '/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/tools/xml-poc/fixtures/anyuri-windows.xml' line 2 column 0: Element 'sourceFile', attribute 'location': 'file://F:\\Users\\example\\Dropbox (UCSD SBRG)\\data' is not a valid value of the atomic type 'xs:anyURI'.\n\n",
+      "valid": false,
+      "file": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/tools/xml-poc/fixtures/anyuri-windows.xml",
+      "schema": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/tools/xml-poc/fixtures/anyuri.xsd"
+    },
+    {
+      "case": "anyuri-normalized",
+      "returncode": 0,
+      "stderr": "",
+      "valid": true,
+      "file": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/tools/xml-poc/fixtures/anyuri-normalized.xml",
+      "schema": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/tools/xml-poc/fixtures/anyuri.xsd"
+    }
+  ]
+}

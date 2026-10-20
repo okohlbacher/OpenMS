@@ -1,0 +1,7 @@
+{
+  "base": "0f77eb46b46ec48f8430535c107d7151f35691bd",
+  "candidate": "cbb180af857f1c89956db8ac5128e4182d9b9ea8",
+  "input_bytes": 11546,
+  "input_sha256": "c160dfe44e26278af5443be5d2555e6ad91434b9b333d853562f91581f747c39",
+  "scope": "complete two-file delta, writer and software reader context"
+}

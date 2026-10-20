@@ -1,0 +1,84 @@
+-- Building OpenMS 3.7.0
+--   - Repository revision 8f66b3d
+--   - Repository branch HEAD
+--   - Repository last change date 2026-10-20 08:24:02 +0200
+--   [CMake is tracking Git commits and branching ('-D GIT_TRACKING=On')]
+-- Dependency provider: system packages and CMAKE_PREFIX_PATH (the CMake presets, see 'cmake --list-presets', build the dependency set CI tests with vcpkg)
+-- OpenMP support requested: ON
+-- Architecture: 64 bit
+-- Processor is : x86_64
+-- Position-independent code (-fPIC) is supported and will be applied to targets
+-- Compiler checks for conversion: OFF
+-- Package type is 'none'
+-- Looking for LIBXML_SAX1_ENABLED
+-- Looking for LIBXML_SAX1_ENABLED - found
+-- Looking for LIBXML_PUSH_ENABLED
+-- Looking for LIBXML_PUSH_ENABLED - found
+-- Looking for LIBXML_SCHEMAS_ENABLED
+-- Looking for LIBXML_SCHEMAS_ENABLED - found
+-- Looking for LIBXML_THREAD_ENABLED
+-- Looking for LIBXML_THREAD_ENABLED - found
+-- Looking for LIBXML_ICONV_ENABLED
+-- Looking for LIBXML_ICONV_ENABLED - found
+-- Looking for LIBXML_ICU_ENABLED
+-- Looking for LIBXML_ICU_ENABLED - not found
+-- Found Boost version 1.87.0
+-- LP solver: COIN-OR
+-- Using zstd target: zstd::libzstd
+-- Found Eigen3 version in range 3.4.0...<6: 5.0.1
+-- Arrow version: 23.0.0
+-- Found the Arrow shared library: 
+-- Found the Arrow import library: 
+-- Found the Arrow static library: /scratch/kohlbach/contrib/build/lib/libarrow.a
+-- Parquet version: 23.0.0
+-- Found the Parquet shared library: 
+-- Found the Parquet import library: 
+-- Found the Parquet static library: /scratch/kohlbach/contrib/build/lib/libparquet.a
+-- Using Arrow Compute from Arrow target: Arrow::arrow_static (no separate compute target/library found)
+-- Using Arrow target: Arrow::arrow_static
+-- Using Arrow Compute target: Arrow::arrow_static
+-- Using Parquet target: Parquet::parquet_static
+-- Arrow is linked statically: added LibXml2 to its link interface
+-- Could NOT find Doxygen (missing: DOXYGEN_EXECUTABLE) 
+-- Adding library OpenSwathAlgo
+-- Adding library OpenSwathAlgo - SUCCESS
+-- Option USE_EXTERNAL_JSON: OFF
+-- Using the multi-header code from /scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/extern/nlohmann_json/include/
+-- Option USE_EXTERNAL_SQLITECPP: OFF
+-- Using Stack Protection hardening
+-- CMAKE_CXX_COMPILER '/usr/bin/c++' 'GNU' '13.3.0'
+-- CMAKE_CXX_FLAGS                '-I/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/dependencies/install/include -I/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/dependencies/install/include/libxml2 -Wall -Wextra -Wpedantic -Wswitch-enum -Wshadow -Wno-long-long'
+-- CMAKE_CXX_FLAGS_RELEASE        '-O3 -DNDEBUG'
+-- Compile sqlite3 from source in subdirectory
+-- SQLITECPP_RUN_CPPLINT OFF
+-- SQLITECPP_RUN_CPPCHECK OFF
+-- SQLITECPP_RUN_DOXYGEN OFF
+-- SQLITECPP_BUILD_EXAMPLES OFF
+-- SQLITECPP_BUILD_TESTS OFF
+-- Option USE_EXTERNAL_SIMDE: OFF
+-- Option USE_EXTERNAL_ISOSPEC: OFF
+-- Option USE_EXTERNAL_EOLBSPLINE: OFF
+-- Info: CF_OPENMS_DATA_PATH: /scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/share/OpenMS
+-- Info: CF_OPENMS_DOC_PATH: /scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/doc
+-- Adding library OpenMS
+-- Adding library OpenMS - SUCCESS
+-- Adding library OpenMS_CLI
+-- Adding library OpenMS_CLI - SUCCESS
+-- TOPP tool registry: 153 tools -> /scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/build/share/OpenMS/TOOLS/OpenMS.tsv
+-- Percolator_subprocess_parity_test: subprocess sections skipped (percolator binary not on PATH nor in THIRDPARTY)
+-- PercolatorAdapter_parity_test: subprocess sections skipped (percolator binary not on PATH nor in THIRDPARTY)
+-- Documentation is not built (-D ENABLE_DOCS=Off).
+-- THIRD-PARTY-NOTICES.txt: 13 license, copyright and notice files
+-- 
+-- -----------------------------------------------------------------
+-- 
+-- You have successfully configured OpenMS.
+-- 
+-- For a full list of make targets execute:
+-- 'make targets'
+-- 
+-- -----------------------------------------------------------------
+-- 
+-- Configuring done (1.1s)
+-- Generating done (1.9s)
+-- Build files have been written to: /scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/build

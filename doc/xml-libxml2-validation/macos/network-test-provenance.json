@@ -1,0 +1,6 @@
+{
+  "file": "src/tests/class_tests/openms/source/Network_test.cpp",
+  "unchanged_from_tested_prototype": true,
+  "source_sha256": "418b5cebd3bc08555f46ef7f68dd8b29c0adba31870437559717f52564ee7700",
+  "failure": "Unescaped file:// URL contains spaces in workspace path; libcurl rejects URL before XML code is involved."
+}

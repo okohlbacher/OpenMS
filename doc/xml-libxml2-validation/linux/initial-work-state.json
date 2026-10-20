@@ -1,0 +1,15 @@
+{
+  "node": "ibminode05",
+  "root": "/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb",
+  "phase": "Dependencies and hardware prepared; awaiting frozen OpenMS candidate",
+  "libxml2": "2.15.4",
+  "libxml2_legacy": false,
+  "libxml2_zlib": true,
+  "zstd": "1.5.7",
+  "private_xerces_paths": false,
+  "openms_source_copied": false,
+  "openms_build_started": false,
+  "old_job_root_absent": true,
+  "shared_contrib": "/scratch/kohlbach/contrib/build",
+  "cleanup": "Only new dedicated root, after all tests and copied local results verified"
+}

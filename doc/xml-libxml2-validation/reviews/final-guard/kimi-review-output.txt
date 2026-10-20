@@ -1,0 +1,29 @@
+• # Final Review: Four-File Guard/Test Correction
+
+  ## Verdict: No introduced defects found.
+
+  Each fix was checked against its stated target and the supplied implementation/test evidence.
+
+  ### 1. `tools/ci/check_no_xerces.py` — pruning correction (correct)
+  - The pruning predicate is applied top-down before descent, and the three buckets are now disjoint and correct:
+    - `excluded` (`.git`, `CMakeFiles`, `_deps`, `node_modules`, `.venv`): pruned anywhere — none can contain product CI recipes.
+    - `excluded_root` (`build`, `vcpkg`, `vcpkg_installed`): pruned only when `parent == source`. At the walk root, `directory == str(source)`, so `Path(directory) == source` holds; nested same-named directories (e.g. `src/foo/build/`) are now scanned, which is exactly what `test_nested_source_directories_are_not_build_trees` pins.
+    - `excluded_paths` uses `relative_to(source).parts`, so only the exact vendor trees (`src/openms/extern`, `src/openms/thirdparty`, `tools/xml-parser-benchmark`) are pruned, with all descendants cut off at that level.
+  - The previously-skipped real CI surface (`.github/actions/*.yml`) is covered: `is_package_recipe` matches any `.github`-rooted `.yml/.yaml`, and the added `('.github/actions/build/action.yml', 'run: brew install xerces-c')` case proves it is flagged.
+  - Residual pre-existing limitation (not a regression): a genuine nested build tree that lacks `CMakeCache.txt` and is not named per `cmake-build-*` is now scanned rather than pruned. This is the intended trade-off of the narrowing and is codified by the new test; no fix required.
+
+  ### 2. `MzIdentMLFile_test.cpp` — false-positive guards (correct)
+  - `xml_declaration_end` is now checked with `ABORT_IF` before `insert(... + 2)`, removing the silent `npos + 2` corruption path.
+  - The below-budget positive control is arithmetically consistent: `&b;` = 10 × `&a;` = 10 × 1000 = 10000 A's, asserted against `std::string(10000, 'A')`. The DTD is copied into `below_limit` *after* insertion, so a stripped/missing DTD makes the test fail rather than pass. Since `load()` clears `proteins`/`peptides` first, the `ABORT_IF(proteins.size() != 1)` guard is sound.
+  - The amplification rejection check requires both `Exception::ParseError` and the substring `"amplification"` (present in libxml2's "Maximum entity amplification factor exceeded"), so an unrelated parse failure can no longer satisfy the test.
+  - The location assertion `"(line 2, column "` matches the status-path format produced in `XMLFile.cpp` (`" (line " + ... + ", column " + ... + ")"`).
+
+  ### 3. `XMLParserBackend_test.cpp` — positive control + diagnostic format (correct)
+  - The positive decode (`id='&e2;'`) expects 100 × "0123456789" (e2 = 10 × e1 = 100 × e0), matching the built `expanded` string; with no `binaryDataArray` present, `decodeBinaryDataMSSpectrum_` early-returns but `setNativeID` still runs, so the assertion exercises exactly the DTD/entity path it claims to.
+  - The diagnostic assertion `"( in line 2 column "` corresponds to the SAX error-callback → `XMLHandler::fatalError` path (the exception is captured in `LibxmlState` and rethrown), which is the path `parseBuffer_("<root>\n<broken></root>")` actually takes. The two tests intentionally assert two different formats because they exercise two different error paths; both are confirmed by the stated pass evidence.
+
+  ### Notes (deliberately disclosed, accepted)
+  - DOM suppression of nonfatal diagnostics, newline/location-0 formatting, and the functional-comment test with separate retained-node probe are unchanged by this diff and remain accepted as documented.
+
+  **Summary:** 0 introduced defects. All three targeted weaknesses (nested-tree over-pruning hiding real CI recipes, uncorroborated negative amplification tests, loose location-format assertions) are closed with positive controls that fail rather than vacuously pass.
+

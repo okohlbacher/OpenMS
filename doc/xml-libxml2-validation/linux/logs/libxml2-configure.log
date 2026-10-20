@@ -1,0 +1,6 @@
+-- Found ZLIB: /usr/lib/x86_64-linux-gnu/libz.so (found version "1.3")  
+-- Checking for module 'zlib'
+--   Found zlib, version 1.3
+-- Configuring done (0.1s)
+-- Generating done (0.0s)
+-- Build files have been written to: /scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/dependencies/libxml2-build

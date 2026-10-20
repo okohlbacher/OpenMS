@@ -1,0 +1,42 @@
+{
+  "command": [
+    "python3",
+    "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/tools/xml-parser-benchmark/run_benchmarks.py",
+    "--binary",
+    "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-optimized-build/xml_parser_benchmark",
+    "--backend",
+    "xerces=/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/xerces/lib",
+    "--backend",
+    "libxml2-poc=/Users/kohlbach/Claude/OpenMS - XERCES Replacement/snapshots-optimized/libxml2/lib",
+    "--backend",
+    "libxml2-full=/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/lib",
+    "--input",
+    "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+    "--input",
+    "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+    "--workers",
+    "1",
+    "--modes",
+    "stream,indexed-metadata",
+    "--repetitions",
+    "5",
+    "--queries",
+    "2048",
+    "--output",
+    "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/encoding-final185/macos/benchmarks.json"
+  ],
+  "method": "Timo declaration-only experiment; frozen published optimized Xerces/libxml2 PoC snapshots plus full-removal candidate; five randomized repeats per cell; cached input, independent fresh process; default indexed open reported via job open_seconds,2048 query reads reported separately.",
+  "candidate": "8f66b3d921c9512e1e5968f494c77715ff71c696",
+  "cpu": "Apple M4 Max",
+  "started_utc": "2026-10-20T06:25:32Z",
+  "source_comment": "https://github.com/OpenMS/OpenMS/issues/10623#issuecomment-6284417895",
+  "native_parser_flags": "Homebrew parser dependencies unchanged; original macOS parser compile flags were not normalized to OpenMS Release flags.",
+  "libxml2": {
+    "path": "/opt/homebrew/Cellar/libxml2/2.15.4/lib/libxml2.16.dylib",
+    "sha256": "bcd9f0c670d63a4bf4ed72d53ec88913c1795e65b642c1ecaa9c46288c64459a"
+  },
+  "xerces": {
+    "path": "/opt/homebrew/Cellar/xerces-c/3.3.0/lib/libxerces-c-3.3.dylib",
+    "sha256": "f87fe3ff2681cc9d055ec5f896d956d3a1e23d48e2fbbb1a32ef41da8ec41718"
+  }
+}

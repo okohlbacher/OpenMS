@@ -1,0 +1,29 @@
+{
+  "base": "cbb180af857f1c89956db8ac5128e4182d9b9ea8",
+  "candidate": "1858656a86869ba462545a9232b89a0e1e1c319c",
+  "input_bytes": 107161,
+  "input_sha256": "0334ff0799bffd4cb8cdd94d397e5a54764a651aa4abeabd8c9a569395d06c53",
+  "changed_files": [
+    ".github/actions/build/action.yml",
+    "cmake/cmake_findExternalLibs.cmake",
+    "src/openms/include/OpenMS/FORMAT/HANDLERS/XMLAttributes.h",
+    "src/openms/source/FORMAT/HANDLERS/MzIdentMLDOMHandler.cpp",
+    "src/openms/source/FORMAT/HANDLERS/XMLAttributes.cpp",
+    "src/openms/source/FORMAT/XMLFile.cpp",
+    "src/tests/class_tests/openms/source/MzIdentMLFile_test.cpp",
+    "src/tests/class_tests/openms/source/StringManager_test.cpp",
+    "src/tests/class_tests/openms/source/XMLParserBackend_test.cpp",
+    "tools/ci/check_no_xerces.py",
+    "tools/ci/tests/test_check_no_xerces.py"
+  ],
+  "full_context_files": [
+    "src/openms/source/FORMAT/XMLFile.cpp",
+    "src/openms/include/OpenMS/FORMAT/HANDLERS/XMLAttributes.h",
+    "src/openms/source/FORMAT/HANDLERS/XMLAttributes.cpp",
+    "tools/ci/check_no_xerces.py",
+    "tools/ci/tests/test_check_no_xerces.py",
+    ".github/actions/build/action.yml",
+    "src/tests/class_tests/openms/source/XMLParserBackend_test.cpp"
+  ],
+  "scope": "entire eleven-file Opus correction delta plus affected implementation/test/build contexts"
+}

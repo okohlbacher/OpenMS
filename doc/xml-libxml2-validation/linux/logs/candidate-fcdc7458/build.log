@@ -1,0 +1,2120 @@
+[  0%] Built target sqlite3
+[  0%] Built target eol-bspline
+[  0%] Built target OpenMSTestFramework
+[  0%] Built target IsoSpec
+[  0%] Built target OpenSwathAlgo
+[  0%] Built target SQLiteCpp
+[  0%] Built target Datastructures_test
+[  0%] Built target Scoring_test
+[  1%] Built target SwathMap_test
+[  1%] Built target TestConvert
+[  1%] Built target DiaHelpers_test
+[  2%] Built target OpenMS_Percolator
+[  2%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/CONCEPT/VersionInfo.cpp.o
+[  2%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/SYSTEM/SystemSettings.cpp.o
+[  2%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/KERNEL/OnDiscImzMLExperiment.cpp.o
+[  2%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/CHEMISTRY/EnzymeXMLDataProvider.cpp.o
+[  2%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/CHEMISTRY/UnimodXMLDataProvider.cpp.o
+[  2%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/DATAACCESS/MSDataWritingConsumer.cpp.o
+[  2%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/DATAACCESS/SwathFileConsumer.cpp.o
+[  2%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/DATAACCESS/MSChromatogramParquetConsumer.cpp.o
+[  2%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/HANDLERS/CachedMzMLHandler.cpp.o
+[  2%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/HANDLERS/ConsensusXMLHandler.cpp.o
+[  2%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/HANDLERS/FeatureXMLHandler.cpp.o
+[  2%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/HANDLERS/MzMLHandler.cpp.o
+[  2%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/HANDLERS/ImzMLHandler.cpp.o
+[  2%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/HANDLERS/MzMLSqliteHandler.cpp.o
+[  2%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/HANDLERS/XMLHandler.cpp.o
+[  2%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/VALIDATORS/MzMLValidator.cpp.o
+[  2%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/VALIDATORS/MzDataValidator.cpp.o
+[  2%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/VALIDATORS/MzIdentMLValidator.cpp.o
+[  2%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/VALIDATORS/SemanticValidator.cpp.o
+[  3%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/VALIDATORS/TraMLValidator.cpp.o
+[  3%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/CompressedInputSource.cpp.o
+[  3%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/CVMappingFile.cpp.o
+[  3%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/ConsensusXMLFile.cpp.o
+[  3%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/FeatureXMLFile.cpp.o
+[  3%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/FLASHDeconvSpectrumFile.cpp.o
+[  3%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/FileHandler.cpp.o
+[  3%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/FileInfo.cpp.o
+[  3%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/IdXMLFile.cpp.o
+[  3%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/ImzMLFile.cpp.o
+[  3%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/IndexedMzMLFileLoader.cpp.o
+[  3%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/InspectInfile.cpp.o
+[  3%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/MascotXMLFile.cpp.o
+[  4%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/MzDataFile.cpp.o
+[  4%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/MzIdentMLFile.cpp.o
+[  4%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/MzMLFile.cpp.o
+[  4%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/MzXMLFile.cpp.o
+[  4%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/OMSSAXMLFile.cpp.o
+[  4%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/ParamXMLFile.cpp.o
+[  4%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/PTMXMLFile.cpp.o
+[  5%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/PepXMLFile.cpp.o
+[  5%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/PepXMLFileMascot.cpp.o
+[  5%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/ProtXMLFile.cpp.o
+[  5%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/QcMLFile.cpp.o
+[  5%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/SequestInfile.cpp.o
+[  5%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/SqMassFile.cpp.o
+[  5%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/SwathFile.cpp.o
+[  5%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/TraMLFile.cpp.o
+[  5%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/TransformationXMLFile.cpp.o
+[  5%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/UnimodXMLFile.cpp.o
+[  5%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/XMLFile.cpp.o
+[  5%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/XQuestResultXMLFile.cpp.o
+[  5%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/XTandemInfile.cpp.o
+[  5%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/XTandemXMLFile.cpp.o
+[  5%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/MRMFile.cpp.o
+[  5%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/FORMAT/TargetedDataFileLoader.cpp.o
+[  5%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/ANALYSIS/ID/ProSEAlgorithm.cpp.o
+[  5%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/ANALYSIS/TARGETED/DIAChromHandler.cpp.o
+[  5%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/QC/DBSuitability.cpp.o
+/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/XMLFile.cpp: In member function ‘void OpenMS::Internal::XMLFile::parse_(const std::string&, OpenMS::Internal::XMLHandler*, bool)’:
+/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/XMLFile.cpp:274:49: warning: ‘std::filesystem::__cxx11::path std::filesystem::__cxx11::u8path(const _Source&) [with _Source = std::__cxx11::basic_string<char>; _Require = path; _CharT = char]’ is deprecated: use 'path((const char8_t*)&*source)' instead [-Wdeprecated-declarations]
+  274 |       std::ifstream file(std::filesystem::u8path(filename), std::ios::binary);
+      |                          ~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~
+In file included from /usr/include/c++/13/filesystem:49,
+                 from /scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/XMLFile.cpp:34:
+/usr/include/c++/13/bits/fs_path.h:843:5: note: declared here
+  843 |     u8path(const _Source& __source)
+      |     ^~~~~~
+[  5%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/ANALYSIS/OPENSWATH/CalibrationWorkflow.cpp.o
+[  5%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/ANALYSIS/OPENSWATH/ConfidenceScoring.cpp.o
+[  5%] Building CXX object src/openms/CMakeFiles/OpenMS.dir/source/ANALYSIS/OPENSWATH/OpenSwathWorkflow.cpp.o
+[  5%] Linking CXX shared library ../../lib/libOpenMS.so
+[ 30%] Built target OpenMS
+[ 30%] Built target OpenMSTestSupport
+[ 30%] Building CXX object src/openms_cli/CMakeFiles/OpenMS_CLI.dir/source/APPLICATIONS/OpenSwathBase.cpp.o
+[ 30%] Building CXX object src/openms_cli/CMakeFiles/OpenMS_CLI.dir/source/APPLICATIONS/SearchEngineBase.cpp.o
+[ 30%] Building CXX object src/openms_cli/CMakeFiles/OpenMS_CLI.dir/source/APPLICATIONS/TOPPBase.cpp.o
+[ 30%] Linking CXX executable ../bin/ClassTest_test
+[ 31%] Linking CXX executable ../bin/PrecisionWrapper_test
+[ 31%] Linking CXX executable ../bin/Colorizer_test
+[ 31%] Linking CXX executable ../bin/Exception_Base_test
+[ 31%] Linking CXX executable ../bin/ClassTestUtils_test
+[ 31%] Linking CXX executable ../bin/GlobalExceptionHandler_test
+[ 31%] Linking CXX executable ../bin/RAIICleanup_test
+[ 31%] Linking CXX executable ../bin/FuzzyStringComparator_test
+[ 31%] Linking CXX executable ../bin/ProgressLogger_test
+[ 31%] Linking CXX executable ../bin/StreamHandler_test
+[ 31%] Building CXX object src/tests/class_tests/openms/CMakeFiles/VersionInfo_test.dir/source/VersionInfo_test.cpp.o
+[ 32%] Linking CXX executable ../bin/Multithreading_test
+[ 32%] Linking CXX executable ../bin/UniqueIdInterface_test
+[ 32%] Linking CXX executable ../bin/UniqueIdGenerator_test
+[ 32%] Linking CXX executable ../bin/BuildInfo_test
+[ 32%] Linking CXX executable ../bin/UniqueIdIndexer_test
+[ 32%] Linking CXX executable ../bin/File_test
+[ 32%] Linking CXX executable ../bin/ExternalProcess_test
+[ 32%] Linking CXX executable ../bin/LogStream_test
+[ 32%] Linking CXX executable ../bin/Network_test
+[ 32%] Linking CXX executable ../bin/LogConfigHandler_test
+[ 32%] Built target BuildInfo_test
+[ 32%] Built target RAIICleanup_test
+[ 32%] Linking CXX executable ../bin/NetworkGetRequest_test
+[ 32%] Built target Network_test
+[ 32%] Built target File_test
+[ 32%] Built target Multithreading_test
+[ 32%] Built target FuzzyStringComparator_test
+[ 32%] Built target Exception_Base_test
+[ 32%] Built target UniqueIdGenerator_test
+[ 32%] Built target ProgressLogger_test
+[ 32%] Linking CXX executable ../bin/JavaInfo_test
+[ 32%] Built target Colorizer_test
+[ 32%] Built target StreamHandler_test
+[ 32%] Built target ClassTest_test
+[ 32%] Built target PrecisionWrapper_test
+[ 32%] Built target UniqueIdInterface_test
+[ 32%] Built target UniqueIdIndexer_test
+[ 32%] Built target ExternalProcess_test
+[ 32%] Linking CXX executable ../bin/PathUtils_test
+[ 32%] Built target ClassTestUtils_test
+[ 32%] Built target GlobalExceptionHandler_test
+[ 32%] Linking CXX executable ../bin/RWrapper_test
+[ 32%] Built target LogStream_test
+[ 32%] Linking CXX executable ../bin/PythonInfo_test
+[ 32%] Linking CXX executable ../bin/StopWatch_test
+[ 32%] Building CXX object src/tests/class_tests/openms/CMakeFiles/SysInfo_test.dir/source/SysInfo_test.cpp.o
+[ 32%] Linking CXX executable ../bin/SystemSettings_test
+[ 32%] Linking CXX executable ../bin/TempFiles_test
+[ 32%] Linking CXX executable ../bin/UpdateCheck_test
+[ 32%] Built target LogConfigHandler_test
+[ 32%] Linking CXX executable ../bin/ClusteringGrid_test
+[ 32%] Linking CXX executable ../bin/CVMappingRule_test
+[ 32%] Linking CXX executable ../bin/CalibrationData_test
+[ 32%] Linking CXX executable ../bin/CVMappingTerm_test
+[ 32%] Linking CXX executable ../bin/Adduct_test
+[ 33%] Linking CXX executable ../bin/CVMappings_test
+[ 33%] Linking CXX executable ../bin/CVReference_test
+[ 33%] Linking CXX executable ../bin/ChargePair_test
+[ 33%] Linking CXX executable ../bin/Compomer_test
+[ 33%] Linking CXX executable ../bin/ConvexHull2D_test
+[ 33%] Built target NetworkGetRequest_test
+[ 33%] Linking CXX executable ../bin/DBoundingBox_test
+[ 34%] Built target JavaInfo_test
+[ 34%] Built target RWrapper_test
+[ 34%] Built target PathUtils_test
+[ 34%] Built target StopWatch_test
+[ 34%] Linking CXX executable ../bin/DIntervalBase_test
+[ 34%] Built target PythonInfo_test
+[ 35%] Built target Adduct_test
+[ 35%] Linking CXX executable ../bin/DPosition_test
+[ 35%] Built target UpdateCheck_test
+[ 35%] Linking CXX executable ../bin/DRange_test
+[ 35%] Linking CXX executable ../bin/DataValue_test
+[ 35%] Built target TempFiles_test
+[ 35%] Built target CVMappingTerm_test
+[ 35%] Built target ChargePair_test
+[ 35%] Built target SystemSettings_test
+[ 35%] Built target CalibrationData_test
+[ 35%] Built target ClusteringGrid_test
+[ 35%] Linking CXX executable ../bin/Date_test
+[ 35%] Built target CVMappings_test
+[ 35%] Built target ConvexHull2D_test
+[ 35%] Linking CXX executable ../bin/DateTime_test
+[ 35%] Built target CVMappingRule_test
+[ 35%] Built target CVReference_test
+[ 35%] Linking CXX executable ../bin/DefaultParamHandler_test
+[ 35%] Built target Compomer_test
+[ 35%] Linking CXX executable ../bin/DistanceMatrix_test
+[ 35%] Linking CXX executable ../bin/GridBasedCluster_test
+[ 35%] Linking CXX executable ../bin/FlagSet_test
+[ 35%] Linking CXX executable ../bin/FASTAContainer_test
+[ 35%] Linking CXX executable ../bin/GridBasedClustering_test
+[ 35%] Linking CXX executable ../bin/GridFeature_test
+[ 35%] Linking CXX executable ../bin/ListUtilsIO_test
+[ 35%] Linking CXX executable ../bin/ListUtils_test
+[ 35%] Linking CXX executable ../bin/HashGrid_test
+[ 35%] Linking CXX executable ../bin/LPWrapper_test
+[ 35%] Linking CXX executable ../bin/MassExplainer_test
+[ 35%] Built target DBoundingBox_test
+[ 35%] Linking CXX executable ../bin/MatchedIterator_test
+[ 35%] Built target DIntervalBase_test
+[ 35%] Built target DPosition_test
+[ 35%] Built target DataValue_test
+[ 35%] Linking CXX executable ../bin/Matrix_test
+[ 35%] Built target Date_test
+[ 35%] Built target DateTime_test
+[ 35%] Built target DRange_test
+[ 35%] Linking CXX executable ../bin/MatrixEigen_test
+[ 35%] Built target FlagSet_test
+[ 35%] Linking CXX executable ../bin/OPXLDataStructs_test
+[ 35%] Linking CXX executable ../bin/Param_test
+[ 35%] Built target DefaultParamHandler_test
+[ 35%] Built target LPWrapper_test
+[ 35%] Built target GridBasedCluster_test
+[ 35%] Linking CXX executable ../bin/OSWData_test
+[ 35%] Linking CXX executable ../bin/ParamValue_test
+[ 35%] Built target DistanceMatrix_test
+[ 35%] Built target GridFeature_test
+[ 35%] Built target ListUtilsIO_test
+[ 35%] Built target FASTAContainer_test
+[ 35%] Built target ListUtils_test
+[ 35%] Built target GridBasedClustering_test
+[ 35%] Linking CXX executable ../bin/QTCluster_test
+[ 35%] Built target MassExplainer_test
+[ 35%] Built target HashGrid_test
+[ 35%] Linking CXX executable ../bin/RangeManager_test
+[ 35%] Linking CXX executable ../bin/StringListUtils_test
+[ 35%] Linking CXX executable ../bin/StringUtils_test
+[ 35%] Linking CXX executable ../bin/StringManager_test
+[ 35%] Linking CXX executable ../bin/String_test
+[ 35%] Linking CXX executable ../bin/AreaIterator_test
+[ 36%] Linking CXX executable ../bin/BaseFeature_test
+[ 36%] Linking CXX executable ../bin/ChromatogramPeak_test
+[ 36%] Linking CXX executable ../bin/ChromatogramTools_test
+[ 36%] Linking CXX executable ../bin/ConsensusFeature_test
+[ 36%] Linking CXX executable ../bin/ConsensusMap_test
+[ 36%] Built target MatchedIterator_test
+[ 36%] Linking CXX executable ../bin/ConversionHelper_test
+[ 36%] Built target Matrix_test
+[ 36%] Built target MatrixEigen_test
+[ 36%] Built target OPXLDataStructs_test
+[ 36%] Built target OSWData_test
+[ 36%] Linking CXX executable ../bin/ConstRefVector_test
+[ 36%] Linking CXX executable ../bin/DimMapper_test
+[ 36%] Built target ParamValue_test
+[ 36%] Built target QTCluster_test
+[ 36%] Built target StringManager_test
+[ 36%] Linking CXX executable ../bin/DPeak_test
+[ 36%] Built target Param_test
+[ 36%] Built target AreaIterator_test
+[ 36%] Linking CXX executable ../bin/FeatureMap_test
+[ 36%] Built target StringUtils_test
+[ 37%] Built target String_test
+[ 37%] Linking CXX executable ../bin/FeatureUniqueIds_test
+[ 37%] Built target StringListUtils_test
+[ 37%] Built target RangeManager_test
+[ 37%] Linking CXX executable ../bin/Feature_test
+[ 37%] Linking CXX executable ../bin/MassTrace_test
+[ 37%] Built target ChromatogramPeak_test
+[ 37%] Built target BaseFeature_test
+[ 37%] Linking CXX executable ../bin/Mobilogram_test
+[ 37%] Built target ChromatogramTools_test
+[ 37%] Linking CXX executable ../bin/MobilityPeak1D_test
+[ 37%] Built target ConsensusFeature_test
+[ 37%] Linking CXX executable ../bin/MobilityPeak2D_test
+[ 37%] Linking CXX executable ../bin/MRMFeature_test
+[ 37%] Linking CXX executable ../bin/MSChromatogram_test
+[ 37%] Linking CXX executable ../bin/MRMTransitionGroup_test
+[ 37%] Built target ConsensusMap_test
+[ 37%] Linking CXX executable ../bin/MSExperiment_rasterizeRTMZ_test
+[ 37%] Linking CXX executable ../bin/MSExperiment_test
+[ 37%] Linking CXX executable ../bin/OnDiscMSExperiment_test
+[ 37%] Linking CXX executable ../bin/MSSpectrum_test
+[ 37%] Linking CXX executable ../bin/MSSpectrum_rasterizeIMFrame_test
+[ 37%] Built target ConversionHelper_test
+[ 37%] Linking CXX executable ../bin/VersionInfo_test
+[ 37%] Linking CXX executable ../bin/Peak1D_test
+[ 37%] Built target ConstRefVector_test
+[ 37%] Built target DimMapper_test
+[ 37%] Built target DPeak_test
+[ 37%] Linking CXX executable ../bin/Peak2D_test
+[ 37%] Built target FeatureUniqueIds_test
+[ 37%] Linking CXX executable ../bin/PeakIndex_test
+[ 37%] Built target FeatureMap_test
+[ 37%] Linking CXX executable ../bin/RangeUtils_test
+[ 37%] Built target MobilityPeak2D_test
+[ 37%] Built target Feature_test
+[ 37%] Built target MRMFeature_test
+[ 37%] Built target MassTrace_test
+[ 37%] Linking CXX executable ../bin/RichPeak2D_test
+[ 37%] Built target MobilityPeak1D_test
+[ 37%] Linking CXX executable ../bin/StandardTypes_test
+[ 37%] Built target Mobilogram_test
+[ 37%] Built target MSExperiment_rasterizeRTMZ_test
+[ 37%] Linking CXX executable ../bin/SpectrumHelper_test
+[ 37%] Built target MRMTransitionGroup_test
+[ 37%] Linking CXX executable ../bin/SpectrumRangeManager_test
+[ 37%] Linking CXX executable ../bin/AcquisitionInfo_test
+[ 37%] Linking CXX executable ../bin/Acquisition_test
+[ 37%] Built target OnDiscMSExperiment_test
+[ 37%] Linking CXX executable ../bin/AnnotatedMSRun_test
+[ 37%] Built target MSSpectrum_rasterizeIMFrame_test
+[ 37%] Linking CXX executable ../bin/CVTermList_test
+[ 37%] Built target MSChromatogram_test
+[ 37%] Built target Peak1D_test
+[ 37%] Linking CXX executable ../bin/CVTermListInterface_test
+[ 37%] Linking CXX executable ../bin/CVTerm_test
+[ 38%] Built target MSExperiment_test
+[ 38%] Built target VersionInfo_test
+[ 38%] Built target MSSpectrum_test
+[ 38%] Linking CXX executable ../bin/ChromatogramSettings_test
+[ 38%] Linking CXX executable ../bin/ContactPerson_test
+[ 38%] Linking CXX executable ../bin/DataProcessing_test
+[ 38%] Linking CXX executable ../bin/DataArrays_test
+[ 39%] Linking CXX executable ../bin/DocumentIdentifier_test
+[ 39%] Linking CXX executable ../bin/ExperimentalSettings_test
+[ 39%] Building CXX object src/tests/class_tests/openms/CMakeFiles/ExperimentalDesign_test.dir/source/ExperimentalDesign_test.cpp.o
+[ 39%] Built target Peak2D_test
+[ 39%] Built target PeakIndex_test
+[ 39%] Linking CXX executable ../bin/Gradient_test
+[ 39%] Built target RangeUtils_test
+[ 39%] Built target StandardTypes_test
+[ 39%] Built target RichPeak2D_test
+[ 39%] Built target AcquisitionInfo_test
+[ 39%] Linking CXX executable ../bin/HPLC_test
+[ 39%] Built target Acquisition_test
+[ 39%] Linking CXX executable ../bin/IDDataContainer_test
+[ 39%] Linking CXX executable ../bin/IdentificationData_test
+[ 39%] Built target SpectrumRangeManager_test
+[ 39%] Built target CVTerm_test
+[ 39%] Building CXX object src/tests/class_tests/openms/CMakeFiles/IdentificationDataConverter_test.dir/source/IdentificationDataConverter_test.cpp.o
+[ 39%] Linking CXX executable ../bin/IdentifiedMolecule_test
+[ 39%] Built target SpectrumHelper_test
+[ 39%] Linking CXX executable ../bin/InstrumentSettings_test
+[ 39%] Built target DataProcessing_test
+[ 39%] Built target CVTermListInterface_test
+[ 39%] Built target CVTermList_test
+[ 39%] Linking CXX executable ../bin/IonDetector_test
+[ 39%] Linking CXX executable ../bin/Instrument_test
+[ 39%] Built target AnnotatedMSRun_test
+[ 39%] Linking CXX executable ../bin/IonSource_test
+[ 39%] Linking CXX executable ../bin/MassAnalyzer_test
+[ 39%] Built target ContactPerson_test
+[ 39%] Built target DataArrays_test
+[ 39%] Linking CXX executable ../bin/MetaInfoDescription_test
+[ 39%] Linking CXX executable ../bin/MetaInfoInterface_test
+[ 39%] Built target DocumentIdentifier_test
+[ 39%] Linking CXX executable ../bin/MS1LabelState_test
+[ 40%] Built target ChromatogramSettings_test
+[ 40%] Built target ExperimentalSettings_test
+[ 40%] Linking CXX executable ../bin/MetaInfoInterfaceUtils_test
+[ 40%] Linking CXX executable ../bin/MetaInfoRegistry_test
+[ 40%] Linking CXX executable ../bin/MetaInfo_test
+[ 40%] Linking CXX executable ../bin/SpectrumNativeIDParser_test
+[ 40%] Linking CXX executable ../bin/PeptideEvidence_test
+[ 40%] Built target Gradient_test
+[ 40%] Linking CXX executable ../bin/PeptideHit_test
+[ 40%] Built target HPLC_test
+[ 40%] Built target MassAnalyzer_test
+[ 40%] Built target InstrumentSettings_test
+[ 40%] Built target IDDataContainer_test
+[ 40%] Built target MetaInfoRegistry_test
+[ 40%] Building CXX object src/tests/class_tests/openms/CMakeFiles/PeptideIdentification_test.dir/source/PeptideIdentification_test.cpp.o
+[ 40%] Built target IdentifiedMolecule_test
+[ 40%] Linking CXX executable ../bin/PeptideIdentificationList_test
+[ 40%] Linking CXX executable ../bin/Precursor_test
+[ 40%] Built target MetaInfoInterface_test
+[ 40%] Built target IdentificationData_test
+[ 40%] Built target IonDetector_test
+[ 40%] Built target Instrument_test
+[ 40%] Linking CXX executable ../bin/Product_test
+[ 40%] Built target MetaInfoDescription_test
+[ 40%] Linking CXX executable ../bin/ProteinHit_test
+[ 40%] Built target IonSource_test
+[ 40%] Building CXX object src/tests/class_tests/openms/CMakeFiles/ProteinIdentification_test.dir/source/ProteinIdentification_test.cpp.o
+[ 40%] Linking CXX executable ../bin/ProteinModificationSummary_test
+[ 40%] Linking CXX executable ../bin/ProteinRunReferences_test
+[ 40%] Linking CXX executable ../bin/IdentifierMSRunMapper_test
+[ 40%] Linking CXX executable ../bin/Sample_test
+[ 40%] Built target MetaInfoInterfaceUtils_test
+[ 40%] Built target MetaInfo_test
+[ 40%] Built target MS1LabelState_test
+[ 40%] Linking CXX executable ../bin/ScanWindow_test
+[ 40%] Linking CXX executable ../bin/Software_test
+[ 40%] Built target SpectrumNativeIDParser_test
+[ 40%] Built target PeptideEvidence_test
+[ 40%] Linking CXX executable ../bin/SpectrumLookup_test
+[ 40%] Linking CXX executable ../bin/SourceFile_test
+[ 40%] Linking CXX executable ../bin/SpectrumMetaDataLookup_test
+[ 40%] Linking CXX executable ../bin/SpectrumSettings_test
+[ 40%] Linking CXX executable ../bin/USI_test
+[ 40%] Built target PeptideHit_test
+[ 40%] Linking CXX executable ../bin/SysInfo_test
+[ 40%] Linking CXX executable ../bin/AbsoluteQuantitationStandardsFile_test
+[ 40%] Built target PeptideIdentificationList_test
+[ 40%] Built target ProteinHit_test
+[ 40%] Built target Product_test
+[ 40%] Built target ProteinModificationSummary_test
+[ 40%] Linking CXX executable ../bin/Base64_test
+[ 40%] Built target Precursor_test
+[ 40%] Linking CXX executable ../bin/BedRModFile_test
+[ 40%] Built target ProteinRunReferences_test
+[ 40%] Built target Sample_test
+[ 40%] Built target ScanWindow_test
+[ 40%] Built target IdentifierMSRunMapper_test
+[ 40%] Built target SpectrumMetaDataLookup_test
+[ 40%] Linking CXX executable ../bin/BrukerTimsImagingFile_test
+[ 40%] Linking CXX executable ../bin/BrukerTimsFile_test
+[ 40%] Linking CXX executable ../bin/PASEFHillCentroider_test
+[ 40%] Built target SpectrumLookup_test
+[ 40%] Built target Software_test
+[ 40%] Built target SourceFile_test
+[ 40%] Linking CXX executable ../bin/MSNumpressCoder_test
+[ 40%] Linking CXX executable ../bin/Bzip2Ifstream_test
+[ 40%] Building CXX object src/tests/class_tests/openms/CMakeFiles/CVMappingFile_test.dir/source/CVMappingFile_test.cpp.o
+[ 40%] Building CXX object src/tests/class_tests/openms/CMakeFiles/ChromeleonFile_test.dir/source/ChromeleonFile_test.cpp.o
+[ 40%] Linking CXX executable ../bin/Bzip2InputStream_test
+[ 40%] Building CXX object src/tests/class_tests/openms/CMakeFiles/CompressedInputSource_test.dir/source/CompressedInputSource_test.cpp.o
+[ 40%] Built target USI_test
+[ 40%] Linking CXX executable ../bin/ControlledVocabulary_test
+[ 40%] Building CXX object src/tests/class_tests/openms/CMakeFiles/ConsensusXMLFile_test.dir/source/ConsensusXMLFile_test.cpp.o
+[ 40%] Built target SpectrumSettings_test
+[ 40%] Linking CXX executable ../bin/CsvFile_test
+[ 40%] Linking CXX executable ../bin/DTAFile_test
+[ 40%] Linking CXX executable ../bin/DTA2DFile_test
+[ 40%] Built target SysInfo_test
+[ 40%] Building CXX object src/tests/class_tests/openms/CMakeFiles/EDTAFile_test.dir/source/EDTAFile_test.cpp.o
+[ 40%] Built target AbsoluteQuantitationStandardsFile_test
+[ 40%] Linking CXX executable ../bin/ExperimentalDesignFile_test
+[ 40%] Built target BrukerTimsFile_test
+[ 40%] Built target BrukerTimsImagingFile_test
+[ 40%] Built target MSNumpressCoder_test
+[ 40%] Built target BedRModFile_test
+[ 40%] Built target PASEFHillCentroider_test
+[ 40%] Built target Bzip2InputStream_test
+[ 40%] Linking CXX executable ../bin/FASTAFile_test
+[ 40%] Built target Base64_test
+[ 40%] Built target Bzip2Ifstream_test
+[ 40%] Linking CXX executable ../bin/FeatureFileOptions_test
+[ 40%] Building CXX object src/tests/class_tests/openms/CMakeFiles/FeatureXMLFile_test.dir/source/FeatureXMLFile_test.cpp.o
+[ 40%] Linking CXX executable ../bin/FLASHDeconvFeatureFile_test
+[ 40%] Linking CXX executable ../bin/FLASHDeconvSpectrumFile_test
+[ 40%] Linking CXX executable ../bin/FLASHHelperClasses_test
+[ 40%] Linking CXX executable ../bin/FileNameUtils_test
+[ 40%] Built target CsvFile_test
+[ 40%] Built target ControlledVocabulary_test
+[ 40%] Building CXX object src/tests/class_tests/openms/CMakeFiles/FileHandler_test.dir/source/FileHandler_test.cpp.o
+[ 40%] Linking CXX executable ../bin/FileInfo_test
+[ 40%] Linking CXX executable ../bin/FileTypes_test
+[ 40%] Built target DTA2DFile_test
+[ 41%] Built target DTAFile_test
+[ 41%] Linking CXX executable ../bin/GNPSMetaValueFile_test
+[ 41%] Linking CXX executable ../bin/GNPSQuantificationFile_test
+[ 41%] Built target ExperimentalDesignFile_test
+[ 41%] Linking CXX executable ../bin/GzipIfstream_test
+[ 41%] Built target FeatureFileOptions_test
+[ 41%] Built target FASTAFile_test
+[ 41%] Linking CXX executable ../bin/GzipInputStream_test
+[ 41%] Built target FileNameUtils_test
+[ 41%] Built target FileInfo_test
+[ 41%] Building CXX object src/tests/class_tests/openms/CMakeFiles/IBSpectraFile_test.dir/source/IBSpectraFile_test.cpp.o
+[ 41%] Built target FLASHDeconvSpectrumFile_test
+[ 41%] Built target FLASHDeconvFeatureFile_test
+[ 41%] Linking CXX executable ../bin/IndentedStream_test
+[ 41%] Building CXX object src/tests/class_tests/openms/CMakeFiles/IdXMLFile_test.dir/source/IdXMLFile_test.cpp.o
+[ 41%] Linking CXX executable ../bin/IndexedMzMLDecoder_test
+[ 41%] Built target FLASHHelperClasses_test
+[ 41%] Built target FileTypes_test
+[ 41%] Building CXX object src/tests/class_tests/openms/CMakeFiles/IndexedMzMLFile_test.dir/source/IndexedMzMLFile_test.cpp.o
+[ 41%] Built target GNPSMetaValueFile_test
+[ 41%] Built target GNPSQuantificationFile_test
+[ 41%] Linking CXX executable ../bin/InspectInfile_test
+[ 42%] Building CXX object src/tests/class_tests/openms/CMakeFiles/IndexedMzMLFileLoader_test.dir/source/IndexedMzMLFileLoader_test.cpp.o
+[ 42%] Linking CXX executable ../bin/InspectOutfile_test
+[ 42%] Linking CXX executable ../bin/KroenikFile_test
+[ 43%] Built target GzipIfstream_test
+[ 43%] Linking CXX executable ../bin/MRMFeatureQCFile_test
+[ 43%] Built target GzipInputStream_test
+[ 43%] Linking CXX executable ../bin/MS2File_test
+[ 43%] Built target IndentedStream_test
+[ 43%] Built target IndexedMzMLDecoder_test
+[ 43%] Linking CXX executable ../bin/MSPFile_test
+[ 43%] Linking CXX executable ../bin/MSPGenericFile_test
+[ 43%] Built target InspectInfile_test
+[ 43%] Built target KroenikFile_test
+[ 43%] Built target InspectOutfile_test
+[ 43%] Linking CXX executable ../bin/MSstatsFile_test
+[ 43%] Linking CXX executable ../bin/MascotRemoteQuery_test
+[ 43%] Linking CXX executable ../bin/MascotGenericFile_test
+[ 43%] Built target MRMFeatureQCFile_test
+[ 43%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MascotXMLFile_test.dir/source/MascotXMLFile_test.cpp.o
+[ 43%] Built target MS2File_test
+[ 43%] Linking CXX executable ../bin/MRMFeaturePickerFile_test
+[ 43%] Built target MSPFile_test
+[ 43%] Built target MSstatsFile_test
+[ 43%] Built target MSPGenericFile_test
+[ 43%] Linking CXX executable ../bin/MsInspectFile_test
+[ 43%] Built target MascotGenericFile_test
+[ 43%] Built target MascotRemoteQuery_test
+[ 43%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MzDataFile_test.dir/source/MzDataFile_test.cpp.o
+[ 43%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MzIdentMLFile_test.dir/source/MzIdentMLFile_test.cpp.o
+[ 43%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MzDataValidator_test.dir/source/MzDataValidator_test.cpp.o
+[ 43%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MzIdentMLValidator_test.dir/source/MzIdentMLValidator_test.cpp.o
+[ 43%] Built target MRMFeaturePickerFile_test
+[ 43%] Linking CXX executable ../bin/ThermoRawFileMetadata_test
+[ 43%] Built target MsInspectFile_test
+[ 43%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MzMLFile_test.dir/source/MzMLFile_test.cpp.o
+[ 43%] Linking CXX executable ../bin/CompressedInputSource_test
+[ 43%] Linking CXX executable ../bin/CVMappingFile_test
+[ 43%] Built target ThermoRawFileMetadata_test
+[ 43%] Building CXX object src/tests/class_tests/openms/CMakeFiles/ImzMLFile_test.dir/source/ImzMLFile_test.cpp.o
+[ 43%] Built target CompressedInputSource_test
+[ 43%] Building CXX object src/tests/class_tests/openms/CMakeFiles/ImzMLFile_all_modes_test.dir/source/ImzMLFile_all_modes_test.cpp.o
+[ 43%] Built target CVMappingFile_test
+[ 43%] Linking CXX executable ../bin/MzMLSpectrumDecoder_test
+[ 43%] Built target MzMLSpectrumDecoder_test
+[ 43%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MzMLSqliteHandler_test.dir/source/MzMLSqliteHandler_test.cpp.o
+[ 43%] Linking CXX executable ../bin/ChromeleonFile_test
+[ 43%] Linking CXX executable ../bin/MzDataValidator_test
+[ 43%] Linking CXX executable ../bin/MzIdentMLValidator_test
+[ 43%] Built target ChromeleonFile_test
+[ 43%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MzMLSqliteSwathHandler_test.dir/source/MzMLSqliteSwathHandler_test.cpp.o
+[ 43%] Built target MzDataValidator_test
+[ 43%] Built target MzIdentMLValidator_test
+[ 43%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MzMLValidator_test.dir/source/MzMLValidator_test.cpp.o
+[ 43%] Linking CXX executable ../bin/MzTab_test
+[ 43%] Linking CXX executable ../bin/IndexedMzMLFile_test
+[ 43%] Linking CXX executable ../bin/MzTabFile_test
+[ 43%] Linking CXX executable ../bin/EDTAFile_test
+[ 43%] Built target MzTab_test
+[ 43%] Built target IndexedMzMLFile_test
+[ 43%] Linking CXX executable ../bin/MzTabM_test
+[ 43%] Built target MzTabFile_test
+[ 43%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MzTabMFile_test.dir/source/MzTabMFile_test.cpp.o
+[ 43%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MzXMLFile_test.dir/source/MzXMLFile_test.cpp.o
+[ 43%] Built target EDTAFile_test
+[ 43%] Linking CXX executable ../bin/NoopMSDataConsumer_test
+[ 43%] Linking CXX executable ../bin/IBSpectraFile_test
+[ 43%] Built target MzTabM_test
+[ 43%] Building CXX object src/tests/class_tests/openms/CMakeFiles/TraMLValidator_test.dir/source/TraMLValidator_test.cpp.o
+[ 43%] Built target NoopMSDataConsumer_test
+[ 43%] Built target IBSpectraFile_test
+[ 43%] Building CXX object src/tests/class_tests/openms/CMakeFiles/OMSFile_test.dir/source/OMSFile_test.cpp.o
+[ 43%] Linking CXX executable ../bin/OMSSACSVFile_test
+[ 43%] Linking CXX executable ../bin/ExperimentalDesign_test
+[ 43%] Linking CXX executable ../bin/ProteinIdentification_test
+[ 43%] Built target OMSSACSVFile_test
+[ 43%] Building CXX object src/tests/class_tests/openms/CMakeFiles/OMSSAXMLFile_test.dir/source/OMSSAXMLFile_test.cpp.o
+[ 43%] Built target ExperimentalDesign_test
+[ 43%] Linking CXX executable ../bin/OSWFile_test
+/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/tests/class_tests/openms/source/MzMLFile_test.cpp: In function ‘int main(int, char**)’:
+/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/tests/class_tests/openms/source/MzMLFile_test.cpp:2069:22: warning: loop variable ‘accession’ of type ‘const std::string&’ {aka ‘const std::__cxx11::basic_string<char>&’} binds to a temporary constructed from type ‘const char* const’ [-Wrange-loop-construct]
+ 2069 |   for (const string& accession : {"MS:1000529", "MS:1003379", "MS:1002678", "MS:1002680", "MS:1002743", "MS:1002744", "MS:1002745", "MS:1000516", "MS:1000617", "MS:1003019", "MS:1000821"})
+      |                      ^~~~~~~~~
+/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/tests/class_tests/openms/source/MzMLFile_test.cpp:2069:22: note: use non-reference type ‘const std::string’ {aka ‘const std::__cxx11::basic_string<char>’} to make the copy explicit or ‘const char* const&’ to prevent copying
+[ 43%] Linking CXX executable ../bin/PeptideIdentification_test
+[ 43%] Linking CXX executable ../bin/ImzMLFile_all_modes_test
+[ 43%] Built target ProteinIdentification_test
+[ 43%] Linking CXX executable ../bin/OSWParquetFile_test
+[ 43%] Built target OSWFile_test
+[ 43%] Linking CXX executable ../bin/OSWFileInference_test
+[ 43%] Built target PeptideIdentification_test
+[ 43%] Building CXX object src/tests/class_tests/openms/CMakeFiles/PTMXMLFile_test.dir/source/PTMXMLFile_test.cpp.o
+[ 43%] Built target ImzMLFile_all_modes_test
+[ 43%] Linking CXX executable ../bin/MzMLValidator_test
+[ 43%] Building CXX object src/tests/class_tests/openms/CMakeFiles/ParamCTDFile_test.dir/source/ParamCTDFile_test.cpp.o
+[ 43%] Built target OSWFileInference_test
+[ 43%] Linking CXX executable ../bin/IndexedMzMLFileLoader_test
+[ 43%] Built target OSWParquetFile_test
+[ 43%] Linking CXX executable ../bin/ParamCWLFile_test
+[ 43%] Linking CXX executable ../bin/ParamJSONFile_test
+[ 43%] Built target MzMLValidator_test
+[ 43%] Building CXX object src/tests/class_tests/openms/CMakeFiles/ParamXMLFile_test.dir/source/ParamXMLFile_test.cpp.o
+[ 43%] Built target IndexedMzMLFileLoader_test
+[ 43%] Built target ParamCWLFile_test
+[ 43%] Built target ParamJSONFile_test
+[ 43%] Linking CXX executable ../bin/ParquetFilter_test
+[ 44%] Linking CXX executable ../bin/PEFFFile_test
+[ 44%] Linking CXX executable ../bin/PeakFileOptions_test
+[ 44%] Linking CXX executable ../bin/MzMLSqliteSwathHandler_test
+[ 44%] Linking CXX executable ../bin/TraMLValidator_test
+[ 44%] Linking CXX executable ../bin/FeatureXMLFile_test
+[ 44%] Built target ParquetFilter_test
+[ 44%] Built target PeakFileOptions_test
+[ 44%] Built target PEFFFile_test
+[ 44%] Linking CXX executable ../bin/PepNovoInfile_test
+[ 44%] Linking CXX executable ../bin/PeakTypeEstimator_test
+[ 44%] Linking CXX executable ../bin/PepNovoOutfile_test
+[ 44%] Built target MzMLSqliteSwathHandler_test
+[ 44%] Built target TraMLValidator_test
+[ 44%] Building CXX object src/tests/class_tests/openms/CMakeFiles/PepXMLFileMascot_test.dir/source/PepXMLFileMascot_test.cpp.o
+[ 45%] Building CXX object src/tests/class_tests/openms/CMakeFiles/PepXMLFile_test.dir/source/PepXMLFile_test.cpp.o
+[ 45%] Built target FeatureXMLFile_test
+[ 45%] Linking CXX executable ../bin/ConsensusXMLFile_test
+[ 45%] Linking CXX executable ../bin/Percolator_test
+[ 45%] Built target PepNovoInfile_test
+[ 45%] Built target PeakTypeEstimator_test
+[ 45%] Linking CXX executable ../bin/MzMLSqliteHandler_test
+[ 45%] Built target PepNovoOutfile_test
+[ 45%] Building CXX object src/tests/class_tests/openms/CMakeFiles/Percolator_subprocess_parity_test.dir/source/Percolator_subprocess_parity_test.cpp.o
+[ 45%] Building CXX object src/tests/class_tests/openms/CMakeFiles/PercolatorAdapter_parity_test.dir/source/PercolatorAdapter_parity_test.cpp.o
+[ 45%] Linking CXX executable ../bin/PercolatorInfile_test
+[ 45%] Linking CXX executable ../bin/MascotXMLFile_test
+[ 45%] Linking CXX executable ../bin/ImzMLFile_test
+[ 45%] Built target Percolator_test
+[ 45%] Built target ConsensusXMLFile_test
+[ 45%] Built target MzMLSqliteHandler_test
+[ 45%] Linking CXX executable ../bin/PercolatorOutfile_test
+[ 45%] Linking CXX executable ../bin/MzDataFile_test
+[ 45%] Linking CXX executable ../bin/PercolatorPosteriorEstimator_test
+[ 45%] Building CXX object src/tests/class_tests/openms/CMakeFiles/ProtXMLFile_test.dir/source/ProtXMLFile_test.cpp.o
+[ 46%] Built target PercolatorInfile_test
+[ 46%] Building CXX object src/tests/class_tests/openms/CMakeFiles/QcMLFile_test.dir/source/QcMLFile_test.cpp.o
+[ 46%] Built target MascotXMLFile_test
+[ 46%] Built target ImzMLFile_test
+[ 46%] Linking CXX executable ../bin/SVOutStream_test
+[ 46%] Building CXX object src/tests/class_tests/openms/CMakeFiles/SemanticValidator_test.dir/source/SemanticValidator_test.cpp.o
+[ 46%] Linking CXX executable ../bin/IdXMLFile_test
+[ 46%] Built target PercolatorPosteriorEstimator_test
+[ 46%] Linking CXX executable ../bin/PTMXMLFile_test
+[ 46%] Built target MzDataFile_test
+[ 46%] Built target PercolatorOutfile_test
+[ 46%] Linking CXX executable ../bin/SequestInfile_test
+[ 46%] Linking CXX executable ../bin/SequestOutfile_test
+[ 46%] Linking CXX executable ../bin/SpecArrayFile_test
+[ 46%] Linking CXX executable ../bin/IdentificationDataConverter_test
+[ 46%] Linking CXX executable ../bin/OMSSAXMLFile_test
+[ 46%] Built target SVOutStream_test
+[ 46%] Built target IdXMLFile_test
+[ 46%] Building CXX object src/tests/class_tests/openms/CMakeFiles/SqMassFile_test.dir/source/SqMassFile_test.cpp.o
+[ 46%] Linking CXX executable ../bin/SqliteConnector_test
+[ 46%] Built target PTMXMLFile_test
+[ 46%] Linking CXX executable ../bin/MRMFile_test
+[ 46%] Built target SequestInfile_test
+[ 46%] Built target SpecArrayFile_test
+[ 46%] Built target SequestOutfile_test
+[ 46%] Linking CXX executable ../bin/ThermoRawFile_test
+[ 46%] Linking CXX executable ../bin/OnDiscThermoRawExperiment_test
+[ 46%] Linking CXX executable ../bin/SwathMapMassCorrection_test
+[ 46%] Built target OMSSAXMLFile_test
+[ 46%] Building CXX object src/tests/class_tests/openms/CMakeFiles/SwathFile_test.dir/source/SwathFile_test.cpp.o
+[ 46%] Built target IdentificationDataConverter_test
+[ 46%] Building CXX object src/tests/class_tests/openms/CMakeFiles/SwathFileConsumer_test.dir/source/SwathFileConsumer_test.cpp.o
+[ 46%] Built target SqliteConnector_test
+[ 46%] Linking CXX executable ../bin/SwathWindowLoader_test
+[ 46%] Built target MRMFile_test
+[ 46%] Built target OnDiscThermoRawExperiment_test
+[ 46%] Built target ThermoRawFile_test
+[ 46%] Built target SwathMapMassCorrection_test
+[ 46%] Linking CXX executable ../bin/TextFile_test
+[ 46%] Linking CXX executable ../bin/TargetedDataFileLoader_test
+[ 46%] Building CXX object src/tests/class_tests/openms/CMakeFiles/TraMLFile_test.dir/source/TraMLFile_test.cpp.o
+[ 46%] Linking CXX executable ../bin/MzIdentMLFile_test
+[ 46%] Building CXX object src/tests/class_tests/openms/CMakeFiles/TransformationXMLFile_test.dir/source/TransformationXMLFile_test.cpp.o
+[ 46%] Linking CXX executable ../bin/FileHandler_test
+[ 46%] Built target SwathWindowLoader_test
+[ 46%] Linking CXX executable ../bin/ParamCTDFile_test
+[ 46%] Building CXX object src/tests/class_tests/openms/CMakeFiles/UnimodXMLFile_test.dir/source/UnimodXMLFile_test.cpp.o
+[ 46%] Built target TextFile_test
+[ 46%] Built target TargetedDataFileLoader_test
+[ 46%] Building CXX object src/tests/class_tests/openms/CMakeFiles/XMLFile_test.dir/source/XMLFile_test.cpp.o
+[ 46%] Linking CXX executable ../bin/XMassFile_test
+[ 46%] Built target MzIdentMLFile_test
+[ 46%] Building CXX object src/tests/class_tests/openms/CMakeFiles/XMLHandler_test.dir/source/XMLHandler_test.cpp.o
+[ 46%] Built target FileHandler_test
+[ 46%] Built target ParamCTDFile_test
+[ 46%] Linking CXX executable ../bin/XMLValidator_test
+[ 47%] Building CXX object src/tests/class_tests/openms/CMakeFiles/XQuestResultXMLFile_test.dir/source/XQuestResultXMLFile_test.cpp.o
+[ 47%] Built target XMassFile_test
+[ 47%] Building CXX object src/tests/class_tests/openms/CMakeFiles/XTandemInfile_test.dir/source/XTandemInfile_test.cpp.o
+[ 47%] Linking CXX executable ../bin/MzXMLFile_test
+[ 47%] Built target XMLValidator_test
+[ 47%] Building CXX object src/tests/class_tests/openms/CMakeFiles/XTandemXMLFile_test.dir/source/XTandemXMLFile_test.cpp.o
+[ 47%] Linking CXX executable ../bin/PepXMLFileMascot_test
+[ 47%] Built target MzXMLFile_test
+[ 47%] Linking CXX executable ../bin/ZlibCompression_test
+[ 47%] Linking CXX executable ../bin/SemanticValidator_test
+[ 47%] Linking CXX executable ../bin/MzTabMFile_test
+[ 47%] Linking CXX shared library ../../lib/libOpenMS_CLI.so
+[ 47%] Built target PepXMLFileMascot_test
+[ 47%] Linking CXX executable ../bin/ZstdCompression_test
+[ 47%] Linking CXX executable ../bin/PercolatorAdapter_parity_test
+[ 47%] Built target ZlibCompression_test
+[ 47%] Linking CXX executable ../bin/Libzip_test
+[ 47%] Built target SemanticValidator_test
+[ 47%] Linking CXX executable ../bin/ZipArchiveFile_test
+[ 47%] Built target OpenMS_CLI
+[ 47%] Built target MzTabMFile_test
+[ 47%] Linking CXX executable ../bin/ProtXMLFile_test
+[ 47%] Linking CXX executable ../bin/ZipIfstream_test
+[ 47%] Linking CXX executable ../bin/ZipInputStream_test
+[ 47%] Built target ZstdCompression_test
+[ 47%] Built target PercolatorAdapter_parity_test
+[ 47%] Linking CXX executable ../bin/ZipRandomAccessFile_test
+[ 47%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MSDataCachedConsumer_test.dir/source/MSDataCachedConsumer_test.cpp.o
+[ 47%] Built target ZipArchiveFile_test
+[ 47%] Built target Libzip_test
+[ 47%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MSDataTransformingConsumer_test.dir/source/MSDataTransformingConsumer_test.cpp.o
+[ 47%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MSDataChainingConsumer_test.dir/source/MSDataChainingConsumer_test.cpp.o
+[ 47%] Built target ZipInputStream_test
+[ 47%] Built target ZipIfstream_test
+[ 47%] Built target ProtXMLFile_test
+[ 47%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MSDataStoringConsumer_test.dir/source/MSDataStoringConsumer_test.cpp.o
+[ 47%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MSDataAggregatingConsumer_test.dir/source/MSDataAggregatingConsumer_test.cpp.o
+[ 47%] Linking CXX executable ../bin/SpectrumAccessQuadMZTransforming_test
+[ 47%] Linking CXX executable ../bin/MzMLFile_test
+[ 47%] Built target ZipRandomAccessFile_test
+[ 47%] Linking CXX executable ../bin/SpectrumAccessSqMass_test
+[ 47%] Linking CXX executable ../bin/OMSFile_test
+[ 47%] Linking CXX executable ../bin/QcMLFile_test
+[ 47%] Linking CXX executable ../bin/UnimodXMLFile_test
+[ 47%] Built target SpectrumAccessQuadMZTransforming_test
+[ 47%] Linking CXX executable ../bin/XMLFile_test
+[ 47%] Building CXX object src/tests/class_tests/openms/CMakeFiles/SpectrumAccessOnDisc_test.dir/source/SpectrumAccessOnDisc_test.cpp.o
+[ 47%] Linking CXX executable ../bin/TraMLFile_test
+[ 47%] Built target SpectrumAccessSqMass_test
+[ 47%] Built target MzMLFile_test
+[ 47%] Linking CXX executable ../bin/SpectrumAccessOpenMS_test
+[ 47%] Linking CXX executable ../bin/SpectrumAccessOpenMSInMemory_test
+[ 47%] Built target UnimodXMLFile_test
+[ 47%] Built target QcMLFile_test
+[ 47%] Linking CXX executable ../bin/MRMFeatureAccessOpenMS_test
+[ 47%] Built target OMSFile_test
+[ 47%] Linking CXX executable ../bin/SiriusFragmentAnnotation_test
+[ 47%] Built target XMLFile_test
+[ 47%] Built target TraMLFile_test
+[ 47%] Linking CXX executable ../bin/Arrow_test
+[ 47%] Linking CXX executable ../bin/MSExperimentArrowExport_test
+[ 47%] Linking CXX executable ../bin/ConsensusMapArrowExport_test
+[ 47%] Built target SpectrumAccessOpenMS_test
+[ 47%] Linking CXX executable ../bin/ProteinGroupArrowExport_test
+[ 47%] Built target SpectrumAccessOpenMSInMemory_test
+[ 47%] Built target SiriusFragmentAnnotation_test
+[ 47%] Linking CXX executable ../bin/QPXFile_test
+[ 47%] Built target MRMFeatureAccessOpenMS_test
+[ 47%] Linking CXX executable ../bin/QPXCollectionExport_test
+[ 47%] Linking CXX executable ../bin/QPXValueValidation_test
+[ 47%] Built target MSExperimentArrowExport_test
+[ 47%] Built target Arrow_test
+[ 47%] Linking CXX executable ../bin/QPXIdentity_test
+[ 47%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MSChromatogramParquetConsumer_test.dir/source/MSChromatogramParquetConsumer_test.cpp.o
+[ 47%] Built target ConsensusMapArrowExport_test
+[ 47%] Linking CXX executable ../bin/MobilogramParquetConsumer_test
+[ 47%] Linking CXX executable ../bin/Percolator_subprocess_parity_test
+[ 47%] Linking CXX executable ../bin/XTandemInfile_test
+[ 47%] Linking CXX executable ../bin/ParamXMLFile_test
+[ 48%] Linking CXX executable ../bin/SqMassFile_test
+[ 48%] Built target ProteinGroupArrowExport_test
+[ 48%] Built target QPXCollectionExport_test
+[ 48%] Linking CXX executable ../bin/XIMParquetFile_test
+[ 48%] Linking CXX executable ../bin/XICParquetFile_test
+[ 48%] Built target QPXIdentity_test
+[ 48%] Built target MobilogramParquetConsumer_test
+[ 48%] Built target QPXFile_test
+[ 48%] Linking CXX executable ../bin/XMLHandler_test
+[ 48%] Linking CXX executable ../bin/XIPMParquetConsumer_test
+[ 48%] Built target QPXValueValidation_test
+[ 48%] Linking CXX executable ../bin/XTandemXMLFile_test
+[ 48%] Linking CXX executable ../bin/XIPMParquetFile_test
+[ 48%] Linking CXX executable ../bin/XIPMParquetRoundTrip_test
+[ 48%] Built target XTandemInfile_test
+[ 48%] Linking CXX executable ../bin/ParquetFile_test
+[ 48%] Built target Percolator_subprocess_parity_test
+[ 48%] Linking CXX executable ../bin/ProteinIdentificationArrowIO_test
+[ 48%] Built target ParamXMLFile_test
+[ 48%] Linking CXX executable ../bin/FeatureMapArrowIO_test
+[ 48%] Linking CXX executable ../bin/ConsensusMapArrowIO_test
+[ 48%] Built target SqMassFile_test
+[ 48%] Linking CXX executable ../bin/PSMArrowIO_test
+[ 48%] Linking CXX executable ../bin/SwathFile_test
+[ 48%] Built target XMLHandler_test
+[ 48%] Built target XIPMParquetConsumer_test
+[ 48%] Built target XIMParquetFile_test
+[ 48%] Built target XICParquetFile_test
+[ 48%] Built target XIPMParquetFile_test
+[ 48%] Linking CXX executable ../bin/ModificationDefinitionIO_test
+[ 48%] Linking CXX executable ../bin/XQuestResultXMLFile_test
+[ 48%] Built target XTandemXMLFile_test
+[ 48%] Linking CXX executable ../bin/ParquetTableComparator_test
+[ 48%] Linking CXX executable ../bin/ArrowSchemaRegistry_test
+[ 48%] Linking CXX executable ../bin/ArrowIOHelpers_test
+[ 48%] Building CXX object src/tests/class_tests/openms/CMakeFiles/OpenSwathOSWParquetRoundTrip_test.dir/source/OpenSwathOSWParquetRoundTrip_test.cpp.o
+[ 48%] Built target XIPMParquetRoundTrip_test
+[ 48%] Building CXX object src/tests/class_tests/openms/CMakeFiles/XMLParserBackend_test.dir/source/XMLParserBackend_test.cpp.o
+[ 48%] Linking CXX executable ../bin/BasicStatistics_test
+[ 48%] Built target ParquetFile_test
+[ 48%] Linking CXX executable ../bin/BilinearInterpolation_test
+[ 48%] Built target ProteinIdentificationArrowIO_test
+[ 48%] Built target FeatureMapArrowIO_test
+[ 48%] Built target ConsensusMapArrowIO_test
+[ 48%] Linking CXX executable ../bin/BSpline2d_test
+[ 48%] Linking CXX executable ../bin/BSplineSmoothingSpline_test
+[ 48%] Linking CXX executable ../bin/CubicSpline2d_test
+[ 48%] Built target SwathFile_test
+[ 48%] Built target PSMArrowIO_test
+[ 48%] Linking CXX executable ../bin/SplineBisection_test
+[ 48%] Built target ModificationDefinitionIO_test
+[ 48%] Linking CXX executable ../bin/EmgGradientDescent_test
+[ 48%] Built target XQuestResultXMLFile_test
+[ 48%] Linking CXX executable ../bin/GammaDistributionFitter_test
+[ 48%] Linking CXX executable ../bin/GaussFitter_test
+[ 48%] Built target ParquetTableComparator_test
+[ 48%] Built target ArrowSchemaRegistry_test
+[ 48%] Built target BasicStatistics_test
+[ 48%] Linking CXX executable ../bin/GumbelDistributionFitter_test
+[ 48%] Built target ArrowIOHelpers_test
+[ 48%] Linking CXX executable ../bin/GumbelMaxLikelihoodFitter_test
+[ 48%] Linking CXX executable ../bin/PepXMLFile_test
+[ 48%] Linking CXX executable ../bin/GridSearch_test
+[ 48%] Linking CXX executable ../bin/CrossValidation_test
+[ 48%] Built target BilinearInterpolation_test
+[ 48%] Linking CXX executable ../bin/Histogram_test
+[ 48%] Built target BSplineSmoothingSpline_test
+[ 48%] Built target BSpline2d_test
+[ 48%] Built target CubicSpline2d_test
+[ 48%] Linking CXX executable ../bin/KernelDensityEstimation_test
+[ 48%] Built target SplineBisection_test
+[ 48%] Linking CXX executable ../bin/LevelContextInference_test
+[ 48%] Linking CXX executable ../bin/LinearInterpolation_test
+[ 48%] Linking CXX executable ../bin/LinearResampling_test
+[ 48%] Built target GammaDistributionFitter_test
+[ 48%] Built target EmgGradientDescent_test
+[ 48%] Linking CXX executable ../bin/LinearRegression_test
+[ 48%] Linking CXX executable ../bin/LinearRegressionWithoutIntercept_test
+[ 48%] Built target GaussFitter_test
+[ 48%] Built target GumbelDistributionFitter_test
+[ 48%] Linking CXX executable ../bin/MathFunctions_test
+[ 48%] Built target GumbelMaxLikelihoodFitter_test
+[ 48%] Linking CXX executable ../bin/MultipleTesting_test
+[ 48%] Built target CrossValidation_test
+[ 48%] Linking CXX executable ../bin/NNLS_test
+[ 48%] Linking CXX executable ../bin/NonNegativeLeastSquaresSolver_test
+[ 48%] Built target PepXMLFile_test
+[ 48%] Built target GridSearch_test
+[ 48%] Linking CXX executable ../bin/QuadraticRegression_test
+[ 48%] Building CXX object src/tests/class_tests/openms/CMakeFiles/PosteriorErrorProbabilityModel_test.dir/source/PosteriorErrorProbabilityModel_test.cpp.o
+[ 48%] Built target Histogram_test
+[ 48%] Built target KernelDensityEstimation_test
+[ 48%] Linking CXX executable ../bin/RankData_test
+[ 48%] Linking CXX executable ../bin/MSDataCachedConsumer_test
+[ 48%] Linking CXX executable ../bin/RANSAC_test
+[ 48%] Built target LevelContextInference_test
+[ 48%] Built target LinearRegression_test
+[ 48%] Built target LinearInterpolation_test
+[ 48%] Linking CXX executable ../bin/MSDataAggregatingConsumer_test
+[ 48%] Built target LinearRegressionWithoutIntercept_test
+[ 48%] Built target LinearResampling_test
+[ 48%] Linking CXX executable ../bin/RANSACModel_test
+[ 48%] Linking CXX executable ../bin/RANSACModelQuadratic_test
+[ 48%] Linking CXX executable ../bin/RANSACModelLinear_test
+[ 48%] Linking CXX executable ../bin/TransformationXMLFile_test
+[ 48%] Linking CXX executable ../bin/ROCCurve_test
+[ 48%] Linking CXX executable ../bin/StatisticFunctions_test
+[ 48%] Linking CXX executable ../bin/MSDataStoringConsumer_test
+[ 48%] Built target MultipleTesting_test
+[ 48%] Built target NNLS_test
+[ 48%] Built target NonNegativeLeastSquaresSolver_test
+[ 48%] Built target MathFunctions_test
+[ 48%] Linking CXX executable ../bin/Biosaur2Algorithm_test
+[ 48%] Linking CXX executable ../bin/DataFilters_test
+[ 48%] Building CXX object src/tests/class_tests/openms/CMakeFiles/Deisotoper_test.dir/source/Deisotoper_test.cpp.o
+[ 48%] Building CXX object src/tests/class_tests/openms/CMakeFiles/ElutionPeakDetection_test.dir/source/ElutionPeakDetection_test.cpp.o
+[ 48%] Built target QuadraticRegression_test
+[ 48%] Building CXX object src/tests/class_tests/openms/CMakeFiles/FeatureFindingMetabo_test.dir/source/FeatureFindingMetabo_test.cpp.o
+[ 48%] Built target RankData_test
+[ 48%] Built target MSDataCachedConsumer_test
+[ 48%] Built target RANSAC_test
+[ 48%] Built target MSDataAggregatingConsumer_test
+[ 48%] Linking CXX executable ../bin/FeatureOverlapFilter_test
+[ 48%] Linking CXX executable ../bin/FastLowessSmoothing_test
+[ 48%] Built target RANSACModelLinear_test
+[ 49%] Linking CXX executable ../bin/MSDataTransformingConsumer_test
+[ 49%] Linking CXX executable ../bin/GaussFilter_test
+[ 49%] Built target RANSACModel_test
+[ 49%] Built target RANSACModelQuadratic_test
+[ 49%] Built target ROCCurve_test
+[ 49%] Linking CXX executable ../bin/GaussFilterAlgorithm_test
+[ 49%] Built target TransformationXMLFile_test
+[ 49%] Built target StatisticFunctions_test
+[ 49%] Building CXX object src/tests/class_tests/openms/CMakeFiles/IDFilter_test.dir/source/IDFilter_test.cpp.o
+[ 49%] Building CXX object src/tests/class_tests/openms/CMakeFiles/InternalCalibration_test.dir/source/InternalCalibration_test.cpp.o
+[ 50%] Linking CXX executable ../bin/LinearResamplerAlign_test
+[ 50%] Built target MSDataStoringConsumer_test
+[ 50%] Linking CXX executable ../bin/LowessSmoothing_test
+[ 50%] Linking CXX executable ../bin/MSDataChainingConsumer_test
+[ 50%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MassTraceDetection_test.dir/source/MassTraceDetection_test.cpp.o
+[ 50%] Linking CXX executable ../bin/MorphologicalFilter_test
+[ 50%] Linking CXX executable ../bin/ModifiedSincSmoother_test
+[ 50%] Built target DataFilters_test
+[ 50%] Built target Biosaur2Algorithm_test
+[ 51%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MultiplexClustering_test.dir/source/MultiplexClustering_test.cpp.o
+[ 51%] Linking CXX executable ../bin/MultiplexDeltaMasses_test
+[ 51%] Built target FeatureOverlapFilter_test
+[ 51%] Linking CXX executable ../bin/MultiplexDeltaMassesGenerator_test
+[ 51%] Linking CXX executable ../bin/SpectrumAccessOnDisc_test
+[ 51%] Built target GaussFilterAlgorithm_test
+[ 51%] Built target GaussFilter_test
+[ 51%] Built target FastLowessSmoothing_test
+[ 51%] Built target MSDataTransformingConsumer_test
+[ 51%] Built target MorphologicalFilter_test
+[ 51%] Linking CXX executable ../bin/MultiplexFilteredMSExperiment_test
+[ 51%] Built target MSDataChainingConsumer_test
+[ 51%] Linking CXX executable ../bin/MultiplexFilteredPeak_test
+[ 51%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MultiplexFiltering_test.dir/source/MultiplexFiltering_test.cpp.o
+[ 51%] Built target LowessSmoothing_test
+[ 51%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MultiplexFilteringCentroided_test.dir/source/MultiplexFilteringCentroided_test.cpp.o
+[ 51%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MultiplexFilteringProfile_test.dir/source/MultiplexFilteringProfile_test.cpp.o
+[ 51%] Linking CXX executable ../bin/MultiplexResolverAlgorithm_test
+[ 51%] Built target LinearResamplerAlign_test
+[ 51%] Linking CXX executable ../bin/MultiplexIsotopicPeakPattern_test
+[ 51%] Built target ModifiedSincSmoother_test
+[ 51%] Linking CXX executable ../bin/MultiplexSatelliteCentroided_test
+[ 51%] Linking CXX executable ../bin/MultiplexSatelliteProfile_test
+[ 51%] Built target MultiplexDeltaMasses_test
+[ 52%] Linking CXX executable ../bin/MZTrafoModel_test
+[ 52%] Built target MultiplexDeltaMassesGenerator_test
+[ 52%] Built target SpectrumAccessOnDisc_test
+[ 52%] Linking CXX executable ../bin/NLargest_test
+[ 52%] Built target MultiplexFilteredMSExperiment_test
+[ 52%] Linking CXX executable ../bin/Normalizer_test
+[ 52%] Building CXX object src/tests/class_tests/openms/CMakeFiles/PrecursorCorrection_test.dir/source/PrecursorCorrection_test.cpp.o
+[ 52%] Built target MultiplexFilteredPeak_test
+[ 52%] Built target MultiplexResolverAlgorithm_test
+[ 52%] Building CXX object src/tests/class_tests/openms/CMakeFiles/SplineInterpolatedPeaks_test.dir/source/SplineInterpolatedPeaks_test.cpp.o
+[ 52%] Built target MultiplexIsotopicPeakPattern_test
+[ 52%] Linking CXX executable ../bin/SplinePackage_test
+[ 52%] Built target MultiplexSatelliteCentroided_test
+[ 52%] Linking CXX executable ../bin/SavitzkyGolayFilter_test
+[ 52%] Built target MultiplexSatelliteProfile_test
+[ 52%] Linking CXX executable ../bin/RankScaler_test
+[ 52%] Linking CXX executable ../bin/SwathFileConsumer_test
+[ 52%] Linking CXX executable ../bin/SignalToNoiseEstimatorMeanIterative_test
+[ 52%] Built target MZTrafoModel_test
+[ 52%] Linking CXX executable ../bin/SignalToNoiseEstimatorMedian_test
+[ 52%] Built target NLargest_test
+[ 52%] Linking CXX executable ../bin/SignalToNoiseEstimatorMedianRapid_test
+[ 52%] Built target Normalizer_test
+[ 52%] Linking CXX executable ../bin/SignalToNoiseEstimator_test
+[ 52%] Built target SplinePackage_test
+[ 52%] Linking CXX executable ../bin/SqrtScaler_test
+[ 52%] Built target SwathFileConsumer_test
+[ 52%] Built target RankScaler_test
+[ 52%] Built target SavitzkyGolayFilter_test
+[ 52%] Linking CXX executable ../bin/ThresholdMower_test
+[ 53%] Linking CXX executable ../bin/WindowMower_test
+[ 53%] Building CXX object src/tests/class_tests/openms/CMakeFiles/SpectraMerger_test.dir/source/SpectraMerger_test.cpp.o
+[ 53%] Built target SignalToNoiseEstimatorMeanIterative_test
+[ 53%] Linking CXX executable ../bin/AverageLinkage_test
+[ 53%] Built target SignalToNoiseEstimatorMedian_test
+[ 53%] Built target SignalToNoiseEstimatorMedianRapid_test
+[ 53%] Linking CXX executable ../bin/BinnedSharedPeakCount_test
+[ 53%] Linking CXX executable ../bin/BinnedSpectralContrastAngle_test
+[ 53%] Built target SignalToNoiseEstimator_test
+[ 53%] Linking CXX executable ../bin/BinnedSpectrumCompareFunctor_test
+[ 53%] Built target SqrtScaler_test
+[ 53%] Built target ThresholdMower_test
+[ 53%] Linking CXX executable ../bin/BinnedSpectrum_test
+[ 53%] Built target WindowMower_test
+[ 53%] Linking CXX executable ../bin/BinnedSumAgreeingIntensities_test
+[ 53%] Linking CXX executable ../bin/ClusterAnalyzer_test
+[ 53%] Built target AverageLinkage_test
+[ 53%] Linking CXX executable ../bin/ClusterFunctor_test
+[ 53%] Built target BinnedSpectralContrastAngle_test
+[ 53%] Built target BinnedSharedPeakCount_test
+[ 53%] Linking CXX executable ../bin/ClusterHierarchical_test
+[ 54%] Built target BinnedSpectrumCompareFunctor_test
+[ 54%] Linking CXX executable ../bin/CompleteLinkage_test
+[ 54%] Linking CXX executable ../bin/EuclideanSimilarity_test
+[ 54%] Built target BinnedSumAgreeingIntensities_test
+[ 54%] Built target BinnedSpectrum_test
+[ 54%] Built target ClusterAnalyzer_test
+[ 54%] Linking CXX executable ../bin/PeakAlignment_test
+[ 54%] Linking CXX executable ../bin/PeakSpectrumCompareFunctor_test
+[ 54%] Linking CXX executable ../bin/SingleLinkage_test
+[ 54%] Linking CXX executable ../bin/MSChromatogramParquetConsumer_test
+[ 54%] Built target ClusterFunctor_test
+[ 54%] Built target CompleteLinkage_test
+[ 54%] Built target ClusterHierarchical_test
+[ 54%] Linking CXX executable ../bin/SpectraSTSimilarityScore_test
+[ 54%] Linking CXX executable ../bin/SpectrumAlignmentScore_test
+[ 54%] Linking CXX executable ../bin/SpectrumAlignment_test
+[ 54%] Built target EuclideanSimilarity_test
+[ 54%] Linking CXX executable ../bin/SpectrumCheapDPCorr_test
+[ 54%] Linking CXX executable ../bin/PosteriorErrorProbabilityModel_test
+[ 54%] Built target PeakSpectrumCompareFunctor_test
+[ 54%] Built target PeakAlignment_test
+[ 54%] Built target SingleLinkage_test
+[ 54%] Linking CXX executable ../bin/SpectrumPrecursorComparator_test
+[ 54%] Linking CXX executable ../bin/ZhangSimilarityScore_test
+[ 54%] Linking CXX executable ../bin/SteinScottImproveScore_test
+[ 54%] Built target MSChromatogramParquetConsumer_test
+[ 54%] Linking CXX executable ../bin/AAIndex_test
+[ 54%] Built target SpectraSTSimilarityScore_test
+[ 54%] Linking CXX executable ../bin/AASequence_test
+[ 54%] Built target SpectrumAlignment_test
+[ 54%] Built target SpectrumAlignmentScore_test
+[ 54%] Linking CXX executable ../bin/AdductInfo_test
+[ 54%] Linking CXX executable ../bin/CoarseIsotopeDistribution_test
+[ 54%] Linking CXX executable ../bin/XMLParserBackend_test
+[ 55%] Built target SpectrumCheapDPCorr_test
+[ 55%] Built target PosteriorErrorProbabilityModel_test
+[ 55%] Linking CXX executable ../bin/CrossLinksDB_test
+[ 55%] Linking CXX executable ../bin/DecoyGenerator_test
+[ 55%] Built target ZhangSimilarityScore_test
+[ 55%] Built target SteinScottImproveScore_test
+[ 55%] Built target SpectrumPrecursorComparator_test
+[ 55%] Linking CXX executable ../bin/DigestionEnzyme_test
+[ 55%] Linking CXX executable ../bin/DigestionEnzymeProtein_test
+[ 55%] Built target AAIndex_test
+[ 55%] Linking CXX executable ../bin/DigestionEnzymeRNA_test
+[ 55%] Linking CXX executable ../bin/ElementDB_test
+[ 55%] Built target AASequence_test
+[ 55%] Linking CXX executable ../bin/Element_test
+[ 55%] Built target AdductInfo_test
+[ 55%] Built target XMLParserBackend_test
+[ 55%] Linking CXX executable ../bin/EmpiricalFormula_test
+[ 55%] Built target CoarseIsotopeDistribution_test
+[ 55%] Linking CXX executable ../bin/EnzymaticDigestion_test
+[ 56%] Linking CXX executable ../bin/FineIsotopeDistribution_test
+[ 56%] Built target CrossLinksDB_test
+[ 57%] Built target DecoyGenerator_test
+[ 57%] Built target DigestionEnzyme_test
+[ 57%] Built target DigestionEnzymeProtein_test
+[ 57%] Linking CXX executable ../bin/GlycanStructure_test
+[ 57%] Linking CXX executable ../bin/HydrophobicityProfile_test
+[ 57%] Linking CXX executable ../bin/IsoelectricPoint_test
+[ 57%] Built target ElementDB_test
+[ 57%] Linking CXX executable ../bin/IMSAlphabetParser_test
+[ 57%] Built target DigestionEnzymeRNA_test
+[ 57%] Linking CXX executable ../bin/ElutionPeakDetection_test
+[ 57%] Linking CXX executable ../bin/IMSAlphabetTextParser_test
+[ 57%] Linking CXX executable ../bin/IMSAlphabet_test
+[ 57%] Built target Element_test
+[ 57%] Linking CXX executable ../bin/IMSElement_test
+[ 57%] Built target EmpiricalFormula_test
+[ 57%] Built target EnzymaticDigestion_test
+[ 57%] Linking CXX executable ../bin/IMSIsotopeDistribution_test
+[ 58%] Linking CXX executable ../bin/MassTraceDetection_test
+[ 58%] Linking CXX executable ../bin/IntegerMassDecomposer_test
+[ 58%] Built target FineIsotopeDistribution_test
+[ 58%] Built target IsoelectricPoint_test
+[ 58%] Built target IMSAlphabetParser_test
+[ 58%] Built target GlycanStructure_test
+[ 58%] Linking CXX executable ../bin/IsoSpec_test
+[ 58%] Built target ElutionPeakDetection_test
+/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/tests/class_tests/openms/source/IDFilter_test.cpp: In function ‘int main(int, char**)’:
+/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/tests/class_tests/openms/source/IDFilter_test.cpp:1120:27: warning: loop variable ‘accession’ of type ‘const std::string&’ {aka ‘const std::__cxx11::basic_string<char>&’} binds to a temporary constructed from type ‘const char* const’ [-Wrange-loop-construct]
+ 1120 |   for (const std::string& accession : {"MS:1002354", "MS:1001868"})
+      |                           ^~~~~~~~~
+/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/tests/class_tests/openms/source/IDFilter_test.cpp:1120:27: note: use non-reference type ‘const std::string’ {aka ‘const std::__cxx11::basic_string<char>’} to make the copy explicit or ‘const char* const&’ to prevent copying
+[ 58%] Linking CXX executable ../bin/IsotopeDistribution_test
+[ 58%] Linking CXX executable ../bin/MassDecomposer_test
+[ 58%] Linking CXX executable ../bin/ModificationDataProvider_test
+/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/tests/class_tests/openms/source/IDFilter_test.cpp:1192:27: warning: loop variable ‘accession’ of type ‘const std::string&’ {aka ‘const std::__cxx11::basic_string<char>&’} binds to a temporary constructed from type ‘const char* const’ [-Wrange-loop-construct]
+ 1192 |   for (const std::string& accession : {"MS:1002354", "MS:1001868", ""})
+      |                           ^~~~~~~~~
+/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/tests/class_tests/openms/source/IDFilter_test.cpp:1192:27: note: use non-reference type ‘const std::string’ {aka ‘const std::__cxx11::basic_string<char>’} to make the copy explicit or ‘const char* const&’ to prevent copying
+[ 58%] Built target HydrophobicityProfile_test
+[ 58%] Built target IMSAlphabetTextParser_test
+[ 59%] Linking CXX executable ../bin/ModificationDefinition_test
+[ 59%] Built target IMSAlphabet_test
+[ 59%] Linking CXX executable ../bin/ModificationDefinitionsSet_test
+[ 59%] Linking CXX executable ../bin/Deisotoper_test
+[ 59%] Linking CXX executable ../bin/ModificationsDB_test
+[ 59%] Built target IMSElement_test
+[ 59%] Linking CXX executable ../bin/MonosaccharideDB_test
+[ 59%] Linking CXX executable ../bin/IonNaming_test
+[ 59%] Built target IMSIsotopeDistribution_test
+[ 59%] Linking CXX executable ../bin/MzPAF_test
+[ 59%] Built target MassTraceDetection_test
+[ 59%] Built target IntegerMassDecomposer_test
+[ 59%] Built target IsotopeDistribution_test
+[ 59%] Built target MassDecomposer_test
+[ 59%] Linking CXX executable ../bin/NASequence_test
+[ 59%] Linking CXX executable ../bin/NucleicAcidSpectrumGenerator_test
+[ 59%] Linking CXX executable ../bin/DigestionEnzymeDataProvider_test
+[ 59%] Built target ModificationDefinition_test
+[ 59%] Linking CXX executable ../bin/ProFormaParser_test
+[ 59%] Built target ModificationsDB_test
+[ 59%] Built target IsoSpec_test
+[ 59%] Built target ModificationDataProvider_test
+[ 59%] Linking CXX executable ../bin/ProteaseDB_test
+[ 59%] Linking CXX executable ../bin/RNaseDB_test
+[ 59%] Linking CXX executable ../bin/ProteaseDigestion_test
+[ 59%] Linking CXX executable ../bin/RNaseDigestion_test
+[ 59%] Built target ModificationDefinitionsSet_test
+[ 59%] Built target Deisotoper_test
+[ 59%] Built target MonosaccharideDB_test
+[ 59%] Linking CXX executable ../bin/SplineInterpolatedPeaks_test
+[ 59%] Linking CXX executable ../bin/RealMassDecomposer_test
+[ 59%] Linking CXX executable ../bin/ResidueDB_test
+[ 59%] Linking CXX executable ../bin/ResidueModification_test
+[ 59%] Built target IonNaming_test
+[ 59%] Linking CXX executable ../bin/Residue_test
+[ 59%] Built target MzPAF_test
+[ 59%] Built target ProFormaParser_test
+[ 59%] Built target ProteaseDB_test
+[ 59%] Linking CXX executable ../bin/RibonucleotideDB_test
+[ 59%] Built target DigestionEnzymeDataProvider_test
+[ 59%] Built target ProteaseDigestion_test
+[ 59%] Built target NASequence_test
+[ 59%] Built target NucleicAcidSpectrumGenerator_test
+[ 59%] Linking CXX executable ../bin/RibonucleotideDataProvider_test
+[ 59%] Linking CXX executable ../bin/Ribonucleotide_test
+[ 59%] Built target RNaseDB_test
+[ 59%] Linking CXX executable ../bin/SequenceCoverage_test
+[ 59%] Linking CXX executable ../bin/Tagger_test
+[ 59%] Linking CXX executable ../bin/SimpleTSGXLMS_test
+[ 59%] Linking CXX executable ../bin/SpectrumAnnotator_test
+[ 59%] Built target RNaseDigestion_test
+[ 59%] Built target RealMassDecomposer_test
+[ 59%] Linking CXX executable ../bin/TheoreticalGlycanSpectrumGenerator_test
+[ 59%] Built target ResidueDB_test
+[ 59%] Built target SplineInterpolatedPeaks_test
+[ 59%] Built target ResidueModification_test
+[ 59%] Linking CXX executable ../bin/TheoreticalSpectrumGenerator_test
+[ 59%] Linking CXX executable ../bin/TheoreticalSpectrumGeneratorXLMS_test
+[ 59%] Linking CXX executable ../bin/Weights_test
+[ 59%] Linking CXX executable ../bin/AbsoluteQuantitation_test
+[ 59%] Linking CXX executable ../bin/AbsoluteQuantitationMethod_test
+[ 59%] Built target Residue_test
+[ 59%] Linking CXX executable ../bin/AbsoluteQuantitationMethodFile_test
+[ 59%] Built target RibonucleotideDB_test
+[ 60%] Built target Ribonucleotide_test
+[ 60%] Built target SimpleTSGXLMS_test
+[ 60%] Built target SpectrumAnnotator_test
+[ 60%] Built target SequenceCoverage_test
+[ 60%] Built target RibonucleotideDataProvider_test
+[ 60%] Building CXX object src/tests/class_tests/openms/CMakeFiles/AbsoluteQuantitationStandards_test.dir/source/AbsoluteQuantitationStandards_test.cpp.o
+[ 60%] Building CXX object src/tests/class_tests/openms/CMakeFiles/AccurateMassSearchEngine_test.dir/source/AccurateMassSearchEngine_test.cpp.o
+[ 60%] Linking CXX executable ../bin/AhoCorasickAmbiguous_test
+[ 60%] Built target Tagger_test
+[ 60%] Linking CXX executable ../bin/AScore_test
+[ 60%] Linking CXX executable ../bin/BaseGroupFinder_test
+[ 60%] Linking CXX executable ../bin/BaseSuperimposer_test
+[ 60%] Building CXX object src/tests/class_tests/openms/CMakeFiles/BasicProteinInferenceAlgorithm_test.dir/source/BasicProteinInferenceAlgorithm_test.cpp.o
+[ 60%] Built target TheoreticalGlycanSpectrumGenerator_test
+[ 60%] Built target Weights_test
+[ 60%] Built target TheoreticalSpectrumGeneratorXLMS_test
+[ 60%] Built target TheoreticalSpectrumGenerator_test
+[ 60%] Built target AbsoluteQuantitation_test
+[ 60%] Built target AbsoluteQuantitationMethod_test
+[ 60%] Built target AbsoluteQuantitationMethodFile_test
+[ 60%] Building CXX object src/tests/class_tests/openms/CMakeFiles/BayesianProteinInferenceAlgorithm_test.dir/source/BayesianProteinInferenceAlgorithm_test.cpp.o
+[ 60%] Linking CXX executable ../bin/ClusterProxyKD_test
+[ 60%] Linking CXX executable ../bin/ConfidenceScoring_test
+[ 60%] Linking CXX executable ../bin/ConsensusIDAlgorithmAverage_test
+[ 60%] Linking CXX executable ../bin/ConsensusIDAlgorithmBest_test
+[ 60%] Linking CXX executable ../bin/ConsensusIDAlgorithmPEPIons_test
+[ 60%] Linking CXX executable ../bin/ConsensusIDAlgorithmPEPMatrix_test
+[ 60%] Linking CXX executable ../bin/FeatureFindingMetabo_test
+[ 60%] Built target AhoCorasickAmbiguous_test
+[ 60%] Linking CXX executable ../bin/ConsensusIDAlgorithmRanks_test
+[ 60%] Built target BaseGroupFinder_test
+[ 60%] Built target AScore_test
+[ 60%] Built target BaseSuperimposer_test
+[ 60%] Linking CXX executable ../bin/ConsensusIDAlgorithmWorst_test
+[ 60%] Linking CXX executable ../bin/ConsensusMapNormalizerAlgorithmThreshold_test
+[ 60%] Linking CXX executable ../bin/ConsensusMapNormalizerAlgorithmMedian_test
+[ 60%] Built target ConsensusIDAlgorithmAverage_test
+[ 60%] Built target ClusterProxyKD_test
+[ 60%] Built target ConfidenceScoring_test
+[ 60%] Built target ConsensusIDAlgorithmPEPIons_test
+[ 60%] Built target ConsensusIDAlgorithmBest_test
+[ 60%] Linking CXX executable ../bin/ConsensusMapNormalizerAlgorithmQuantile_test
+[ 61%] Built target ConsensusIDAlgorithmPEPMatrix_test
+[ 61%] Linking CXX executable ../bin/ConsensusMapNormalizerAlgorithmRTLocal_test
+[ 61%] Building CXX object src/tests/class_tests/openms/CMakeFiles/ConsensusMapMergerAlgorithm_test.dir/source/ConsensusMapMergerAlgorithm_test.cpp.o
+[ 61%] Linking CXX executable ../bin/Scores_test
+[ 61%] Building CXX object src/tests/class_tests/openms/CMakeFiles/FalseDiscoveryRate_test.dir/source/FalseDiscoveryRate_test.cpp.o
+[ 61%] Building CXX object src/tests/class_tests/openms/CMakeFiles/FeatureDeconvolution_test.dir/source/FeatureDeconvolution_test.cpp.o
+[ 61%] Built target FeatureFindingMetabo_test
+[ 61%] Linking CXX executable ../bin/MultiplexClustering_test
+[ 61%] Linking CXX executable ../bin/FeatureDistance_test
+[ 61%] Built target ConsensusIDAlgorithmRanks_test
+[ 61%] Linking CXX executable ../bin/FeatureMapping_test
+[ 61%] Built target ConsensusIDAlgorithmWorst_test
+[ 61%] Built target ConsensusMapNormalizerAlgorithmThreshold_test
+[ 62%] Linking CXX executable ../bin/FeatureGroupingAlgorithmKD_test
+[ 62%] Built target ConsensusMapNormalizerAlgorithmMedian_test
+[ 62%] Linking CXX executable ../bin/FeatureGroupingAlgorithmLabeled_test
+[ 62%] Linking CXX executable ../bin/FeatureGroupingAlgorithmQT_test
+[ 62%] Linking CXX executable ../bin/InternalCalibration_test
+[ 62%] Built target ConsensusMapNormalizerAlgorithmQuantile_test
+[ 62%] Linking CXX executable ../bin/MultiplexFilteringCentroided_test
+[ 62%] Linking CXX executable ../bin/MultiplexFiltering_test
+[ 62%] Built target ConsensusMapNormalizerAlgorithmRTLocal_test
+[ 62%] Built target Scores_test
+[ 62%] Linking CXX executable ../bin/FeatureGroupingAlgorithmUnlabeled_test
+[ 62%] Linking CXX executable ../bin/MultiplexFilteringProfile_test
+[ 62%] Linking CXX executable ../bin/FeatureGroupingAlgorithm_test
+[ 62%] Linking CXX executable ../bin/PipEchoAlgorithm_test
+[ 62%] Built target MultiplexClustering_test
+[ 63%] Built target FeatureDistance_test
+[ 63%] Linking CXX executable ../bin/PipEchoAlgorithm_realistic_test
+[ 63%] Linking CXX executable ../bin/FeatureHandle_test
+[ 63%] Built target FeatureMapping_test
+[ 63%] Building CXX object src/tests/class_tests/openms/CMakeFiles/FIAMSDataProcessor_test.dir/source/FIAMSDataProcessor_test.cpp.o
+[ 63%] Built target FeatureGroupingAlgorithmLabeled_test
+[ 63%] Built target FeatureGroupingAlgorithmKD_test
+[ 63%] Linking CXX executable ../bin/FIAMSScheduler_test
+[ 63%] Built target FeatureGroupingAlgorithmQT_test
+[ 63%] Building CXX object src/tests/class_tests/openms/CMakeFiles/FLASHDeconvAlgorithm_test.dir/source/FLASHDeconvAlgorithm_test.cpp.o
+[ 63%] Built target InternalCalibration_test
+[ 63%] Built target MultiplexFilteringCentroided_test
+[ 63%] Linking CXX executable ../bin/FLASHDeconvHelperStructs_test
+[ 63%] Built target FeatureGroupingAlgorithm_test
+[ 63%] Built target MultiplexFiltering_test
+[ 63%] Linking CXX executable ../bin/OpenSearchModificationAnalysis_test
+[ 63%] Built target FeatureGroupingAlgorithmUnlabeled_test
+[ 63%] Built target MultiplexFilteringProfile_test
+[ 63%] Linking CXX executable ../bin/IDDecoyProbability_test
+[ 63%] Building CXX object src/tests/class_tests/openms/CMakeFiles/IDBoostGraph_test.dir/source/IDBoostGraph_test.cpp.o
+[ 63%] Building CXX object src/tests/class_tests/openms/CMakeFiles/IDMapper_test.dir/source/IDMapper_test.cpp.o
+[ 63%] Built target PipEchoAlgorithm_test
+[ 63%] Building CXX object src/tests/class_tests/openms/CMakeFiles/IDMergerAlgorithm_test.dir/source/IDMergerAlgorithm_test.cpp.o
+[ 64%] Building CXX object src/tests/class_tests/openms/CMakeFiles/IDRipper_test.dir/source/IDRipper_test.cpp.o
+[ 64%] Linking CXX executable ../bin/OpenSwathOSWParquetRoundTrip_test
+[ 64%] Building CXX object src/tests/class_tests/openms/CMakeFiles/IDScoreSwitcherAlgorithm_test.dir/source/IDScoreSwitcherAlgorithm_test.cpp.o
+[ 64%] Built target FeatureHandle_test
+[ 64%] Linking CXX executable ../bin/ILPDCWrapper_test
+[ 64%] Built target PipEchoAlgorithm_realistic_test
+[ 64%] Linking CXX executable ../bin/IonIdentityMolecularNetworking_test
+[ 64%] Built target FIAMSScheduler_test
+[ 65%] Linking CXX executable ../bin/DDAWorkflowCommons_test
+[ 65%] Built target FLASHDeconvHelperStructs_test
+[ 65%] Built target OpenSearchModificationAnalysis_test
+[ 65%] Linking CXX executable ../bin/IsotopeLabelingMDVs_test
+[ 65%] Built target IDDecoyProbability_test
+[ 65%] Linking CXX executable ../bin/IncludeExcludeTarget_test
+[ 65%] Building CXX object src/tests/class_tests/openms/CMakeFiles/IsobaricChannelExtractor_test.dir/source/IsobaricChannelExtractor_test.cpp.o
+[ 65%] Built target OpenSwathOSWParquetRoundTrip_test
+[ 65%] Built target ILPDCWrapper_test
+[ 65%] Linking CXX executable ../bin/PrecursorCorrection_test
+[ 65%] Building CXX object src/tests/class_tests/openms/CMakeFiles/IsobaricIsotopeCorrector_test.dir/source/IsobaricIsotopeCorrector_test.cpp.o
+[ 65%] Built target IonIdentityMolecularNetworking_test
+[ 65%] Building CXX object src/tests/class_tests/openms/CMakeFiles/IsobaricNormalizer_test.dir/source/IsobaricNormalizer_test.cpp.o
+[ 65%] Linking CXX executable ../bin/IsobaricQuantitationMethod_test
+[ 65%] Built target DDAWorkflowCommons_test
+[ 65%] Building CXX object src/tests/class_tests/openms/CMakeFiles/IsobaricQuantifier_test.dir/source/IsobaricQuantifier_test.cpp.o
+[ 65%] Built target IncludeExcludeTarget_test
+[ 65%] Built target IsotopeLabelingMDVs_test
+[ 65%] Linking CXX executable ../bin/IsobaricQuantifierStatistics_test
+[ 65%] Linking CXX executable ../bin/ItraqConstants_test
+[ 65%] Built target PrecursorCorrection_test
+[ 65%] Built target IsobaricQuantitationMethod_test
+[ 65%] Linking CXX executable ../bin/ItraqFourPlexQuantitationMethod_test
+[ 65%] Linking CXX executable ../bin/ItraqEightPlexQuantitationMethod_test
+[ 65%] Built target IsobaricQuantifierStatistics_test
+[ 65%] Built target ItraqConstants_test
+[ 66%] Linking CXX executable ../bin/TMTSixPlexQuantitationMethod_test
+[ 66%] Linking CXX executable ../bin/TMTTenPlexQuantitationMethod_test
+[ 66%] Built target ItraqFourPlexQuantitationMethod_test
+[ 66%] Built target ItraqEightPlexQuantitationMethod_test
+[ 66%] Linking CXX executable ../bin/TMTElevenPlexQuantitationMethod_test
+[ 66%] Linking CXX executable ../bin/TMTSixteenPlexQuantitationMethod_test
+[ 66%] Built target TMTSixPlexQuantitationMethod_test
+[ 66%] Built target TMTTenPlexQuantitationMethod_test
+[ 66%] Linking CXX executable ../bin/TMTEighteenPlexQuantitationMethod_test
+[ 66%] Linking CXX executable ../bin/TMTThirtyTwoPlexQuantitationMethod_test
+[ 66%] Built target TMTElevenPlexQuantitationMethod_test
+[ 66%] Built target TMTSixteenPlexQuantitationMethod_test
+[ 66%] Linking CXX executable ../bin/TMTThirtyFivePlexQuantitationMethod_test
+[ 66%] Linking CXX executable ../bin/KDTreeFeatureMaps_test
+[ 66%] Built target TMTEighteenPlexQuantitationMethod_test
+[ 66%] Built target TMTThirtyTwoPlexQuantitationMethod_test
+[ 66%] Linking CXX executable ../bin/KDTreeFeatureNode_test
+[ 66%] Building CXX object src/tests/class_tests/openms/CMakeFiles/LabeledPairFinder_test.dir/source/LabeledPairFinder_test.cpp.o
+[ 66%] Built target TMTThirtyFivePlexQuantitationMethod_test
+[ 66%] Built target KDTreeFeatureMaps_test
+[ 66%] Linking CXX executable ../bin/TargetedExperiment_test
+[ 66%] Linking CXX executable ../bin/TargetedExperimentHelper_test
+[ 66%] Linking CXX executable ../bin/BayesianProteinInferenceAlgorithm_test
+[ 66%] Built target KDTreeFeatureNode_test
+[ 66%] Linking CXX executable ../bin/MRMFeaturePicker_test
+[ 66%] Built target TargetedExperiment_test
+[ 66%] Linking CXX executable ../bin/MRMMapping_test
+[ 66%] Built target BayesianProteinInferenceAlgorithm_test
+[ 66%] Built target TargetedExperimentHelper_test
+[ 66%] Linking CXX executable ../bin/MRMChromHandler_test
+[ 66%] Linking CXX executable ../bin/DefaultChromHandler_test
+[ 66%] Built target MRMFeaturePicker_test
+[ 66%] Linking CXX executable ../bin/DIAChromHandler_test
+[ 66%] Linking CXX executable ../bin/SpectraMerger_test
+[ 66%] Built target MRMMapping_test
+[ 66%] Linking CXX executable ../bin/ChromatogramProcessor_test
+[ 66%] Built target MRMChromHandler_test
+[ 66%] Built target DefaultChromHandler_test
+[ 66%] Linking CXX executable ../bin/MRMScoring_test
+[ 66%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MapAlignmentAlgorithmIdentification_test.dir/source/MapAlignmentAlgorithmIdentification_test.cpp.o
+[ 66%] Linking CXX executable ../bin/AbsoluteQuantitationStandards_test
+[ 66%] Built target DIAChromHandler_test
+[ 66%] Linking CXX executable ../bin/MapAlignmentAlgorithmKD_test
+[ 66%] Built target SpectraMerger_test
+[ 66%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MapAlignmentAlgorithmPoseClustering_test.dir/source/MapAlignmentAlgorithmPoseClustering_test.cpp.o
+[ 66%] Built target ChromatogramProcessor_test
+[ 66%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MapAlignmentAlgorithmTreeGuided_test.dir/source/MapAlignmentAlgorithmTreeGuided_test.cpp.o
+[ 66%] Built target MRMScoring_test
+[ 66%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MapAlignmentEvaluationAlgorithmPrecision_test.dir/source/MapAlignmentEvaluationAlgorithmPrecision_test.cpp.o
+[ 66%] Built target AbsoluteQuantitationStandards_test
+[ 66%] Linking CXX executable ../bin/IDRipper_test
+[ 66%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MapAlignmentEvaluationAlgorithmRecall_test.dir/source/MapAlignmentEvaluationAlgorithmRecall_test.cpp.o
+[ 66%] Built target MapAlignmentAlgorithmKD_test
+[ 66%] Linking CXX executable ../bin/MapAlignmentEvaluationAlgorithm_test
+[ 66%] Built target IDRipper_test
+[ 66%] Linking CXX executable ../bin/MapAlignmentTransformer_test
+[ 66%] Built target MapAlignmentEvaluationAlgorithm_test
+[ 66%] Linking CXX executable ../bin/IDFilter_test
+[ 66%] Linking CXX executable ../bin/MassDecompositionAlgorithm_test
+[ 66%] Linking CXX executable ../bin/ConsensusMapMergerAlgorithm_test
+[ 66%] Linking CXX executable ../bin/BasicProteinInferenceAlgorithm_test
+[ 66%] Built target MapAlignmentTransformer_test
+[ 66%] Linking CXX executable ../bin/MassDecomposition_test
+[ 66%] Built target MassDecompositionAlgorithm_test
+[ 66%] Built target ConsensusMapMergerAlgorithm_test
+[ 66%] Built target IDFilter_test
+[ 66%] Linking CXX executable ../bin/MassFeatureTrace_test
+[ 66%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MetaboliteFeatureDeconvolution_test.dir/source/MetaboliteFeatureDeconvolution_test.cpp.o
+[ 66%] Linking CXX executable ../bin/MetaboliteSpectralMatching_test
+[ 66%] Built target BasicProteinInferenceAlgorithm_test
+[ 66%] Linking CXX executable ../bin/ModifiedPeptideGenerator_test
+[ 66%] Built target MassDecomposition_test
+[ 66%] Linking CXX executable ../bin/NeedlemanWunsch_test
+[ 66%] Built target MassFeatureTrace_test
+[ 66%] Built target MetaboliteSpectralMatching_test
+[ 66%] Linking CXX executable ../bin/PeptideIndexing_test
+[ 66%] Building CXX object src/tests/class_tests/openms/CMakeFiles/PeptideAndProteinQuant_test.dir/source/PeptideAndProteinQuant_test.cpp.o
+[ 66%] Linking CXX executable ../bin/FeatureDeconvolution_test
+[ 66%] Built target ModifiedPeptideGenerator_test
+[ 66%] Built target NeedlemanWunsch_test
+[ 66%] Building CXX object src/tests/class_tests/openms/CMakeFiles/PeptideProteinResolution_test.dir/source/PeptideProteinResolution_test.cpp.o
+[ 66%] Linking CXX executable ../bin/FLASHDeconvAlgorithm_test
+[ 66%] Linking CXX executable ../bin/PeakGroup_test
+[ 66%] Built target PeptideIndexing_test
+[ 66%] Linking CXX executable ../bin/PScore_test
+[ 66%] Built target FeatureDeconvolution_test
+[ 66%] Linking CXX executable ../bin/IDScoreSwitcherAlgorithm_test
+[ 66%] Linking CXX executable ../bin/FragmentIndex_test
+[ 66%] Linking CXX executable ../bin/IDMergerAlgorithm_test
+[ 66%] Built target PeakGroup_test
+[ 66%] Built target FLASHDeconvAlgorithm_test
+[ 66%] Linking CXX executable ../bin/FragmentIonLikelihoodModel_test
+[ 66%] Linking CXX executable ../bin/AccurateMassSearchEngine_test
+[ 66%] Linking CXX executable ../bin/HyperScore_test
+[ 67%] Linking CXX executable ../bin/IsobaricNormalizer_test
+[ 67%] Built target PScore_test
+[ 67%] Built target IDScoreSwitcherAlgorithm_test
+[ 67%] Linking CXX executable ../bin/MorpheusScore_test
+[ 67%] Building CXX object src/tests/class_tests/openms/CMakeFiles/OpenPepXLAlgorithm_test.dir/source/OpenPepXLAlgorithm_test.cpp.o
+[ 67%] Built target FragmentIndex_test
+[ 68%] Building CXX object src/tests/class_tests/openms/CMakeFiles/OPXLHelper_test.dir/source/OPXLHelper_test.cpp.o
+[ 68%] Linking CXX executable ../bin/IsobaricIsotopeCorrector_test
+[ 68%] Built target IDMergerAlgorithm_test
+[ 68%] Linking CXX executable ../bin/OPXLSpectrumProcessingAlgorithms_test
+[ 68%] Built target AccurateMassSearchEngine_test
+[ 68%] Built target FragmentIonLikelihoodModel_test
+[ 68%] Built target HyperScore_test
+[ 68%] Built target IsobaricNormalizer_test
+[ 68%] Linking CXX executable ../bin/PoseClusteringAffineSuperimposer_test
+[ 68%] Linking CXX executable ../bin/PoseClusteringShiftSuperimposer_test
+[ 68%] Linking CXX executable ../bin/QTClusterFinder_test
+[ 68%] Building CXX object src/tests/class_tests/openms/CMakeFiles/PrecursorPurity_test.dir/source/PrecursorPurity_test.cpp.o
+[ 68%] Built target MorpheusScore_test
+[ 68%] Linking CXX executable ../bin/ReactionMonitoringTransition_test
+[ 68%] Built target IsobaricIsotopeCorrector_test
+[ 68%] Building CXX object src/tests/class_tests/openms/CMakeFiles/ProSEAlgorithm_test.dir/source/ProSEAlgorithm_test.cpp.o
+[ 68%] Built target OPXLSpectrumProcessingAlgorithms_test
+[ 68%] Linking CXX executable ../bin/SimpleSearchEngineAlgorithm_test
+[ 68%] Built target PoseClusteringAffineSuperimposer_test
+[ 68%] Linking CXX executable ../bin/SimpleSVM_test
+[ 68%] Built target QTClusterFinder_test
+[ 68%] Built target PoseClusteringShiftSuperimposer_test
+[ 68%] Building CXX object src/tests/class_tests/openms/CMakeFiles/SpectralDeconvolution_test.dir/source/SpectralDeconvolution_test.cpp.o
+[ 68%] Linking CXX executable ../bin/IsobaricQuantifier_test
+[ 68%] Built target ReactionMonitoringTransition_test
+[ 68%] Linking CXX executable ../bin/StablePairFinder_test
+[ 69%] Linking CXX executable ../bin/FIAMSDataProcessor_test
+[ 69%] Building CXX object src/tests/class_tests/openms/CMakeFiles/PercolatorFeatureSetHelper_test.dir/source/PercolatorFeatureSetHelper_test.cpp.o
+[ 69%] Linking CXX executable ../bin/LabeledPairFinder_test
+[ 69%] Built target SimpleSearchEngineAlgorithm_test
+[ 69%] Built target SimpleSVM_test
+[ 70%] Linking CXX executable ../bin/TransformationDescription_test
+[ 70%] Built target IsobaricQuantifier_test
+[ 70%] Linking CXX executable ../bin/TransformationModel_test
+[ 70%] Linking CXX executable ../bin/FalseDiscoveryRate_test
+[ 70%] Linking CXX executable ../bin/TransformationModelBSpline_test
+[ 70%] Built target StablePairFinder_test
+[ 70%] Built target FIAMSDataProcessor_test
+[ 70%] Linking CXX executable ../bin/TransformationModelLowess_test
+[ 70%] Linking CXX executable ../bin/TransformationModelInterpolated_test
+[ 70%] Linking CXX executable ../bin/IDMapper_test
+[ 70%] Built target LabeledPairFinder_test
+[ 70%] Linking CXX executable ../bin/TransformationModelLinear_test
+[ 70%] Built target TransformationModel_test
+[ 70%] Built target TransformationDescription_test
+[ 70%] Built target TransformationModelBSpline_test
+[ 70%] Built target FalseDiscoveryRate_test
+[ 70%] Building CXX object src/tests/class_tests/openms/CMakeFiles/XFDRAlgorithm_test.dir/source/XFDRAlgorithm_test.cpp.o
+[ 70%] Linking CXX executable ../bin/XQuestScores_test
+[ 71%] Linking CXX executable ../bin/ConsoleUtils_test
+[ 71%] Built target TransformationModelInterpolated_test
+[ 71%] Linking CXX executable ../bin/BaseModel_test
+[ 71%] Built target TransformationModelLowess_test
+[ 71%] Linking CXX executable ../bin/IsobaricChannelExtractor_test
+[ 71%] Linking CXX executable ../bin/BiGaussFitter1D_test
+[ 71%] Linking CXX executable ../bin/BiGaussModel_test
+[ 71%] Built target IDMapper_test
+[ 71%] Built target TransformationModelLinear_test
+[ 71%] Linking CXX executable ../bin/EGHTraceFitter_test
+[ 71%] Building CXX object src/tests/class_tests/openms/CMakeFiles/ElutionModelFitter_test.dir/source/ElutionModelFitter_test.cpp.o
+[ 71%] Linking CXX executable ../bin/MapAlignmentEvaluationAlgorithmPrecision_test
+[ 71%] Built target ConsoleUtils_test
+[ 71%] Built target BaseModel_test
+[ 71%] Built target XQuestScores_test
+[ 71%] Linking CXX executable ../bin/EmgFitter1D_test
+[ 71%] Linking CXX executable ../bin/EmgModel_test
+[ 71%] Linking CXX executable ../bin/ExtendedIsotopeFitter1D_test
+[ 71%] Built target IsobaricChannelExtractor_test
+[ 71%] Built target BiGaussFitter1D_test
+[ 71%] Linking CXX executable ../bin/MapAlignmentEvaluationAlgorithmRecall_test
+[ 71%] Built target BiGaussModel_test
+[ 71%] Linking CXX executable ../bin/ExtendedIsotopeModel_test
+[ 71%] Linking CXX executable ../bin/FeatureFinderAlgorithmPickedHelperStructs_test
+[ 71%] Building CXX object src/tests/class_tests/openms/CMakeFiles/FeatureFinderAlgorithmPicked_test.dir/source/FeatureFinderAlgorithmPicked_test.cpp.o
+[ 71%] Built target EGHTraceFitter_test
+[ 71%] Linking CXX executable ../bin/FeatureFinderIdentificationAlgorithm_test
+[ 71%] Built target MapAlignmentEvaluationAlgorithmPrecision_test
+[ 71%] Building CXX object src/tests/class_tests/openms/CMakeFiles/FeatureFinderMultiplexAlgorithm_test.dir/source/FeatureFinderMultiplexAlgorithm_test.cpp.o
+[ 71%] Built target EmgModel_test
+[ 71%] Built target EmgFitter1D_test
+[ 71%] Built target ExtendedIsotopeFitter1D_test
+[ 71%] Built target MapAlignmentEvaluationAlgorithmRecall_test
+[ 71%] Linking CXX executable ../bin/Fitter1D_test
+[ 71%] Linking CXX executable ../bin/GaussFitter1D_test
+[ 71%] Linking CXX executable ../bin/GaussModel_test
+[ 71%] Built target ExtendedIsotopeModel_test
+[ 71%] Built target FeatureFinderAlgorithmPickedHelperStructs_test
+[ 71%] Linking CXX executable ../bin/GaussTraceFitter_test
+[ 71%] Linking CXX executable ../bin/IDConflictResolverAlgorithm_test
+[ 71%] Linking CXX executable ../bin/InterpolationModel_test
+[ 71%] Built target FeatureFinderIdentificationAlgorithm_test
+[ 71%] Linking CXX executable ../bin/IsotopeFitter1D_test
+[ 71%] Built target Fitter1D_test
+[ 71%] Built target GaussFitter1D_test
+[ 71%] Linking CXX executable ../bin/IsotopeModel_test
+[ 71%] Built target GaussTraceFitter_test
+[ 71%] Linking CXX executable ../bin/LevMarqFitter1D_test
+[ 71%] Built target GaussModel_test
+[ 71%] Built target IDConflictResolverAlgorithm_test
+[ 71%] Linking CXX executable ../bin/MaxLikeliFitter1D_test
+[ 71%] Linking CXX executable ../bin/ModelDescription_test
+[ 71%] Building CXX object src/tests/class_tests/openms/CMakeFiles/PeakPickerHiRes_test.dir/source/PeakPickerHiRes_test.cpp.o
+[ 71%] Built target InterpolationModel_test
+[ 71%] Linking CXX executable ../bin/PeakPickerIterative_test
+[ 71%] Built target IsotopeFitter1D_test
+[ 71%] Linking CXX executable ../bin/PeakPickerIM_test
+/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/tests/class_tests/openms/source/PeptideAndProteinQuant_test.cpp: In function ‘int main(int, char**)’:
+/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/tests/class_tests/openms/source/PeptideAndProteinQuant_test.cpp:2315:27: warning: loop variable ‘aggregate’ of type ‘const std::string&’ {aka ‘const std::__cxx11::basic_string<char>&’} binds to a temporary constructed from type ‘const char* const’ [-Wrange-loop-construct]
+ 2315 |   for (const std::string& aggregate : {"median", "mean"})
+      |                           ^~~~~~~~~
+/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/tests/class_tests/openms/source/PeptideAndProteinQuant_test.cpp:2315:27: note: use non-reference type ‘const std::string’ {aka ‘const std::__cxx11::basic_string<char>’} to make the copy explicit or ‘const char* const&’ to prevent copying
+[ 71%] Built target IsotopeModel_test
+[ 71%] Built target LevMarqFitter1D_test
+[ 71%] Building CXX object src/tests/class_tests/openms/CMakeFiles/PeakWidthEstimator_test.dir/source/PeakWidthEstimator_test.cpp.o
+[ 71%] Built target MaxLikeliFitter1D_test
+[ 71%] Building CXX object src/tests/class_tests/openms/CMakeFiles/SeedListGenerator_test.dir/source/SeedListGenerator_test.cpp.o
+[ 71%] Built target ModelDescription_test
+[ 71%] Linking CXX executable ../bin/TraceFitter_test
+[ 71%] Built target PeakPickerIterative_test
+[ 71%] Linking CXX executable ../bin/EmgScoring_test
+[ 71%] Building CXX object src/tests/class_tests/openms/CMakeFiles/FAIMSHelper_test.dir/source/FAIMSHelper_test.cpp.o
+[ 71%] Linking CXX executable ../bin/IDBoostGraph_test
+[ 71%] Built target PeakPickerIM_test
+[ 71%] Building CXX object src/tests/class_tests/openms/CMakeFiles/IMDataConverter_test.dir/source/IMDataConverter_test.cpp.o
+[ 71%] Linking CXX executable ../bin/MapAlignmentAlgorithmTreeGuided_test
+[ 71%] Built target TraceFitter_test
+[ 71%] Linking CXX executable ../bin/IMDataArrayUtils_test
+[ 71%] Built target EmgScoring_test
+[ 71%] Built target IDBoostGraph_test
+[ 71%] Building CXX object src/tests/class_tests/openms/CMakeFiles/IMTypes_test.dir/source/IMTypes_test.cpp.o
+[ 71%] Linking CXX executable ../bin/IonImage_test
+[ 71%] Built target MapAlignmentAlgorithmTreeGuided_test
+[ 71%] Linking CXX executable ../bin/MSImagingGeometry_test
+[ 71%] Linking CXX executable ../bin/MapAlignmentAlgorithmPoseClustering_test
+[ 71%] Built target IMDataArrayUtils_test
+[ 71%] Linking CXX executable ../bin/MSImagingExperiment_test
+[ 71%] Built target IonImage_test
+[ 71%] Linking CXX executable ../bin/MSImagingRegion_test
+[ 71%] Built target MSImagingGeometry_test
+[ 71%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MRMAssay_test.dir/source/MRMAssay_test.cpp.o
+[ 71%] Linking CXX executable ../bin/PercolatorFeatureSetHelper_test
+[ 71%] Built target MSImagingExperiment_test
+[ 71%] Built target MapAlignmentAlgorithmPoseClustering_test
+[ 71%] Linking CXX executable ../bin/MRMIonSeries_test
+[ 71%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MRMDecoy_test.dir/source/MRMDecoy_test.cpp.o
+[ 72%] Linking CXX executable ../bin/PrecursorPurity_test
+[ 72%] Built target MSImagingRegion_test
+[ 72%] Linking CXX executable ../bin/SpectralDeconvolution_test
+[ 72%] Linking CXX executable ../bin/MRMRTNormalizer_test
+[ 72%] Linking CXX executable ../bin/MapAlignmentAlgorithmIdentification_test
+[ 72%] Linking CXX executable ../bin/PeptideProteinResolution_test
+[ 72%] Built target PercolatorFeatureSetHelper_test
+[ 72%] Building CXX object src/tests/class_tests/openms/CMakeFiles/TransitionTSVFile_test.dir/source/TransitionTSVFile_test.cpp.o
+[ 73%] Built target MRMIonSeries_test
+[ 73%] Built target PrecursorPurity_test
+[ 73%] Building CXX object src/tests/class_tests/openms/CMakeFiles/ChromatogramExtractor_test.dir/source/ChromatogramExtractor_test.cpp.o
+[ 73%] Building CXX object src/tests/class_tests/openms/CMakeFiles/TransitionPQPFile_test.dir/source/TransitionPQPFile_test.cpp.o
+[ 73%] Built target MRMRTNormalizer_test
+[ 73%] Built target SpectralDeconvolution_test
+[ 73%] Building CXX object src/tests/class_tests/openms/CMakeFiles/ChromatogramExtractorAlgorithm_test.dir/source/ChromatogramExtractorAlgorithm_test.cpp.o
+[ 73%] Linking CXX executable ../bin/PeakMapExtractor_test
+[ 73%] Built target PeptideProteinResolution_test
+[ 73%] Linking CXX executable ../bin/OpenSwathHelper_test
+[ 73%] Built target MapAlignmentAlgorithmIdentification_test
+[ 73%] Linking CXX executable ../bin/OpenSwathLibraryIDNormalizer_test
+[ 73%] Linking CXX executable ../bin/MetaboliteFeatureDeconvolution_test
+[ 73%] Linking CXX executable ../bin/OpenPepXLAlgorithm_test
+[ 73%] Built target PeakMapExtractor_test
+[ 73%] Linking CXX executable ../bin/OpenSwathLibraryPreparation_test
+[ 73%] Built target OpenSwathHelper_test
+[ 73%] Linking CXX executable ../bin/OPXLHelper_test
+[ 73%] Built target OpenSwathLibraryIDNormalizer_test
+[ 73%] Linking CXX executable ../bin/OpenSwathOSWWriter_test
+[ 73%] Linking CXX executable ../bin/OpenSwathPeptidoformInference_test
+[ 73%] Built target MetaboliteFeatureDeconvolution_test
+[ 73%] Linking CXX executable ../bin/TransitionListEvidenceFilter_test
+[ 73%] Built target OpenPepXLAlgorithm_test
+[ 73%] Built target OpenSwathLibraryPreparation_test
+[ 73%] Linking CXX executable ../bin/OpenSwathScoring_test
+[ 73%] Linking CXX executable ../bin/OpenSwathScores_test
+[ 73%] Built target OPXLHelper_test
+[ 73%] Built target OpenSwathOSWWriter_test
+[ 73%] Linking CXX executable ../bin/OpenSwathWorkflowScheduler_test
+[ 73%] Linking CXX executable ../bin/PeakIntegrator_test
+[ 73%] Built target OpenSwathPeptidoformInference_test
+[ 73%] Building CXX object src/tests/class_tests/openms/CMakeFiles/PeakPickerChromatogram_test.dir/source/PeakPickerChromatogram_test.cpp.o
+[ 73%] Linking CXX executable ../bin/XFDRAlgorithm_test
+[ 73%] Built target TransitionListEvidenceFilter_test
+[ 73%] Linking CXX executable ../bin/PeakPickerMobilogram_test
+[ 73%] Linking CXX executable ../bin/ElutionModelFitter_test
+[ 73%] Built target OpenSwathScoring_test
+[ 73%] Built target OpenSwathScores_test
+[ 73%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MRMTransitionGroupPicker_test.dir/source/MRMTransitionGroupPicker_test.cpp.o
+[ 73%] Linking CXX executable ../bin/DIAHelper_test
+[ 73%] Built target OpenSwathWorkflowScheduler_test
+[ 73%] Linking CXX executable ../bin/DIAScoring_test
+[ 73%] Built target PeakIntegrator_test
+[ 73%] Linking CXX executable ../bin/DIAPrescoring_test
+[ 73%] Built target XFDRAlgorithm_test
+[ 73%] Linking CXX executable ../bin/OpenSwathMRMFeatureAccessOpenMS_test
+[ 73%] Built target PeakPickerMobilogram_test
+[ 73%] Built target ElutionModelFitter_test
+[ 73%] Building CXX object src/tests/class_tests/openms/CMakeFiles/SpectrumAddition_test.dir/source/SpectrumAddition_test.cpp.o
+[ 73%] Built target DIAHelper_test
+[ 73%] Building CXX object src/tests/class_tests/openms/CMakeFiles/TargetedSpectraExtractor_test.dir/source/TargetedSpectraExtractor_test.cpp.o
+[ 73%] Building CXX object src/tests/class_tests/openms/CMakeFiles/OpenSwathSpectrumAccessOpenMS_test.dir/source/OpenSwathSpectrumAccessOpenMS_test.cpp.o
+[ 73%] Built target DIAScoring_test
+[ 73%] Built target DIAPrescoring_test
+[ 73%] Building CXX object src/tests/class_tests/openms/CMakeFiles/OpenSwathDataAccessHelper_test.dir/source/OpenSwathDataAccessHelper_test.cpp.o
+[ 73%] Linking CXX executable ../bin/CalibrationWorkflow_test
+[ 73%] Linking CXX executable ../bin/PeakWidthEstimator_test
+[ 73%] Linking CXX executable ../bin/PeakPickerHiRes_test
+[ 73%] Linking CXX executable ../bin/FAIMSHelper_test
+[ 73%] Built target OpenSwathMRMFeatureAccessOpenMS_test
+[ 73%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MasstraceCorrelator_test.dir/source/MasstraceCorrelator_test.cpp.o
+/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/tests/class_tests/openms/source/MRMAssay_test.cpp: In function ‘int main(int, char**)’:
+/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/tests/class_tests/openms/source/MRMAssay_test.cpp:936:10: warning: unused variable ‘initial_transitions’ [-Wunused-variable]
+  936 |   size_t initial_transitions = targeted_exp_heavy.getTransitions().size();
+      |          ^~~~~~~~~~~~~~~~~~~
+[ 73%] Built target CalibrationWorkflow_test
+[ 73%] Built target PeakWidthEstimator_test
+[ 73%] Built target PeakPickerHiRes_test
+[ 74%] Linking CXX executable ../bin/MRMBatchFeatureSelector_test
+[ 74%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MRMFeatureScoring_test.dir/source/MRMFeatureScoring_test.cpp.o
+[ 74%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MRMFeatureSelector_test.dir/source/MRMFeatureSelector_test.cpp.o
+[ 74%] Built target FAIMSHelper_test
+[ 74%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MRMFeatureFinderScoring_test.dir/source/MRMFeatureFinderScoring_test.cpp.o
+[ 74%] Linking CXX executable ../bin/IMDataConverter_test
+[ 74%] Linking CXX executable ../bin/IMTypes_test
+[ 74%] Linking CXX executable ../bin/FeatureFinderAlgorithmPicked_test
+[ 74%] Built target MRMBatchFeatureSelector_test
+[ 74%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MRMFeatureFilter_test.dir/source/MRMFeatureFilter_test.cpp.o
+[ 74%] Built target IMDataConverter_test
+[ 74%] Built target IMTypes_test
+[ 74%] Building CXX object src/tests/class_tests/openms/CMakeFiles/MRMFeatureQC_test.dir/source/MRMFeatureQC_test.cpp.o
+[ 74%] Linking CXX executable ../bin/OpenSwathExport_test
+[ 74%] Linking CXX executable ../bin/FeatureFinderMultiplexAlgorithm_test
+[ 74%] Built target FeatureFinderAlgorithmPicked_test
+[ 74%] Linking CXX executable ../bin/OpenSwathPercolatorScoring_test
+[ 74%] Built target FeatureFinderMultiplexAlgorithm_test
+[ 74%] Built target OpenSwathExport_test
+[ 74%] Linking CXX executable ../bin/StatsHelpers_test
+[ 74%] Linking CXX executable ../bin/SpectrumHelpers_test
+[ 74%] Built target OpenSwathPercolatorScoring_test
+[ 74%] Building CXX object src/tests/class_tests/openms/CMakeFiles/SwathQC_test.dir/source/SwathQC_test.cpp.o
+[ 74%] Linking CXX executable ../bin/SeedListGenerator_test
+[ 74%] Built target SpectrumHelpers_test
+[ 74%] Built target StatsHelpers_test
+[ 74%] Linking CXX executable ../bin/TransitionTSVFile_test
+[ 74%] Linking CXX executable ../bin/MRMDecoy_test
+[ 74%] Linking CXX executable ../bin/IonMobilityScoring_test
+[ 74%] Building CXX object src/tests/class_tests/openms/CMakeFiles/CachedMzML_test.dir/source/CachedMzML_test.cpp.o
+[ 74%] Linking CXX executable ../bin/ChromatogramExtractorAlgorithm_test
+[ 74%] Linking CXX executable ../bin/MRMAssay_test
+[ 74%] Built target SeedListGenerator_test
+[ 74%] Building CXX object src/tests/class_tests/openms/CMakeFiles/CachedMzMLHandler_test.dir/source/CachedMzMLHandler_test.cpp.o
+[ 74%] Built target TransitionTSVFile_test
+[ 74%] Built target IonMobilityScoring_test
+[ 74%] Building CXX object src/tests/class_tests/openms/CMakeFiles/TransitionParquetFile_test.dir/source/TransitionParquetFile_test.cpp.o
+[ 74%] Linking CXX executable ../bin/OpenSwathOSWParquetReader_test
+[ 74%] Built target MRMDecoy_test
+[ 74%] Building CXX object src/tests/class_tests/openms/CMakeFiles/OpenSwathOSWParquetWriter_test.dir/source/OpenSwathOSWParquetWriter_test.cpp.o
+[ 74%] Built target ChromatogramExtractorAlgorithm_test
+[ 74%] Built target MRMAssay_test
+[ 74%] Linking CXX executable ../bin/OpenSwathMatrixExporter_test
+[ 74%] Linking CXX executable ../bin/OpenSwathResultsExporter_test
+[ 74%] Built target OpenSwathOSWParquetReader_test
+[ 74%] Linking CXX executable ../bin/OpenSwathParquetExporter_test
+[ 74%] Built target OpenSwathMatrixExporter_test
+[ 74%] Building CXX object src/tests/class_tests/openms/CMakeFiles/DBSuitability_test.dir/source/DBSuitability_test.cpp.o
+[ 74%] Built target OpenSwathResultsExporter_test
+[ 74%] Linking CXX executable ../bin/FeatureSummary_test
+[ 74%] Linking CXX executable ../bin/PeptideAndProteinQuant_test
+[ 74%] Linking CXX executable ../bin/SpectrumAddition_test
+[ 74%] Built target OpenSwathParquetExporter_test
+[ 74%] Linking CXX executable ../bin/IdentificationSummary_test
+[ 75%] Built target FeatureSummary_test
+[ 76%] Linking CXX executable ../bin/PeakPickerChromatogram_test
+[ 76%] Linking CXX executable ../bin/IDFreeMassErrorEstimator_test
+[ 76%] Built target PeptideAndProteinQuant_test
+[ 76%] Linking CXX executable ../bin/MissedCleavages_test
+[ 76%] Built target SpectrumAddition_test
+[ 76%] Linking CXX executable ../bin/Ms2IdentificationRate_test
+[ 76%] Built target IdentificationSummary_test
+[ 76%] Linking CXX executable ../bin/PSMExplainedIonCurrent_test
+[ 76%] Built target PeakPickerChromatogram_test
+[ 76%] Built target IDFreeMassErrorEstimator_test
+[ 76%] Linking CXX executable ../bin/QCBase_test
+[ 76%] Linking CXX executable ../bin/SpectrumCount_test
+[ 76%] Built target MissedCleavages_test
+[ 76%] Linking CXX executable ../bin/TIC_test
+[ 76%] Built target Ms2IdentificationRate_test
+[ 76%] Linking CXX executable ../../bin/CometModification_test
+[ 76%] Built target PSMExplainedIonCurrent_test
+[ 76%] Linking CXX executable ../bin/OpenSwathDataAccessHelper_test
+[ 76%] Linking CXX executable ../../bin/CometNativeIDRemapper_test
+[ 76%] Built target QCBase_test
+[ 77%] Linking CXX executable ../../bin/NeighborSeq_test
+[ 77%] Built target SpectrumCount_test
+[ 77%] Linking CXX executable ../../bin/DIAQCMetrics_test
+[ 77%] Built target TIC_test
+[ 77%] Linking CXX executable ../bin/TransitionPQPFile_test
+[ 77%] Built target CometModification_test
+[ 77%] Linking CXX executable ../../bin/INIUpdater_test
+[ 77%] Linking CXX executable ../../bin/MS1LabeledFAIMS_test
+[ 77%] Built target OpenSwathDataAccessHelper_test
+[ 77%] Built target CometNativeIDRemapper_test
+[ 77%] Linking CXX executable ../bin/OpenSwathSpectrumAccessOpenMS_test
+[ 77%] Linking CXX executable ../../bin/MS1LabeledRatioQuantifier_test
+[ 77%] Building CXX object src/tests/class_tests/openms/topp_MS1LabeledWorkflow_tests/CMakeFiles/MS1LabeledSpectra_test.dir/MS1LabeledSpectra_test.cpp.o
+[ 77%] Built target NeighborSeq_test
+[ 77%] Linking CXX executable ../../bin/ModifiedNASequenceGenerator_test
+[ 77%] Built target INIUpdater_test
+[ 77%] Built target TransitionPQPFile_test
+[ 77%] Linking CXX executable ../../bin/NuXLDeisotoper_test
+[ 77%] Building CXX object src/tests/class_tests/openms/topp_NucleicAcidSearchEngine_tests/CMakeFiles/NASEDigestion_test.dir/NASEDigestion_test.cpp.o
+[ 77%] Built target MS1LabeledFAIMS_test
+[ 77%] Built target DIAQCMetrics_test
+[ 77%] Built target OpenSwathSpectrumAccessOpenMS_test
+[ 77%] Linking CXX executable ../../bin/NuXLFragmentAdductDefinition_test
+[ 77%] Linking CXX executable ../../bin/NuXLModificationsGenerator_test
+[ 77%] Linking CXX executable ../../bin/NuXLParameterParsing_test
+[ 77%] Built target MS1LabeledRatioQuantifier_test
+[ 77%] Linking CXX executable ../bin/SwathQC_test
+[ 77%] Linking CXX executable ../../bin/NuXLReport_test
+[ 77%] Built target ModifiedNASequenceGenerator_test
+[ 77%] Linking CXX executable ../../bin/OpenSwathInference_test
+[ 77%] Linking CXX executable ../bin/ChromatogramExtractor_test
+[ 77%] Built target NuXLDeisotoper_test
+[ 77%] Linking CXX executable ../../bin/Contaminants_test
+[ 77%] Built target NuXLFragmentAdductDefinition_test
+[ 77%] Built target NuXLModificationsGenerator_test
+[ 77%] Linking CXX executable ../../bin/FWHM_test
+[ 77%] Linking CXX executable ../../bin/FragmentMassError_test
+[ 77%] Built target SwathQC_test
+[ 77%] Linking CXX executable ../bin/MasstraceCorrelator_test
+[ 78%] Built target NuXLParameterParsing_test
+[ 78%] Building CXX object src/tests/class_tests/openms/topp_QualityControl_tests/CMakeFiles/MQEvidenceExporter_test.dir/MQEvidenceExporter_test.cpp.o
+[ 78%] Building CXX object src/tests/class_tests/openms/topp_QualityControl_tests/CMakeFiles/MQMsmsExporter_test.dir/MQMsmsExporter_test.cpp.o
+[ 78%] Built target NuXLReport_test
+[ 78%] Built target OpenSwathInference_test
+[ 78%] Linking CXX executable ../../bin/Ms2SpectrumStats_test
+[ 78%] Linking CXX executable ../bin/MRMFeatureSelector_test
+[ 78%] Building CXX object src/tests/class_tests/openms/topp_QualityControl_tests/CMakeFiles/MzCalibration_test.dir/__/source/MzCalibration.cpp.o
+[ 78%] Built target ChromatogramExtractor_test
+[ 78%] Built target Contaminants_test
+[ 78%] Linking CXX executable ../../bin/PeptideMass_test
+[ 79%] Linking CXX executable ../../bin/RTAlignment_test
+[ 79%] Built target FWHM_test
+[ 79%] Built target FragmentMassError_test
+[ 79%] Building CXX object src/tests/class_tests/openms/topp_UniPEFF_tests/CMakeFiles/UniProtXMLFile_test.dir/UniProtXMLFile_test.cpp.o
+[ 79%] Building CXX object src/tests/class_tests/openms/topp_UniPEFF_tests/CMakeFiles/UniPEFFEntries_test.dir/UniPEFFEntries_test.cpp.o
+[ 79%] Built target MasstraceCorrelator_test
+[ 79%] Linking CXX executable ../bin/ParameterInformation_test
+[ 79%] Built target MRMFeatureSelector_test
+[ 79%] Built target Ms2SpectrumStats_test
+[ 79%] Building CXX object src/tests/class_tests/openms_cli/CMakeFiles/SearchEngineBase_test.dir/source/SearchEngineBase_test.cpp.o
+[ 79%] Linking CXX executable ../bin/MRMFeatureQC_test
+[ 79%] Building CXX object src/tests/class_tests/openms_cli/CMakeFiles/TOPPBase_test.dir/source/TOPPBase_test.cpp.o
+[ 79%] Built target PeptideMass_test
+[ 79%] Built target RTAlignment_test
+[ 79%] Linking CXX executable ../bin/ToolHandler_test
+[ 79%] Linking CXX executable ../bin/TOPPExternalToolBase_test
+[ 79%] Built target ParameterInformation_test
+[ 79%] Linking CXX executable ../bin/TransformationModelDefaults_test
+[ 79%] Built target MRMFeatureQC_test
+[ 79%] Building CXX object src/tests/class_tests/openms/topp_UniPEFF_tests/CMakeFiles/UniProtXMLFile_test.dir/__/source/UniProtXMLFile.cpp.o
+[ 79%] Built target ToolHandler_test
+[ 79%] Built target TOPPExternalToolBase_test
+[ 79%] Linking CXX executable ../../bin/AccurateMassSearch
+[ 79%] Linking CXX executable ../../bin/AssayGeneratorMetabo
+[ 79%] Built target TransformationModelDefaults_test
+[ 79%] Linking CXX executable ../../bin/AssayGeneratorMetaboSirius
+[ 79%] Built target AccurateMassSearch
+[ 79%] Linking CXX executable ../../bin/BaselineFilter
+[ 79%] Built target AssayGeneratorMetabo
+[ 79%] Built target AssayGeneratorMetaboSirius
+[ 79%] Building CXX object src/topp/CMakeFiles/FeatureFinderLFQ.dir/FeatureFinderLFQ.cpp.o
+[ 79%] Linking CXX executable ../../bin/ClusterMassTraces
+[ 79%] Built target BaselineFilter
+[ 79%] Linking CXX executable ../../bin/ClusterMassTracesByPrecursor
+[ 79%] Built target ClusterMassTraces
+[ 79%] Linking CXX executable ../../bin/ConsensusID
+[ 79%] Linking CXX executable ../bin/TargetedSpectraExtractor_test
+[ 79%] Built target ClusterMassTracesByPrecursor
+[ 79%] Building CXX object src/topp/CMakeFiles/ConsensusMapNormalizer.dir/ConsensusMapNormalizer.cpp.o
+[ 79%] Built target ConsensusID
+[ 79%] Building CXX object src/topp/CMakeFiles/CVInspector.dir/CVInspector.cpp.o
+[ 79%] Linking CXX executable ../bin/CachedMzML_test
+[ 79%] Built target TargetedSpectraExtractor_test
+[ 79%] Linking CXX executable ../../bin/DatabaseFilter
+[ 79%] Linking CXX executable ../bin/DBSuitability_test
+[ 79%] Linking CXX executable ../bin/MRMFeatureFinderScoring_test
+[ 79%] Building CXX object src/tests/class_tests/openms/topp_UniPEFF_tests/CMakeFiles/UniProtXMLFile_test.dir/__/source/UniProtXMLHandler.cpp.o
+[ 79%] Built target DatabaseFilter
+[ 79%] Built target CachedMzML_test
+[ 79%] Linking CXX executable ../bin/MRMFeatureScoring_test
+[ 79%] Linking CXX executable ../../bin/Decharger
+[ 79%] Linking CXX executable ../../bin/DatabaseSuitability
+[ 79%] Linking CXX executable ../../bin/DeMeanderize
+[ 79%] Built target DBSuitability_test
+[ 79%] Linking CXX executable ../../bin/MS1LabeledSpectra_test
+[ 79%] Linking CXX executable ../../bin/Digestor
+[ 79%] Built target MRMFeatureFinderScoring_test
+[ 79%] Building CXX object src/topp/CMakeFiles/DigestorMotif.dir/DigestorMotif.cpp.o
+[ 79%] Built target DatabaseSuitability
+[ 79%] Building CXX object src/tests/class_tests/openms/topp_UniPEFF_tests/CMakeFiles/UniPEFFEntries_test.dir/__/source/UniPEFFEntries.cpp.o
+[ 79%] Linking CXX executable ../../bin/DTAExtractor
+[ 79%] Built target Decharger
+[ 79%] Built target DeMeanderize
+[ 79%] Built target MRMFeatureScoring_test
+[ 79%] Linking CXX executable ../../bin/EICExtractor
+[ 79%] Linking CXX executable ../../bin/Epifany
+[ 79%] Building CXX object src/topp/CMakeFiles/ExternalCalibration.dir/ExternalCalibration.cpp.o
+[ 79%] Built target Digestor
+[ 79%] Linking CXX executable ../../bin/FalseDiscoveryRate
+[ 80%] Built target MS1LabeledSpectra_test
+[ 80%] Linking CXX executable ../../bin/FeatureFinderCentroided
+[ 80%] Linking CXX executable ../bin/MRMTransitionGroupPicker_test
+[ 80%] Built target DTAExtractor
+[ 80%] Linking CXX executable ../../bin/FeatureFinderIdentification
+[ 81%] Built target Epifany
+[ 81%] Built target EICExtractor
+[ 81%] Linking CXX executable ../../bin/FeatureFinderMetabo
+[ 81%] Linking CXX executable ../../bin/FeatureFinderMetaboIdent
+[ 81%] Built target FalseDiscoveryRate
+[ 81%] Built target FeatureFinderCentroided
+[ 81%] Linking CXX executable ../../bin/FeatureFinderMultiplex
+[ 81%] Linking CXX executable ../../bin/FeatureLinkerLabeled
+[ 81%] Linking CXX executable ../bin/CachedMzMLHandler_test
+[ 81%] Linking CXX executable ../bin/MRMFeatureFilter_test
+[ 81%] Built target MRMTransitionGroupPicker_test
+[ 81%] Built target FeatureFinderIdentification
+[ 81%] Built target FeatureFinderMetabo
+[ 81%] Building CXX object src/topp/CMakeFiles/FeatureLinkerUnlabeled.dir/FeatureLinkerUnlabeled.cpp.o
+[ 81%] Linking CXX executable ../../bin/FeatureLinkerUnlabeledKD
+[ 81%] Built target FeatureFinderMetaboIdent
+[ 81%] Linking CXX executable ../../bin/FeatureLinkerUnlabeledQT
+[ 81%] Building CXX object src/topp/CMakeFiles/FileConverter.dir/FileConverter.cpp.o
+[ 81%] Built target FeatureFinderMultiplex
+[ 81%] Built target FeatureLinkerLabeled
+[ 81%] Building CXX object src/topp/CMakeFiles/FileFilter.dir/FileFilter.cpp.o
+[ 81%] Linking CXX executable ../../bin/FileInfo
+[ 81%] Built target CachedMzMLHandler_test
+[ 81%] Built target MRMFeatureFilter_test
+[ 81%] Linking CXX executable ../../bin/FileMerger
+[ 81%] Linking CXX executable ../../bin/FLASHDeconv
+[ 81%] Built target FeatureLinkerUnlabeledKD
+[ 81%] Built target FeatureLinkerUnlabeledQT
+[ 81%] Linking CXX executable ../../bin/FuzzyDiff
+[ 81%] Linking CXX executable ../../bin/GNPSExport
+[ 81%] Linking CXX executable ../bin/TransitionParquetFile_test
+[ 81%] Built target FileInfo
+[ 81%] Building CXX object src/topp/CMakeFiles/HighResPrecursorMassCorrector.dir/HighResPrecursorMassCorrector.cpp.o
+[ 81%] Built target FLASHDeconv
+[ 81%] Linking CXX executable ../../bin/UniProtXMLFile_test
+[ 81%] Linking CXX executable ../../bin/IDConflictResolver
+[ 81%] Built target FileMerger
+[ 82%] Linking CXX executable ../bin/SearchEngineBase_test
+[ 82%] Built target GNPSExport
+[ 83%] Linking CXX executable ../../bin/IDDecoyProbability
+[ 83%] Built target FuzzyDiff
+[ 83%] Linking CXX executable ../../bin/IDExtractor
+[ 83%] Building CXX object src/topp/CMakeFiles/IDFileConverter.dir/IDFileConverter.cpp.o
+[ 83%] Built target TransitionParquetFile_test
+[ 83%] Linking CXX executable ../../bin/IDFilter
+[ 83%] Built target IDConflictResolver
+[ 83%] Building CXX object src/topp/CMakeFiles/IDMapper.dir/IDMapper.cpp.o
+[ 83%] Built target SearchEngineBase_test
+[ 83%] Built target IDDecoyProbability
+[ 83%] Built target UniProtXMLFile_test
+[ 83%] Linking CXX executable ../../bin/IDMerger
+[ 83%] Linking CXX executable ../../bin/IDPosteriorErrorProbability
+[ 83%] Linking CXX executable ../../bin/IDRipper
+[ 83%] Built target IDExtractor
+[ 83%] Linking CXX executable ../../bin/MQMsmsExporter_test
+[ 83%] Linking CXX executable ../bin/OpenSwathOSWParquetWriter_test
+[ 83%] Linking CXX executable ../../bin/IDRTCalibration
+[ 83%] Linking CXX executable ../../bin/MzCalibration_test
+[ 83%] Built target IDFilter
+[ 83%] Linking CXX executable ../../bin/IDScoreSwitcher
+[ 83%] Linking CXX executable ../../bin/MQEvidenceExporter_test
+[ 83%] Built target IDPosteriorErrorProbability
+[ 83%] Built target IDMerger
+[ 83%] Linking CXX executable ../../bin/IDSplitter
+[ 83%] Built target IDRipper
+[ 83%] Linking CXX executable ../../bin/InternalCalibration
+[ 84%] Linking CXX executable ../../bin/IonMobilityBinning
+[ 84%] Built target IDRTCalibration
+[ 84%] Built target MQMsmsExporter_test
+[ 84%] Built target MzCalibration_test
+[ 84%] Built target IDScoreSwitcher
+[ 84%] Building CXX object src/topp/CMakeFiles/IsobaricAnalyzer.dir/IsobaricAnalyzer.cpp.o
+[ 84%] Building CXX object src/topp/CMakeFiles/IsobaricWorkflow.dir/IsobaricWorkflow.cpp.o
+[ 84%] Built target OpenSwathOSWParquetWriter_test
+[ 84%] Linking CXX executable ../../bin/JSONExporter
+[ 84%] Building CXX object src/topp/CMakeFiles/LuciphorAdapter.dir/LuciphorAdapter.cpp.o
+[ 84%] Linking CXX executable ../../bin/MapAlignerIdentification
+[ 84%] Built target MQEvidenceExporter_test
+[ 84%] Building CXX object src/topp/CMakeFiles/MapAlignerPoseClustering.dir/MapAlignerPoseClustering.cpp.o
+[ 84%] Built target IDSplitter
+[ 84%] Linking CXX executable ../../bin/MapAlignerTreeGuided
+[ 84%] Built target IonMobilityBinning
+[ 84%] Built target InternalCalibration
+[ 84%] Linking CXX executable ../../bin/MapNormalizer
+[ 84%] Linking CXX executable ../../bin/MapRTTransformer
+[ 84%] Built target JSONExporter
+[ 84%] Linking CXX executable ../../bin/MapStatistics
+[ 84%] Built target MapAlignerIdentification
+[ 84%] Linking CXX executable ../../bin/MaRaClusterAdapter
+[ 84%] Built target MapAlignerTreeGuided
+[ 84%] Building CXX object src/topp/CMakeFiles/MascotAdapterOnline.dir/MascotAdapterOnline.cpp.o
+[ 84%] Built target MapNormalizer
+[ 84%] Linking CXX executable ../../bin/MassCalculator
+[ 85%] Built target MapRTTransformer
+[ 85%] Linking CXX executable ../../bin/MassTraceExtractor
+[ 85%] Built target MapStatistics
+[ 85%] Linking CXX executable ../../bin/MetaboliteAdductDecharger
+[ 85%] Built target MaRaClusterAdapter
+[ 85%] Linking CXX executable ../../bin/MetaboliteSpectralMatcher
+[ 85%] Linking CXX executable ../../bin/UniPEFFEntries_test
+[ 85%] Built target MassCalculator
+[ 85%] Linking CXX executable ../../bin/MetaProSIP
+[ 85%] Built target MassTraceExtractor
+[ 85%] Built target MetaboliteAdductDecharger
+[ 85%] Linking CXX executable ../../bin/MRMMapper
+[ 85%] Linking CXX executable ../../bin/MRMPairFinder
+[ 85%] Built target MetaboliteSpectralMatcher
+[ 85%] Building CXX object src/topp/CMakeFiles/MSGFPlusAdapter.dir/MSGFPlusAdapter.cpp.o
+[ 85%] Built target UniPEFFEntries_test
+[ 85%] Building CXX object src/topp/CMakeFiles/MSFraggerAdapter.dir/MSFraggerAdapter.cpp.o
+[ 86%] Built target MetaProSIP
+[ 86%] Linking CXX executable ../../bin/MSstatsConverter
+[ 86%] Built target MRMMapper
+[ 86%] Built target MRMPairFinder
+[ 86%] Linking CXX executable ../../bin/MultiplexResolver
+[ 86%] Linking CXX executable ../../bin/MzMLSplitter
+[ 86%] Built target MSstatsConverter
+[ 86%] Linking CXX executable ../../bin/CVInspector
+[ 87%] Linking CXX executable ../../bin/MzTabExporter
+[ 87%] Built target MultiplexResolver
+[ 87%] Built target MzMLSplitter
+[ 87%] Building CXX object src/topp/CMakeFiles/NoiseFilterGaussian.dir/NoiseFilterGaussian.cpp.o
+[ 87%] Building CXX object src/topp/CMakeFiles/NoiseFilterSGolay.dir/NoiseFilterSGolay.cpp.o
+[ 87%] Linking CXX executable ../../bin/ConsensusMapNormalizer
+[ 87%] Built target CVInspector
+[ 87%] Building CXX object src/topp/CMakeFiles/NovorAdapter.dir/NovorAdapter.cpp.o
+[ 87%] Built target MzTabExporter
+[ 87%] Linking CXX executable ../../bin/FeatureFinderLFQ
+[ 87%] Building CXX object src/topp/CMakeFiles/OpenDIA.dir/OpenDIA.cpp.o
+[ 87%] Built target ConsensusMapNormalizer
+[ 87%] Linking CXX executable ../../bin/OpenMSDatabasesInfo
+[ 87%] Linking CXX executable ../../bin/ExternalCalibration
+[ 87%] Built target FeatureFinderLFQ
+[ 87%] Linking CXX executable ../../bin/OpenMSInfo
+[ 87%] Built target OpenMSDatabasesInfo
+[ 87%] Building CXX object src/topp/CMakeFiles/OpenPepXL.dir/OpenPepXL.cpp.o
+[ 87%] Built target ExternalCalibration
+[ 87%] Linking CXX executable ../../bin/OpenSwathAnalyzer
+[ 87%] Built target OpenMSInfo
+[ 87%] Linking CXX executable ../../bin/OpenSwathAssayGenerator
+[ 88%] Built target OpenSwathAnalyzer
+[ 88%] Linking CXX executable ../../bin/OpenSwathChromatogramExtractor
+[ 88%] Built target OpenSwathAssayGenerator
+[ 88%] Linking CXX executable ../../bin/OpenSwathConfidenceScoring
+/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/topp/MascotAdapterOnline.cpp: In member function ‘virtual OpenMS::TOPPBase::ExitCodes TOPPMascotAdapterOnline::main_(int, const char**)’:
+/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/topp/MascotAdapterOnline.cpp:237:23: warning: unused parameter ‘argc’ [-Wunused-parameter]
+  237 |   ExitCodes main_(int argc, const char** argv) override
+      |                   ~~~~^~~~
+/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/topp/MascotAdapterOnline.cpp:237:42: warning: unused parameter ‘argv’ [-Wunused-parameter]
+  237 |   ExitCodes main_(int argc, const char** argv) override
+      |                             ~~~~~~~~~~~~~^~~~
+[ 88%] Built target OpenSwathChromatogramExtractor
+[ 88%] Linking CXX executable ../../bin/OpenSwathDecoyGenerator
+[ 88%] Built target OpenSwathConfidenceScoring
+[ 88%] Linking CXX executable ../../bin/OpenSwathFeatureXMLToTSV
+[ 88%] Built target OpenSwathDecoyGenerator
+[ 88%] Linking CXX executable ../../bin/DigestorMotif
+[ 88%] Linking CXX executable ../../bin/OpenSwathRTNormalizer
+[ 88%] Built target OpenSwathFeatureXMLToTSV
+[ 88%] Building CXX object src/topp/CMakeFiles/PeakPickerHiRes.dir/PeakPickerHiRes.cpp.o
+[ 88%] Built target DigestorMotif
+[ 88%] Built target OpenSwathRTNormalizer
+[ 88%] Linking CXX executable ../../bin/PeakPickerIterative
+[ 88%] Building CXX object src/topp/CMakeFiles/PeakPickerIM.dir/PeakPickerIM.cpp.o
+[ 88%] Linking CXX executable ../bin/ProSEAlgorithm_test
+[ 88%] Built target PeakPickerIterative
+[ 88%] Linking CXX executable ../../bin/PeptideIndexer
+[ 88%] Built target ProSEAlgorithm_test
+[ 88%] Linking CXX executable ../../bin/ProSE
+[ 88%] Built target PeptideIndexer
+[ 88%] Linking CXX executable ../../bin/PercolatorAdapter
+[ 88%] Built target ProSE
+[ 88%] Linking CXX executable ../../bin/PhosphoScoring
+[ 88%] Built target PercolatorAdapter
+[ 88%] Linking CXX executable ../../bin/HighResPrecursorMassCorrector
+[ 88%] Linking CXX executable ../../bin/ProteinInference
+[ 88%] Built target PhosphoScoring
+[ 88%] Linking CXX executable ../../bin/ProteinQuantifier
+[ 89%] Built target ProteinInference
+[ 89%] Built target HighResPrecursorMassCorrector
+[ 89%] Linking CXX executable ../../bin/ProteomicsLFQ
+[ 89%] Linking CXX executable ../../bin/PSMFeatureExtractor
+[ 89%] Built target ProteinQuantifier
+[ 89%] Linking CXX executable ../../bin/MapAlignerPoseClustering
+[ 89%] Linking CXX executable ../../bin/QCCalculator
+[ 89%] Built target PSMFeatureExtractor
+[ 89%] Built target ProteomicsLFQ
+[ 89%] Building CXX object src/topp/CMakeFiles/QCEmbedder.dir/QCEmbedder.cpp.o
+[ 89%] Building CXX object src/topp/CMakeFiles/QCExporter.dir/QCExporter.cpp.o
+[ 89%] Linking CXX executable ../../bin/IDMapper
+[ 89%] Built target MapAlignerPoseClustering
+[ 89%] Building CXX object src/topp/CMakeFiles/QCExtractor.dir/QCExtractor.cpp.o
+[ 89%] Built target QCCalculator
+[ 89%] Building CXX object src/topp/CMakeFiles/QCImporter.dir/QCImporter.cpp.o
+[ 89%] Linking CXX executable ../../bin/IsobaricAnalyzer
+[ 89%] Built target IDMapper
+/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/topp/PeakPickerIM.cpp: In member function ‘virtual OpenMS::TOPPBase::ExitCodes TOPPPeakPickerIM::main_(int, const char**)’:
+/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/topp/PeakPickerIM.cpp:362:21: warning: unused variable ‘in_type’ [-Wunused-variable]
+  362 |     FileTypes::Type in_type = FileHandler::getType(input_file);
+      |                     ^~~~~~~
+[ 89%] Building CXX object src/topp/CMakeFiles/QCMerger.dir/QCMerger.cpp.o
+[ 89%] Linking CXX executable ../../bin/NoiseFilterGaussian
+[ 89%] Linking CXX executable ../../bin/FeatureLinkerUnlabeled
+[ 89%] Built target IsobaricAnalyzer
+[ 89%] Building CXX object src/topp/CMakeFiles/QCShrinker.dir/QCShrinker.cpp.o
+[ 89%] Built target NoiseFilterGaussian
+[ 89%] Linking CXX executable ../../bin/Resampler
+[ 89%] Built target FeatureLinkerUnlabeled
+[ 89%] Linking CXX executable ../../bin/RNADigestor
+[ 89%] Built target Resampler
+[ 89%] Built target RNADigestor
+[ 89%] Linking CXX executable ../../bin/RNAMassCalculator
+[ 89%] Linking CXX executable ../../bin/RNPxlXICFilter
+[ 89%] Built target RNAMassCalculator
+[ 89%] Built target RNPxlXICFilter
+[ 89%] Building CXX object src/topp/CMakeFiles/SageAdapter.dir/SageAdapter.cpp.o
+[ 89%] Linking CXX executable ../../bin/SeedListGenerator
+[ 89%] Linking CXX executable ../../bin/PeakPickerIM
+[ 89%] Built target SeedListGenerator
+[ 89%] Linking CXX executable ../../bin/MSFraggerAdapter
+[ 89%] Building CXX object src/topp/CMakeFiles/SemanticValidator.dir/SemanticValidator.cpp.o
+[ 89%] Built target PeakPickerIM
+[ 89%] Built target MSFraggerAdapter
+[ 89%] Linking CXX executable ../../bin/SequenceCoverageCalculator
+[ 89%] Linking CXX executable ../../bin/SimpleSearchEngine
+[ 89%] Linking CXX executable ../../bin/MascotAdapterOnline
+[ 89%] Linking CXX executable ../../bin/NoiseFilterSGolay
+[ 89%] Linking CXX executable ../../bin/LuciphorAdapter
+[ 90%] Built target SimpleSearchEngine
+[ 90%] Built target SequenceCoverageCalculator
+[ 90%] Linking CXX executable ../../bin/SiriusExport
+[ 90%] Linking CXX executable ../../bin/SpectraFilterNLargest
+[ 90%] Built target MascotAdapterOnline
+[ 90%] Built target NoiseFilterSGolay
+[ 90%] Linking CXX executable ../../bin/SpectraFilterNormalizer
+[ 90%] Linking CXX executable ../../bin/SpectraFilterThresholdMower
+[ 90%] Linking CXX executable ../../bin/NovorAdapter
+[ 90%] Built target LuciphorAdapter
+[ 90%] Built target SpectraFilterNLargest
+[ 90%] Linking CXX executable ../../bin/SpectraFilterWindowMower
+[ 90%] Built target SiriusExport
+[ 91%] Linking CXX executable ../../bin/SpectraMerger
+[ 91%] Built target SpectraFilterNormalizer
+[ 91%] Built target SpectraFilterThresholdMower
+[ 91%] Linking CXX executable ../../bin/SpectraSTSearchAdapter
+[ 91%] Built target NovorAdapter
+[ 91%] Linking CXX executable ../../bin/StaticModification
+[ 91%] Building CXX object src/topp/CMakeFiles/TICCalculator.dir/TICCalculator.cpp.o
+[ 91%] Linking CXX executable ../../bin/TextExporter
+[ 91%] Linking CXX executable ../../bin/PeakPickerHiRes
+[ 91%] Built target SpectraFilterWindowMower
+[ 91%] Building CXX object src/topp/CMakeFiles/XFDR.dir/XFDR.cpp.o
+[ 91%] Built target SpectraMerger
+[ 91%] Built target StaticModification
+[ 91%] Built target SpectraSTSearchAdapter
+[ 91%] Built target TextExporter
+[ 91%] Linking CXX executable ../../bin/TargetedFileConverter
+[ 91%] Building CXX object src/topp/CMakeFiles/XMLValidator.dir/XMLValidator.cpp.o
+[ 91%] Linking CXX executable ../../bin/OpenSwathDIAPreScoring
+[ 91%] Linking CXX executable ../../bin/FileConverter
+[ 91%] Building CXX object src/topp/CMakeFiles/OpenSwathMzMLFileCacher.dir/OpenSwathMzMLFileCacher.cpp.o
+[ 91%] Built target PeakPickerHiRes
+[ 91%] Building CXX object src/topp/CMakeFiles/TransitionListEvidenceFilter.dir/TransitionListEvidenceFilter.cpp.o
+[ 91%] Linking CXX executable ../../bin/OpenPepXL
+[ 91%] Built target TargetedFileConverter
+[ 91%] Built target FileConverter
+[ 91%] Built target OpenSwathDIAPreScoring
+[ 91%] Building CXX object src/topp/CMakeFiles/OpenSwathFileSplitter.dir/OpenSwathFileSplitter.cpp.o
+[ 91%] Linking CXX executable ../../bin/OpenSwathRewriteToFeatureXML
+[ 91%] Linking CXX executable ../../bin/MRMTransitionGroupPicker
+[ 91%] Linking CXX executable ../../bin/IDFileConverter
+[ 91%] Built target OpenPepXL
+[ 91%] Building CXX object src/topp/CMakeFiles/ParquetConverter.dir/ParquetConverter.cpp.o
+[ 91%] Built target OpenSwathRewriteToFeatureXML
+[ 91%] Built target MRMTransitionGroupPicker
+[ 91%] Building CXX object src/topp/CometAdapter/CMakeFiles/CometAdapter.dir/CometAdapter.cpp.o
+[ 91%] Linking CXX executable ../../../bin/DecoyDatabase
+[ 91%] Built target IDFileConverter
+[ 91%] Building CXX object src/topp/DIAuditor/CMakeFiles/DIAuditor.dir/DIAuditor.cpp.o
+[ 91%] Linking CXX executable ../../bin/QCExtractor
+[ 91%] Linking CXX executable ../../bin/QCExporter
+[ 91%] Linking CXX executable ../../bin/MSGFPlusAdapter
+[ 91%] Linking CXX executable ../../bin/QCMerger
+[ 91%] Built target DecoyDatabase
+[ 91%] Building CXX object src/topp/INIUpdater/CMakeFiles/INIUpdater.dir/INIUpdater.cpp.o
+[ 91%] Linking CXX executable ../../bin/QCEmbedder
+[ 91%] Built target QCExtractor
+[ 91%] Built target QCExporter
+[ 91%] Linking CXX executable ../../../bin/MS1LabeledWorkflow
+[ 91%] Built target QCMerger
+[ 91%] Linking CXX executable ../../../bin/NucleicAcidSearchEngine
+[ 91%] Built target MSGFPlusAdapter
+[ 92%] Linking CXX executable ../../bin/QCShrinker
+[ 92%] Linking CXX executable ../../bin/SemanticValidator
+[ 92%] Linking CXX executable ../../../bin/OpenSwathExport
+[ 92%] Linking CXX executable ../../bin/QCImporter
+[ 92%] Building CXX object src/topp/OpenNuXL/CMakeFiles/OpenNuXL.dir/OpenNuXL.cpp.o
+[ 92%] Built target QCEmbedder
+[ 92%] Linking CXX executable ../../../bin/OpenSwathInfer
+[ 92%] Built target MS1LabeledWorkflow
+[ 92%] Linking CXX executable ../../bin/IsobaricWorkflow
+[ 92%] Built target NucleicAcidSearchEngine
+[ 92%] Built target SemanticValidator
+[ 92%] Built target QCShrinker
+[ 92%] Built target QCImporter
+[ 92%] Linking CXX executable ../../../bin/OpenSwathPercolatorScoring
+[ 92%] Built target OpenSwathExport
+[ 93%] Building CXX object src/topp/UniPEFF/CMakeFiles/UniPEFF.dir/UniPEFF.cpp.o
+[ 94%] Building CXX object src/topp/OpenSwathPeakMapExtractor/CMakeFiles/OpenSwathPeakMapExtractor.dir/OpenSwathPeakMapExtractor.cpp.o
+[ 94%] Building CXX object src/topp/OpenSwathWorkflow/CMakeFiles/OpenSwathWorkflow.dir/OpenSwathWorkflow.cpp.o
+[ 94%] Building CXX object src/topp/QualityControl/CMakeFiles/QualityControl.dir/source/MzCalibration.cpp.o
+[ 94%] Linking CXX executable ../../../bin/ParquetDiff
+[ 95%] Built target OpenSwathInfer
+[ 95%] Building CXX object src/topp/UniPEFF/CMakeFiles/UniPEFF.dir/source/UniPEFFEntries.cpp.o
+[ 95%] Built target IsobaricWorkflow
+[ 95%] Building CXX object src/topp/UniPEFF/CMakeFiles/UniPEFF.dir/source/UniProtXMLFile.cpp.o
+[ 95%] Built target OpenSwathPercolatorScoring
+[ 95%] Building CXX object src/topp/UniPEFF/CMakeFiles/UniPEFF.dir/source/UniProtXMLHandler.cpp.o
+[ 96%] Built target ParquetDiff
+[ 96%] Building CXX object src/topp/OpenNuXL/CMakeFiles/OpenNuXL.dir/source/NuXLFDR.cpp.o
+[ 96%] Linking CXX executable ../bin/TOPPBase_test
+[ 96%] Built target TOPPBase_test
+[ 96%] Linking CXX executable ../../bin/FileFilter
+[ 96%] Linking CXX executable ../../bin/OpenSwathFileSplitter
+[ 96%] Linking CXX executable ../../bin/NASEDigestion_test
+[ 96%] Built target FileFilter
+[ 96%] Built target OpenSwathFileSplitter
+[ 96%] Built target NASEDigestion_test
+[ 96%] Linking CXX executable ../../bin/TICCalculator
+[ 96%] Built target TICCalculator
+[ 96%] Linking CXX executable ../../../bin/INIUpdater
+[ 96%] Linking CXX executable ../../bin/OpenSwathMzMLFileCacher
+[ 96%] Linking CXX executable ../../bin/XMLValidator
+[ 97%] Built target INIUpdater
+[ 97%] Linking CXX executable ../../../bin/DIAuditor
+[ 97%] Linking CXX executable ../../bin/ParquetConverter
+[ 97%] Built target OpenSwathMzMLFileCacher
+[ 97%] Built target XMLValidator
+[ 97%] Built target ParquetConverter
+[ 97%] Built target DIAuditor
+[ 97%] Linking CXX executable ../../bin/XFDR
+[ 97%] Linking CXX executable ../../../bin/QualityControl
+[ 97%] Built target XFDR
+[ 98%] Built target QualityControl
+[ 98%] Linking CXX executable ../../bin/OpenDIA
+[ 98%] Built target OpenDIA
+[ 98%] Linking CXX executable ../../bin/TransitionListEvidenceFilter
+[ 98%] Built target TransitionListEvidenceFilter
+[ 98%] Linking CXX executable ../../../bin/UniPEFF
+[ 98%] Built target UniPEFF
+[ 98%] Linking CXX executable ../../../bin/CometAdapter
+[ 98%] Built target CometAdapter
+[ 98%] Linking CXX executable ../../../bin/OpenSwathPeakMapExtractor
+[ 98%] Built target OpenSwathPeakMapExtractor
+[ 98%] Linking CXX executable ../../bin/SageAdapter
+[ 98%] Linking CXX executable ../../../bin/OpenSwathWorkflow
+[ 98%] Built target SageAdapter
+[ 98%] Built target OpenSwathWorkflow
+[ 98%] Linking CXX executable ../../../bin/OpenNuXL
+[100%] Built target OpenNuXL

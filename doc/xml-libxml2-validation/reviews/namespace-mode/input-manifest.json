@@ -1,0 +1,13 @@
+{
+  "base": "72d8c395e6f90ee3c0ff250a6575fb5985fe44df",
+  "candidate": "fcdc7458543e8936a0f8915828860669c7044514",
+  "input_bytes": 73866,
+  "input_sha256": "8993c14d2d8cd9bf58044606591c146eba55c216099d5eb092aa8f265d23e4da",
+  "full_context_files": [
+    "src/openms/include/OpenMS/FORMAT/CompressedInputSource.h",
+    "src/openms/include/OpenMS/FORMAT/XMLFile.h",
+    "src/openms/source/FORMAT/ImzMLFile.cpp",
+    "src/openms/source/FORMAT/XMLFile.cpp",
+    "src/tests/class_tests/openms/source/XMLParserBackend_test.cpp"
+  ]
+}

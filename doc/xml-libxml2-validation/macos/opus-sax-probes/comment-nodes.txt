@@ -1,0 +1,2 @@
+callbacks_disabled=0 retained_document_nodes=20000
+callbacks_disabled=1 retained_document_nodes=0

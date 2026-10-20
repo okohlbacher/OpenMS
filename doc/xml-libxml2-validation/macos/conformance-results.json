@@ -1,0 +1,78 @@
+{
+  "candidate": "1858656a86869ba462545a9232b89a0e1e1c319c",
+  "binary_sha256": "f3aa0a9467dab90449b72267f1abed9151fb3360b4466a0208a8dc3d4a4a86a5",
+  "method": "native full-removal library; one separate child per historical conformance fixture, no other backend loaded",
+  "results": [
+    {
+      "case": "entity-valid",
+      "stderr": "",
+      "accepted": true,
+      "utf16_code_units": [
+        65,
+        38,
+        66
+      ]
+    },
+    {
+      "case": "undefined-entity",
+      "stderr": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Entity 'undefined' not defined\n( in line 1 column 15)\nWhile loading 'memory': Entity 'undefined' not defined\n( in line 1 column 15) in: memory\n",
+      "accepted": false
+    },
+    {
+      "case": "malformed-reference",
+      "stderr": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': xmlParseEntityRef: no name\n( in line 1 column 6)\nWhile loading 'memory': xmlParseEntityRef: no name\n( in line 1 column 6) in: memory\n",
+      "accepted": false
+    },
+    {
+      "case": "duplicate-attribute",
+      "stderr": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Attribute a redefined\n( in line 1 column 15)\nWhile loading 'memory': Attribute a redefined\n( in line 1 column 15) in: memory\n",
+      "accepted": false
+    },
+    {
+      "case": "invalid-utf8",
+      "stderr": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4)\nWhile loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4) in: memory\n",
+      "accepted": false
+    },
+    {
+      "case": "overlong-utf8",
+      "stderr": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4)\nWhile loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4) in: memory\n",
+      "accepted": false
+    },
+    {
+      "case": "truncated-utf8",
+      "stderr": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4)\nWhile loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4) in: memory\n",
+      "accepted": false
+    },
+    {
+      "case": "latin1",
+      "stderr": "",
+      "accepted": true,
+      "utf16_code_units": [
+        233
+      ]
+    },
+    {
+      "case": "windows1252",
+      "stderr": "",
+      "accepted": true,
+      "utf16_code_units": [
+        8364
+      ]
+    },
+    {
+      "case": "unicode",
+      "stderr": "",
+      "accepted": true,
+      "utf16_code_units": [
+        946,
+        55358,
+        56812
+      ]
+    },
+    {
+      "case": "mismatched-tag",
+      "stderr": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Opening and ending tag mismatch: x line 0 and r\n( in line 2 column 8)\nWhile loading 'memory': Opening and ending tag mismatch: x line 0 and r\n( in line 2 column 8) in: memory\n",
+      "accepted": false
+    }
+  ]
+}

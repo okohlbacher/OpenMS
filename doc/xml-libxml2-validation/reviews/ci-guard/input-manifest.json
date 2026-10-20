@@ -1,0 +1,10 @@
+{
+  "base": "fcdc7458543e8936a0f8915828860669c7044514",
+  "candidate": "8cf5579a163146a6d7d543b9ec19613909f876ad",
+  "input_bytes": 11908,
+  "input_sha256": "05e8167d59d16cb90deab7129738b0a420f080060277017a3fa83055e73bab4f",
+  "full_context_files": [
+    "tools/ci/check_no_xerces.py",
+    "tools/ci/tests/test_check_no_xerces.py"
+  ]
+}

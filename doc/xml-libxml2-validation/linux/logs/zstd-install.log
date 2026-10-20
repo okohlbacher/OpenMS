@@ -1,0 +1,12 @@
+-- Install configuration: "Release"
+-- Up-to-date: /scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/dependencies/install/lib/cmake/zstd/zstdTargets.cmake
+-- Up-to-date: /scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/dependencies/install/lib/cmake/zstd/zstdTargets-release.cmake
+-- Up-to-date: /scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/dependencies/install/lib/cmake/zstd/zstdConfig.cmake
+-- Up-to-date: /scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/dependencies/install/lib/cmake/zstd/zstdConfigVersion.cmake
+-- Up-to-date: /scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/dependencies/install/lib/pkgconfig/libzstd.pc
+-- Up-to-date: /scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/dependencies/install/include/zdict.h
+-- Up-to-date: /scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/dependencies/install/include/zstd.h
+-- Up-to-date: /scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/dependencies/install/include/zstd_errors.h
+-- Up-to-date: /scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/dependencies/install/lib/libzstd.so.1.5.7
+-- Up-to-date: /scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/dependencies/install/lib/libzstd.so.1
+-- Up-to-date: /scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/dependencies/install/lib/libzstd.so

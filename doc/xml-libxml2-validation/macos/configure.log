@@ -1,0 +1,186 @@
+-- The CXX compiler identification is AppleClang 21.0.0.21000334
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Building OpenMS 3.7.0
+--   [CMake is not tracking Git commits and branching ('-D GIT_TRACKING=Off')]
+-- Dependency provider: system packages and CMAKE_PREFIX_PATH (the CMake presets, see 'cmake --list-presets', build the dependency set CI tests with vcpkg)
+-- OpenMP support requested: ON
+-- Found OpenMP_CXX: -Xclang -fopenmp (found version "5.1")
+-- Found OpenMP: TRUE (found version "5.1") found components: CXX
+-- Architecture: 64 bit
+-- Processor is : arm64
+-- Performing Test WITH_FPIC
+-- Performing Test WITH_FPIC - Success
+-- Position-independent code (-fPIC) is supported and will be applied to targets
+-- Compiler checks for conversion: OFF
+-- Package type is 'none'
+-- Found LibXml2: /opt/homebrew/opt/libxml2/lib/libxml2.dylib (found suitable version "2.15.4", minimum required is "2.13")
+-- Found Boost version 1.92.0
+-- Found LIBSVM: /opt/homebrew/lib/libsvm.dylib (found suitable version "3.3.7", minimum required is "2.91")
+-- LP solver: COIN-OR
+-- Found ZLIB: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/libz.tbd (found version "1.2.12")
+-- Looking for ZLIBNG_VERSION
+-- Looking for ZLIBNG_VERSION - not found
+-- Found BZip2: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/libbz2.tbd (found version "1.0.8")
+-- Looking for BZ2_bzCompressInit
+-- Looking for BZ2_bzCompressInit - found
+-- Using zstd target: zstd::libzstd
+-- Found Libzip: /opt/homebrew/lib/libzip.dylib
+-- Found Eigen3 version in range 3.4.0...<6: 5.0.1
+-- Found CURL: /opt/homebrew/opt/curl/lib/libcurl.dylib (found version "8.23.0")
+-- Found Threads: TRUE
+-- Checking for modules 'libbrotlicommon;libbrotlienc;libbrotlidec'
+--   Found libbrotlicommon, version 1.2.0
+--   Found libbrotlienc, version 1.2.0
+--   Found libbrotlidec, version 1.2.0
+-- Found BrotliAlt: /opt/homebrew/Cellar/brotli/1.2.0/lib/libbrotlicommon.dylib
+-- Found OpenSSL: /opt/homebrew/opt/openssl@4/lib/libcrypto.dylib (found version "4.0.3")
+CMake Warning at /opt/homebrew/lib/cmake/Arrow/Findlz4Alt.cmake:29 (find_package):
+  By not providing "Findlz4.cmake" in CMAKE_MODULE_PATH this project has
+  asked CMake to find a package configuration file provided by "lz4", but
+  CMake did not find one.
+
+  Could not find a package configuration file provided by "lz4" with any of
+  the following names:
+
+    lz4.cps
+    lz4Config.cmake
+    lz4-config.cmake
+
+  Add the installation prefix of "lz4" to CMAKE_PREFIX_PATH or set "lz4_DIR"
+  to a directory containing one of the above files.  If "lz4" provides a
+  separate development package or SDK, be sure it has been installed.
+Call Stack (most recent call first):
+  /opt/homebrew/share/cmake/Modules/CMakeFindDependencyMacro.cmake:93 (find_package)
+  /opt/homebrew/share/cmake/Modules/CMakeFindDependencyMacro.cmake:125 (__find_dependency_common)
+  /opt/homebrew/lib/cmake/Arrow/ArrowConfig.cmake:108 (find_dependency)
+  /opt/homebrew/lib/cmake/Arrow/ArrowConfig.cmake:132 (arrow_find_dependencies)
+  cmake/cmake_findExternalLibs.cmake:252 (find_package)
+  CMakeLists.txt:709 (include)
+
+
+-- Checking for module 'liblz4'
+--   Found liblz4, version 1.10.0
+-- Found lz4Alt: /opt/homebrew/opt/lz4/lib/liblz4.dylib
+-- Found utf8proc: /opt/homebrew/lib/libutf8proc.dylib (found version "2.12.0")
+-- Arrow version: 26.0.0
+-- Found the Arrow shared library: /opt/homebrew/lib/libarrow.2600.0.0.dylib
+-- Found the Arrow import library: ARROW_IMPORT_LIB-NOTFOUND
+-- Found the Arrow static library: /opt/homebrew/lib/libarrow.a
+CMake Warning at /opt/homebrew/lib/cmake/Parquet/FindThriftAlt.cmake:42 (find_package):
+  By not providing "FindThrift.cmake" in CMAKE_MODULE_PATH this project has
+  asked CMake to find a package configuration file provided by "Thrift", but
+  CMake did not find one.
+
+  Could not find a package configuration file provided by "Thrift" with any
+  of the following names:
+
+    Thrift.cps
+    thrift.cps
+    ThriftConfig.cmake
+    thrift-config.cmake
+
+  Add the installation prefix of "Thrift" to CMAKE_PREFIX_PATH or set
+  "Thrift_DIR" to a directory containing one of the above files.  If "Thrift"
+  provides a separate development package or SDK, be sure it has been
+  installed.
+Call Stack (most recent call first):
+  /opt/homebrew/share/cmake/Modules/CMakeFindDependencyMacro.cmake:93 (find_package)
+  /opt/homebrew/share/cmake/Modules/CMakeFindDependencyMacro.cmake:125 (__find_dependency_common)
+  /opt/homebrew/lib/cmake/Arrow/ArrowConfig.cmake:108 (find_dependency)
+  /opt/homebrew/lib/cmake/Parquet/ParquetConfig.cmake:62 (arrow_find_dependencies)
+  cmake/cmake_findExternalLibs.cmake:256 (find_package)
+  CMakeLists.txt:709 (include)
+
+
+-- Checking for module 'thrift'
+--   Found thrift, version 0.25.0
+-- Found ThriftAlt: /opt/homebrew/Cellar/thrift/0.25.0_1/lib/libthrift.dylib (found version "0.25.0")
+-- Parquet version: 26.0.0
+-- Found the Parquet shared library: /opt/homebrew/lib/libparquet.2600.0.0.dylib
+-- Found the Parquet import library: PARQUET_IMPORT_LIB-NOTFOUND
+-- Found the Parquet static library: /opt/homebrew/lib/libparquet.a
+-- Using Arrow Compute library from find_library: /opt/homebrew/lib/libarrow_compute.dylib
+-- Using Arrow target: Arrow::arrow_static
+-- Using Arrow Compute target: /opt/homebrew/lib/libarrow_compute.dylib
+-- Using Parquet target: Parquet::parquet_static
+-- Using Arrow Dataset target: ArrowDataset::arrow_dataset_static
+-- Arrow is linked statically: added LibXml2 to its link interface
+-- Found Doxygen: /opt/homebrew/bin/doxygen (found version "1.18.0") found components: doxygen dot
+-- The C compiler identification is AppleClang 21.0.0.21000334
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Adding library OpenSwathAlgo
+-- Performing Test COMPILER_HAS_HIDDEN_VISIBILITY
+-- Performing Test COMPILER_HAS_HIDDEN_VISIBILITY - Success
+-- Performing Test COMPILER_HAS_HIDDEN_INLINE_VISIBILITY
+-- Performing Test COMPILER_HAS_HIDDEN_INLINE_VISIBILITY - Success
+-- Performing Test COMPILER_HAS_DEPRECATED_ATTR
+-- Performing Test COMPILER_HAS_DEPRECATED_ATTR - Success
+-- Adding library OpenSwathAlgo - SUCCESS
+-- Option USE_EXTERNAL_JSON: OFF
+-- Using the multi-header code from /Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/extern/nlohmann_json/include/
+-- Option USE_EXTERNAL_SQLITECPP: OFF
+-- Using Stack Protection hardening
+-- CMAKE_CXX_COMPILER '/usr/bin/c++' 'AppleClang' '21.0.0.21000334'
+-- CMAKE_CXX_FLAGS                ' -Wall -Wextra -Wpedantic -Wswitch-enum -Wshadow -Wno-long-long'
+-- CMAKE_CXX_FLAGS_RELEASE        '-O3 -DNDEBUG'
+-- Compile sqlite3 from source in subdirectory
+-- SQLITECPP_RUN_CPPLINT OFF
+-- SQLITECPP_RUN_CPPCHECK OFF
+-- SQLITECPP_RUN_DOXYGEN OFF
+-- SQLITECPP_BUILD_EXAMPLES OFF
+-- SQLITECPP_BUILD_TESTS OFF
+-- Option USE_EXTERNAL_SIMDE: OFF
+-- Option USE_EXTERNAL_ISOSPEC: OFF
+-- Option USE_EXTERNAL_EOLBSPLINE: OFF
+-- Info: CF_OPENMS_DATA_PATH: /Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/share/OpenMS
+-- Info: CF_OPENMS_DOC_PATH: /Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/doc
+-- Looking for C++ include unistd.h
+-- Looking for C++ include unistd.h - found
+-- Looking for C++ include time.h
+-- Looking for C++ include time.h - found
+-- Looking for C++ include sys/times.h
+-- Looking for C++ include sys/times.h - found
+-- Looking for C++ include sys/time.h
+-- Looking for C++ include sys/time.h - found
+-- Looking for C++ include sys/resource.h
+-- Looking for C++ include sys/resource.h - found
+-- Looking for kill
+-- Looking for kill - found
+-- Looking for sysconf
+-- Looking for sysconf - found
+-- Adding library OpenMS
+-- Adding library OpenMS - SUCCESS
+-- Adding library OpenMS_CLI
+-- Adding library OpenMS_CLI - SUCCESS
+-- TOPP tool registry: no tools, /Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build/share/OpenMS/TOOLS/OpenMS.tsv not written
+-- Percolator_subprocess_parity_test: subprocess sections skipped (percolator binary not on PATH nor in THIRDPARTY)
+-- PercolatorAdapter_parity_test: subprocess sections skipped (percolator binary not on PATH nor in THIRDPARTY)
+-- Documentation is not built (-D ENABLE_DOCS=Off).
+-- THIRD-PARTY-NOTICES.txt: 13 license, copyright and notice files
+-- 
+-- -----------------------------------------------------------------
+-- 
+-- You have successfully configured OpenMS.
+-- 
+-- For a full list of make targets execute:
+-- 'make targets'
+-- 
+-- -----------------------------------------------------------------
+-- 
+-- Configuring done (5.1s)
+-- Generating done (0.7s)
+CMake Warning (unused-cli):
+  Manually-specified variables were not used by the project:
+
+    CMAKE_DISABLE_FIND_PACKAGE_XercesC
+
+
+-- Build files have been written to: /Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-replacement-build

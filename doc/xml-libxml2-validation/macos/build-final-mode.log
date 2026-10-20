@@ -1,0 +1,1234 @@
+[1/1086] Building CXX object src/openms_cli/CMakeFiles/OpenMS_CLI.dir/source/APPLICATIONS/SearchEngineBase.cpp.o
+[2/1086] Building CXX object src/topp/CMakeFiles/CVInspector.dir/CVInspector.cpp.o
+[3/1086] Building CXX object src/topp/CMakeFiles/ExternalCalibration.dir/ExternalCalibration.cpp.o
+[4/1086] Building CXX object src/topp/CMakeFiles/DigestorMotif.dir/DigestorMotif.cpp.o
+[5/1086] Building CXX object src/topp/CMakeFiles/ConsensusMapNormalizer.dir/ConsensusMapNormalizer.cpp.o
+[6/1086] Building CXX object src/topp/CMakeFiles/FeatureFinderLFQ.dir/FeatureFinderLFQ.cpp.o
+[7/1086] Building CXX object src/topp/CMakeFiles/FeatureLinkerUnlabeled.dir/FeatureLinkerUnlabeled.cpp.o
+[8/1086] Building CXX object src/openms_cli/CMakeFiles/OpenMS_CLI.dir/source/APPLICATIONS/OpenSwathBase.cpp.o
+[9/1086] Building CXX object src/topp/CMakeFiles/FileConverter.dir/FileConverter.cpp.o
+[10/1086] Building CXX object src/topp/CMakeFiles/HighResPrecursorMassCorrector.dir/HighResPrecursorMassCorrector.cpp.o
+[11/1086] Building CXX object src/topp/CMakeFiles/IDMapper.dir/IDMapper.cpp.o
+[12/1086] Building CXX object src/topp/CMakeFiles/IsobaricAnalyzer.dir/IsobaricAnalyzer.cpp.o
+[13/1086] Building CXX object src/openms_cli/CMakeFiles/OpenMS_CLI.dir/source/APPLICATIONS/TOPPBase.cpp.o
+[14/1086] Linking CXX shared library lib/libOpenMS_CLI.dylib
+[15/1086] Building CXX object src/topp/CMakeFiles/MapAlignerPoseClustering.dir/MapAlignerPoseClustering.cpp.o
+[16/1086] Building CXX object src/topp/CMakeFiles/IDFileConverter.dir/IDFileConverter.cpp.o
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/topp/IDFileConverter.cpp:669:29: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]
+  669 |             exp.addSpectrum(move(spec));
+      |                             ^
+      |                             std::
+1 warning generated.
+[17/1086] Building CXX object src/topp/CMakeFiles/NoiseFilterGaussian.dir/NoiseFilterGaussian.cpp.o
+[18/1086] Building CXX object src/topp/CMakeFiles/FileFilter.dir/FileFilter.cpp.o
+[19/1086] Building CXX object src/topp/CMakeFiles/LuciphorAdapter.dir/LuciphorAdapter.cpp.o
+[20/1086] Building CXX object src/topp/CMakeFiles/IsobaricWorkflow.dir/IsobaricWorkflow.cpp.o
+[21/1086] Building CXX object src/topp/CMakeFiles/MSFraggerAdapter.dir/MSFraggerAdapter.cpp.o
+[22/1086] Building CXX object src/topp/CMakeFiles/MascotAdapterOnline.dir/MascotAdapterOnline.cpp.o
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/topp/MascotAdapterOnline.cpp:237:23: warning: unused parameter 'argc' [-Wunused-parameter]
+  237 |   ExitCodes main_(int argc, const char** argv) override
+      |                       ^
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/topp/MascotAdapterOnline.cpp:237:42: warning: unused parameter 'argv' [-Wunused-parameter]
+  237 |   ExitCodes main_(int argc, const char** argv) override
+      |                                          ^
+2 warnings generated.
+[23/1086] Building CXX object src/topp/CMakeFiles/MSGFPlusAdapter.dir/MSGFPlusAdapter.cpp.o
+[24/1086] Building CXX object src/topp/CMakeFiles/NoiseFilterSGolay.dir/NoiseFilterSGolay.cpp.o
+[25/1086] Building CXX object src/topp/CMakeFiles/NovorAdapter.dir/NovorAdapter.cpp.o
+[26/1086] Building CXX object src/topp/CMakeFiles/PeakPickerIM.dir/PeakPickerIM.cpp.o
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/topp/PeakPickerIM.cpp:362:21: warning: unused variable 'in_type' [-Wunused-variable]
+  362 |     FileTypes::Type in_type = FileHandler::getType(input_file);
+      |                     ^~~~~~~
+1 warning generated.
+[27/1086] Building CXX object src/topp/CMakeFiles/PeakPickerHiRes.dir/PeakPickerHiRes.cpp.o
+[28/1086] Building CXX object src/topp/CMakeFiles/QCEmbedder.dir/QCEmbedder.cpp.o
+[29/1086] Building CXX object src/topp/CMakeFiles/QCExtractor.dir/QCExtractor.cpp.o
+[30/1086] Building CXX object src/topp/CMakeFiles/QCExporter.dir/QCExporter.cpp.o
+[31/1086] Building CXX object src/topp/CMakeFiles/OpenPepXL.dir/OpenPepXL.cpp.o
+[32/1086] Building CXX object src/topp/CMakeFiles/SemanticValidator.dir/SemanticValidator.cpp.o
+[33/1086] Building CXX object src/topp/CMakeFiles/QCImporter.dir/QCImporter.cpp.o
+[34/1086] Building CXX object src/topp/CMakeFiles/QCMerger.dir/QCMerger.cpp.o
+[35/1086] Building CXX object src/topp/CMakeFiles/QCShrinker.dir/QCShrinker.cpp.o
+[36/1086] Building CXX object src/topp/CMakeFiles/TICCalculator.dir/TICCalculator.cpp.o
+[37/1086] Building CXX object src/topp/CMakeFiles/OpenSwathFileSplitter.dir/OpenSwathFileSplitter.cpp.o
+[38/1086] Building CXX object src/topp/CMakeFiles/XMLValidator.dir/XMLValidator.cpp.o
+[39/1086] Building CXX object src/topp/CMakeFiles/OpenSwathMzMLFileCacher.dir/OpenSwathMzMLFileCacher.cpp.o
+[40/1086] Building CXX object src/topp/CMakeFiles/XFDR.dir/XFDR.cpp.o
+[41/1086] Building CXX object src/topp/CMakeFiles/ParquetConverter.dir/ParquetConverter.cpp.o
+[42/1086] Building CXX object src/topp/CMakeFiles/OpenDIA.dir/OpenDIA.cpp.o
+[43/1086] Building CXX object src/topp/DIAuditor/CMakeFiles/DIAuditor.dir/DIAuditor.cpp.o
+[44/1086] Building CXX object src/topp/INIUpdater/CMakeFiles/INIUpdater.dir/INIUpdater.cpp.o
+[45/1086] Building CXX object src/topp/UniPEFF/CMakeFiles/UniPEFF.dir/source/UniProtXMLFile.cpp.o
+[46/1086] Building CXX object src/topp/CMakeFiles/TransitionListEvidenceFilter.dir/TransitionListEvidenceFilter.cpp.o
+[47/1086] Building CXX object src/topp/QualityControl/CMakeFiles/QualityControl.dir/source/MzCalibration.cpp.o
+[48/1086] Building CXX object src/topp/UniPEFF/CMakeFiles/UniPEFF.dir/source/UniProtXMLHandler.cpp.o
+[49/1086] Building CXX object src/topp/CometAdapter/CMakeFiles/CometAdapter.dir/CometAdapter.cpp.o
+[50/1086] Building CXX object src/topp/CMakeFiles/SageAdapter.dir/SageAdapter.cpp.o
+[51/1086] Building CXX object src/topp/OpenNuXL/CMakeFiles/OpenNuXL.dir/source/NuXLFDR.cpp.o
+[52/1086] Building CXX object src/topp/UniPEFF/CMakeFiles/UniPEFF.dir/source/UniPEFFEntries.cpp.o
+[53/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/SysInfo_test.dir/source/SysInfo_test.cpp.o
+[54/1086] Building CXX object src/topp/UniPEFF/CMakeFiles/UniPEFF.dir/UniPEFF.cpp.o
+[55/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/CVMappingFile_test.dir/source/CVMappingFile_test.cpp.o
+[56/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/ExperimentalDesign_test.dir/source/ExperimentalDesign_test.cpp.o
+[57/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/ChromeleonFile_test.dir/source/ChromeleonFile_test.cpp.o
+[58/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/CompressedInputSource_test.dir/source/CompressedInputSource_test.cpp.o
+[59/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/ProteinIdentification_test.dir/source/ProteinIdentification_test.cpp.o
+[60/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/PeptideIdentification_test.dir/source/PeptideIdentification_test.cpp.o
+[61/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/IdentificationDataConverter_test.dir/source/IdentificationDataConverter_test.cpp.o
+[62/1086] Building CXX object src/topp/OpenSwathPeakMapExtractor/CMakeFiles/OpenSwathPeakMapExtractor.dir/OpenSwathPeakMapExtractor.cpp.o
+[63/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/EDTAFile_test.dir/source/EDTAFile_test.cpp.o
+[64/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/IBSpectraFile_test.dir/source/IBSpectraFile_test.cpp.o
+[65/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/IndexedMzMLFile_test.dir/source/IndexedMzMLFile_test.cpp.o
+[66/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/ConsensusXMLFile_test.dir/source/ConsensusXMLFile_test.cpp.o
+[67/1086] Building CXX object src/topp/OpenSwathWorkflow/CMakeFiles/OpenSwathWorkflow.dir/OpenSwathWorkflow.cpp.o
+[68/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/FeatureXMLFile_test.dir/source/FeatureXMLFile_test.cpp.o
+[69/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MzDataValidator_test.dir/source/MzDataValidator_test.cpp.o
+[70/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/FileHandler_test.dir/source/FileHandler_test.cpp.o
+[71/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MzIdentMLValidator_test.dir/source/MzIdentMLValidator_test.cpp.o
+[72/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/IdXMLFile_test.dir/source/IdXMLFile_test.cpp.o
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/tests/class_tests/openms/source/IdXMLFile_test.cpp:357:21: warning: unused variable 'fault_injection_unreached' [-Wunused-const-variable]
+  357 |   const char* const fault_injection_unreached = "SKIPPED: the replacement of operator new in this test program does "
+      |                     ^~~~~~~~~~~~~~~~~~~~~~~~~
+1 warning generated.
+[73/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/IndexedMzMLFileLoader_test.dir/source/IndexedMzMLFileLoader_test.cpp.o
+[74/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MzMLValidator_test.dir/source/MzMLValidator_test.cpp.o
+[75/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MascotXMLFile_test.dir/source/MascotXMLFile_test.cpp.o
+[76/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MzMLSqliteHandler_test.dir/source/MzMLSqliteHandler_test.cpp.o
+[77/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MzIdentMLFile_test.dir/source/MzIdentMLFile_test.cpp.o
+[78/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MzMLSqliteSwathHandler_test.dir/source/MzMLSqliteSwathHandler_test.cpp.o
+[79/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MzDataFile_test.dir/source/MzDataFile_test.cpp.o
+[80/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/TraMLValidator_test.dir/source/TraMLValidator_test.cpp.o
+[81/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/PTMXMLFile_test.dir/source/PTMXMLFile_test.cpp.o
+[82/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/OMSSAXMLFile_test.dir/source/OMSSAXMLFile_test.cpp.o
+[83/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/ParamCTDFile_test.dir/source/ParamCTDFile_test.cpp.o
+[84/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MzXMLFile_test.dir/source/MzXMLFile_test.cpp.o
+[85/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MzTabMFile_test.dir/source/MzTabMFile_test.cpp.o
+[86/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/PepXMLFileMascot_test.dir/source/PepXMLFileMascot_test.cpp.o
+[87/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/SemanticValidator_test.dir/source/SemanticValidator_test.cpp.o
+[88/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/ProtXMLFile_test.dir/source/ProtXMLFile_test.cpp.o
+[89/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/OMSFile_test.dir/source/OMSFile_test.cpp.o
+[90/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/PercolatorAdapter_parity_test.dir/source/PercolatorAdapter_parity_test.cpp.o
+[91/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/ParamXMLFile_test.dir/source/ParamXMLFile_test.cpp.o
+[92/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/Percolator_subprocess_parity_test.dir/source/Percolator_subprocess_parity_test.cpp.o
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/tests/class_tests/openms/source/Percolator_subprocess_parity_test.cpp:135:42: warning: unused function 'loadBaselineTriplets' [-Wunused-function]
+  135 | std::map<std::string, PercolatorTriplet> loadBaselineTriplets(const std::string& idxml)
+      |                                          ^~~~~~~~~~~~~~~~~~~~
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/tests/class_tests/openms/source/Percolator_subprocess_parity_test.cpp:167:12: warning: unused function 'buildRescoreInput' [-Wunused-function]
+  167 | BuiltInput buildRescoreInput(const PeptideIdentificationList& pids,
+      |            ^~~~~~~~~~~~~~~~~
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/tests/class_tests/openms/source/Percolator_subprocess_parity_test.cpp:409:13: warning: unused function 'alignAndCompare' [-Wunused-function]
+  409 | AlignedRows alignAndCompare(const RescoreOutput& inp,
+      |             ^~~~~~~~~~~~~~~
+3 warnings generated.
+[93/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/QcMLFile_test.dir/source/QcMLFile_test.cpp.o
+[94/1086] Building CXX object src/topp/OpenNuXL/CMakeFiles/OpenNuXL.dir/OpenNuXL.cpp.o
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/topp/OpenNuXL/OpenNuXL.cpp:1936:5: warning: misleading indentation; statement is not part of the previous 'for' [-Wmisleading-indentation]
+ 1936 |     UInt y_ion_count(0), b_ion_count(0), a_ion_count(0);
+      |     ^
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/topp/OpenNuXL/OpenNuXL.cpp:1909:3: note: previous statement is here
+ 1909 |   for (double diff2b : { -18.010565, -17.026549 } ) 
+      |   ^
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/topp/OpenNuXL/OpenNuXL.cpp:1938:12: warning: variable 'b_sum' set but not used [-Wunused-but-set-variable]
+ 1938 |     double b_sum(0.0);
+      |            ^
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/topp/OpenNuXL/OpenNuXL.cpp:1949:12: warning: variable 'y_sum' set but not used [-Wunused-but-set-variable]
+ 1949 |     double y_sum(0.0);
+      |            ^
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/topp/OpenNuXL/OpenNuXL.cpp:1960:12: warning: variable 'a_sum' set but not used [-Wunused-but-set-variable]
+ 1960 |     double a_sum(0.0);
+      |            ^
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/topp/OpenNuXL/OpenNuXL.cpp:2835:14: warning: variable 'aa_plus_adduct_in_mass_range' set but not used [-Wunused-but-set-variable]
+ 2835 |       size_t aa_plus_adduct_in_mass_range(0);
+      |              ^
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/topp/OpenNuXL/OpenNuXL.cpp:3936:10: warning: variable 'fractional_mass_filtered' set but not used [-Wunused-but-set-variable]
+ 3936 |     Size fractional_mass_filtered(0), small_peptide_mass_filtered(0);
+      |          ^
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/topp/OpenNuXL/OpenNuXL.cpp:3936:39: warning: variable 'small_peptide_mass_filtered' set but not used [-Wunused-but-set-variable]
+ 3936 |     Size fractional_mass_filtered(0), small_peptide_mass_filtered(0);
+      |                                       ^
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/topp/OpenNuXL/OpenNuXL.cpp:4095:35: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]
+ 4095 |       annotated_hits.emplace_back(move(ah));
+      |                                   ^
+      |                                   std::
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/topp/OpenNuXL/OpenNuXL.cpp:5672:67: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]
+ 5672 |                       annotated_peptides[scan_index].emplace_back(move(ah));
+      |                                                                   ^
+      |                                                                   std::
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/topp/OpenNuXL/OpenNuXL.cpp:5924:64: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]
+ 5924 |                         annotated_XLs[scan_index].emplace_back(move(ah));
+      |                                                                ^
+      |                                                                std::
+10 warnings generated.
+[95/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/SqMassFile_test.dir/source/SqMassFile_test.cpp.o
+[96/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/PepXMLFile_test.dir/source/PepXMLFile_test.cpp.o
+[97/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/TraMLFile_test.dir/source/TraMLFile_test.cpp.o
+[98/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/UnimodXMLFile_test.dir/source/UnimodXMLFile_test.cpp.o
+[99/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/XTandemInfile_test.dir/source/XTandemInfile_test.cpp.o
+[100/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/SwathFile_test.dir/source/SwathFile_test.cpp.o
+[101/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/XTandemXMLFile_test.dir/source/XTandemXMLFile_test.cpp.o
+[102/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MSDataCachedConsumer_test.dir/source/MSDataCachedConsumer_test.cpp.o
+[103/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MSDataTransformingConsumer_test.dir/source/MSDataTransformingConsumer_test.cpp.o
+[104/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MSDataChainingConsumer_test.dir/source/MSDataChainingConsumer_test.cpp.o
+[105/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/TransformationXMLFile_test.dir/source/TransformationXMLFile_test.cpp.o
+[106/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MSDataStoringConsumer_test.dir/source/MSDataStoringConsumer_test.cpp.o
+[107/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MSDataAggregatingConsumer_test.dir/source/MSDataAggregatingConsumer_test.cpp.o
+[108/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/SwathFileConsumer_test.dir/source/SwathFileConsumer_test.cpp.o
+[109/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/SpectrumAccessOnDisc_test.dir/source/SpectrumAccessOnDisc_test.cpp.o
+[110/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/PosteriorErrorProbabilityModel_test.dir/source/PosteriorErrorProbabilityModel_test.cpp.o
+[111/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MSChromatogramParquetConsumer_test.dir/source/MSChromatogramParquetConsumer_test.cpp.o
+[112/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/ElutionPeakDetection_test.dir/source/ElutionPeakDetection_test.cpp.o
+[113/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/Deisotoper_test.dir/source/Deisotoper_test.cpp.o
+[114/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MassTraceDetection_test.dir/source/MassTraceDetection_test.cpp.o
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/tests/class_tests/openms/source/MassTraceDetection_test.cpp:177:28: warning: unused variable 'mt_it1' [-Wunused-variable]
+  177 | PeakMap::ConstAreaIterator mt_it1 = input.areaBeginConst(335.0, 385.0, 437.1, 437.4);
+      |                            ^~~~~~
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/tests/class_tests/openms/source/MassTraceDetection_test.cpp:178:28: warning: unused variable 'mt_it2' [-Wunused-variable]
+  178 | PeakMap::ConstAreaIterator mt_it2 = input.areaBeginConst(335.0, 385.0, 438.2, 438.4);
+      |                            ^~~~~~
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/tests/class_tests/openms/source/MassTraceDetection_test.cpp:179:28: warning: unused variable 'mt_it3' [-Wunused-variable]
+  179 | PeakMap::ConstAreaIterator mt_it3 = input.areaBeginConst(335.0, 385.0, 439.2, 439.4);
+      |                            ^~~~~~
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/tests/class_tests/openms/source/MassTraceDetection_test.cpp:183:28: warning: unused variable 'mt_end' [-Wunused-variable]
+  183 | PeakMap::ConstAreaIterator mt_end = input.areaEndConst();
+      |                            ^~~~~~
+4 warnings generated.
+[115/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/OpenSwathOSWParquetRoundTrip_test.dir/source/OpenSwathOSWParquetRoundTrip_test.cpp.o
+[116/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/FeatureFindingMetabo_test.dir/source/FeatureFindingMetabo_test.cpp.o
+[117/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/InternalCalibration_test.dir/source/InternalCalibration_test.cpp.o
+[118/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MultiplexClustering_test.dir/source/MultiplexClustering_test.cpp.o
+[119/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MultiplexFiltering_test.dir/source/MultiplexFiltering_test.cpp.o
+[120/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MultiplexFilteringCentroided_test.dir/source/MultiplexFilteringCentroided_test.cpp.o
+[121/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/SplineInterpolatedPeaks_test.dir/source/SplineInterpolatedPeaks_test.cpp.o
+[122/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/IDFilter_test.dir/source/IDFilter_test.cpp.o
+[123/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MultiplexFilteringProfile_test.dir/source/MultiplexFilteringProfile_test.cpp.o
+[124/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/PrecursorCorrection_test.dir/source/PrecursorCorrection_test.cpp.o
+[125/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/AbsoluteQuantitationStandards_test.dir/source/AbsoluteQuantitationStandards_test.cpp.o
+[126/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/BayesianProteinInferenceAlgorithm_test.dir/source/BayesianProteinInferenceAlgorithm_test.cpp.o
+[127/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/BasicProteinInferenceAlgorithm_test.dir/source/BasicProteinInferenceAlgorithm_test.cpp.o
+[128/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/ConsensusMapMergerAlgorithm_test.dir/source/ConsensusMapMergerAlgorithm_test.cpp.o
+[129/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/SpectraMerger_test.dir/source/SpectraMerger_test.cpp.o
+[130/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/AccurateMassSearchEngine_test.dir/source/AccurateMassSearchEngine_test.cpp.o
+[131/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/FLASHDeconvAlgorithm_test.dir/source/FLASHDeconvAlgorithm_test.cpp.o
+[132/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/FeatureDeconvolution_test.dir/source/FeatureDeconvolution_test.cpp.o
+[133/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/FalseDiscoveryRate_test.dir/source/FalseDiscoveryRate_test.cpp.o
+[134/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/FIAMSDataProcessor_test.dir/source/FIAMSDataProcessor_test.cpp.o
+[135/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/IDRipper_test.dir/source/IDRipper_test.cpp.o
+[136/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/IDMapper_test.dir/source/IDMapper_test.cpp.o
+[137/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/IDMergerAlgorithm_test.dir/source/IDMergerAlgorithm_test.cpp.o
+[138/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/IsobaricIsotopeCorrector_test.dir/source/IsobaricIsotopeCorrector_test.cpp.o
+[139/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/IsobaricChannelExtractor_test.dir/source/IsobaricChannelExtractor_test.cpp.o
+[140/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/IDBoostGraph_test.dir/source/IDBoostGraph_test.cpp.o
+[141/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/IsobaricNormalizer_test.dir/source/IsobaricNormalizer_test.cpp.o
+[142/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/IsobaricQuantifier_test.dir/source/IsobaricQuantifier_test.cpp.o
+[143/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/LabeledPairFinder_test.dir/source/LabeledPairFinder_test.cpp.o
+[144/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MapAlignmentEvaluationAlgorithmPrecision_test.dir/source/MapAlignmentEvaluationAlgorithmPrecision_test.cpp.o
+[145/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MapAlignmentAlgorithmIdentification_test.dir/source/MapAlignmentAlgorithmIdentification_test.cpp.o
+[146/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MapAlignmentAlgorithmPoseClustering_test.dir/source/MapAlignmentAlgorithmPoseClustering_test.cpp.o
+[147/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MapAlignmentAlgorithmTreeGuided_test.dir/source/MapAlignmentAlgorithmTreeGuided_test.cpp.o
+[148/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MapAlignmentEvaluationAlgorithmRecall_test.dir/source/MapAlignmentEvaluationAlgorithmRecall_test.cpp.o
+[149/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MetaboliteFeatureDeconvolution_test.dir/source/MetaboliteFeatureDeconvolution_test.cpp.o
+[150/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/PeptideProteinResolution_test.dir/source/PeptideProteinResolution_test.cpp.o
+[151/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/OPXLHelper_test.dir/source/OPXLHelper_test.cpp.o
+[152/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/PrecursorPurity_test.dir/source/PrecursorPurity_test.cpp.o
+[153/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/OpenPepXLAlgorithm_test.dir/source/OpenPepXLAlgorithm_test.cpp.o
+[154/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/SpectralDeconvolution_test.dir/source/SpectralDeconvolution_test.cpp.o
+[155/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/PercolatorFeatureSetHelper_test.dir/source/PercolatorFeatureSetHelper_test.cpp.o
+[156/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/PeptideAndProteinQuant_test.dir/source/PeptideAndProteinQuant_test.cpp.o
+[157/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/ElutionModelFitter_test.dir/source/ElutionModelFitter_test.cpp.o
+[158/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/PeakPickerHiRes_test.dir/source/PeakPickerHiRes_test.cpp.o
+[159/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/PeakWidthEstimator_test.dir/source/PeakWidthEstimator_test.cpp.o
+[160/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/FAIMSHelper_test.dir/source/FAIMSHelper_test.cpp.o
+[161/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/IMDataConverter_test.dir/source/IMDataConverter_test.cpp.o
+[162/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/FeatureFinderAlgorithmPicked_test.dir/source/FeatureFinderAlgorithmPicked_test.cpp.o
+[163/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/FeatureFinderMultiplexAlgorithm_test.dir/source/FeatureFinderMultiplexAlgorithm_test.cpp.o
+[164/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/IMTypes_test.dir/source/IMTypes_test.cpp.o
+[165/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/SeedListGenerator_test.dir/source/SeedListGenerator_test.cpp.o
+[166/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MRMAssay_test.dir/source/MRMAssay_test.cpp.o
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/tests/class_tests/openms/source/MRMAssay_test.cpp:936:10: warning: unused variable 'initial_transitions' [-Wunused-variable]
+  936 |   size_t initial_transitions = targeted_exp_heavy.getTransitions().size();
+      |          ^~~~~~~~~~~~~~~~~~~
+1 warning generated.
+[167/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MRMDecoy_test.dir/source/MRMDecoy_test.cpp.o
+[168/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/TransitionTSVFile_test.dir/source/TransitionTSVFile_test.cpp.o
+[169/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/SpectrumAddition_test.dir/source/SpectrumAddition_test.cpp.o
+[170/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/ChromatogramExtractorAlgorithm_test.dir/source/ChromatogramExtractorAlgorithm_test.cpp.o
+[171/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/PeakPickerChromatogram_test.dir/source/PeakPickerChromatogram_test.cpp.o
+[172/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/TransitionPQPFile_test.dir/source/TransitionPQPFile_test.cpp.o
+[173/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/ProSEAlgorithm_test.dir/source/ProSEAlgorithm_test.cpp.o
+[174/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/OpenSwathSpectrumAccessOpenMS_test.dir/source/OpenSwathSpectrumAccessOpenMS_test.cpp.o
+[175/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/ChromatogramExtractor_test.dir/source/ChromatogramExtractor_test.cpp.o
+[176/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/OpenSwathDataAccessHelper_test.dir/source/OpenSwathDataAccessHelper_test.cpp.o
+[177/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MRMTransitionGroupPicker_test.dir/source/MRMTransitionGroupPicker_test.cpp.o
+[178/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/TargetedSpectraExtractor_test.dir/source/TargetedSpectraExtractor_test.cpp.o
+[179/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MasstraceCorrelator_test.dir/source/MasstraceCorrelator_test.cpp.o
+[180/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MRMFeatureSelector_test.dir/source/MRMFeatureSelector_test.cpp.o
+[181/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/SwathQC_test.dir/source/SwathQC_test.cpp.o
+[182/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MRMFeatureScoring_test.dir/source/MRMFeatureScoring_test.cpp.o
+[183/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MRMFeatureQC_test.dir/source/MRMFeatureQC_test.cpp.o
+[184/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MRMFeatureFinderScoring_test.dir/source/MRMFeatureFinderScoring_test.cpp.o
+[185/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/CachedMzML_test.dir/source/CachedMzML_test.cpp.o
+[186/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/MRMFeatureFilter_test.dir/source/MRMFeatureFilter_test.cpp.o
+[187/1086] Building CXX object src/tests/class_tests/openms/topp_MS1LabeledWorkflow_tests/CMakeFiles/MS1LabeledSpectra_test.dir/MS1LabeledSpectra_test.cpp.o
+[188/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/DBSuitability_test.dir/source/DBSuitability_test.cpp.o
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/tests/class_tests/openms/source/DBSuitability_test.cpp:196:13: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]
+  196 |   s.compute(move(pep_ids), empty_exp, empty_fasta, empty_fasta, empty_params);
+      |             ^
+      |             std::
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/tests/class_tests/openms/source/DBSuitability_test.cpp:201:13: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]
+  201 |   s.compute(move(pep_ids_2), empty_exp, empty_fasta, empty_fasta, empty_params);
+      |             ^
+      |             std::
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/tests/class_tests/openms/source/DBSuitability_test.cpp:202:13: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]
+  202 |   s.compute(move(top_decoy), empty_exp, empty_fasta, empty_fasta, empty_params);
+      |             ^
+      |             std::
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/tests/class_tests/openms/source/DBSuitability_test.cpp:206:13: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]
+  206 |   s.compute(move(pep_ids_3), empty_exp, empty_fasta, empty_fasta, empty_params);
+      |             ^
+      |             std::
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/tests/class_tests/openms/source/DBSuitability_test.cpp:237:66: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]
+  237 |   TEST_EXCEPTION_WITH_MESSAGE(Exception::Precondition, s.compute(move(FDR_id), empty_exp, empty_fasta, empty_fasta, empty_params), "q-value found at PeptideIdentifications. That is not allowed! Please make sure FDR did not run previously.");
+      |                                                                  ^
+      |                                                                  std::
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/testframework/include/OpenMS/CONCEPT/ClassTest.h:948:7: note: expanded from macro 'TEST_EXCEPTION_WITH_MESSAGE'
+  948 |       command;                                                                            \
+      |       ^
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/tests/class_tests/openms/source/DBSuitability_test.cpp:238:72: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]
+  238 |   TEST_EXCEPTION_WITH_MESSAGE(Exception::MissingInformation, s.compute(move(few_decoys), empty_exp, empty_fasta, empty_fasta, empty_params), "Under 20 % of peptide identifications have two decoy hits. This is not enough for re-ranking. Use the 'no_rerank' flag to still compute a suitability score.");
+      |                                                                        ^
+      |                                                                        std::
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/testframework/include/OpenMS/CONCEPT/ClassTest.h:948:7: note: expanded from macro 'TEST_EXCEPTION_WITH_MESSAGE'
+  948 |       command;                                                                            \
+      |       ^
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/tests/class_tests/openms/source/DBSuitability_test.cpp:239:72: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]
+  239 |   TEST_EXCEPTION_WITH_MESSAGE(Exception::MissingInformation, s.compute(move(no_xcorr_ids), empty_exp, empty_fasta, empty_fasta, empty_params), "No cross correlation score found at peptide hit. Only Comet search engine is supported for re-ranking. Set 'force' flag to use the default score for this. This may result in undefined behaviour and is not advised.");
+      |                                                                        ^
+      |                                                                        std::
+/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/testframework/include/OpenMS/CONCEPT/ClassTest.h:948:7: note: expanded from macro 'TEST_EXCEPTION_WITH_MESSAGE'
+  948 |       command;                                                                            \
+      |       ^
+7 warnings generated.
+[189/1086] Building CXX object src/tests/class_tests/openms/topp_UniPEFF_tests/CMakeFiles/UniProtXMLFile_test.dir/UniProtXMLFile_test.cpp.o
+[190/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/TransitionParquetFile_test.dir/source/TransitionParquetFile_test.cpp.o
+[191/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/CachedMzMLHandler_test.dir/source/CachedMzMLHandler_test.cpp.o
+[192/1086] Building CXX object src/tests/class_tests/openms/topp_UniPEFF_tests/CMakeFiles/UniProtXMLFile_test.dir/__/source/UniProtXMLFile.cpp.o
+[193/1086] Building CXX object src/tests/class_tests/openms/topp_UniPEFF_tests/CMakeFiles/UniProtXMLFile_test.dir/__/source/UniProtXMLHandler.cpp.o
+[194/1086] Linking CXX executable bin/AccurateMassSearch
+[195/1086] Linking CXX executable bin/AssayGeneratorMetabo
+[196/1086] Building CXX object src/tests/class_tests/openms/CMakeFiles/OpenSwathOSWParquetWriter_test.dir/source/OpenSwathOSWParquetWriter_test.cpp.o
+[197/1086] Building CXX object src/tests/class_tests/openms/topp_UniPEFF_tests/CMakeFiles/UniPEFFEntries_test.dir/UniPEFFEntries_test.cpp.o
+[198/1086] Linking CXX executable bin/AssayGeneratorMetaboSirius
+[199/1086] Linking CXX executable bin/BaselineFilter
+[200/1086] Linking CXX executable bin/ClusterMassTraces
+[201/1086] Linking CXX executable bin/FeatureFinderLFQ
+[202/1086] Building CXX object src/tests/class_tests/openms/topp_QualityControl_tests/CMakeFiles/MQEvidenceExporter_test.dir/MQEvidenceExporter_test.cpp.o
+[203/1086] Linking CXX executable bin/ConsensusID
+[204/1086] Linking CXX executable bin/ConsensusMapNormalizer
+[205/1086] Linking CXX executable bin/ClusterMassTracesByPrecursor
+[206/1086] Linking CXX executable bin/CVInspector
+[207/1086] Linking CXX executable bin/DatabaseFilter
+[208/1086] Linking CXX executable bin/DatabaseSuitability
+[209/1086] Linking CXX executable bin/Decharger
+[210/1086] Building CXX object src/tests/class_tests/openms/topp_QualityControl_tests/CMakeFiles/MQMsmsExporter_test.dir/MQMsmsExporter_test.cpp.o
+[211/1086] Linking CXX executable bin/DeMeanderize
+[212/1086] Linking CXX executable bin/DigestorMotif
+[213/1086] Linking CXX executable bin/DTAExtractor
+[214/1086] Linking CXX executable bin/Digestor
+[215/1086] Building CXX object src/tests/class_tests/openms/topp_QualityControl_tests/CMakeFiles/MzCalibration_test.dir/__/source/MzCalibration.cpp.o
+[216/1086] Linking CXX executable bin/EICExtractor
+[217/1086] Linking CXX executable bin/Epifany
+[218/1086] Linking CXX executable bin/ExternalCalibration
+[219/1086] Linking CXX executable bin/FalseDiscoveryRate
+[220/1086] Linking CXX executable bin/FeatureFinderCentroided
+[221/1086] Building CXX object src/tests/class_tests/openms/topp_UniPEFF_tests/CMakeFiles/UniPEFFEntries_test.dir/__/source/UniPEFFEntries.cpp.o
+[222/1086] Linking CXX executable bin/FeatureFinderIdentification
+[223/1086] Linking CXX executable bin/FeatureFinderMetabo
+[224/1086] Linking CXX executable bin/FeatureFinderMetaboIdent
+[225/1086] Linking CXX executable bin/FeatureFinderMultiplex
+[226/1086] Linking CXX executable bin/FeatureLinkerLabeled
+[227/1086] Linking CXX executable bin/FeatureLinkerUnlabeled
+[228/1086] Linking CXX executable bin/FeatureLinkerUnlabeledKD
+[229/1086] Linking CXX executable bin/FeatureLinkerUnlabeledQT
+[230/1086] Linking CXX executable bin/FileFilter
+[231/1086] Linking CXX executable bin/FileMerger
+[232/1086] Linking CXX executable bin/FileConverter
+[233/1086] Linking CXX executable bin/FileInfo
+[234/1086] Linking CXX executable bin/FLASHDeconv
+[235/1086] Linking CXX executable bin/FuzzyDiff
+[236/1086] Linking CXX executable bin/GNPSExport
+[237/1086] Linking CXX executable bin/HighResPrecursorMassCorrector
+[238/1086] Linking CXX executable bin/IDDecoyProbability
+[239/1086] Linking CXX executable bin/IDExtractor
+[240/1086] Linking CXX executable bin/IDConflictResolver
+[241/1086] Linking CXX executable bin/IDFileConverter
+[242/1086] Linking CXX executable bin/IDFilter
+[243/1086] Linking CXX executable bin/IDMerger
+[244/1086] Linking CXX executable bin/IDMapper
+[245/1086] Linking CXX executable bin/IDPosteriorErrorProbability
+[246/1086] Linking CXX executable bin/IDRipper
+[247/1086] Linking CXX executable bin/IDRTCalibration
+[248/1086] Linking CXX executable bin/IDScoreSwitcher
+[249/1086] Linking CXX executable bin/IDSplitter
+[250/1086] Linking CXX executable bin/InternalCalibration
+[251/1086] Linking CXX executable bin/IsobaricAnalyzer
+[252/1086] Linking CXX executable bin/IonMobilityBinning
+[253/1086] Linking CXX executable bin/JSONExporter
+[254/1086] Linking CXX executable bin/IsobaricWorkflow
+[255/1086] Linking CXX executable bin/LuciphorAdapter
+[256/1086] Linking CXX executable bin/MapAlignerIdentification
+[257/1086] Linking CXX executable bin/MapAlignerTreeGuided
+[258/1086] Linking CXX executable bin/MapAlignerPoseClustering
+[259/1086] Linking CXX executable bin/MapRTTransformer
+[260/1086] Linking CXX executable bin/MapNormalizer
+[261/1086] Linking CXX executable bin/MapStatistics
+[262/1086] Linking CXX executable bin/MaRaClusterAdapter
+[263/1086] Linking CXX executable bin/MascotAdapterOnline
+[264/1086] Building CXX object src/tests/class_tests/openms_cli/CMakeFiles/SearchEngineBase_test.dir/source/SearchEngineBase_test.cpp.o
+[265/1086] Linking CXX executable bin/MRMMapper
+[266/1086] Linking CXX executable bin/MetaProSIP
+[267/1086] Linking CXX executable bin/MassCalculator
+[268/1086] Linking CXX executable bin/MassTraceExtractor
+[269/1086] Linking CXX executable bin/MetaboliteSpectralMatcher
+[270/1086] Linking CXX executable bin/MetaboliteAdductDecharger
+[271/1086] Linking CXX executable bin/MRMPairFinder
+[272/1086] Linking CXX executable bin/MSGFPlusAdapter
+[273/1086] Linking CXX executable bin/MzMLSplitter
+[274/1086] Linking CXX executable bin/NoiseFilterGaussian
+[275/1086] Linking CXX executable bin/MSFraggerAdapter
+[276/1086] Linking CXX executable bin/MSstatsConverter
+[277/1086] Linking CXX executable bin/MzTabExporter
+[278/1086] Linking CXX executable bin/NoiseFilterSGolay
+[279/1086] Linking CXX executable bin/MultiplexResolver
+[280/1086] Linking CXX executable bin/OpenMSInfo
+[281/1086] Linking CXX executable bin/OpenSwathChromatogramExtractor
+[282/1086] Linking CXX executable bin/NovorAdapter
+[283/1086] Linking CXX executable bin/OpenSwathAnalyzer
+[284/1086] Linking CXX executable bin/OpenDIA
+[285/1086] Linking CXX executable bin/OpenMSDatabasesInfo
+[286/1086] Linking CXX executable bin/OpenSwathAssayGenerator
+[287/1086] Linking CXX executable bin/OpenPepXL
+[288/1086] Linking CXX executable bin/OpenSwathDecoyGenerator
+[289/1086] Linking CXX executable bin/OpenSwathConfidenceScoring
+[290/1086] Linking CXX executable bin/OpenSwathRTNormalizer
+[291/1086] Linking CXX executable bin/PeakPickerHiRes
+[292/1086] Linking CXX executable bin/OpenSwathFeatureXMLToTSV
+[293/1086] Linking CXX executable bin/PeptideIndexer
+[294/1086] Linking CXX executable bin/PeakPickerIterative
+[295/1086] Linking CXX executable bin/PeakPickerIM
+[296/1086] Linking CXX executable bin/ProSE
+[297/1086] Linking CXX executable bin/ProteinInference
+[298/1086] Linking CXX executable bin/PSMFeatureExtractor
+[299/1086] Linking CXX executable bin/PercolatorAdapter
+[300/1086] Linking CXX executable bin/PhosphoScoring
+[301/1086] Linking CXX executable bin/ProteomicsLFQ
+[302/1086] Linking CXX executable bin/QCCalculator
+[303/1086] Linking CXX executable bin/ProteinQuantifier
+[304/1086] Linking CXX executable bin/QCEmbedder
+[305/1086] Linking CXX executable bin/QCExporter
+[306/1086] Linking CXX executable bin/QCMerger
+[307/1086] Linking CXX executable bin/Resampler
+[308/1086] Linking CXX executable bin/QCExtractor
+[309/1086] Linking CXX executable bin/QCImporter
+[310/1086] Linking CXX executable bin/QCShrinker
+[311/1086] Linking CXX executable bin/RNADigestor
+[312/1086] Linking CXX executable bin/RNAMassCalculator
+[313/1086] Linking CXX executable bin/RNPxlXICFilter
+[314/1086] Linking CXX executable bin/SequenceCoverageCalculator
+[315/1086] Linking CXX executable bin/SageAdapter
+[316/1086] Linking CXX executable bin/SimpleSearchEngine
+[317/1086] Linking CXX executable bin/SeedListGenerator
+[318/1086] Linking CXX executable bin/SemanticValidator
+[319/1086] Linking CXX executable bin/SiriusExport
+[320/1086] Linking CXX executable bin/TICCalculator
+[321/1086] Linking CXX executable bin/StaticModification
+[322/1086] Linking CXX executable bin/SpectraFilterNLargest
+[323/1086] Linking CXX executable bin/SpectraFilterWindowMower
+[324/1086] Linking CXX executable bin/SpectraFilterNormalizer
+[325/1086] Linking CXX executable bin/SpectraFilterThresholdMower
+[326/1086] Linking CXX executable bin/SpectraMerger
+[327/1086] Linking CXX executable bin/SpectraSTSearchAdapter
+[328/1086] Linking CXX executable bin/OpenSwathFileSplitter
+[329/1086] Linking CXX executable bin/XFDR
+[330/1086] Linking CXX executable bin/OpenSwathMzMLFileCacher
+[331/1086] Linking CXX executable bin/XMLValidator
+[332/1086] Linking CXX executable bin/TransitionListEvidenceFilter
+[333/1086] Linking CXX executable bin/TargetedFileConverter
+[334/1086] Linking CXX executable bin/OpenSwathDIAPreScoring
+[335/1086] Linking CXX executable bin/TextExporter
+[336/1086] Linking CXX executable bin/OpenSwathRewriteToFeatureXML
+[337/1086] Linking CXX executable bin/MRMTransitionGroupPicker
+[338/1086] Linking CXX executable bin/ParquetConverter
+[339/1086] Linking CXX executable bin/INIUpdater
+[340/1086] Linking CXX executable bin/CometAdapter
+[341/1086] Linking CXX executable bin/DecoyDatabase
+[342/1086] Linking CXX executable bin/DIAuditor
+[343/1086] Linking CXX executable bin/MS1LabeledWorkflow
+[344/1086] Linking CXX executable bin/OpenSwathExport
+[345/1086] Linking CXX executable bin/QualityControl
+[346/1086] Linking CXX executable bin/OpenSwathPercolatorScoring
+[347/1086] Linking CXX executable bin/OpenNuXL
+[348/1086] Linking CXX executable bin/UniPEFF
+[349/1086] Linking CXX executable bin/OpenSwathInfer
+[350/1086] Linking CXX executable bin/OpenSwathPeakMapExtractor
+[351/1086] Linking CXX executable bin/NucleicAcidSearchEngine
+[352/1086] Linking CXX executable src/tests/class_tests/bin/ClassTestUtils_test
+[353/1086] Linking CXX executable src/tests/class_tests/bin/ClassTest_test
+[354/1086] Linking CXX executable bin/ParquetDiff
+[355/1086] Linking CXX executable src/tests/class_tests/bin/Colorizer_test
+[356/1086] Linking CXX executable src/tests/class_tests/bin/FuzzyStringComparator_test
+[357/1086] Linking CXX executable src/tests/class_tests/bin/GlobalExceptionHandler_test
+[358/1086] Linking CXX executable bin/OpenSwathWorkflow
+[359/1086] Linking CXX executable src/tests/class_tests/bin/Exception_Base_test
+[360/1086] Linking CXX executable src/tests/class_tests/bin/PrecisionWrapper_test
+[361/1086] Linking CXX executable src/tests/class_tests/bin/RAIICleanup_test
+[362/1086] Linking CXX executable src/tests/class_tests/bin/StreamHandler_test
+[363/1086] Linking CXX executable src/tests/class_tests/bin/LogConfigHandler_test
+[364/1086] Linking CXX executable src/tests/class_tests/bin/ProgressLogger_test
+[365/1086] Linking CXX executable src/tests/class_tests/bin/VersionInfo_test
+[366/1086] Linking CXX executable src/tests/class_tests/bin/Multithreading_test
+[367/1086] Linking CXX executable src/tests/class_tests/bin/LogStream_test
+[368/1086] Linking CXX executable src/tests/class_tests/bin/ExternalProcess_test
+[369/1086] Linking CXX executable src/tests/class_tests/bin/UniqueIdIndexer_test
+[370/1086] Linking CXX executable src/tests/class_tests/bin/File_test
+[371/1086] Linking CXX executable src/tests/class_tests/bin/UniqueIdInterface_test
+[372/1086] Linking CXX executable src/tests/class_tests/bin/NetworkGetRequest_test
+[373/1086] Linking CXX executable src/tests/class_tests/bin/Network_test
+[374/1086] Linking CXX executable src/tests/class_tests/bin/BuildInfo_test
+[375/1086] Linking CXX executable src/tests/class_tests/bin/UniqueIdGenerator_test
+[376/1086] Linking CXX executable src/tests/class_tests/bin/JavaInfo_test
+[377/1086] Linking CXX executable src/tests/class_tests/bin/PythonInfo_test
+[378/1086] Linking CXX executable src/tests/class_tests/bin/SysInfo_test
+[379/1086] Linking CXX executable src/tests/class_tests/bin/RWrapper_test
+[380/1086] Linking CXX executable src/tests/class_tests/bin/SystemSettings_test
+[381/1086] Linking CXX executable src/tests/class_tests/bin/TempFiles_test
+[382/1086] Linking CXX executable src/tests/class_tests/bin/PathUtils_test
+[383/1086] Linking CXX executable src/tests/class_tests/bin/StopWatch_test
+[384/1086] Linking CXX executable src/tests/class_tests/bin/CVReference_test
+[385/1086] Linking CXX executable src/tests/class_tests/bin/UpdateCheck_test
+[386/1086] Linking CXX executable src/tests/class_tests/bin/ClusteringGrid_test
+[387/1086] Linking CXX executable src/tests/class_tests/bin/CVMappings_test
+[388/1086] Linking CXX executable src/tests/class_tests/bin/CVMappingRule_test
+[389/1086] Linking CXX executable src/tests/class_tests/bin/CalibrationData_test
+[390/1086] Linking CXX executable src/tests/class_tests/bin/CVMappingTerm_test
+[391/1086] Linking CXX executable src/tests/class_tests/bin/Adduct_test
+[392/1086] Linking CXX executable src/tests/class_tests/bin/ChargePair_test
+[393/1086] Linking CXX executable src/tests/class_tests/bin/DBoundingBox_test
+[394/1086] Linking CXX executable src/tests/class_tests/bin/DataValue_test
+[395/1086] Linking CXX executable src/tests/class_tests/bin/Compomer_test
+[396/1086] Linking CXX executable src/tests/class_tests/bin/ConvexHull2D_test
+[397/1086] Linking CXX executable src/tests/class_tests/bin/DIntervalBase_test
+[398/1086] Linking CXX executable src/tests/class_tests/bin/DPosition_test
+[399/1086] Linking CXX executable src/tests/class_tests/bin/DRange_test
+[400/1086] Linking CXX executable src/tests/class_tests/bin/DateTime_test
+[401/1086] Linking CXX executable src/tests/class_tests/bin/Date_test
+[402/1086] Linking CXX executable src/tests/class_tests/bin/GridBasedCluster_test
+[403/1086] Linking CXX executable src/tests/class_tests/bin/DistanceMatrix_test
+[404/1086] Linking CXX executable src/tests/class_tests/bin/GridBasedClustering_test
+[405/1086] Linking CXX executable src/tests/class_tests/bin/DefaultParamHandler_test
+[406/1086] Linking CXX executable src/tests/class_tests/bin/FlagSet_test
+[407/1086] Linking CXX executable src/tests/class_tests/bin/FASTAContainer_test
+[408/1086] Linking CXX executable src/tests/class_tests/bin/LPWrapper_test
+[409/1086] Linking CXX executable src/tests/class_tests/bin/ListUtilsIO_test
+[410/1086] Linking CXX executable src/tests/class_tests/bin/GridFeature_test
+[411/1086] Linking CXX executable src/tests/class_tests/bin/HashGrid_test
+[412/1086] Linking CXX executable src/tests/class_tests/bin/MatchedIterator_test
+[413/1086] Linking CXX executable src/tests/class_tests/bin/Matrix_test
+[414/1086] Linking CXX executable src/tests/class_tests/bin/ListUtils_test
+[415/1086] Linking CXX executable src/tests/class_tests/bin/MassExplainer_test
+[416/1086] Linking CXX executable src/tests/class_tests/bin/MatrixEigen_test
+[417/1086] Linking CXX executable src/tests/class_tests/bin/QTCluster_test
+[418/1086] Linking CXX executable src/tests/class_tests/bin/OSWData_test
+[419/1086] Linking CXX executable src/tests/class_tests/bin/ParamValue_test
+[420/1086] Linking CXX executable src/tests/class_tests/bin/RangeManager_test
+[421/1086] Linking CXX executable src/tests/class_tests/bin/OPXLDataStructs_test
+[422/1086] Linking CXX executable src/tests/class_tests/bin/StringListUtils_test
+[423/1086] Linking CXX executable src/tests/class_tests/bin/Param_test
+[424/1086] Linking CXX executable src/tests/class_tests/bin/BaseFeature_test
+[425/1086] Linking CXX executable src/tests/class_tests/bin/StringManager_test
+[426/1086] Linking CXX executable src/tests/class_tests/bin/ConsensusFeature_test
+[427/1086] Linking CXX executable src/tests/class_tests/bin/StringUtils_test
+[428/1086] Linking CXX executable src/tests/class_tests/bin/ChromatogramTools_test
+[429/1086] Linking CXX executable src/tests/class_tests/bin/ChromatogramPeak_test
+[430/1086] Linking CXX executable src/tests/class_tests/bin/String_test
+[431/1086] Linking CXX executable src/tests/class_tests/bin/AreaIterator_test
+[432/1086] Linking CXX executable src/tests/class_tests/bin/ConsensusMap_test
+[433/1086] Linking CXX executable src/tests/class_tests/bin/ConversionHelper_test
+[434/1086] Linking CXX executable src/tests/class_tests/bin/ConstRefVector_test
+[435/1086] Linking CXX executable src/tests/class_tests/bin/DPeak_test
+[436/1086] Linking CXX executable src/tests/class_tests/bin/DimMapper_test
+[437/1086] Linking CXX executable src/tests/class_tests/bin/FeatureMap_test
+[438/1086] Linking CXX executable src/tests/class_tests/bin/Feature_test
+[439/1086] Linking CXX executable src/tests/class_tests/bin/FeatureUniqueIds_test
+[440/1086] Linking CXX executable src/tests/class_tests/bin/Mobilogram_test
+[441/1086] Linking CXX executable src/tests/class_tests/bin/MobilityPeak1D_test
+[442/1086] Linking CXX executable src/tests/class_tests/bin/MRMFeature_test
+[443/1086] Linking CXX executable src/tests/class_tests/bin/MassTrace_test
+[444/1086] Linking CXX executable src/tests/class_tests/bin/MobilityPeak2D_test
+[445/1086] Linking CXX executable src/tests/class_tests/bin/MSChromatogram_test
+[446/1086] Linking CXX executable src/tests/class_tests/bin/MRMTransitionGroup_test
+[447/1086] Linking CXX executable src/tests/class_tests/bin/MSExperiment_test
+[448/1086] Linking CXX executable src/tests/class_tests/bin/PeakIndex_test
+[449/1086] Linking CXX executable src/tests/class_tests/bin/MSExperiment_rasterizeRTMZ_test
+[450/1086] Linking CXX executable src/tests/class_tests/bin/MSSpectrum_rasterizeIMFrame_test
+[451/1086] Linking CXX executable src/tests/class_tests/bin/Peak1D_test
+[452/1086] Linking CXX executable src/tests/class_tests/bin/OnDiscMSExperiment_test
+[453/1086] Linking CXX executable src/tests/class_tests/bin/Peak2D_test
+[454/1086] Linking CXX executable src/tests/class_tests/bin/RangeUtils_test
+[455/1086] Linking CXX executable src/tests/class_tests/bin/MSSpectrum_test
+[456/1086] Linking CXX executable src/tests/class_tests/bin/SpectrumRangeManager_test
+[457/1086] Linking CXX executable src/tests/class_tests/bin/RichPeak2D_test
+[458/1086] Linking CXX executable src/tests/class_tests/bin/StandardTypes_test
+[459/1086] Linking CXX executable src/tests/class_tests/bin/AcquisitionInfo_test
+[460/1086] Linking CXX executable src/tests/class_tests/bin/Acquisition_test
+[461/1086] Linking CXX executable src/tests/class_tests/bin/AnnotatedMSRun_test
+[462/1086] Linking CXX executable src/tests/class_tests/bin/CVTermList_test
+[463/1086] Linking CXX executable src/tests/class_tests/bin/SpectrumHelper_test
+[464/1086] Linking CXX executable src/tests/class_tests/bin/CVTerm_test
+[465/1086] Linking CXX executable src/tests/class_tests/bin/DataArrays_test
+[466/1086] Linking CXX executable src/tests/class_tests/bin/DataProcessing_test
+[467/1086] Linking CXX executable src/tests/class_tests/bin/ContactPerson_test
+[468/1086] Linking CXX executable src/tests/class_tests/bin/DocumentIdentifier_test
+[469/1086] Linking CXX executable src/tests/class_tests/bin/CVTermListInterface_test
+[470/1086] Linking CXX executable src/tests/class_tests/bin/ExperimentalDesign_test
+[471/1086] Linking CXX executable src/tests/class_tests/bin/ChromatogramSettings_test
+[472/1086] Linking CXX executable src/tests/class_tests/bin/IdentificationDataConverter_test
+[473/1086] Linking CXX executable src/tests/class_tests/bin/HPLC_test
+[474/1086] Linking CXX executable src/tests/class_tests/bin/Gradient_test
+[475/1086] Linking CXX executable src/tests/class_tests/bin/ExperimentalSettings_test
+[476/1086] Linking CXX executable src/tests/class_tests/bin/IDDataContainer_test
+[477/1086] Linking CXX executable src/tests/class_tests/bin/IdentifiedMolecule_test
+[478/1086] Linking CXX executable src/tests/class_tests/bin/InstrumentSettings_test
+[479/1086] Linking CXX executable src/tests/class_tests/bin/IdentificationData_test
+[480/1086] Building CXX object src/tests/class_tests/openms/topp_NucleicAcidSearchEngine_tests/CMakeFiles/NASEDigestion_test.dir/NASEDigestion_test.cpp.o
+[481/1086] Linking CXX executable src/tests/class_tests/bin/IonSource_test
+[482/1086] Linking CXX executable src/tests/class_tests/bin/MassAnalyzer_test
+[483/1086] Linking CXX executable src/tests/class_tests/bin/MetaInfoDescription_test
+[484/1086] Linking CXX executable src/tests/class_tests/bin/MetaInfoInterface_test
+[485/1086] Linking CXX executable src/tests/class_tests/bin/MetaInfoInterfaceUtils_test
+[486/1086] Linking CXX executable src/tests/class_tests/bin/Instrument_test
+[487/1086] Linking CXX executable src/tests/class_tests/bin/IonDetector_test
+[488/1086] Linking CXX executable src/tests/class_tests/bin/MS1LabelState_test
+[489/1086] Linking CXX executable src/tests/class_tests/bin/MetaInfoRegistry_test
+[490/1086] Linking CXX executable src/tests/class_tests/bin/PeptideEvidence_test
+[491/1086] Linking CXX executable src/tests/class_tests/bin/MetaInfo_test
+[492/1086] Linking CXX executable src/tests/class_tests/bin/PeptideIdentificationList_test
+[493/1086] Linking CXX executable src/tests/class_tests/bin/SpectrumNativeIDParser_test
+[494/1086] Linking CXX executable src/tests/class_tests/bin/PeptideHit_test
+[495/1086] Linking CXX executable src/tests/class_tests/bin/PeptideIdentification_test
+[496/1086] Linking CXX executable src/tests/class_tests/bin/Precursor_test
+[497/1086] Linking CXX executable src/tests/class_tests/bin/Product_test
+[498/1086] Linking CXX executable src/tests/class_tests/bin/ProteinHit_test
+[499/1086] Linking CXX executable src/tests/class_tests/bin/ProteinIdentification_test
+[500/1086] Linking CXX executable src/tests/class_tests/bin/ScanWindow_test
+[501/1086] Linking CXX executable src/tests/class_tests/bin/ProteinModificationSummary_test
+[502/1086] Linking CXX executable src/tests/class_tests/bin/Sample_test
+[503/1086] Linking CXX executable src/tests/class_tests/bin/IdentifierMSRunMapper_test
+[504/1086] Linking CXX executable src/tests/class_tests/bin/ProteinRunReferences_test
+[505/1086] Linking CXX executable src/tests/class_tests/bin/Software_test
+[506/1086] Linking CXX executable src/tests/class_tests/bin/SourceFile_test
+[507/1086] Linking CXX executable src/tests/class_tests/bin/USI_test
+[508/1086] Linking CXX executable src/tests/class_tests/bin/SpectrumSettings_test
+[509/1086] Linking CXX executable src/tests/class_tests/bin/SpectrumLookup_test
+[510/1086] Linking CXX executable src/tests/class_tests/bin/SpectrumMetaDataLookup_test
+[511/1086] Linking CXX executable src/tests/class_tests/bin/AbsoluteQuantitationStandardsFile_test
+[512/1086] Linking CXX executable src/tests/class_tests/bin/Base64_test
+[513/1086] Linking CXX executable src/tests/class_tests/bin/BedRModFile_test
+[514/1086] Linking CXX executable src/tests/class_tests/bin/BrukerTimsFile_test
+[515/1086] Linking CXX executable src/tests/class_tests/bin/BrukerTimsImagingFile_test
+[516/1086] Building CXX object src/tests/class_tests/openms_cli/CMakeFiles/TOPPBase_test.dir/source/TOPPBase_test.cpp.o
+[517/1086] Linking CXX executable src/tests/class_tests/bin/MSNumpressCoder_test
+[518/1086] Linking CXX executable src/tests/class_tests/bin/Bzip2InputStream_test
+[519/1086] Linking CXX executable src/tests/class_tests/bin/ChromeleonFile_test
+[520/1086] Linking CXX executable src/tests/class_tests/bin/CVMappingFile_test
+[521/1086] Linking CXX executable src/tests/class_tests/bin/ConsensusXMLFile_test
+[522/1086] Linking CXX executable src/tests/class_tests/bin/PASEFHillCentroider_test
+[523/1086] Linking CXX executable src/tests/class_tests/bin/Bzip2Ifstream_test
+[524/1086] Linking CXX executable src/tests/class_tests/bin/ControlledVocabulary_test
+[525/1086] Linking CXX executable src/tests/class_tests/bin/CompressedInputSource_test
+[526/1086] Linking CXX executable src/tests/class_tests/bin/CsvFile_test
+[527/1086] Linking CXX executable src/tests/class_tests/bin/ExperimentalDesignFile_test
+[528/1086] Linking CXX executable src/tests/class_tests/bin/EDTAFile_test
+[529/1086] Linking CXX executable src/tests/class_tests/bin/DTA2DFile_test
+[530/1086] Linking CXX executable src/tests/class_tests/bin/FASTAFile_test
+[531/1086] Linking CXX executable src/tests/class_tests/bin/FLASHDeconvSpectrumFile_test
+[532/1086] Linking CXX executable src/tests/class_tests/bin/DTAFile_test
+[533/1086] Linking CXX executable src/tests/class_tests/bin/FeatureFileOptions_test
+[534/1086] Linking CXX executable src/tests/class_tests/bin/FLASHDeconvFeatureFile_test
+[535/1086] Linking CXX executable src/tests/class_tests/bin/FeatureXMLFile_test
+[536/1086] Linking CXX executable src/tests/class_tests/bin/FLASHHelperClasses_test
+[537/1086] Linking CXX executable src/tests/class_tests/bin/FileInfo_test
+[538/1086] Linking CXX executable src/tests/class_tests/bin/GNPSMetaValueFile_test
+[539/1086] Linking CXX executable src/tests/class_tests/bin/GNPSQuantificationFile_test
+[540/1086] Linking CXX executable src/tests/class_tests/bin/IdXMLFile_test
+[541/1086] Linking CXX executable src/tests/class_tests/bin/FileNameUtils_test
+[542/1086] Linking CXX executable src/tests/class_tests/bin/IBSpectraFile_test
+[543/1086] Linking CXX executable src/tests/class_tests/bin/FileHandler_test
+[544/1086] Linking CXX executable src/tests/class_tests/bin/GzipIfstream_test
+[545/1086] Linking CXX executable src/tests/class_tests/bin/GzipInputStream_test
+[546/1086] Linking CXX executable src/tests/class_tests/bin/FileTypes_test
+[547/1086] Linking CXX executable src/tests/class_tests/bin/IndexedMzMLDecoder_test
+[548/1086] Linking CXX executable src/tests/class_tests/bin/InspectInfile_test
+[549/1086] Linking CXX executable src/tests/class_tests/bin/MS2File_test
+[550/1086] Linking CXX executable src/tests/class_tests/bin/IndentedStream_test
+[551/1086] Linking CXX executable src/tests/class_tests/bin/KroenikFile_test
+[552/1086] Linking CXX executable src/tests/class_tests/bin/MSPFile_test
+[553/1086] Linking CXX executable src/tests/class_tests/bin/IndexedMzMLFile_test
+[554/1086] Linking CXX executable src/tests/class_tests/bin/IndexedMzMLFileLoader_test
+[555/1086] Linking CXX executable src/tests/class_tests/bin/InspectOutfile_test
+[556/1086] Linking CXX executable src/tests/class_tests/bin/MRMFeatureQCFile_test
+[557/1086] Linking CXX executable src/tests/class_tests/bin/MascotRemoteQuery_test
+[558/1086] Linking CXX executable src/tests/class_tests/bin/MascotGenericFile_test
+[559/1086] Linking CXX executable src/tests/class_tests/bin/MsInspectFile_test
+[560/1086] Linking CXX executable src/tests/class_tests/bin/MSPGenericFile_test
+[561/1086] Linking CXX executable src/tests/class_tests/bin/MSstatsFile_test
+[562/1086] Linking CXX executable src/tests/class_tests/bin/MzDataValidator_test
+[563/1086] Linking CXX executable src/tests/class_tests/bin/MRMFeaturePickerFile_test
+[564/1086] Linking CXX executable src/tests/class_tests/bin/MzIdentMLFile_test
+[565/1086] Linking CXX executable src/tests/class_tests/bin/MascotXMLFile_test
+[566/1086] Linking CXX executable src/tests/class_tests/bin/MzDataFile_test
+[567/1086] Linking CXX executable src/tests/class_tests/bin/MzMLSqliteSwathHandler_test
+[568/1086] Linking CXX executable src/tests/class_tests/bin/ThermoRawFileMetadata_test
+[569/1086] Linking CXX executable src/tests/class_tests/bin/MzMLSpectrumDecoder_test
+[570/1086] Linking CXX executable src/tests/class_tests/bin/MzTab_test
+[571/1086] Linking CXX executable src/tests/class_tests/bin/MzMLSqliteHandler_test
+[572/1086] Linking CXX executable src/tests/class_tests/bin/MzIdentMLValidator_test
+[573/1086] Linking CXX executable src/tests/class_tests/bin/MzTabFile_test
+[574/1086] Linking CXX executable src/tests/class_tests/bin/MzTabMFile_test
+[575/1086] Linking CXX executable src/tests/class_tests/bin/MzTabM_test
+[576/1086] Linking CXX executable src/tests/class_tests/bin/MzMLValidator_test
+[577/1086] Linking CXX executable src/tests/class_tests/bin/MzXMLFile_test
+[578/1086] Linking CXX executable src/tests/class_tests/bin/NoopMSDataConsumer_test
+[579/1086] Linking CXX executable src/tests/class_tests/bin/TraMLValidator_test
+[580/1086] Linking CXX executable src/tests/class_tests/bin/PTMXMLFile_test
+[581/1086] Linking CXX executable src/tests/class_tests/bin/OMSFile_test
+[582/1086] Linking CXX executable src/tests/class_tests/bin/OSWFile_test
+[583/1086] Linking CXX executable src/tests/class_tests/bin/OMSSAXMLFile_test
+[584/1086] Linking CXX executable src/tests/class_tests/bin/OMSSACSVFile_test
+[585/1086] Linking CXX executable src/tests/class_tests/bin/OSWFileInference_test
+[586/1086] Linking CXX executable src/tests/class_tests/bin/OSWParquetFile_test
+[587/1086] Linking CXX executable src/tests/class_tests/bin/ParquetFilter_test
+[588/1086] Linking CXX executable src/tests/class_tests/bin/ParamCWLFile_test
+[589/1086] Linking CXX executable src/tests/class_tests/bin/ParamJSONFile_test
+[590/1086] Linking CXX executable src/tests/class_tests/bin/ParamXMLFile_test
+[591/1086] Linking CXX executable src/tests/class_tests/bin/PEFFFile_test
+[592/1086] Linking CXX executable src/tests/class_tests/bin/PeakTypeEstimator_test
+[593/1086] Linking CXX executable src/tests/class_tests/bin/PepNovoOutfile_test
+[594/1086] Linking CXX executable src/tests/class_tests/bin/ParamCTDFile_test
+[595/1086] Linking CXX executable src/tests/class_tests/bin/PepNovoInfile_test
+[596/1086] Linking CXX executable src/tests/class_tests/bin/PepXMLFileMascot_test
+[597/1086] Linking CXX executable src/tests/class_tests/bin/PercolatorAdapter_parity_test
+[598/1086] Linking CXX executable src/tests/class_tests/bin/ProtXMLFile_test
+[599/1086] Linking CXX executable src/tests/class_tests/bin/PepXMLFile_test
+[600/1086] Linking CXX executable src/tests/class_tests/bin/Percolator_subprocess_parity_test
+[601/1086] Linking CXX executable src/tests/class_tests/bin/PercolatorPosteriorEstimator_test
+[602/1086] Linking CXX executable src/tests/class_tests/bin/Percolator_test
+[603/1086] Linking CXX executable src/tests/class_tests/bin/PercolatorOutfile_test
+[604/1086] Linking CXX executable src/tests/class_tests/bin/PercolatorInfile_test
+[605/1086] Linking CXX executable src/tests/class_tests/bin/QcMLFile_test
+[606/1086] Linking CXX executable src/tests/class_tests/bin/SVOutStream_test
+[607/1086] Linking CXX executable src/tests/class_tests/bin/SemanticValidator_test
+[608/1086] Linking CXX executable src/tests/class_tests/bin/SpecArrayFile_test
+[609/1086] Linking CXX executable src/tests/class_tests/bin/SequestInfile_test
+[610/1086] Linking CXX executable src/tests/class_tests/bin/SqliteConnector_test
+[611/1086] Linking CXX executable src/tests/class_tests/bin/ThermoRawFile_test
+[612/1086] Linking CXX executable src/tests/class_tests/bin/SwathMapMassCorrection_test
+[613/1086] Linking CXX executable src/tests/class_tests/bin/MRMFile_test
+[614/1086] Linking CXX executable src/tests/class_tests/bin/SequestOutfile_test
+[615/1086] Linking CXX executable src/tests/class_tests/bin/OnDiscThermoRawExperiment_test
+[616/1086] Linking CXX executable src/tests/class_tests/bin/SqMassFile_test
+[617/1086] Linking CXX executable src/tests/class_tests/bin/SwathFileConsumer_test
+[618/1086] Linking CXX executable src/tests/class_tests/bin/TextFile_test
+[619/1086] Linking CXX executable src/tests/class_tests/bin/SwathWindowLoader_test
+[620/1086] Linking CXX executable src/tests/class_tests/bin/SwathFile_test
+[621/1086] Linking CXX executable src/tests/class_tests/bin/TransformationXMLFile_test
+[622/1086] Linking CXX executable src/tests/class_tests/bin/XMLValidator_test
+[623/1086] Linking CXX executable src/tests/class_tests/bin/TraMLFile_test
+[624/1086] Linking CXX executable src/tests/class_tests/bin/UnimodXMLFile_test
+[625/1086] Linking CXX executable src/tests/class_tests/bin/XMassFile_test
+[626/1086] Linking CXX executable src/tests/class_tests/bin/TargetedDataFileLoader_test
+[627/1086] Linking CXX executable src/tests/class_tests/bin/XTandemInfile_test
+[628/1086] Linking CXX executable src/tests/class_tests/bin/ZipInputStream_test
+[629/1086] Linking CXX executable src/tests/class_tests/bin/MSDataCachedConsumer_test
+[630/1086] Linking CXX executable src/tests/class_tests/bin/ZlibCompression_test
+[631/1086] Linking CXX executable src/tests/class_tests/bin/XTandemXMLFile_test
+[632/1086] Linking CXX executable src/tests/class_tests/bin/ZipArchiveFile_test
+[633/1086] Linking CXX executable src/tests/class_tests/bin/ZipIfstream_test
+[634/1086] Linking CXX executable src/tests/class_tests/bin/ZstdCompression_test
+[635/1086] Linking CXX executable src/tests/class_tests/bin/ZipRandomAccessFile_test
+ld: warning: ignoring duplicate libraries: '/opt/homebrew/lib/libarrow.a'
+[636/1086] Linking CXX executable src/tests/class_tests/bin/Libzip_test
+ld: warning: ignoring duplicate libraries: '/opt/homebrew/lib/libarrow.a'
+[637/1086] Linking CXX executable src/tests/class_tests/bin/SpectrumAccessQuadMZTransforming_test
+[638/1086] Linking CXX executable src/tests/class_tests/bin/SpectrumAccessOnDisc_test
+[639/1086] Linking CXX executable src/tests/class_tests/bin/SpectrumAccessSqMass_test
+[640/1086] Linking CXX executable src/tests/class_tests/bin/MSDataStoringConsumer_test
+[641/1086] Linking CXX executable src/tests/class_tests/bin/MRMFeatureAccessOpenMS_test
+[642/1086] Linking CXX executable src/tests/class_tests/bin/MSDataChainingConsumer_test
+[643/1086] Linking CXX executable src/tests/class_tests/bin/SpectrumAccessOpenMSInMemory_test
+[644/1086] Linking CXX executable src/tests/class_tests/bin/MSDataAggregatingConsumer_test
+[645/1086] Linking CXX executable src/tests/class_tests/bin/SpectrumAccessOpenMS_test
+[646/1086] Linking CXX executable src/tests/class_tests/bin/MSDataTransformingConsumer_test
+[647/1086] Linking CXX executable src/tests/class_tests/bin/SiriusFragmentAnnotation_test
+[648/1086] Linking CXX executable src/tests/class_tests/bin/Arrow_test
+ld: warning: ignoring duplicate libraries: '/opt/homebrew/lib/libarrow.a'
+[649/1086] Linking CXX executable src/tests/class_tests/bin/QPXIdentity_test
+[650/1086] Linking CXX executable src/tests/class_tests/bin/QPXCollectionExport_test
+[651/1086] Linking CXX executable src/tests/class_tests/bin/MSChromatogramParquetConsumer_test
+[652/1086] Linking CXX executable src/tests/class_tests/bin/MSExperimentArrowExport_test
+ld: warning: ignoring duplicate libraries: '/opt/homebrew/lib/libarrow.a'
+[653/1086] Linking CXX executable src/tests/class_tests/bin/QPXValueValidation_test
+ld: warning: ignoring duplicate libraries: '/opt/homebrew/lib/libarrow.a'
+[654/1086] Linking CXX executable src/tests/class_tests/bin/QPXFile_test
+ld: warning: ignoring duplicate libraries: '/opt/homebrew/lib/libarrow.a'
+[655/1086] Linking CXX executable src/tests/class_tests/bin/ConsensusMapArrowExport_test
+ld: warning: ignoring duplicate libraries: '/opt/homebrew/lib/libarrow.a'
+[656/1086] Linking CXX executable src/tests/class_tests/bin/ProteinGroupArrowExport_test
+ld: warning: ignoring duplicate libraries: '/opt/homebrew/lib/libarrow.a'
+[657/1086] Linking CXX executable src/tests/class_tests/bin/MobilogramParquetConsumer_test
+[658/1086] Linking CXX executable src/tests/class_tests/bin/XIPMParquetConsumer_test
+[659/1086] Linking CXX executable src/tests/class_tests/bin/XIPMParquetRoundTrip_test
+[660/1086] Linking CXX executable src/tests/class_tests/bin/XIPMParquetFile_test
+[661/1086] Linking CXX executable src/tests/class_tests/bin/XICParquetFile_test
+ld: warning: ignoring duplicate libraries: '/opt/homebrew/lib/libarrow.a'
+[662/1086] Linking CXX executable src/tests/class_tests/bin/XIMParquetFile_test
+ld: warning: ignoring duplicate libraries: '/opt/homebrew/lib/libarrow.a'
+[663/1086] Linking CXX executable src/tests/class_tests/bin/ParquetFile_test
+ld: warning: ignoring duplicate libraries: '/opt/homebrew/lib/libarrow.a'
+[664/1086] Linking CXX executable src/tests/class_tests/bin/FeatureMapArrowIO_test
+ld: warning: ignoring duplicate libraries: '/opt/homebrew/lib/libarrow.a'
+[665/1086] Linking CXX executable src/tests/class_tests/bin/ConsensusMapArrowIO_test
+ld: warning: ignoring duplicate libraries: '/opt/homebrew/lib/libarrow.a'
+[666/1086] Linking CXX executable src/tests/class_tests/bin/ProteinIdentificationArrowIO_test
+ld: warning: ignoring duplicate libraries: '/opt/homebrew/lib/libarrow.a'
+[667/1086] Linking CXX executable src/tests/class_tests/bin/ModificationDefinitionIO_test
+[668/1086] Linking CXX executable src/tests/class_tests/bin/PSMArrowIO_test
+ld: warning: ignoring duplicate libraries: '/opt/homebrew/lib/libarrow.a'
+[669/1086] Linking CXX executable src/tests/class_tests/bin/BasicStatistics_test
+[670/1086] Linking CXX executable src/tests/class_tests/bin/BilinearInterpolation_test
+[671/1086] Linking CXX executable src/tests/class_tests/bin/BSpline2d_test
+[672/1086] Linking CXX executable src/tests/class_tests/bin/ArrowSchemaRegistry_test
+ld: warning: ignoring duplicate libraries: '/opt/homebrew/lib/libarrow.a'
+[673/1086] Linking CXX executable src/tests/class_tests/bin/ArrowIOHelpers_test
+ld: warning: ignoring duplicate libraries: '/opt/homebrew/lib/libarrow.a'
+[674/1086] Linking CXX executable src/tests/class_tests/bin/OpenSwathOSWParquetRoundTrip_test
+ld: warning: ignoring duplicate libraries: '/opt/homebrew/lib/libarrow.a'
+[675/1086] Linking CXX executable src/tests/class_tests/bin/BSplineSmoothingSpline_test
+[676/1086] Linking CXX executable src/tests/class_tests/bin/ParquetTableComparator_test
+ld: warning: ignoring duplicate libraries: '/opt/homebrew/lib/libarrow.a'
+[677/1086] Linking CXX executable src/tests/class_tests/bin/CubicSpline2d_test
+[678/1086] Linking CXX executable src/tests/class_tests/bin/SplineBisection_test
+[679/1086] Linking CXX executable src/tests/class_tests/bin/GammaDistributionFitter_test
+[680/1086] Linking CXX executable src/tests/class_tests/bin/EmgGradientDescent_test
+[681/1086] Linking CXX executable src/tests/class_tests/bin/GumbelMaxLikelihoodFitter_test
+[682/1086] Linking CXX executable src/tests/class_tests/bin/GridSearch_test
+[683/1086] Linking CXX executable src/tests/class_tests/bin/KernelDensityEstimation_test
+[684/1086] Linking CXX executable src/tests/class_tests/bin/GumbelDistributionFitter_test
+[685/1086] Linking CXX executable src/tests/class_tests/bin/Histogram_test
+[686/1086] Linking CXX executable src/tests/class_tests/bin/GaussFitter_test
+[687/1086] Linking CXX executable src/tests/class_tests/bin/CrossValidation_test
+[688/1086] Linking CXX executable src/tests/class_tests/bin/LevelContextInference_test
+[689/1086] Linking CXX executable src/tests/class_tests/bin/LinearInterpolation_test
+[690/1086] Linking CXX executable src/tests/class_tests/bin/LinearResampling_test
+[691/1086] Linking CXX executable src/tests/class_tests/bin/LinearRegressionWithoutIntercept_test
+[692/1086] Linking CXX executable src/tests/class_tests/bin/PosteriorErrorProbabilityModel_test
+[693/1086] Linking CXX executable src/tests/class_tests/bin/NNLS_test
+[694/1086] Linking CXX executable src/tests/class_tests/bin/MathFunctions_test
+[695/1086] Linking CXX executable src/tests/class_tests/bin/LinearRegression_test
+[696/1086] Linking CXX executable src/tests/class_tests/bin/QuadraticRegression_test
+[697/1086] Linking CXX executable src/tests/class_tests/bin/MultipleTesting_test
+[698/1086] Linking CXX executable src/tests/class_tests/bin/NonNegativeLeastSquaresSolver_test
+[699/1086] Linking CXX executable src/tests/class_tests/bin/RANSACModel_test
+[700/1086] Linking CXX executable src/tests/class_tests/bin/RANSACModelLinear_test
+[701/1086] Linking CXX executable src/tests/class_tests/bin/RankData_test
+[702/1086] Linking CXX executable src/tests/class_tests/bin/RANSAC_test
+[703/1086] Linking CXX executable src/tests/class_tests/bin/DataFilters_test
+[704/1086] Linking CXX executable src/tests/class_tests/bin/RANSACModelQuadratic_test
+[705/1086] Linking CXX executable src/tests/class_tests/bin/ROCCurve_test
+[706/1086] Linking CXX executable src/tests/class_tests/bin/Biosaur2Algorithm_test
+[707/1086] Linking CXX executable src/tests/class_tests/bin/Deisotoper_test
+[708/1086] Linking CXX executable src/tests/class_tests/bin/StatisticFunctions_test
+[709/1086] Linking CXX executable src/tests/class_tests/bin/FeatureOverlapFilter_test
+[710/1086] Linking CXX executable src/tests/class_tests/bin/GaussFilter_test
+[711/1086] Linking CXX executable src/tests/class_tests/bin/GaussFilterAlgorithm_test
+[712/1086] Linking CXX executable src/tests/class_tests/bin/FeatureFindingMetabo_test
+[713/1086] Linking CXX executable src/tests/class_tests/bin/FastLowessSmoothing_test
+[714/1086] Linking CXX executable src/tests/class_tests/bin/LowessSmoothing_test
+[715/1086] Linking CXX executable src/tests/class_tests/bin/InternalCalibration_test
+[716/1086] Linking CXX executable src/tests/class_tests/bin/ElutionPeakDetection_test
+[717/1086] Linking CXX executable src/tests/class_tests/bin/LinearResamplerAlign_test
+[718/1086] Linking CXX executable src/tests/class_tests/bin/IDFilter_test
+[719/1086] Linking CXX executable src/tests/class_tests/bin/MassTraceDetection_test
+[720/1086] Linking CXX executable src/tests/class_tests/bin/MultiplexClustering_test
+[721/1086] Linking CXX executable src/tests/class_tests/bin/MorphologicalFilter_test
+[722/1086] Linking CXX executable src/tests/class_tests/bin/MultiplexDeltaMassesGenerator_test
+[723/1086] Linking CXX executable src/tests/class_tests/bin/ModifiedSincSmoother_test
+[724/1086] Linking CXX executable src/tests/class_tests/bin/MultiplexDeltaMasses_test
+[725/1086] Linking CXX executable src/tests/class_tests/bin/MultiplexFilteringCentroided_test
+[726/1086] Linking CXX executable src/tests/class_tests/bin/MultiplexFilteredMSExperiment_test
+[727/1086] Linking CXX executable src/tests/class_tests/bin/MultiplexFilteredPeak_test
+[728/1086] Linking CXX executable src/tests/class_tests/bin/MultiplexFiltering_test
+[729/1086] Linking CXX executable src/tests/class_tests/bin/MultiplexFilteringProfile_test
+[730/1086] Linking CXX executable src/tests/class_tests/bin/MultiplexIsotopicPeakPattern_test
+[731/1086] Linking CXX executable src/tests/class_tests/bin/MultiplexResolverAlgorithm_test
+[732/1086] Linking CXX executable src/tests/class_tests/bin/MultiplexSatelliteProfile_test
+[733/1086] Linking CXX executable src/tests/class_tests/bin/MZTrafoModel_test
+[734/1086] Linking CXX executable src/tests/class_tests/bin/NLargest_test
+[735/1086] Linking CXX executable src/tests/class_tests/bin/PrecursorCorrection_test
+[736/1086] Linking CXX executable src/tests/class_tests/bin/MultiplexSatelliteCentroided_test
+[737/1086] Linking CXX executable src/tests/class_tests/bin/Normalizer_test
+[738/1086] Linking CXX executable src/tests/class_tests/bin/SplineInterpolatedPeaks_test
+[739/1086] Linking CXX executable src/tests/class_tests/bin/SavitzkyGolayFilter_test
+[740/1086] Linking CXX executable src/tests/class_tests/bin/SplinePackage_test
+[741/1086] Linking CXX executable src/tests/class_tests/bin/RankScaler_test
+[742/1086] Linking CXX executable src/tests/class_tests/bin/SignalToNoiseEstimatorMedianRapid_test
+[743/1086] Linking CXX executable src/tests/class_tests/bin/SignalToNoiseEstimatorMedian_test
+[744/1086] Linking CXX executable src/tests/class_tests/bin/SignalToNoiseEstimator_test
+[745/1086] Linking CXX executable src/tests/class_tests/bin/SignalToNoiseEstimatorMeanIterative_test
+[746/1086] Linking CXX executable src/tests/class_tests/bin/WindowMower_test
+[747/1086] Linking CXX executable src/tests/class_tests/bin/SqrtScaler_test
+[748/1086] Linking CXX executable src/tests/class_tests/bin/ThresholdMower_test
+[749/1086] Linking CXX executable src/tests/class_tests/bin/SpectraMerger_test
+[750/1086] Linking CXX executable src/tests/class_tests/bin/AverageLinkage_test
+[751/1086] Linking CXX executable src/tests/class_tests/bin/BinnedSumAgreeingIntensities_test
+[752/1086] Linking CXX executable src/tests/class_tests/bin/BinnedSpectrum_test
+[753/1086] Linking CXX executable src/tests/class_tests/bin/ClusterAnalyzer_test
+[754/1086] Linking CXX executable src/tests/class_tests/bin/ClusterHierarchical_test
+[755/1086] Linking CXX executable src/tests/class_tests/bin/BinnedSharedPeakCount_test
+[756/1086] Linking CXX executable src/tests/class_tests/bin/BinnedSpectralContrastAngle_test
+[757/1086] Linking CXX executable src/tests/class_tests/bin/BinnedSpectrumCompareFunctor_test
+[758/1086] Linking CXX executable src/tests/class_tests/bin/ClusterFunctor_test
+[759/1086] Linking CXX executable src/tests/class_tests/bin/PeakAlignment_test
+[760/1086] Linking CXX executable src/tests/class_tests/bin/SingleLinkage_test
+[761/1086] Linking CXX executable src/tests/class_tests/bin/CompleteLinkage_test
+[762/1086] Linking CXX executable src/tests/class_tests/bin/SpectrumCheapDPCorr_test
+[763/1086] Linking CXX executable src/tests/class_tests/bin/EuclideanSimilarity_test
+[764/1086] Linking CXX executable src/tests/class_tests/bin/SpectrumAlignment_test
+[765/1086] Linking CXX executable src/tests/class_tests/bin/PeakSpectrumCompareFunctor_test
+[766/1086] Linking CXX executable src/tests/class_tests/bin/SpectrumPrecursorComparator_test
+[767/1086] Linking CXX executable src/tests/class_tests/bin/SpectrumAlignmentScore_test
+[768/1086] Linking CXX executable src/tests/class_tests/bin/SpectraSTSimilarityScore_test
+[769/1086] Linking CXX executable src/tests/class_tests/bin/SteinScottImproveScore_test
+[770/1086] Linking CXX executable src/tests/class_tests/bin/ZhangSimilarityScore_test
+[771/1086] Linking CXX executable src/tests/class_tests/bin/CrossLinksDB_test
+[772/1086] Linking CXX executable src/tests/class_tests/bin/AASequence_test
+[773/1086] Linking CXX executable src/tests/class_tests/bin/DigestionEnzymeProtein_test
+[774/1086] Linking CXX executable src/tests/class_tests/bin/DecoyGenerator_test
+[775/1086] Linking CXX executable src/tests/class_tests/bin/AAIndex_test
+[776/1086] Linking CXX executable src/tests/class_tests/bin/AdductInfo_test
+[777/1086] Linking CXX executable src/tests/class_tests/bin/DigestionEnzyme_test
+[778/1086] Linking CXX executable src/tests/class_tests/bin/CoarseIsotopeDistribution_test
+[779/1086] Linking CXX executable src/tests/class_tests/bin/DigestionEnzymeRNA_test
+[780/1086] Linking CXX executable src/tests/class_tests/bin/ElementDB_test
+[781/1086] Linking CXX executable src/tests/class_tests/bin/Element_test
+[782/1086] Linking CXX executable src/tests/class_tests/bin/EnzymaticDigestion_test
+[783/1086] Linking CXX executable src/tests/class_tests/bin/HydrophobicityProfile_test
+[784/1086] Linking CXX executable src/tests/class_tests/bin/IMSAlphabetParser_test
+[785/1086] Linking CXX executable src/tests/class_tests/bin/EmpiricalFormula_test
+[786/1086] Linking CXX executable src/tests/class_tests/bin/FineIsotopeDistribution_test
+[787/1086] Linking CXX executable src/tests/class_tests/bin/GlycanStructure_test
+[788/1086] Linking CXX executable src/tests/class_tests/bin/IsoelectricPoint_test
+[789/1086] Linking CXX executable src/tests/class_tests/bin/IntegerMassDecomposer_test
+[790/1086] Linking CXX executable src/tests/class_tests/bin/IMSAlphabet_test
+[791/1086] Linking CXX executable src/tests/class_tests/bin/IMSElement_test
+[792/1086] Linking CXX executable src/tests/class_tests/bin/IsoSpec_test
+[793/1086] Linking CXX executable src/tests/class_tests/bin/IsotopeDistribution_test
+[794/1086] Linking CXX executable src/tests/class_tests/bin/MassDecomposer_test
+[795/1086] Linking CXX executable src/tests/class_tests/bin/IMSAlphabetTextParser_test
+[796/1086] Linking CXX executable src/tests/class_tests/bin/IMSIsotopeDistribution_test
+[797/1086] Linking CXX executable src/tests/class_tests/bin/ModificationDataProvider_test
+[798/1086] Linking CXX executable src/tests/class_tests/bin/ModificationDefinition_test
+[799/1086] Linking CXX executable src/tests/class_tests/bin/NucleicAcidSpectrumGenerator_test
+[800/1086] Linking CXX executable src/tests/class_tests/bin/DigestionEnzymeDataProvider_test
+[801/1086] Linking CXX executable src/tests/class_tests/bin/MzPAF_test
+[802/1086] Linking CXX executable src/tests/class_tests/bin/ModificationsDB_test
+[803/1086] Linking CXX executable src/tests/class_tests/bin/MonosaccharideDB_test
+[804/1086] Linking CXX executable src/tests/class_tests/bin/NASequence_test
+[805/1086] Linking CXX executable src/tests/class_tests/bin/ProFormaParser_test
+[806/1086] Linking CXX executable src/tests/class_tests/bin/IonNaming_test
+[807/1086] Linking CXX executable src/tests/class_tests/bin/ProteaseDB_test
+[808/1086] Linking CXX executable src/tests/class_tests/bin/ModificationDefinitionsSet_test
+[809/1086] Linking CXX executable src/tests/class_tests/bin/ResidueDB_test
+[810/1086] Linking CXX executable src/tests/class_tests/bin/RNaseDB_test
+[811/1086] Linking CXX executable src/tests/class_tests/bin/ResidueModification_test
+[812/1086] Linking CXX executable src/tests/class_tests/bin/ProteaseDigestion_test
+[813/1086] Linking CXX executable src/tests/class_tests/bin/RNaseDigestion_test
+[814/1086] Linking CXX executable src/tests/class_tests/bin/RealMassDecomposer_test
+[815/1086] Linking CXX executable src/tests/class_tests/bin/RibonucleotideDataProvider_test
+[816/1086] Linking CXX executable src/tests/class_tests/bin/Ribonucleotide_test
+[817/1086] Linking CXX executable src/tests/class_tests/bin/Residue_test
+[818/1086] Linking CXX executable src/tests/class_tests/bin/RibonucleotideDB_test
+[819/1086] Linking CXX executable src/tests/class_tests/bin/SimpleTSGXLMS_test
+[820/1086] Linking CXX executable src/tests/class_tests/bin/SpectrumAnnotator_test
+[821/1086] Linking CXX executable src/tests/class_tests/bin/SequenceCoverage_test
+[822/1086] Linking CXX executable src/tests/class_tests/bin/Tagger_test
+[823/1086] Linking CXX executable src/tests/class_tests/bin/TheoreticalSpectrumGeneratorXLMS_test
+[824/1086] Linking CXX executable src/tests/class_tests/bin/Weights_test
+[825/1086] Linking CXX executable src/tests/class_tests/bin/AbsoluteQuantitation_test
+[826/1086] Linking CXX executable src/tests/class_tests/bin/AbsoluteQuantitationMethod_test
+[827/1086] Linking CXX executable src/tests/class_tests/bin/TheoreticalSpectrumGenerator_test
+[828/1086] Linking CXX executable src/tests/class_tests/bin/TheoreticalGlycanSpectrumGenerator_test
+[829/1086] Linking CXX executable src/tests/class_tests/bin/AbsoluteQuantitationMethodFile_test
+[830/1086] Linking CXX executable src/tests/class_tests/bin/AScore_test
+[831/1086] Linking CXX executable src/tests/class_tests/bin/ClusterProxyKD_test
+[832/1086] Linking CXX executable src/tests/class_tests/bin/BaseGroupFinder_test
+[833/1086] Linking CXX executable src/tests/class_tests/bin/AhoCorasickAmbiguous_test
+[834/1086] Linking CXX executable src/tests/class_tests/bin/AccurateMassSearchEngine_test
+[835/1086] Linking CXX executable src/tests/class_tests/bin/AbsoluteQuantitationStandards_test
+[836/1086] Linking CXX executable src/tests/class_tests/bin/BaseSuperimposer_test
+[837/1086] Linking CXX executable src/tests/class_tests/bin/BasicProteinInferenceAlgorithm_test
+[838/1086] Linking CXX executable src/tests/class_tests/bin/BayesianProteinInferenceAlgorithm_test
+[839/1086] Linking CXX executable src/tests/class_tests/bin/ConsensusIDAlgorithmBest_test
+[840/1086] Linking CXX executable src/tests/class_tests/bin/ConfidenceScoring_test
+[841/1086] Linking CXX executable src/tests/class_tests/bin/ConsensusIDAlgorithmPEPMatrix_test
+[842/1086] Linking CXX executable src/tests/class_tests/bin/ConsensusIDAlgorithmRanks_test
+[843/1086] Linking CXX executable src/tests/class_tests/bin/ConsensusMapNormalizerAlgorithmThreshold_test
+[844/1086] Linking CXX executable src/tests/class_tests/bin/ConsensusIDAlgorithmPEPIons_test
+[845/1086] Linking CXX executable src/tests/class_tests/bin/ConsensusIDAlgorithmAverage_test
+[846/1086] Linking CXX executable src/tests/class_tests/bin/ConsensusIDAlgorithmWorst_test
+[847/1086] Linking CXX executable src/tests/class_tests/bin/ConsensusMapNormalizerAlgorithmMedian_test
+[848/1086] Linking CXX executable src/tests/class_tests/bin/ConsensusMapNormalizerAlgorithmQuantile_test
+[849/1086] Linking CXX executable src/tests/class_tests/bin/FalseDiscoveryRate_test
+[850/1086] Linking CXX executable src/tests/class_tests/bin/FeatureDistance_test
+[851/1086] Linking CXX executable src/tests/class_tests/bin/ConsensusMapMergerAlgorithm_test
+[852/1086] Linking CXX executable src/tests/class_tests/bin/Scores_test
+[853/1086] Linking CXX executable src/tests/class_tests/bin/FeatureMapping_test
+[854/1086] Linking CXX executable src/tests/class_tests/bin/ConsensusMapNormalizerAlgorithmRTLocal_test
+[855/1086] Linking CXX executable src/tests/class_tests/bin/FeatureGroupingAlgorithmLabeled_test
+[856/1086] Linking CXX executable src/tests/class_tests/bin/FeatureDeconvolution_test
+[857/1086] Linking CXX executable src/tests/class_tests/bin/FeatureGroupingAlgorithmKD_test
+[858/1086] Linking CXX executable src/tests/class_tests/bin/FeatureGroupingAlgorithmQT_test
+[859/1086] Linking CXX executable src/tests/class_tests/bin/PipEchoAlgorithm_test
+[860/1086] Linking CXX executable src/tests/class_tests/bin/FeatureGroupingAlgorithmUnlabeled_test
+[861/1086] Linking CXX executable src/tests/class_tests/bin/FeatureGroupingAlgorithm_test
+[862/1086] Linking CXX executable src/tests/class_tests/bin/PipEchoAlgorithm_realistic_test
+[863/1086] Linking CXX executable src/tests/class_tests/bin/FeatureHandle_test
+[864/1086] Linking CXX executable src/tests/class_tests/bin/FIAMSDataProcessor_test
+[865/1086] Linking CXX executable src/tests/class_tests/bin/FLASHDeconvAlgorithm_test
+[866/1086] Linking CXX executable src/tests/class_tests/bin/OpenSearchModificationAnalysis_test
+[867/1086] Linking CXX executable src/tests/class_tests/bin/FIAMSScheduler_test
+[868/1086] Linking CXX executable src/tests/class_tests/bin/FLASHDeconvHelperStructs_test
+[869/1086] Linking CXX executable src/tests/class_tests/bin/DDAWorkflowCommons_test
+[870/1086] Linking CXX executable src/tests/class_tests/bin/IncludeExcludeTarget_test
+[871/1086] Linking CXX executable src/tests/class_tests/bin/ILPDCWrapper_test
+[872/1086] Linking CXX executable src/tests/class_tests/bin/IDRipper_test
+[873/1086] Linking CXX executable src/tests/class_tests/bin/IonIdentityMolecularNetworking_test
+[874/1086] Linking CXX executable src/tests/class_tests/bin/IDBoostGraph_test
+[875/1086] Linking CXX executable src/tests/class_tests/bin/IDDecoyProbability_test
+[876/1086] Linking CXX executable src/tests/class_tests/bin/IDMapper_test
+[877/1086] Linking CXX executable src/tests/class_tests/bin/IDMergerAlgorithm_test
+[878/1086] Linking CXX executable src/tests/class_tests/bin/IsotopeLabelingMDVs_test
+[879/1086] Linking CXX executable src/tests/class_tests/bin/IsobaricNormalizer_test
+[880/1086] Linking CXX executable src/tests/class_tests/bin/ItraqEightPlexQuantitationMethod_test
+[881/1086] Linking CXX executable src/tests/class_tests/bin/IsobaricQuantitationMethod_test
+[882/1086] Linking CXX executable src/tests/class_tests/bin/IsobaricQuantifier_test
+[883/1086] Linking CXX executable src/tests/class_tests/bin/IsobaricIsotopeCorrector_test
+[884/1086] Linking CXX executable src/tests/class_tests/bin/ItraqConstants_test
+[885/1086] Linking CXX executable src/tests/class_tests/bin/IsobaricQuantifierStatistics_test
+[886/1086] Linking CXX executable src/tests/class_tests/bin/TMTSixPlexQuantitationMethod_test
+[887/1086] Linking CXX executable src/tests/class_tests/bin/IsobaricChannelExtractor_test
+[888/1086] Linking CXX executable src/tests/class_tests/bin/ItraqFourPlexQuantitationMethod_test
+[889/1086] Linking CXX executable src/tests/class_tests/bin/LabeledPairFinder_test
+[890/1086] Linking CXX executable src/tests/class_tests/bin/TMTElevenPlexQuantitationMethod_test
+[891/1086] Linking CXX executable src/tests/class_tests/bin/TMTThirtyFivePlexQuantitationMethod_test
+[892/1086] Linking CXX executable src/tests/class_tests/bin/TMTTenPlexQuantitationMethod_test
+[893/1086] Linking CXX executable src/tests/class_tests/bin/TMTSixteenPlexQuantitationMethod_test
+[894/1086] Linking CXX executable src/tests/class_tests/bin/KDTreeFeatureNode_test
+[895/1086] Linking CXX executable src/tests/class_tests/bin/TMTEighteenPlexQuantitationMethod_test
+[896/1086] Linking CXX executable src/tests/class_tests/bin/TMTThirtyTwoPlexQuantitationMethod_test
+[897/1086] Linking CXX executable src/tests/class_tests/bin/KDTreeFeatureMaps_test
+[898/1086] Linking CXX executable src/tests/class_tests/bin/TargetedExperiment_test
+[899/1086] Linking CXX executable src/tests/class_tests/bin/DIAChromHandler_test
+[900/1086] Linking CXX executable src/tests/class_tests/bin/MRMChromHandler_test
+[901/1086] Linking CXX executable src/tests/class_tests/bin/TargetedExperimentHelper_test
+[902/1086] Linking CXX executable src/tests/class_tests/bin/MRMFeaturePicker_test
+[903/1086] Linking CXX executable src/tests/class_tests/bin/MRMScoring_test
+[904/1086] Linking CXX executable src/tests/class_tests/bin/MRMMapping_test
+[905/1086] Linking CXX executable src/tests/class_tests/bin/MapAlignmentAlgorithmIdentification_test
+[906/1086] Linking CXX executable src/tests/class_tests/bin/MapAlignmentAlgorithmKD_test
+[907/1086] Linking CXX executable src/tests/class_tests/bin/ChromatogramProcessor_test
+[908/1086] Linking CXX executable src/tests/class_tests/bin/DefaultChromHandler_test
+[909/1086] Linking CXX executable src/tests/class_tests/bin/MapAlignmentAlgorithmTreeGuided_test
+[910/1086] Linking CXX executable src/tests/class_tests/bin/MapAlignmentEvaluationAlgorithmRecall_test
+[911/1086] Linking CXX executable src/tests/class_tests/bin/MassFeatureTrace_test
+[912/1086] Linking CXX executable src/tests/class_tests/bin/MassDecomposition_test
+[913/1086] Linking CXX executable src/tests/class_tests/bin/MapAlignmentEvaluationAlgorithmPrecision_test
+[914/1086] Linking CXX executable src/tests/class_tests/bin/MapAlignmentAlgorithmPoseClustering_test
+[915/1086] Linking CXX executable src/tests/class_tests/bin/MapAlignmentEvaluationAlgorithm_test
+[916/1086] Linking CXX executable src/tests/class_tests/bin/MapAlignmentTransformer_test
+[917/1086] Linking CXX executable src/tests/class_tests/bin/MassDecompositionAlgorithm_test
+[918/1086] Linking CXX executable src/tests/class_tests/bin/MetaboliteFeatureDeconvolution_test
+[919/1086] Linking CXX executable src/tests/class_tests/bin/MetaboliteSpectralMatching_test
+[920/1086] Linking CXX executable src/tests/class_tests/bin/NeedlemanWunsch_test
+[921/1086] Linking CXX executable src/tests/class_tests/bin/PeptideIndexing_test
+[922/1086] Linking CXX executable src/tests/class_tests/bin/PeakGroup_test
+[923/1086] Linking CXX executable src/tests/class_tests/bin/PScore_test
+[924/1086] Linking CXX executable src/tests/class_tests/bin/ModifiedPeptideGenerator_test
+[925/1086] Linking CXX executable src/tests/class_tests/bin/FragmentIonLikelihoodModel_test
+[926/1086] Linking CXX executable src/tests/class_tests/bin/PeptideAndProteinQuant_test
+[927/1086] Linking CXX executable src/tests/class_tests/bin/FragmentIndex_test
+[928/1086] Linking CXX executable src/tests/class_tests/bin/PeptideProteinResolution_test
+[929/1086] Linking CXX executable src/tests/class_tests/bin/OpenPepXLAlgorithm_test
+[930/1086] Linking CXX executable src/tests/class_tests/bin/HyperScore_test
+[931/1086] Linking CXX executable src/tests/class_tests/bin/PoseClusteringAffineSuperimposer_test
+[932/1086] Linking CXX executable src/tests/class_tests/bin/MorpheusScore_test
+[933/1086] Linking CXX executable src/tests/class_tests/bin/OPXLHelper_test
+[934/1086] Linking CXX executable src/tests/class_tests/bin/OPXLSpectrumProcessingAlgorithms_test
+[935/1086] Linking CXX executable src/tests/class_tests/bin/QTClusterFinder_test
+[936/1086] Linking CXX executable src/tests/class_tests/bin/PoseClusteringShiftSuperimposer_test
+[937/1086] Linking CXX executable src/tests/class_tests/bin/PrecursorPurity_test
+[938/1086] Linking CXX executable src/tests/class_tests/bin/ReactionMonitoringTransition_test
+[939/1086] Linking CXX executable src/tests/class_tests/bin/TransformationModelLowess_test
+[940/1086] Linking CXX executable src/tests/class_tests/bin/SimpleSearchEngineAlgorithm_test
+[941/1086] Linking CXX executable src/tests/class_tests/bin/SimpleSVM_test
+[942/1086] Linking CXX executable src/tests/class_tests/bin/TransformationModelBSpline_test
+[943/1086] Linking CXX executable src/tests/class_tests/bin/SpectralDeconvolution_test
+[944/1086] Linking CXX executable src/tests/class_tests/bin/TransformationDescription_test
+[945/1086] Linking CXX executable src/tests/class_tests/bin/TransformationModel_test
+[946/1086] Linking CXX executable src/tests/class_tests/bin/ProSEAlgorithm_test
+[947/1086] Linking CXX executable src/tests/class_tests/bin/StablePairFinder_test
+[948/1086] Linking CXX executable src/tests/class_tests/bin/PercolatorFeatureSetHelper_test
+[949/1086] Linking CXX executable src/tests/class_tests/bin/TransformationModelInterpolated_test
+[950/1086] Linking CXX executable src/tests/class_tests/bin/BiGaussFitter1D_test
+[951/1086] Linking CXX executable src/tests/class_tests/bin/EmgFitter1D_test
+[952/1086] Linking CXX executable src/tests/class_tests/bin/XQuestScores_test
+[953/1086] Linking CXX executable src/tests/class_tests/bin/ConsoleUtils_test
+[954/1086] Linking CXX executable src/tests/class_tests/bin/TransformationModelLinear_test
+[955/1086] Linking CXX executable src/tests/class_tests/bin/BiGaussModel_test
+[956/1086] Linking CXX executable src/tests/class_tests/bin/ElutionModelFitter_test
+[957/1086] Linking CXX executable src/tests/class_tests/bin/BaseModel_test
+[958/1086] Linking CXX executable src/tests/class_tests/bin/EGHTraceFitter_test
+[959/1086] Linking CXX executable src/tests/class_tests/bin/ExtendedIsotopeFitter1D_test
+[960/1086] Linking CXX executable src/tests/class_tests/bin/FeatureFinderAlgorithmPickedHelperStructs_test
+[961/1086] Linking CXX executable src/tests/class_tests/bin/FeatureFinderAlgorithmPicked_test
+[962/1086] Linking CXX executable src/tests/class_tests/bin/Fitter1D_test
+[963/1086] Linking CXX executable src/tests/class_tests/bin/FeatureFinderMultiplexAlgorithm_test
+[964/1086] Linking CXX executable src/tests/class_tests/bin/GaussFitter1D_test
+[965/1086] Linking CXX executable src/tests/class_tests/bin/EmgModel_test
+[966/1086] Linking CXX executable src/tests/class_tests/bin/ExtendedIsotopeModel_test
+[967/1086] Linking CXX executable src/tests/class_tests/bin/FeatureFinderIdentificationAlgorithm_test
+[968/1086] Linking CXX executable src/tests/class_tests/bin/GaussModel_test
+[969/1086] Linking CXX executable src/tests/class_tests/bin/GaussTraceFitter_test
+[970/1086] Linking CXX executable src/tests/class_tests/bin/InterpolationModel_test
+[971/1086] Linking CXX executable src/tests/class_tests/bin/MaxLikeliFitter1D_test
+[972/1086] Linking CXX executable src/tests/class_tests/bin/PeakPickerHiRes_test
+[973/1086] Linking CXX executable src/tests/class_tests/bin/IDConflictResolverAlgorithm_test
+[974/1086] Linking CXX executable src/tests/class_tests/bin/LevMarqFitter1D_test
+[975/1086] Linking CXX executable src/tests/class_tests/bin/ModelDescription_test
+[976/1086] Linking CXX executable src/tests/class_tests/bin/PeakPickerIterative_test
+[977/1086] Linking CXX executable src/tests/class_tests/bin/IsotopeFitter1D_test
+[978/1086] Linking CXX executable src/tests/class_tests/bin/IsotopeModel_test
+[979/1086] Linking CXX executable src/tests/class_tests/bin/PeakPickerIM_test
+[980/1086] Linking CXX executable src/tests/class_tests/bin/PeakWidthEstimator_test
+[981/1086] Linking CXX executable src/tests/class_tests/bin/SeedListGenerator_test
+[982/1086] Linking CXX executable src/tests/class_tests/bin/TraceFitter_test
+[983/1086] Linking CXX executable src/tests/class_tests/bin/IMDataArrayUtils_test
+[984/1086] Linking CXX executable src/tests/class_tests/bin/FAIMSHelper_test
+[985/1086] Linking CXX executable src/tests/class_tests/bin/IMTypes_test
+[986/1086] Linking CXX executable src/tests/class_tests/bin/IonImage_test
+[987/1086] Linking CXX executable src/tests/class_tests/bin/IMDataConverter_test
+[988/1086] Linking CXX executable src/tests/class_tests/bin/EmgScoring_test
+[989/1086] Linking CXX executable src/tests/class_tests/bin/MSImagingRegion_test
+[990/1086] Linking CXX executable src/tests/class_tests/bin/MRMAssay_test
+[991/1086] Linking CXX executable src/tests/class_tests/bin/MRMDecoy_test
+[992/1086] Linking CXX executable src/tests/class_tests/bin/MRMIonSeries_test
+[993/1086] Linking CXX executable src/tests/class_tests/bin/ChromatogramExtractor_test
+[994/1086] Linking CXX executable src/tests/class_tests/bin/MSImagingGeometry_test
+[995/1086] Linking CXX executable src/tests/class_tests/bin/TransitionTSVFile_test
+[996/1086] Linking CXX executable src/tests/class_tests/bin/TransitionPQPFile_test
+[997/1086] Linking CXX executable src/tests/class_tests/bin/MSImagingExperiment_test
+[998/1086] Linking CXX executable src/tests/class_tests/bin/MRMRTNormalizer_test
+[999/1086] Linking CXX executable src/tests/class_tests/bin/OpenSwathHelper_test
+[1000/1086] Linking CXX executable src/tests/class_tests/bin/TransitionListEvidenceFilter_test
+[1001/1086] Linking CXX executable src/tests/class_tests/bin/OpenSwathScoring_test
+[1002/1086] Linking CXX executable src/tests/class_tests/bin/OpenSwathOSWWriter_test
+[1003/1086] Linking CXX executable src/tests/class_tests/bin/OpenSwathPeptidoformInference_test
+[1004/1086] Linking CXX executable src/tests/class_tests/bin/PeakMapExtractor_test
+[1005/1086] Linking CXX executable src/tests/class_tests/bin/OpenSwathLibraryPreparation_test
+[1006/1086] Linking CXX executable src/tests/class_tests/bin/OpenSwathLibraryIDNormalizer_test
+[1007/1086] Linking CXX executable src/tests/class_tests/bin/ChromatogramExtractorAlgorithm_test
+[1008/1086] Linking CXX executable src/tests/class_tests/bin/OpenSwathScores_test
+[1009/1086] Linking CXX executable src/tests/class_tests/bin/OpenSwathWorkflowScheduler_test
+[1010/1086] Linking CXX executable src/tests/class_tests/bin/PeakPickerMobilogram_test
+[1011/1086] Linking CXX executable src/tests/class_tests/bin/PeakIntegrator_test
+[1012/1086] Linking CXX executable src/tests/class_tests/bin/DIAHelper_test
+[1013/1086] Linking CXX executable src/tests/class_tests/bin/DIAScoring_test
+[1014/1086] Linking CXX executable src/tests/class_tests/bin/OpenSwathMRMFeatureAccessOpenMS_test
+[1015/1086] Linking CXX executable src/tests/class_tests/bin/DIAPrescoring_test
+[1016/1086] Linking CXX executable src/tests/class_tests/bin/PeakPickerChromatogram_test
+[1017/1086] Linking CXX executable src/tests/class_tests/bin/SpectrumAddition_test
+[1018/1086] Linking CXX executable src/tests/class_tests/bin/MRMTransitionGroupPicker_test
+[1019/1086] Linking CXX executable src/tests/class_tests/bin/MRMBatchFeatureSelector_test
+[1020/1086] Linking CXX executable src/tests/class_tests/bin/OpenSwathDataAccessHelper_test
+[1021/1086] Linking CXX executable src/tests/class_tests/bin/MRMFeatureFilter_test
+[1022/1086] Linking CXX executable src/tests/class_tests/bin/TargetedSpectraExtractor_test
+[1023/1086] Linking CXX executable src/tests/class_tests/bin/MasstraceCorrelator_test
+[1024/1086] Linking CXX executable src/tests/class_tests/bin/CalibrationWorkflow_test
+[1025/1086] Linking CXX executable src/tests/class_tests/bin/MRMFeatureFinderScoring_test
+[1026/1086] Linking CXX executable src/tests/class_tests/bin/OpenSwathSpectrumAccessOpenMS_test
+[1027/1086] Linking CXX executable src/tests/class_tests/bin/MRMFeatureScoring_test
+[1028/1086] Linking CXX executable src/tests/class_tests/bin/MRMFeatureSelector_test
+[1029/1086] Linking CXX executable src/tests/class_tests/bin/SwathQC_test
+[1030/1086] Linking CXX executable src/tests/class_tests/bin/MRMFeatureQC_test
+[1031/1086] Linking CXX executable src/tests/class_tests/bin/StatsHelpers_test
+[1032/1086] Linking CXX executable src/tests/class_tests/bin/SpectrumHelpers_test
+[1033/1086] Linking CXX executable src/tests/class_tests/bin/CachedMzML_test
+[1034/1086] Linking CXX executable src/tests/class_tests/bin/IonMobilityScoring_test
+[1035/1086] Linking CXX executable src/tests/class_tests/bin/CachedMzMLHandler_test
+[1036/1086] Linking CXX executable src/tests/class_tests/bin/OpenSwathExport_test
+ld: warning: ignoring duplicate libraries: '/opt/homebrew/lib/libarrow.a'
+[1037/1086] Linking CXX executable src/tests/class_tests/bin/OpenSwathPercolatorScoring_test
+ld: warning: ignoring duplicate libraries: '/opt/homebrew/lib/libarrow.a'
+[1038/1086] Linking CXX executable src/tests/class_tests/bin/TransitionParquetFile_test
+ld: warning: ignoring duplicate libraries: '/opt/homebrew/lib/libarrow.a'
+[1039/1086] Linking CXX executable src/tests/class_tests/bin/OpenSwathMatrixExporter_test
+[1040/1086] Linking CXX executable src/tests/class_tests/bin/OpenSwathOSWParquetReader_test
+ld: warning: ignoring duplicate libraries: '/opt/homebrew/lib/libarrow.a'
+[1041/1086] Linking CXX executable src/tests/class_tests/bin/DBSuitability_test
+[1042/1086] Linking CXX executable src/tests/class_tests/bin/FeatureSummary_test
+[1043/1086] Linking CXX executable src/tests/class_tests/bin/IdentificationSummary_test
+[1044/1086] Linking CXX executable src/tests/class_tests/bin/IDFreeMassErrorEstimator_test
+[1045/1086] Linking CXX executable src/tests/class_tests/bin/OpenSwathOSWParquetWriter_test
+ld: warning: ignoring duplicate libraries: '/opt/homebrew/lib/libarrow.a'
+[1046/1086] Linking CXX executable src/tests/class_tests/bin/MissedCleavages_test
+[1047/1086] Linking CXX executable src/tests/class_tests/bin/OpenSwathResultsExporter_test
+ld: warning: ignoring duplicate libraries: '/opt/homebrew/lib/libarrow.a'
+[1048/1086] Linking CXX executable src/tests/class_tests/bin/OpenSwathParquetExporter_test
+ld: warning: ignoring duplicate libraries: '/opt/homebrew/lib/libarrow.a'
+[1049/1086] Linking CXX executable src/tests/class_tests/bin/Ms2IdentificationRate_test
+[1050/1086] Linking CXX executable src/tests/class_tests/bin/PSMExplainedIonCurrent_test
+[1051/1086] Linking CXX executable src/tests/class_tests/bin/TIC_test
+[1052/1086] Linking CXX executable src/tests/class_tests/bin/CometModification_test
+[1053/1086] Linking CXX executable src/tests/class_tests/bin/DIAQCMetrics_test
+[1054/1086] Linking CXX executable src/tests/class_tests/bin/QCBase_test
+[1055/1086] Linking CXX executable src/tests/class_tests/bin/NeighborSeq_test
+[1056/1086] Linking CXX executable src/tests/class_tests/bin/CometNativeIDRemapper_test
+[1057/1086] Linking CXX executable src/tests/class_tests/bin/INIUpdater_test
+[1058/1086] Linking CXX executable src/tests/class_tests/bin/SpectrumCount_test
+[1059/1086] Linking CXX executable src/tests/class_tests/bin/MS1LabeledFAIMS_test
+[1060/1086] Linking CXX executable src/tests/class_tests/bin/MS1LabeledRatioQuantifier_test
+[1061/1086] Linking CXX executable src/tests/class_tests/bin/MS1LabeledSpectra_test
+[1062/1086] Linking CXX executable src/tests/class_tests/bin/ModifiedNASequenceGenerator_test
+[1063/1086] Linking CXX executable src/tests/class_tests/bin/NuXLFragmentAdductDefinition_test
+[1064/1086] Linking CXX executable src/tests/class_tests/bin/NuXLDeisotoper_test
+[1065/1086] Linking CXX executable src/tests/class_tests/bin/NASEDigestion_test
+[1066/1086] Linking CXX executable src/tests/class_tests/bin/NuXLModificationsGenerator_test
+[1067/1086] Linking CXX executable src/tests/class_tests/bin/NuXLParameterParsing_test
+[1068/1086] Linking CXX executable src/tests/class_tests/bin/NuXLReport_test
+[1069/1086] Linking CXX executable src/tests/class_tests/bin/OpenSwathInference_test
+[1070/1086] Linking CXX executable src/tests/class_tests/bin/MQEvidenceExporter_test
+[1071/1086] Linking CXX executable src/tests/class_tests/bin/MQMsmsExporter_test
+[1072/1086] Linking CXX executable src/tests/class_tests/bin/FragmentMassError_test
+[1073/1086] Linking CXX executable src/tests/class_tests/bin/PeptideMass_test
+[1074/1086] Linking CXX executable src/tests/class_tests/bin/FWHM_test
+[1075/1086] Linking CXX executable src/tests/class_tests/bin/RTAlignment_test
+[1076/1086] Linking CXX executable src/tests/class_tests/bin/MzCalibration_test
+[1077/1086] Linking CXX executable src/tests/class_tests/bin/Contaminants_test
+[1078/1086] Linking CXX executable src/tests/class_tests/bin/Ms2SpectrumStats_test
+[1079/1086] Linking CXX executable src/tests/class_tests/bin/UniProtXMLFile_test
+[1080/1086] Linking CXX executable src/tests/class_tests/bin/ParameterInformation_test
+[1081/1086] Linking CXX executable src/tests/class_tests/bin/SearchEngineBase_test
+[1082/1086] Linking CXX executable src/tests/class_tests/bin/TOPPExternalToolBase_test
+[1083/1086] Linking CXX executable src/tests/class_tests/bin/UniPEFFEntries_test
+[1084/1086] Linking CXX executable src/tests/class_tests/bin/TransformationModelDefaults_test
+[1085/1086] Linking CXX executable src/tests/class_tests/bin/ToolHandler_test
+[1086/1086] Linking CXX executable src/tests/class_tests/bin/TOPPBase_test

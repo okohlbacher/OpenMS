@@ -1,0 +1,14 @@
+{
+  "original": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+  "utf8_copy": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+  "original_sha256": "8f2c671efe432f61f21e682c8fd5a58dc4fd9f83ee2bb2020f38e8d0cc61abf7",
+  "utf8_sha256": "b864ae517f17976e50f3ffcbb2d205db6532f28b76b27b44d93dbe3b3600b81d",
+  "bytes": 1126185409,
+  "original_header": "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>",
+  "utf8_header": "<?xml version=\"1.0\" encoding=\"UTF-8\"     ?>",
+  "only_first_line_changed": true,
+  "unchanged_byte_length": true,
+  "entire_body_ascii": true,
+  "index_offsets_preserved": true,
+  "method": "Declaration-only ISO-8859-1 to UTF-8, pad with spaces, identical remaining bytes; original input retained."
+}

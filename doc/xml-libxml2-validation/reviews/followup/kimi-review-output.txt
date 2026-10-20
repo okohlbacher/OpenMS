@@ -1,0 +1,41 @@
+• # Adversarial Follow-Up Review — Candidate 72d8c395 vs Base 94e69565
+
+  ## Verdict
+
+  After a line-by-line review of the complete fix diff and all supplied full sources (SAX2 adapter, mzIdentML DOM handler, writers, and all four test files), I find **no new introduced regressions** in this candidate. The three previously confirmed regressions are genuinely fixed, and the fixes do not introduce new defects that I can concretely demonstrate from the supplied packet. Details and two low-severity residual items (one pre-existing, one borderline) below.
+
+  ## Verification of the three fixes (by inspection)
+
+  1. **Entity-declaration double counting** (`MzIdentMLDOMHandler.cpp`, `descendants_(const xmlDoc*, ...)`, ~lines 138–148): Traversal now starts at `xmlDocGetRootElement`, so parsed element trees owned by DTD entity declarations (reachable under `doc->intSubset` when starting from the document node) are excluded, while entity *expansions* (substituted in-place under the root by `XML_PARSE_NOENT`) are still seen exactly once. Correct. The `name_(root) == name` root-insertion branch is dead code (no caller queries "MzIdentML") but harmless.
+
+  2. **Foreign-namespace impersonation** (`name_()`, ~lines 74–86; `firstElement_`/`nextElement_`, ~lines 88–100): The allowlist (mzIdentML 1.0/1.1/1.2/3 + unqualified historical files) covers all real namespace URIs; libxml2's tree API stores the local name in `node->name` with the prefix in `ns->prefix`, so prefixed mzid files match correctly. All sibling-iteration sites were consistently converted, and the `children_()`-based sites (`parseParamGroup_`, `parsePeptideSiblings_`) still filter via `name_() == ""` → "Misplaced elements" warn-and-skip. `attribute_(nullptr, ...)` paths introduced by `firstElement_` returning null are safe (`xmlGetNoNsProp` null-checks its node argument).
+
+  3. **SAX1→SAX2 adapter** (`XMLFile.cpp`, ~lines 125–165, 192–214): The callback signatures match libxml2's `startElementNsSAX2Func`/`endElementNsSAX2Func` (5-tuple attribute layout, `[3]/[4]` value slice bounds); `xmlSAXVersion(&sax, 2)` sets `XML_SAX2_MAGIC`; `userData`/`_private` wiring is consistent between SAX callbacks and `xmlCtxtSetErrorHandler`; qualified-name reconstruction is byte-parity with SAX1 qnames; xmlns injection restores SAX1's delivery of namespace declarations as attributes (including the `xmlns=''`/null-href case, now guarded by the null check in `utf16`); bounded slices are copied into owned `std::u16string`s during the callback only, matching `XMLAttributes`' documented lifetime. Exception capture/stop semantics (`EndParsingSoftly` vs. handler exceptions vs. parser diagnostics) are preserved, and namespace errors route through the context-local structured error handler into `XMLHandler::fatalError`.
+
+  4. **`buildAnalysisSoftwareList_` literal `search_engine_`** (~lines 3009–3030): Fixed as described, and additionally repairs a latent mis-parenting (`SoftwareName` was appended to the list instead of the `AnalysisSoftware` node) and a bogus `std::string + UInt64` id concatenation.
+
+  ## Findings
+
+  ### 1. LOW (pre-existing, not introduced by this candidate) — Legacy DOM writer wires `AnalysisProtocolCollection` to the wrong builder
+  - **Path/line**: `src/openms/source/FORMAT/HANDLERS/MzIdentMLDOMHandler.cpp`, `writeMzIdentMLFile`, the `// * AnalysisProtocolCollection *` block (~lines 518–521): `xmlNode* apc_p = element_(xmlDoc, "AnalysisProtocolCollection"); buildAnalysisCollection_(apc_p);`
+  - **Trigger**: Any call to `MzIdentMLDOMHandler::writeMzIdentMLFile` (legacy DOM writer only; public store uses the streaming writer).
+  - **Impact**: The output contains a `<SpectrumIdentification>` element inside `<AnalysisProtocolCollection>` and no `<SpectrumIdentificationProtocol>` anywhere, which violates the mzIdentML schema (`AnalysisProtocolCollection` requires `SpectrumIdentificationProtocol`, 1..unbounded). `buildAnalysisProtocolCollection_` (~line 3360) is dead code. These lines are untouched by the fix diff and exist identically in the base (the diff context confirms the base already used the libxml2 API), so this is inherited, not introduced.
+  - **Minimal fix**: Call `buildAnalysisProtocolCollection_(apc_p)` instead. **Test**: schema-validate (or structurally assert absence of `SpectrumIdentification` under `AnalysisProtocolCollection`) the legacy DOM writer's output, e.g. extend the existing "legacy DOM writer emits UTF8 namespaces" section.
+
+  ### 2. LOW (borderline introduced) — Legacy DOM writer emits `version=""`, which its own reader then drops
+  - **Path/line**: `src/openms/source/FORMAT/HANDLERS/MzIdentMLDOMHandler.cpp`, `buildAnalysisSoftwareList_` (~line 3015–3018): `const std::string version = cpro_id_->empty() ? "" : cpro_id_->front().getSearchEngineVersion();` → `setAttribute_(current_as, "version", version);`
+  - **Trigger**: `writeMzIdentMLFile` with a `ProteinIdentification` whose search-engine version is empty (or with an empty `cpro_id_`).
+  - **Impact**: Emits `<AnalysisSoftware version="" ...>`. On re-read, `parseAnalysisSoftwareList_` requires non-empty name *and* version (~line 714: `if (!swname.empty() && !swversion.empty())`), so the software entry is discarded with "No name/version found", and `as_map_[swr]` later default-inserts an empty `AnalysisSoftware`, silently losing engine metadata. The base wrote the non-empty garbage literal `search_engine_version_`, which round-tripped (wrongly) rather than being dropped — so the failure mode changed from "wrong value" to "lost value". Legacy writer only; the new test always sets a version, so this is uncovered.
+  - **Minimal fix**: Substitute a non-empty fallback (e.g. `"unknown"`) when `getSearchEngineVersion()` is empty, matching the `"TOPP software"` engine fallback. **Test**: in the legacy-writer test, add a case with engine set but version empty, reload, and assert `protein_ids2[0].getSearchEngine()` survives.
+
+  ## Explicitly checked and found sound (non-findings)
+
+  - SAX2 attribute/namespace semantics: defaulted DTD attributes are still delivered (as in SAX1); xmlns declarations are injected only on the declaring element (parity with SAX1); attribute *order* changes (namespaces first), but no positional/index-based attribute consumer is visible in the supplied packet (`XMLAttributes` exposes only name lookup plus index round-trip, exercised consistently in the new test), so no concrete breakage is demonstrable.
+  - `utf16` decoding: correct masks/continuation counts for 2–4-byte sequences, correct surrogate-pair emission, slice-bounded; invalid sequences are unreachable because libxml2 validates UTF-8 before callbacks.
+  - Entity handling: internal general entities expand in content and attribute values; external entities are blocked (`NONET|NO_XXE`); `xmlCtxtSetMaxAmplification(5)` equals the default and the single-reference test entity stays under the amplification denominator; malformed/invalid-UTF8/bad-reference inputs return null from `xmlCtxtReadFile` and raise `ParseError` with the real diagnostic.
+  - Root check (`~line 312`): rejects foreign-namespace and wrong-root documents, accepts prefixed/unprefixed mzid 1.0–1.3 and historical unqualified files.
+  - `NativeDocument` ownership: appended nodes have parents and are freed via `xmlFreeDoc`; detached nodes are re-attached before `xmlFreeDoc`; no double-free path on exception.
+  - The new tests are internally consistent with the implementation (qualified names, bounded values, entity expansion, namespace-error set, foreign-element exclusion, entity non-duplication) and do not mask a defect I can identify.
+
+  No HIGH or MEDIUM findings; nothing blocking. Note that formats other than mzIdentML/imzML (mzML, idXML, featureXML, etc.) consume the same SAX2 adapter, and their handlers are outside the supplied packet — the pending full 747-test run is the right gate for that residual coverage gap, and this review found no packet-internal evidence of breakage there.
+

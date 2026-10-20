@@ -1,0 +1,7 @@
+[ 25%] Built target xml_benchmark_launcher
+[ 37%] Linking CXX executable xml_schema_validation_probe
+[ 50%] Linking CXX executable xml_conformance_probe
+[ 62%] Linking CXX executable xml_parser_benchmark
+[ 75%] Built target xml_schema_validation_probe
+[ 87%] Built target xml_conformance_probe
+[100%] Built target xml_parser_benchmark

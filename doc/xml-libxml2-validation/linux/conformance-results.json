@@ -1,0 +1,377 @@
+{
+  "method": "Eleven generic XML cases, four isolated native-libxml2 process repetitions each",
+  "results": [
+    {
+      "backend": "libxml2",
+      "case": "entity-valid",
+      "repetition": 0,
+      "stderr": "",
+      "accepted": true,
+      "utf16_code_units": [
+        65,
+        38,
+        66
+      ]
+    },
+    {
+      "backend": "libxml2",
+      "case": "entity-valid",
+      "repetition": 1,
+      "stderr": "",
+      "accepted": true,
+      "utf16_code_units": [
+        65,
+        38,
+        66
+      ]
+    },
+    {
+      "backend": "libxml2",
+      "case": "entity-valid",
+      "repetition": 2,
+      "stderr": "",
+      "accepted": true,
+      "utf16_code_units": [
+        65,
+        38,
+        66
+      ]
+    },
+    {
+      "backend": "libxml2",
+      "case": "entity-valid",
+      "repetition": 3,
+      "stderr": "",
+      "accepted": true,
+      "utf16_code_units": [
+        65,
+        38,
+        66
+      ]
+    },
+    {
+      "backend": "libxml2",
+      "case": "undefined-entity",
+      "repetition": 0,
+      "stderr": "/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Entity 'undefined' not defined\n( in line 1 column 15)\nWhile loading 'memory': Entity 'undefined' not defined\n( in line 1 column 15) in: memory\n",
+      "accepted": false
+    },
+    {
+      "backend": "libxml2",
+      "case": "undefined-entity",
+      "repetition": 1,
+      "stderr": "/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Entity 'undefined' not defined\n( in line 1 column 15)\nWhile loading 'memory': Entity 'undefined' not defined\n( in line 1 column 15) in: memory\n",
+      "accepted": false
+    },
+    {
+      "backend": "libxml2",
+      "case": "undefined-entity",
+      "repetition": 2,
+      "stderr": "/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Entity 'undefined' not defined\n( in line 1 column 15)\nWhile loading 'memory': Entity 'undefined' not defined\n( in line 1 column 15) in: memory\n",
+      "accepted": false
+    },
+    {
+      "backend": "libxml2",
+      "case": "undefined-entity",
+      "repetition": 3,
+      "stderr": "/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Entity 'undefined' not defined\n( in line 1 column 15)\nWhile loading 'memory': Entity 'undefined' not defined\n( in line 1 column 15) in: memory\n",
+      "accepted": false
+    },
+    {
+      "backend": "libxml2",
+      "case": "malformed-reference",
+      "repetition": 0,
+      "stderr": "/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': xmlParseEntityRef: no name\n( in line 1 column 6)\nWhile loading 'memory': xmlParseEntityRef: no name\n( in line 1 column 6) in: memory\n",
+      "accepted": false
+    },
+    {
+      "backend": "libxml2",
+      "case": "malformed-reference",
+      "repetition": 1,
+      "stderr": "/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': xmlParseEntityRef: no name\n( in line 1 column 6)\nWhile loading 'memory': xmlParseEntityRef: no name\n( in line 1 column 6) in: memory\n",
+      "accepted": false
+    },
+    {
+      "backend": "libxml2",
+      "case": "malformed-reference",
+      "repetition": 2,
+      "stderr": "/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': xmlParseEntityRef: no name\n( in line 1 column 6)\nWhile loading 'memory': xmlParseEntityRef: no name\n( in line 1 column 6) in: memory\n",
+      "accepted": false
+    },
+    {
+      "backend": "libxml2",
+      "case": "malformed-reference",
+      "repetition": 3,
+      "stderr": "/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': xmlParseEntityRef: no name\n( in line 1 column 6)\nWhile loading 'memory': xmlParseEntityRef: no name\n( in line 1 column 6) in: memory\n",
+      "accepted": false
+    },
+    {
+      "backend": "libxml2",
+      "case": "duplicate-attribute",
+      "repetition": 0,
+      "stderr": "/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Attribute a redefined\n( in line 1 column 15)\nWhile loading 'memory': Attribute a redefined\n( in line 1 column 15) in: memory\n",
+      "accepted": false
+    },
+    {
+      "backend": "libxml2",
+      "case": "duplicate-attribute",
+      "repetition": 1,
+      "stderr": "/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Attribute a redefined\n( in line 1 column 15)\nWhile loading 'memory': Attribute a redefined\n( in line 1 column 15) in: memory\n",
+      "accepted": false
+    },
+    {
+      "backend": "libxml2",
+      "case": "duplicate-attribute",
+      "repetition": 2,
+      "stderr": "/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Attribute a redefined\n( in line 1 column 15)\nWhile loading 'memory': Attribute a redefined\n( in line 1 column 15) in: memory\n",
+      "accepted": false
+    },
+    {
+      "backend": "libxml2",
+      "case": "duplicate-attribute",
+      "repetition": 3,
+      "stderr": "/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Attribute a redefined\n( in line 1 column 15)\nWhile loading 'memory': Attribute a redefined\n( in line 1 column 15) in: memory\n",
+      "accepted": false
+    },
+    {
+      "backend": "libxml2",
+      "case": "invalid-utf8",
+      "repetition": 0,
+      "stderr": "/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4)\nWhile loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4) in: memory\n",
+      "accepted": false
+    },
+    {
+      "backend": "libxml2",
+      "case": "invalid-utf8",
+      "repetition": 1,
+      "stderr": "/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4)\nWhile loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4) in: memory\n",
+      "accepted": false
+    },
+    {
+      "backend": "libxml2",
+      "case": "invalid-utf8",
+      "repetition": 2,
+      "stderr": "/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4)\nWhile loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4) in: memory\n",
+      "accepted": false
+    },
+    {
+      "backend": "libxml2",
+      "case": "invalid-utf8",
+      "repetition": 3,
+      "stderr": "/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4)\nWhile loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4) in: memory\n",
+      "accepted": false
+    },
+    {
+      "backend": "libxml2",
+      "case": "overlong-utf8",
+      "repetition": 0,
+      "stderr": "/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4)\nWhile loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4) in: memory\n",
+      "accepted": false
+    },
+    {
+      "backend": "libxml2",
+      "case": "overlong-utf8",
+      "repetition": 1,
+      "stderr": "/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4)\nWhile loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4) in: memory\n",
+      "accepted": false
+    },
+    {
+      "backend": "libxml2",
+      "case": "overlong-utf8",
+      "repetition": 2,
+      "stderr": "/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4)\nWhile loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4) in: memory\n",
+      "accepted": false
+    },
+    {
+      "backend": "libxml2",
+      "case": "overlong-utf8",
+      "repetition": 3,
+      "stderr": "/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4)\nWhile loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4) in: memory\n",
+      "accepted": false
+    },
+    {
+      "backend": "libxml2",
+      "case": "truncated-utf8",
+      "repetition": 0,
+      "stderr": "/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4)\nWhile loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4) in: memory\n",
+      "accepted": false
+    },
+    {
+      "backend": "libxml2",
+      "case": "truncated-utf8",
+      "repetition": 1,
+      "stderr": "/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4)\nWhile loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4) in: memory\n",
+      "accepted": false
+    },
+    {
+      "backend": "libxml2",
+      "case": "truncated-utf8",
+      "repetition": 2,
+      "stderr": "/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4)\nWhile loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4) in: memory\n",
+      "accepted": false
+    },
+    {
+      "backend": "libxml2",
+      "case": "truncated-utf8",
+      "repetition": 3,
+      "stderr": "/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4)\nWhile loading 'memory': Invalid bytes in character encoding\n( in line 1 column 4) in: memory\n",
+      "accepted": false
+    },
+    {
+      "backend": "libxml2",
+      "case": "latin1",
+      "repetition": 0,
+      "stderr": "",
+      "accepted": true,
+      "utf16_code_units": [
+        233
+      ]
+    },
+    {
+      "backend": "libxml2",
+      "case": "latin1",
+      "repetition": 1,
+      "stderr": "",
+      "accepted": true,
+      "utf16_code_units": [
+        233
+      ]
+    },
+    {
+      "backend": "libxml2",
+      "case": "latin1",
+      "repetition": 2,
+      "stderr": "",
+      "accepted": true,
+      "utf16_code_units": [
+        233
+      ]
+    },
+    {
+      "backend": "libxml2",
+      "case": "latin1",
+      "repetition": 3,
+      "stderr": "",
+      "accepted": true,
+      "utf16_code_units": [
+        233
+      ]
+    },
+    {
+      "backend": "libxml2",
+      "case": "windows1252",
+      "repetition": 0,
+      "stderr": "",
+      "accepted": true,
+      "utf16_code_units": [
+        8364
+      ]
+    },
+    {
+      "backend": "libxml2",
+      "case": "windows1252",
+      "repetition": 1,
+      "stderr": "",
+      "accepted": true,
+      "utf16_code_units": [
+        8364
+      ]
+    },
+    {
+      "backend": "libxml2",
+      "case": "windows1252",
+      "repetition": 2,
+      "stderr": "",
+      "accepted": true,
+      "utf16_code_units": [
+        8364
+      ]
+    },
+    {
+      "backend": "libxml2",
+      "case": "windows1252",
+      "repetition": 3,
+      "stderr": "",
+      "accepted": true,
+      "utf16_code_units": [
+        8364
+      ]
+    },
+    {
+      "backend": "libxml2",
+      "case": "unicode",
+      "repetition": 0,
+      "stderr": "",
+      "accepted": true,
+      "utf16_code_units": [
+        946,
+        55358,
+        56812
+      ]
+    },
+    {
+      "backend": "libxml2",
+      "case": "unicode",
+      "repetition": 1,
+      "stderr": "",
+      "accepted": true,
+      "utf16_code_units": [
+        946,
+        55358,
+        56812
+      ]
+    },
+    {
+      "backend": "libxml2",
+      "case": "unicode",
+      "repetition": 2,
+      "stderr": "",
+      "accepted": true,
+      "utf16_code_units": [
+        946,
+        55358,
+        56812
+      ]
+    },
+    {
+      "backend": "libxml2",
+      "case": "unicode",
+      "repetition": 3,
+      "stderr": "",
+      "accepted": true,
+      "utf16_code_units": [
+        946,
+        55358,
+        56812
+      ]
+    },
+    {
+      "backend": "libxml2",
+      "case": "mismatched-tag",
+      "repetition": 0,
+      "stderr": "/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Opening and ending tag mismatch: x line 0 and r\n( in line 2 column 8)\nWhile loading 'memory': Opening and ending tag mismatch: x line 0 and r\n( in line 2 column 8) in: memory\n",
+      "accepted": false
+    },
+    {
+      "backend": "libxml2",
+      "case": "mismatched-tag",
+      "repetition": 1,
+      "stderr": "/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Opening and ending tag mismatch: x line 0 and r\n( in line 2 column 8)\nWhile loading 'memory': Opening and ending tag mismatch: x line 0 and r\n( in line 2 column 8) in: memory\n",
+      "accepted": false
+    },
+    {
+      "backend": "libxml2",
+      "case": "mismatched-tag",
+      "repetition": 2,
+      "stderr": "/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Opening and ending tag mismatch: x line 0 and r\n( in line 2 column 8)\nWhile loading 'memory': Opening and ending tag mismatch: x line 0 and r\n( in line 2 column 8) in: memory\n",
+      "accepted": false
+    },
+    {
+      "backend": "libxml2",
+      "case": "mismatched-tag",
+      "repetition": 3,
+      "stderr": "/scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/source/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading 'memory': Opening and ending tag mismatch: x line 0 and r\n( in line 2 column 8)\nWhile loading 'memory': Opening and ending tag mismatch: x line 0 and r\n( in line 2 column 8) in: memory\n",
+      "accepted": false
+    }
+  ]
+}

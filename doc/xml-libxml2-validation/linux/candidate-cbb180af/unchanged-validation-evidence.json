@@ -1,0 +1,20 @@
+{
+  "method": "Prior fcdc 22/195 schema and44genericconformance outcomes retained; only MzIdentML reader empty engine-version fallback changed; XMLFile, schema validator, schemas andgenericconformance code unchanged. No new corpus/conformance run claimed.",
+  "inherited": {
+    "schema-results.json": {
+      "source_cpp_build_commit": "fcdc7458543e8936a0f8915828860669c7044514",
+      "sha256": "aaf5db65f5ece874e046594b58b7743e154189c34e91a950d1fbc680fa1460dc",
+      "relative_path": "candidate-fcdc7458/schema-results.json"
+    },
+    "schema-comparison.json": {
+      "source_cpp_build_commit": "fcdc7458543e8936a0f8915828860669c7044514",
+      "sha256": "a0d21d16b30cc050c717851a41dd181333c3604426eb81436227bbc87c277132",
+      "relative_path": "candidate-fcdc7458/schema-comparison.json"
+    },
+    "conformance-results.json": {
+      "source_cpp_build_commit": "fcdc7458543e8936a0f8915828860669c7044514",
+      "sha256": "d9ae7ac1b13974563c650f963bbb94daf392504904e527c5e26a74f0c9e1e035",
+      "relative_path": "candidate-fcdc7458/conformance-results.json"
+    }
+  }
+}

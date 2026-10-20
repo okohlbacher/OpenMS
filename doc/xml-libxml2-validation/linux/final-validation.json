@@ -1,0 +1,10 @@
+{
+  "candidate": "8f66b3d921c9512e1e5968f494c77715ff71c696",
+  "all_class_tests_passed": 747,
+  "copied_files_sha256_verified": 233,
+  "checksum_manifest": "transfer-final-sha256.txt",
+  "supplemental_complete": true,
+  "source_status_clean": true,
+  "class_seconds": 103.25,
+  "scratch_cleanup": "success; dedicated root absent, shared contrib preserved"
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "case": "all-enabled",
+    "returncode": 0,
+    "expected": true
+  },
+  {
+    "case": "without-SAX1",
+    "returncode": 1,
+    "expected": true
+  },
+  {
+    "case": "without-PUSH",
+    "returncode": 1,
+    "expected": true
+  },
+  {
+    "case": "without-SCHEMAS",
+    "returncode": 1,
+    "expected": true
+  },
+  {
+    "case": "without-THREAD",
+    "returncode": 1,
+    "expected": true
+  },
+  {
+    "case": "without-ICONV-ICU",
+    "returncode": 0,
+    "expected": true
+  }
+]

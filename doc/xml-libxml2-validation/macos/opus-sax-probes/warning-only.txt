@@ -1,0 +1,2 @@
+level=1 code=100 message=xmlns: URI relative is not absolute
+return=0

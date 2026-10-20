@@ -1,0 +1,16 @@
+{
+  "base": "94e69565a2e6473fe389874d8a2214abb1c3a9c8",
+  "candidate": "72d8c395e6f90ee3c0ff250a6575fb5985fe44df",
+  "input_bytes": 383319,
+  "input_sha256": "4b68294fc11ee27cd5bc9727fcb0677ed80d5fe17e856229c1e0c49c96c705c1",
+  "full_context_files": [
+    "src/openms/source/FORMAT/HANDLERS/MzIdentMLDOMHandler.cpp",
+    "src/openms/source/FORMAT/XMLFile.cpp",
+    "src/tests/class_tests/openms/source/ImzMLFile_test.cpp",
+    "src/tests/class_tests/openms/source/MzIdentMLFile_test.cpp",
+    "src/tests/class_tests/openms/source/XMLParserBackend_test.cpp",
+    "src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp",
+    "src/openms/source/FORMAT/ImzMLFile.cpp",
+    "src/openms/include/OpenMS/FORMAT/HANDLERS/XMLAttributes.h"
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "base": "c5b68c645f80960cc033db79313978b1ad8fb058",
+  "candidate": "94e69565a2e6473fe389874d8a2214abb1c3a9c8",
+  "input_bytes": 592548,
+  "input_sha256": "187b13b7c7389d63667aa0912f25970619bf75f6a0269237e40be917446c5f17",
+  "full_context_files": [
+    "src/openms/source/FORMAT/XMLFile.cpp",
+    "src/openms/source/FORMAT/HANDLERS/MzIdentMLDOMHandler.cpp",
+    "src/openms/include/OpenMS/FORMAT/HANDLERS/MzIdentMLDOMHandler.h",
+    "src/openms/source/FORMAT/HANDLERS/StringManager.cpp",
+    "src/openms/include/OpenMS/FORMAT/HANDLERS/StringManager.h",
+    "src/openms/source/FORMAT/HANDLERS/XMLAttributes.cpp",
+    "src/openms/source/FORMAT/VALIDATORS/XMLValidator.cpp",
+    "src/openms/source/FORMAT/HANDLERS/MzMLSpectrumDecoder.cpp",
+    "src/openms/source/FORMAT/HANDLERS/IndexedMzMLDecoder.cpp",
+    "src/openms/include/OpenMS/FORMAT/InputStream.h",
+    "src/openms/source/FORMAT/CompressedInputSource.cpp",
+    "src/openms/source/FORMAT/GzipInputStream.cpp",
+    "src/openms/source/FORMAT/Bzip2InputStream.cpp",
+    "src/openms/source/FORMAT/ZipInputStream.cpp",
+    "src/openms/source/CONCEPT/Init.cpp",
+    "tools/ci/check_no_xerces.py",
+    "dockerfiles/Dockerfile",
+    "cmake/OpenMSConfig.cmake.in"
+  ],
+  "scope": "complete63-filecandidate diff plusfullcriticalcontext; actualindependenttool-freeKimiCLIreview"
+}

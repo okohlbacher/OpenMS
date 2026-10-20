@@ -1,0 +1,12 @@
+[ 12%] Building CXX object CMakeFiles/xml_schema_validation_probe.dir/schema_validation_probe.cpp.o
+[ 25%] Building CXX object CMakeFiles/xml_parser_benchmark.dir/benchmark.cpp.o
+[ 37%] Building CXX object CMakeFiles/xml_conformance_probe.dir/conformance_probe.cpp.o
+[ 50%] Building CXX object CMakeFiles/xml_benchmark_launcher.dir/launcher.cpp.o
+[ 62%] Linking CXX executable xml_benchmark_launcher
+[ 62%] Built target xml_benchmark_launcher
+[ 75%] Linking CXX executable xml_schema_validation_probe
+[ 75%] Built target xml_schema_validation_probe
+[ 87%] Linking CXX executable xml_conformance_probe
+[ 87%] Built target xml_conformance_probe
+[100%] Linking CXX executable xml_parser_benchmark
+[100%] Built target xml_parser_benchmark

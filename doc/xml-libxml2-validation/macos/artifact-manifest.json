@@ -1,0 +1,30 @@
+{
+  "candidate": "1858656a86869ba462545a9232b89a0e1e1c319c",
+  "finished_utc": "2026-10-20T06:20:03Z",
+  "artifacts": [
+    {
+      "path": "OpenMS-replacement-build/lib/libOpenMS.dylib",
+      "sha256": "c70ca225e11ca26e6afd5c3bede4fa08862bbabd26fb636ac073577cbe8df2bf"
+    },
+    {
+      "path": "OpenMS-replacement-build/lib/libOpenSwathAlgo.dylib",
+      "sha256": "c37b9cd6f4268731899609f3232e1523fbaa5714ce3db16e926e81bf765ba42d"
+    },
+    {
+      "path": "replacement-validation/benchmark-build/xml_parser_benchmark",
+      "sha256": "34c373edf4e2bef7486d381e20a688c29c148bc3c78dd2ad0c7330fafe7e8148"
+    },
+    {
+      "path": "replacement-validation/benchmark-build/xml_schema_validation_probe",
+      "sha256": "0ed004e196076eda161763229aec3a1e6e96df63cd42184fcdf8f702b27565ac"
+    },
+    {
+      "path": "replacement-validation/benchmark-build/xml_conformance_probe",
+      "sha256": "f3aa0a9467dab90449b72267f1abed9151fb3360b4466a0208a8dc3d4a4a86a5"
+    }
+  ],
+  "final_guard_and_regression_candidate": "8f66b3d921c9512e1e5968f494c77715ff71c696",
+  "runtime_implementation_unchanged_from": "1858656a86869ba462545a9232b89a0e1e1c319c",
+  "full_class_suite": "ctest-final-guard.log",
+  "full_class_seconds": 65.78
+}

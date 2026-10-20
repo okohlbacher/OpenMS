@@ -1,0 +1,51 @@
+{
+  "claude_completed_reviews": [
+    {
+      "phase": "final-opus",
+      "candidate": "cbb180af857f1c89956db8ac5128e4182d9b9ea8",
+      "requested_model": "claude-opus-5-5",
+      "actual_models": [
+        "claude-opus-5-5"
+      ],
+      "returncode": 0,
+      "subtype": "success",
+      "stop_reason": "end_turn",
+      "terminal_reason": "completed",
+      "raw_final_envelope_sha256": "b60dab5000a4da7ccaf30a8fd77c070e6d99d1a1c1a11953afa35ba09e1b9e17",
+      "input_sha256": "17704ebea1ce2d42a22a7a28816d685bcc98508160de18ee45a121a9bef22712"
+    },
+    {
+      "phase": "opus-fixes",
+      "candidate": "1858656a86869ba462545a9232b89a0e1e1c319c",
+      "requested_model": "claude-opus-5-5",
+      "actual_models": [
+        "claude-opus-5-5"
+      ],
+      "returncode": 0,
+      "subtype": "success",
+      "stop_reason": "end_turn",
+      "terminal_reason": "completed",
+      "raw_final_envelope_sha256": "51b6de02fb2660e7e447291b65f60a70c6c3c5a7f720f30bb2006d8a5b30a15c",
+      "input_sha256": "0334ff0799bffd4cb8cdd94d397e5a54764a651aa4abeabd8c9a569395d06c53"
+    },
+    {
+      "phase": "final-guard",
+      "candidate": "8f66b3d921c9512e1e5968f494c77715ff71c696",
+      "requested_model": "claude-opus-5-5",
+      "actual_models": [
+        "claude-opus-5-5"
+      ],
+      "returncode": 0,
+      "subtype": "success",
+      "stop_reason": "end_turn",
+      "terminal_reason": "completed",
+      "raw_final_envelope_sha256": "71e6ba9b8c24967777a9db456e76e0b3991548700c01d8cb271a67eb575554f8",
+      "input_sha256": "d76a87d1a18fad95c56457ad7d7aed8118483dcfee9a9099b9c772386db396dc"
+    }
+  ],
+  "codex_final_candidate": "8f66b3d921c9512e1e5968f494c77715ff71c696",
+  "kimi_final_input_sha256": "d76a87d1a18fad95c56457ad7d7aed8118483dcfee9a9099b9c772386db396dc",
+  "kimi_final_returncode": 0,
+  "private_stderr_excluded": true,
+  "interrupted_invocations_counted": false
+}

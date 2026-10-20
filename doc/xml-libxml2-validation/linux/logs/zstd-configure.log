@@ -1,0 +1,13 @@
+-- ZSTD VERSION: 1.5.7
+-- CMAKE_INSTALL_PREFIX: /scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/dependencies/install
+-- CMAKE_INSTALL_LIBDIR: lib
+-- ZSTD_LEGACY_SUPPORT defined!
+-- ZSTD_MULTITHREAD_SUPPORT is enabled
+CMake Warning at lib/CMakeLists.txt:156 (message):
+  BUILD_SHARED_LIBS is OFF, but ZSTD_BUILD_SHARED is ON and ZSTD_BUILD_STATIC
+  is OFF, which takes precedence, so libzstd is a shared library
+
+
+-- Configuring done (0.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /scratch/kohlbach/openms-libxml2-replacement-20261020-01a153cb/dependencies/zstd-build

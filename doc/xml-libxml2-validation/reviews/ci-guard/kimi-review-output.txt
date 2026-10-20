@@ -1,0 +1,13 @@
+• ## Findings
+
+  1. **Low — dependency-output decoding can still produce an uncontrolled traceback**  
+     - **Source:** `tools/ci/check_no_xerces.py:44-48`  
+     - **Trigger:** `ldd`, `otool`, or `dumpbin` emits bytes that are invalid under the current locale encoding—for example, a raw non-UTF-8 dependency path—while `subprocess.check_output(..., text=True)` uses strict decoding. `UnicodeDecodeError` is not included in the new exception handler.  
+     - **Impact:** The guard still exits nonzero, but with an unhandled traceback rather than the controlled diagnostic introduced for unavailable or failed inspectors. This does not create a false pass.  
+     - **Minimal fix:** Include `UnicodeError` in the exception handler, or decode with `errors='replace'`. Add a guard unit case with `check_output(side_effect=UnicodeDecodeError(...))`.  
+     - **Regression status:** Pre-existing limitation; candidate `8cf5579a` narrows the unhandled cases but does not introduce this behavior.
+
+  ## Introduced-regression assessment
+
+  No concrete introduced regression is evident in the supplied packet. The repository-relative exclusion change is directly covered for `data`, `extern`, and `thirdparty` checkout parents, and the supplied Dockerfile changes contain no independently demonstrable issue.
+

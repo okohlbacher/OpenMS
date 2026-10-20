@@ -1,0 +1,13 @@
+{
+  "base": "1858656a86869ba462545a9232b89a0e1e1c319c",
+  "candidate": "8f66b3d921c9512e1e5968f494c77715ff71c696",
+  "input_sha256": "d76a87d1a18fad95c56457ad7d7aed8118483dcfee9a9099b9c772386db396dc",
+  "input_bytes": 135582,
+  "changed_files": [
+    "src/tests/class_tests/openms/source/MzIdentMLFile_test.cpp",
+    "src/tests/class_tests/openms/source/XMLParserBackend_test.cpp",
+    "tools/ci/check_no_xerces.py",
+    "tools/ci/tests/test_check_no_xerces.py"
+  ],
+  "scope": "complete final four-file correction plus full relevant decoder/SAX context; runtime implementation unchanged"
+}

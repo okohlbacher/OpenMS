@@ -1,0 +1,101 @@
+• # Adversarial Review: Xerces→libxml2 full-removal candidate (94e69565)
+
+  Scope note: files absent from the candidate diff but present in the packet (MzMLSpectrumDecoder.cpp, IndexedMzMLDecoder.cpp, ImzMLFile.cpp's new `parse_` call site) belong to the earlier PoC lineage already in base c5b68c. Findings against them are labeled **pre-existing (PoC)**, not introduced by this candidate. I found no push blocker; I did find two CI-guard defects that can silently void the removal guarantee or break Windows CI, plus several verify-before-push items.
+
+  ---
+
+  ## A. Introduced regressions / defects in this candidate
+
+  ### A1 (Medium) — Xerces-removal guard silently disables itself by checkout path
+  - **Source**: `tools/ci/check_no_xerces.py` ~L23-24
+    ```python
+    if path.suffix not in ('.h', '.hpp', '.cpp') or {'extern', 'thirdparty', 'data'} & set(path.parts):
+        continue
+    ```
+  - **Trigger**: any checkout whose absolute path contains a component named `extern`, `thirdparty`, or `data` (e.g. `/data/ci/OpenMS`, `D:\thirdparty\work`). `path.parts` covers the *whole* absolute path, not the tree relative to the repo. Every scanned file is then skipped and the guard prints "No Xerces dependency" even with `#include <xercesc/...>` in `src/`.
+  - **Impact**: the new CI step ("Verify Xerces removal", `.github/actions/build/action.yml` ~L245-249) can pass while Xerces is reintroduced — exactly the regression this guard exists to catch. The unit test (`test_check_no_xerces.py`) never exercises this because its tempdir prefix contains none of those words.
+  - **Minimal fix**: `rel = path.relative_to(source)` and test `{'extern','thirdparty','data'} & set(rel.parts)`.
+  - **Minimal test**: parametrize the existing test over a tempdir named `.../data/x`, plant `#include <xercesc/dom/DOM.hpp>`, assert exit 1.
+
+  ### A2 (Medium) — binary check crashes the CI step when the platform tool is absent
+  - **Source**: `tools/ci/check_no_xerces.py` ~L41-48 (`subprocess.check_output(command, ...)` with `dumpbin` on Windows, `otool` on macOS, `ldd` on Linux).
+  - **Trigger**: the build action runs the guard unconditionally for every preset. On a Windows runner using Git Bash without an initialized MSVC environment (the action's preceding steps don't establish one in this packet), `dumpbin` is not on `PATH` → `FileNotFoundError` propagates out of `main()` → traceback, exit ≠ 0 with no diagnostic. Same for `otool` on a minimal macOS image or `ldd` in a musl/static context.
+  - **Impact**: false CI failure indistinguishable from a real Xerces finding; or, if someone "fixes" it by deleting the binary check, loss of the only linked-artifact verification. (If your build action does set up the MSVC env before this step, downgrade to Low; that is not visible in the packet.)
+  - **Minimal fix**: `if shutil.which(command[0]) is None: failures.append(f'{tool} not available; binary check not run')` (fail loudly rather than crash or silently skip), or `try/except (OSError, subprocess.CalledProcessError)` mapped into `failures`.
+  - **Minimal test**: mock `check.shutil.which`/`check_output` to raise `FileNotFoundError`, assert controlled non-zero exit with message.
+
+  ### A3 (Low) — Docker libxml2 build does not pin the feature set the code depends on
+  - **Source**: `dockerfiles/Dockerfile` ~L91-110 (libxml2 CMake configure).
+  - **Trigger**: OpenMS requires SAX1 at runtime (`XMLFile.cpp` `parse()`: `xmlSAXVersion(&sax, 1) != 0` → `ParseError "libxml2 was built without SAX1 support"`) and relies on ICONV for non-UTF-8/16 encodings (X!Tandem path). The Docker build sets only `LEGACY=OFF` and `ZLIB=ON`; the stated reference configuration is `SAX1/ICONV/THREADS=ON`. Today the defaults happen to be ON for 2.15.4, but nothing pins them, and `LIBXML2_VERSION` is a build ARG.
+  - **Impact**: a future `LIBXML2_VERSION` bump that flips a default (SAX1 was made optional/deprecated in 2.15) yields a container where *every* XML load throws `ParseError`, caught only at runtime/test time, not at image build.
+  - **Minimal fix**: add `-DLIBXML2_WITH_SAX1=ON -DLIBXML2_WITH_ICONV=ON -DLIBXML2_WITH_THREADS=ON -DLIBXML2_WITH_SCHEMAS=ON` (schemas are used by `XMLValidator`) to the configure line.
+  - **Minimal test**: build-stage smoke command `xml2-config`/compile-free check is unavailable (programs off), so run one existing validator CTest in the `test` stage as the gate — already implicitly covered by the full ctest run; no new test needed once options are pinned.
+
+  ### A4 (Low) — schema parser loads without NONET; validation warnings flip the result
+  - **Source**: `src/openms/source/FORMAT/VALIDATORS/XMLValidator.cpp` ~L49-56 and `logError_` ~L75-81.
+  - **Trigger (a)**: `xmlSchemaNewParserCtxt(schema.c_str())` + `xmlSchemaParse` with no `XML_PARSE_NONET`. A schema containing `<xs:import schemaLocation="http://...">` fetches over the network during `XMLFile::isValid`. Schemas come from `File::find(schema_location_)` (OpenMS-controlled), so this is hardening, not an active hole — but the document-side validation correctly sets `XML_PARSE_NONET | XML_PARSE_NO_XXE` (~L66), making the omission asymmetric and clearly unintended.
+  - **Trigger (b)**: `logError_` sets `valid_ = false` for `XML_ERR_WARNING` as well as errors, so a schema/validation *warning* now makes `isValid()` return false. The Xerces predecessor routed warnings through `warning()` (non-fatal) in the SAX path; whether the old validator invalidated on warnings is not visible in the packet — classify as **suspected introduced change, verify against old behavior**.
+  - **Minimal fix**: `xmlSchemaSetParserOptions(parser.get(), XML_PARSE_NONET);` and only clear `valid_` for `XML_ERR_ERROR`/`XML_ERR_FATAL`.
+  - **Minimal test**: schema with a local import (works) and a schema triggering a warning-level diagnostic (assert `isValid` result matches the old expected outcome).
+
+  ### A5 (Low) — error reporting: ERROR-level collapsed to fatal; generic fallback drops file and detail
+  - **Source**: `src/openms/source/FORMAT/XMLFile.cpp` — `LibxmlState::error` (~L143-152) and the tail of `parse()` (~L205-210).
+  - **Trigger**: (a) every non-warning libxml2 diagnostic is forwarded as `handler->fatalError(...)`; the Xerces adapter distinguished `error` (recoverable) from `fatalError`. Handlers relying on the old distinction (default `error()` logs and continues) now throw `ParseError` on recoverable conditions. In practice libxml2 marks well-formedness violations FATAL, so exposure is small but real for schema-adjacent/recoverable ERRORs.
+    (b) When a subclass' `fatalError` does *not* throw, `parse()` falls through to `throw Exception::ParseError(..., "", "libxml2 rejected XML input")` — filename argument is `""` although `filename` is in scope, and the captured `xmlCtxtGetLastError()` text is discarded.
+  - **Impact**: worse diagnostics and a narrow behavior change for custom handlers.
+  - **Minimal fix**: route `XML_ERR_ERROR` to `handler->error(...)`; in the tail, pass `filename` and append `xmlCtxtGetLastError(parser.get())->message`.
+  - **Minimal test**: a handler overriding `fatalError` without throwing; parse malformed XML; assert the exception names the file and includes the libxml2 message and line.
+
+  ### A6 (Low) — UTF-8/Windows path handling is improved for plain files but left inconsistent elsewhere
+  - **Source**: `XMLFile::parse_` plain branch uses `std::filesystem::u8path` (good, introduced improvement); but `CompressedInputSource` streams open via `gzopen`/narrow `ifstream` (`GzipInputStream.cpp` ~L19, `Bzip2InputStream.cpp` ~L15, `ZipInputStream.cpp` ~L15), `XMLValidator.cpp` ~L50/66 (`xmlSchemaNewParserCtxt`, `xmlSchemaValidateFile`), `MzIdentMLDOMHandler.cpp` ~L274 (`xmlCtxtReadFile`) and ~L558 (`xmlSaveToFilename`) all take narrow `const char*` paths.
+  - **Assessment**: the compressed streams and the mzid DOM read were *also* narrow under Xerces (default-charset transcode / `parse(const char*)`), so those are **pre-existing limitations, not regressions**. The validator's old path handling is not in the packet — **verify**. Either way, a Windows user in a non-ASCII directory now gets: plain XML works, the same file gzipped fails with "Cannot open compressed XML stream", and validation/DOM-mzid may fail — an inconsistent, confusing matrix introduced by fixing only one branch.
+  - **Minimal fix**: open via `std::filesystem::u8path`/`_wfopen` wrapper in the three streams; for libxml2 file APIs use `xmlParserInputBufferCreateFilename`-style IO callbacks or convert to short-path/wide fopen. At minimum document the limitation.
+  - **Minimal test**: parametrize `TMP`/`CWD` to a directory containing `ümläut` and run one plain, one `.gz`, one `isValid`, one mzid load/store round-trip on Windows CI.
+
+  ---
+
+  ## B. Verify-before-push (falsifiable, semantics uncertain from the packet)
+
+  ### B1 (Medium if confirmed) — `enforceEncoding_` may no longer override a wrong XML declaration
+  - **Source**: `XMLFile.cpp` `parse()` ~L186-193: `xmlSwitchEncodingName(parser.get(), encoding.c_str())` on a push parser before the first chunk.
+  - **Concern**: the Xerces code set the encoding on the `InputSource`, which *overrode* the document declaration (the documented purpose: "non-conforming XML producers (e.g. X!Tandem)"). In libxml2's push parser, the XML declaration's `encoding=` switch happens during the first `xmlParseChunk` and can supersede a pre-set encoding — i.e. a file declaring `UTF-8` but encoded in ISO-8859-1 would still be decoded as UTF-8, silently corrupting non-ASCII content.
+  - **Falsifiable test**: buffer `<?xml version="1.0" encoding="UTF-8"?><r>ä</r>` with `ä` as byte 0xE4, `enforceEncoding_("ISO-8859-1")`, assert callback text == `ä` (not `Ã¤`/error). If it fails, fix by overriding after the declaration (custom input encoding that ignores the decl) or by stripping/rewriting the declaration.
+  - **Classification**: regression vs Xerces if the test fails; cannot be settled from source alone.
+
+  ### B2 (Medium; **pre-existing PoC, not introduced**) — `XML_PARSE_HUGE` defeats the explicitly claimed amplification cap in the spectrum decoder
+  - **Source**: `src/openms/source/FORMAT/HANDLERS/MzMLSpectrumDecoder.cpp` `domParseString_` (~L487-500): sets `xmlCtxtSetMaxAmplification(parser.get(), 5)`, then parses with `XML_PARSE_HUGE`; the comment asserts "the independent entity-amplification limit is explicitly retained at 5".
+  - **Concern**: in libxml2, `XML_PARSE_HUGE` applied via `xmlCtxtUseOptions` zeroes `ctxt->maxAmplification` / bypasses the amplification check in `xmlParserEntityCheck`, and it is applied *after* the explicit setter call. The input here is an attacker-controllable byte range of an indexed mzML (offset span → `domParseString_`), parsed with `NOENT` → a crafted internal DOCTYPE with nested entities could expand unboundedly (classic billion-laughs), despite the comment's claim. Note `MzIdentMLDOMHandler.cpp` ~L273 is fine: amplification 5, no HUGE.
+  - **Falsifiable test**: fragment with `<!DOCTYPE spectrum [<!ENTITY a "AAAA...(100KB)"><!ENTITY b "&a;&a;...×10">...]>` and `<spectrum ...>&b;</spectrum>`; assert `ParseError` (amplification) rather than success. If it parses, the cap is void.
+  - **Minimal fix if confirmed**: drop `XML_PARSE_HUGE` and raise only what is needed (`xmlCtxtSetMaxTextSize` for the >10 MB base64 node, `xmlCtxtSetMaxDepth` if required), or set amplification *after* options if the API ordering allows.
+  - **Classification**: introduced by the earlier PoC, retained unchanged by this candidate — flag for the same fix window since it ships with this branch.
+
+  ### B3 (Low) — decoder ownership nit if both doc pointers are non-null
+  - **Source**: `MzMLSpectrumDecoder.cpp` ~L502-510: `document(completed_document ? completed_document : returned_document, ...)` leaks `returned_document` if both are non-null. Currently unreachable by construction (after `xmlStopParser` with `myDoc` detached, `xmlCtxtReadMemory` returns NULL), but the invariant is implicit. One-line hardening: take `returned_document` into a `unique_ptr` immediately. No test needed; not introduced by this candidate.
+
+  ---
+
+  ## C. Pre-existing issues (explicitly NOT introduced — listed only because the review scope touched them)
+
+  - **C1 (Medium, pre-existing since the Xerces era)**: unchecked cross-indexing in XL-MS fragmentation parsing — `MzIdentMLDOMHandler.cpp` ~L1704: `for (s < indices.size()) { ... chains[s]; categories[s]; positions[s]; intensities[s]; }`. A malformed mzid whose `index`, `cross-link_chain`, `cross-link_ioncategory`, `Measure_mz`, `Measure_int` lists have different lengths reads out of bounds (UB/crash). Identical loop existed in the Xerces version. Minimal fix: bail or `ParseError` when sizes differ; test with a truncated `values=` list.
+  - **C2 (pre-existing)**: `StringManager::strLength` SIMD 16-byte block scan can read past the terminator (suppressed under ASan, #8122). Unchanged.
+  - **C3 (pre-existing)**: `GzipIfstream`/`Bzip2Ifstream`/`ZipIfstream::read` error returns are cast into `Size` without a negative check in all three `readBytes` (was the same cast under Xerces); a decompressor error mid-stream yields a huge `actual_read` and position corruption. The new `min(max_to_read, INT_MAX)` clamp does not address negative returns.
+  - **C4 (pre-existing, per packet note)**: legacy DOM writer business-logic gaps (`buildAnalysisProtocolCollection_` never invoked; `buildAnalysisCollection_(apc_p)` used for the protocol collection; "TBA" attributes). Confirmed unchanged by the diff; not re-reported as findings.
+  - **C5 (documented decision)**: xs:anyURI Windows-backslash rejection — explicitly retained; no action.
+
+  ---
+
+  ## D. Areas checked with no concrete finding
+
+  - **SAX callback integrity**: C++ exceptions are captured before crossing libxml2 frames (`LibxmlState::callback`), first-exception-wins on re-entry, `xmlStopParser` on throw; soft-stop (`EndParsingSoftly`) unwinds to the loop, is rethrown, caught, and returns cleanly with `XMLCleaner_` still resetting the handler. Attribute view lifetime is callback-scoped and documented; temporaries live for the full call.
+  - **Magic sniffing**: empty/1-byte files handled (`header` sized by `gcount`, `std::string::compare(0,2,...)` is safe on short strings); short headers fall back to gzip as before.
+  - **Entities/malformed input in the mzid DOM reader**: `NONET | NO_XXE | NOENT` with `xmlCtxtSetMaxAmplification(...,5)` (honored — no HUGE there), parse failure → `ParseError` with the libxml2 message, root-name check added; new regression tests (namespace prefixes, external entity not read, truncated/invalid-UTF8 → `ParseError`) are on point.
+  - **Namespaces**: DOM matching uses local names (`node->name`, `xmlGetNoNsProp`) — prefixed elements and foreign-namespaced attributes behave as the added tests assert. SAX1 delivery of qualified names matches the handlers' qname-based comparisons as under the previous SAX1-style configuration.
+  - **Ownership (writer)**: `NativeDocument` tracks detached nodes and reattaches on destruction; `setText_` frees on failed append; namespace/xsi:schemaLocation handling is explicit; `xmlSaveDoc`/`xmlSaveClose` errors now throw `UnableToCreateFile` instead of being logged.
+  - **ABI/headers**: no libxml2 includes in installed headers; `xmlNode` is forward-declared only in the private `MzIdentMLDOMHandler.h`; `InputStream.h` and the stream adapters are in the private header list; `OpenMSConfig.cmake.in` adds `find_dependency(LibXml2 2.13)` only for static exports, matching the PRIVATE link of the shared library. macOS wheel builds add the keg-only brew prefix.
+  - **Init/threads**: `std::call_once` + `xmlInitParser`, deliberate no-`xmlCleanupParser`, documented; per-call parser/schema contexts are thread-local.
+  - **CI wiring** (other than A1/A2): `CMAKE_DISABLE_FIND_PACKAGE_XercesC=ON` guard, manifest swap with `version>=2.13.0`, Docker pin+sha256 and runtime `ldconfig` propagation are coherent. (Nit: the added `-DCMAKE_DISABLE_FIND_PACKAGE_XercesC=ON \` continues onto a blank line — harmless today, fragile on the next edit.)
+
+  ## Bottom line
+
+  No blocker found. Fix before push: **A1** and **A2** (the removal guard can silently pass and can crash Windows CI), and decide **B1**/**B2** by running the two falsifiable tests; **B2** is a pre-existing-PoC amplification gap whose in-code claim is likely wrong. A3–A6 are cheap hardening/consistency fixes; C1 deserves a bounds check while the file is being touched but is not a migration regression.
+

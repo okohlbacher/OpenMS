@@ -1,0 +1,14 @@
+{
+  "requested_model": "claude-opus-5-5",
+  "version": "2.1.288 (Claude Code)",
+  "candidate": "8f66b3d921c9512e1e5968f494c77715ff71c696",
+  "started_utc": "2026-10-20T06:24:15.727746+00:00",
+  "input_sha256": "d76a87d1a18fad95c56457ad7d7aed8118483dcfee9a9099b9c772386db396dc",
+  "mode": "tool-free self-contained complete-diff review; no model fallback configured",
+  "returncode": 0,
+  "elapsed_seconds": 92.72613501548767,
+  "reported_models": [
+    "claude-opus-5-5"
+  ],
+  "is_error": false
+}
