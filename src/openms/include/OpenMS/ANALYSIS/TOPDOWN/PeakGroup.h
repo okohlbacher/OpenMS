@@ -105,6 +105,10 @@ namespace OpenMS
      */
     std::vector<LogMzPeak> recruitAllPeaksInSpectrum(const MSSpectrum& spec, double tol, const FLASHHelperClasses::PrecalculatedAveragine& avg, double mono_mass, bool renew_signal_peaks = true);
 
+    /// as above, but writes the noisy peaks into @p noisy_peaks (cleared first) so callers can reuse its capacity
+    void recruitAllPeaksInSpectrum(const MSSpectrum& spec, double tol, const FLASHHelperClasses::PrecalculatedAveragine& avg, double mono_mass,
+                                   std::vector<LogMzPeak>& noisy_peaks, bool renew_signal_peaks = true);
+
     /**
      * @brief Get noisy peaks for this PeakGroup without modifying any state (const-safe).
      * This is a const alternative to recruitAllPeaksInSpectrum(..., false) for use in output/write functions.
@@ -345,6 +349,8 @@ namespace OpenMS
     void updateChargeFitScoreAndChargeIntensities_(bool is_low_charge);
     /// update avg ppm error
     void updateAvgMassError_();
+    /// average absolute per-isotope mass error (same arithmetic as averaging getMassErrors(ppm))
+    float averageAbsMassError_(bool ppm) const;
     /// update avg Da error
     float getPPMError_(const LogMzPeak& p) const;
     /// get Da error of a logMzPeak from the closest isotope

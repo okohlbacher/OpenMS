@@ -1078,14 +1078,15 @@ inline const double tol_div_factor
 
       if (isPeakGroupInExcludedMassForDecoyRuns_(peak_group, tol)) { return false; }
 
+      thread_local std::vector<LogMzPeak> noisy_peaks; // per-worker scratch
       int num_iteration = 10;
       bool mass_determined = false;
       double prev_cos = 0;
       // isotope pattern matching and qscore update part. Isotope pattern matching is done multiple times until finding the maximum isotope cosine
       for (int k = 0; k < num_iteration; k++)
       {
-        auto noisy_peaks = peak_group.recruitAllPeaksInSpectrum(deconvolved_spectrum_.getOriginalSpectrum(), tol, activeAveragine_(),
-                                                                peak_group.getMonoMass() + offset * iso_da_distance_);
+        peak_group.recruitAllPeaksInSpectrum(deconvolved_spectrum_.getOriginalSpectrum(), tol, activeAveragine_(),
+                                             peak_group.getMonoMass() + offset * iso_da_distance_, noisy_peaks);
         if (isPeakGroupInExcludedMassForDecoyRuns_(peak_group, tol)) { break; }
         // min cosine is checked in here. mono mass is also updated one last time. SNR, per charge SNR, and avg errors are updated here.
         const auto& [z1, z2] = peak_group.getAbsChargeRange();
@@ -1097,8 +1098,8 @@ inline const double tol_div_factor
           if (peak_group.getChargeSNR(peak_group.getRepAbsCharge()) < snr_threshold) // to speed up
             break;
           if (offset != 0)
-            noisy_peaks = peak_group.recruitAllPeaksInSpectrum(deconvolved_spectrum_.getOriginalSpectrum(), tol, activeAveragine_(),
-                                                               peak_group.getMonoMass() + offset * iso_da_distance_);
+            peak_group.recruitAllPeaksInSpectrum(deconvolved_spectrum_.getOriginalSpectrum(), tol, activeAveragine_(),
+                                                 peak_group.getMonoMass() + offset * iso_da_distance_, noisy_peaks);
 
           peak_group.updateQscore(noisy_peaks, activeAveragine_(), min_isotope_cosine_[ms_level_ - 1], tol, (z1 + z2) < 2 * low_charge_,
                                   excluded_masses_for_decoy_runs_, true);
@@ -1222,7 +1223,8 @@ inline const double tol_div_factor
         const auto& [z1_, z2_] = pg.getAbsChargeRange();
         if (z2 - z1 > z2_ - z1_) break; // if harmonic charges are too high stop
         pg.setMonoisotopicMass(peak_group.getMonoMass() * hz);
-        auto nps = pg.recruitAllPeaksInSpectrum(deconvolved_spectrum_.getOriginalSpectrum(), tol, activeAveragine_(), pg.getMonoMass());
+        thread_local std::vector<LogMzPeak> nps; // per-worker scratch
+        pg.recruitAllPeaksInSpectrum(deconvolved_spectrum_.getOriginalSpectrum(), tol, activeAveragine_(), pg.getMonoMass(), nps);
         pg.updateQscore(nps, activeAveragine_(), min_isotope_cosine_[ms_level_ - 1], tol, (z1 + z2) * hz < 2 * low_charge_,
                         excluded_masses_for_decoy_runs_, true);
 
@@ -1369,7 +1371,8 @@ inline const double tol_div_factor
     }
     if (max_isotope_index - min_isotope_index < min_iso_size) { return .0; }
 
-    std::vector<std::pair<int, float>> offset_cos;
+    thread_local std::vector<std::pair<int, float>> offset_cos; // per-worker scratch
+    offset_cos.clear();
     offset_cos.reserve(right + left + 1);
 
     for (int tmp_offset = -left; tmp_offset <= right; tmp_offset++)
