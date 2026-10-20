@@ -135,6 +135,10 @@ namespace OpenMS
     const PeakGroup& operator[](Size i) const;
     PeakGroup& operator[](Size i);
     void push_back(const PeakGroup& pg);
+    void push_back(PeakGroup&& pg);
+
+    /// exchange the peak group vector with @p x (lets callers recycle vector capacity)
+    void swapPeakGroups(std::vector<PeakGroup>& x);
     void emplace_back(const PeakGroup& pg);
     void pop_back();
     PeakGroup& back();

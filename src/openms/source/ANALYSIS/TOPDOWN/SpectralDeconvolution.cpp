@@ -10,7 +10,9 @@
 #include <OpenMS/ANALYSIS/TOPDOWN/PeakGroup.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/SpectralDeconvolution.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/FLASHTrace.h>
+#include <cstddef>
 #include <optional>
+#include <type_traits>
 #include <OpenMS/CONCEPT/Exception.h>
 #include <OpenMS/CONCEPT/LogStream.h>
 #include <OpenMS/SYSTEM/BuildInfo.h>
@@ -362,7 +364,8 @@ inline const double tol_div_factor
   void SpectralDeconvolution::updateCandidateMassBins_(std::vector<float>& mass_intensities, const std::vector<float>& mz_intensities)
   { //
     Size mz_bin_index = binned_log_mz_peaks_.find_first();
-    auto mz_bin_index_reverse = std::vector<Size>();
+    auto& mz_bin_index_reverse = mz_bin_index_reverse_pool_;
+    mz_bin_index_reverse.clear();
     mz_bin_index_reverse.reserve(binned_log_mz_peaks_.count());
     // invert mz bins so charges are counted from small to large given a mass
 
@@ -395,7 +398,7 @@ inline const double tol_div_factor
     // A fixed charge maps each mz bin to one mass bin by an integer offset.
     // The stored charge therefore identifies the previous mz bin exactly.
     auto update_mass_bins = [&](auto& states) {
-      mass_intensities = std::vector<float>(binned_log_masses_.size(), .0f);
+      mass_intensities.assign(binned_log_masses_.size(), .0f);
 
       double bin_mul_factor = bin_mul_factors_[ms_level_ - 1];
       std::vector<float> sub_max_h_intensity(h_charge_size, .0f);
@@ -614,15 +617,28 @@ inline const double tol_div_factor
     // are needed for the initial sentinel, not for a stored charge index.
     const bool byte_state = current_max_charge_ >= 0 && current_max_charge_ <= std::numeric_limits<std::uint8_t>::max() - 2
                             && sizeof(ByteMassBinState) < sizeof(CompactMassBinState);
+    // The two compact layouts are trivially copyable and are placed in a worker-owned byte pool.
+    auto pooled_states = [&](auto init) {
+      using State = decltype(init);
+      static_assert(std::is_trivially_copyable_v<State> && alignof(State) <= alignof(std::max_align_t));
+      const Size n = binned_log_masses_.size();
+      if (mass_bin_state_pool_.size() < n * sizeof(State)) { mass_bin_state_pool_.resize(n * sizeof(State)); }
+      State* first = reinterpret_cast<State*>(mass_bin_state_pool_.data());
+      std::fill(first, first + n, init);
+      struct View
+      {
+        State* d;
+        State& operator[](Size i) { return d[i]; }
+      } view {first};
+      update_mass_bins(view);
+    };
     if (byte_state)
     {
-      std::vector<ByteMassBinState> states(binned_log_masses_.size(), {0, static_cast<std::uint8_t>(current_max_charge_ + 2)});
-      update_mass_bins(states);
+      pooled_states(ByteMassBinState {0, static_cast<std::uint8_t>(current_max_charge_ + 2)});
     }
     else if (compact_state)
     {
-      std::vector<CompactMassBinState> states(binned_log_masses_.size(), {0, (unsigned short)(current_max_charge_ + 2)});
-      update_mass_bins(states);
+      pooled_states(CompactMassBinState {0, (unsigned short)(current_max_charge_ + 2)});
     }
     else
     {
@@ -634,14 +650,17 @@ inline const double tol_div_factor
   // Subfunction of updateMassBins_. If a peak corresponds to multiple masses, only one mass is selected for the peak based on intensities.
   // mass level harmonic check is also performed in this function
   // it also outputs the charge range of each mass bin
-  Matrix<int> SpectralDeconvolution::filterMassBins_(const std::vector<float>& mass_intensities)
+  const Matrix<int>& SpectralDeconvolution::filterMassBins_(const std::vector<float>& mass_intensities)
   {
-    Matrix<int> abs_charge_ranges;
+    // Pooled: only columns whose bit is set below are initialized and read, so no zeroing is needed.
+    Matrix<int>& abs_charge_ranges = abs_charge_ranges_pool_;
     abs_charge_ranges.resize(2, binned_log_masses_.size());
     Size mz_bin_index = binned_log_mz_peaks_.find_first();
     long bin_size = (long)binned_log_masses_.size();
 
-    auto to_skip = binned_log_masses_.flip();
+    binned_log_masses_.flip();
+    auto& to_skip = to_skip_pool_;
+    to_skip = binned_log_masses_;
     binned_log_masses_.reset();
 
     const int select_top_N = 2; // select top N charges per peak. We allow up to 2 just to consider frequent coelution.
@@ -734,14 +753,10 @@ inline const double tol_div_factor
   }
 
   // update mass bins which will be used to select peaks in the input spectrum...
-  Matrix<int> SpectralDeconvolution::updateMassBins_(const std::vector<float>& mz_intensities)
+  const Matrix<int>& SpectralDeconvolution::updateMassBins_(const std::vector<float>& mz_intensities)
   {
-    std::vector<float> mass_intensities;
-    updateCandidateMassBins_(mass_intensities, mz_intensities); // universal pattern matching
-
-    auto per_mass_abs_charge_ranges = filterMassBins_(mass_intensities);
-
-    return per_mass_abs_charge_ranges;
+    updateCandidateMassBins_(mass_intensities_pool_, mz_intensities); // universal pattern matching
+    return filterMassBins_(mass_intensities_pool_);
   }
 
   // With binned_log_masses_ from updateMassBins_ function, select peaks from the same mass in the original input spectrum
@@ -754,9 +769,13 @@ inline const double tol_div_factor
     int log_mz_peak_size = (int)log_mz_peaks_.size();
     // this stores which peak is now being considered per charge. Per charge, peak is considered from left (lowest m/z) to right (highest m/z).
     auto current_peak_index = std::vector<int>(charge_range, 0);
+    // Reuse the previous spectrum's candidate vector capacity (worker-owned pool).
+    candidate_pool_.clear();
+    deconvolved_spectrum_.swapPeakGroups(candidate_pool_);
     deconvolved_spectrum_.reserve(binned_log_masses_.count());
     Size mass_bin_index = binned_log_masses_.find_first();
-    auto peak_bin_numbers = std::vector<Size>(log_mz_peak_size);
+    auto& peak_bin_numbers = peak_bin_numbers_pool_;
+    peak_bin_numbers.resize(log_mz_peak_size);
     // per peak, store the m/z bin number for fast processing
     for (int i = 0; i < log_mz_peak_size; i++)
     {
@@ -974,7 +993,8 @@ inline const double tol_div_factor
     // Binning buffers are no longer needed once candidate peak groups own their peaks.
     {
       Size mz_bin_number = getBinNumber_(mz_bin_max_value, mz_bin_min_value_, bin_mul_factor) + 1;
-      auto binned_log_mz_peak_intensities = std::vector<float>(mz_bin_number, .0f);
+      auto& binned_log_mz_peak_intensities = mz_intensities_pool_;
+      binned_log_mz_peak_intensities.assign(mz_bin_number, .0f);
 
       // bin log mzs
       binLogMzPeaks_(mz_bin_number, binned_log_mz_peak_intensities);
@@ -1025,11 +1045,12 @@ inline const double tol_div_factor
       }
 
       // main algorithm to generate mass bins
-      Matrix<int> per_mass_abs_charge_ranges;
+      const Matrix<int>* per_mass_abs_charge_ranges_ptr;
       {
         FLASHTrace::Scope trace_bins("sd.bins", ms_level_, (int64_t)log_mz_peaks_.size());
-        per_mass_abs_charge_ranges = updateMassBins_(binned_log_mz_peak_intensities);
+        per_mass_abs_charge_ranges_ptr = &updateMassBins_(binned_log_mz_peak_intensities);
       }
+      const Matrix<int>& per_mass_abs_charge_ranges = *per_mass_abs_charge_ranges_ptr;
       // main algorithm to generate peak groups
       FLASHTrace::Scope trace_cand("sd.cand", ms_level_);
       getCandidatePeakGroups_(per_mass_abs_charge_ranges);
@@ -1180,7 +1201,8 @@ inline const double tol_div_factor
     Size selected_count = selected.count();
     if (selected_count == 0)
     {
-      deconvolved_spectrum_.clear();
+      deconvolved_spectrum_.swapPeakGroups(candidate_pool_);
+      candidate_pool_.clear(); // destroy candidates now, keep the vector capacity for the next spectrum
       return;
     }
 
@@ -1203,7 +1225,9 @@ inline const double tol_div_factor
       }
     }
 
-    deconvolved_spectrum_.setPeakGroups(std::move(filtered_peak_groups));
+    deconvolved_spectrum_.swapPeakGroups(filtered_peak_groups);
+    filtered_peak_groups.clear(); // destroy the remaining candidates now
+    candidate_pool_.swap(filtered_peak_groups);
     deconvolved_spectrum_.sort();
 
     removeChargeErrorPeakGroups_(deconvolved_spectrum_, target_decoy_type_);

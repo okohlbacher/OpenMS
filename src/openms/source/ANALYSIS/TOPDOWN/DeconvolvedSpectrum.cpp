@@ -295,6 +295,16 @@ namespace OpenMS
     return peak_groups_.size();
   }
 
+  void DeconvolvedSpectrum::push_back(PeakGroup&& pg)
+  {
+    peak_groups_.push_back(std::move(pg));
+  }
+
+  void DeconvolvedSpectrum::swapPeakGroups(std::vector<PeakGroup>& x)
+  {
+    peak_groups_.swap(x);
+  }
+
   void DeconvolvedSpectrum::clear()
   {
     std::vector<PeakGroup>().swap(peak_groups_);
