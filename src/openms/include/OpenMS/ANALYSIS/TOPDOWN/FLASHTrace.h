@@ -64,7 +64,7 @@ namespace OpenMS::FLASHTrace
       std::lock_guard<std::mutex> g(m);
       if (dumped || ! enabled()) return;
       dumped = true;
-      FILE* f = std::fopen(tracePath(), "w");
+      FILE* f = std::fopen(tracePath(), "a"); // executable and library each own a registry
       if (! f) return;
       for (auto& [tid, v] : bufs)
         for (auto& e : *v)
