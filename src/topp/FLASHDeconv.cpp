@@ -484,6 +484,21 @@ protected:
       }
     }
 
+    // Experiment (FD_OPT=pfree): release results and input in parallel instead of in the serial destructors.
+    if (FLASHTrace::opt("pfree"))
+    {
+      FLASHTrace::Scope trace_release("release");
+#pragma omp parallel for schedule(dynamic, 16)
+      for (SignedSize i = 0; i < (SignedSize)deconvolved_spectra.size(); ++i)
+      {
+        deconvolved_spectra[i] = DeconvolvedSpectrum();
+      }
+#pragma omp parallel for schedule(dynamic, 16)
+      for (SignedSize i = 0; i < (SignedSize)map.size(); ++i)
+      {
+        MSSpectrum().swap(map[i]);
+      }
+    }
     return EXECUTION_OK;
   }
 };
