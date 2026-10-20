@@ -144,6 +144,8 @@ void FLASHDeconvAlgorithm::updateMSLevels_(MSExperiment& map)
 
 namespace
 {
+  Size ms1Cap_(); // defined with runSpectralDeconvolution_
+
   ThresholdMower makeLowPeakFilter_()
   {
     ThresholdMower threshold_mower_filter;                         // threshold
