@@ -18,10 +18,12 @@
 #include <iostream>
 
 #include <libxml/parser.h>
+#include <libxml/xmlreader.h>
 #include <memory>
 #include <limits>
 #include <cstdint>
 #include <algorithm>
+#include <exception>
 
 namespace OpenMS
 {
@@ -158,21 +160,12 @@ namespace OpenMS
   {
 
     if (in.size() > static_cast<Size>(std::numeric_limits<int>::max())) { return -1; }
-    std::unique_ptr<xmlDoc, decltype(&xmlFreeDoc)> document(
-      xmlReadMemory(in.data(), static_cast<int>(in.size()), "index.xml", nullptr,
-                    XML_PARSE_NONET | XML_PARSE_NO_XXE | XML_PARSE_NOENT | XML_PARSE_NOERROR | XML_PARSE_NOWARNING), xmlFreeDoc);
-    xmlNode* root = document ? xmlDocGetRootElement(document.get()) : nullptr;
-    if (!root) { return -1; }
-    xmlNode* list = nullptr;
-    for (xmlNode* node = root->children; node; node = node->next)
-    {
-      if (node->type == XML_ELEMENT_NODE && xmlStrEqual(node->name, BAD_CAST "indexList"))
-      {
-        if (list) { return -1; }
-        list = node;
-      }
-    }
-    if (!list) { return -1; }
+    // A DOM for a large index leaves freed nodes in each worker's allocator
+    // arena. Read forward and expand only one offset at a time instead.
+    std::unique_ptr<xmlTextReader, decltype(&xmlFreeTextReader)> reader(
+      xmlReaderForMemory(in.data(), static_cast<int>(in.size()), "index.xml", nullptr,
+                         XML_PARSE_NONET | XML_PARSE_NO_XXE | XML_PARSE_NOENT | XML_PARSE_NOERROR | XML_PARSE_NOWARNING), xmlFreeTextReader);
+    if (!reader) { return -1; }
     auto property = [](xmlNode* node, const char* key)
     {
       xmlChar* value = xmlGetProp(node, BAD_CAST key);
@@ -180,23 +173,73 @@ namespace OpenMS
       xmlFree(value);
       return result;
     };
-    for (xmlNode* index = list->children; index; index = index->next)
+    OffsetVector spectra, chromatograms, offsets;
+    std::string index_name;
+    bool found_list = false, in_list = false, found_spectra = false, found_chromatograms = false;
+    auto finish_index = [&]()
     {
-      if (index->type != XML_ELEMENT_NODE) { continue; }
-      OffsetVector result;
-      for (xmlNode* offset = index->children; offset; offset = offset->next)
+      if (index_name == "spectrum")
       {
-        if (offset->type != XML_ELEMENT_NODE) { continue; }
-        xmlChar* content = xmlNodeGetContent(offset);
-        std::string text = content ? reinterpret_cast<const char*>(content) : "";
-        xmlFree(content);
-        result.emplace_back(property(offset, "idRef"), IndexedMzMLUtils::stringToStreampos(text));
+        spectra = std::move(offsets);
+        found_spectra = true;
       }
-      const auto name = property(index, "name");
-      if (name == "spectrum") { spectra_offsets = std::move(result); }
-      else if (name == "chromatogram") { chromatograms_offsets = std::move(result); }
-      else { return -1; }
+      else if (index_name == "chromatogram")
+      {
+        chromatograms = std::move(offsets);
+        found_chromatograms = true;
+      }
+      else { return false; }
+      offsets.clear();
+      return true;
+    };
+    std::exception_ptr conversion_error;
+    int status;
+    while ((status = xmlTextReaderRead(reader.get())) == 1)
+    {
+      const int depth = xmlTextReaderDepth(reader.get());
+      const int type = xmlTextReaderNodeType(reader.get());
+      if (type == XML_READER_TYPE_ELEMENT)
+      {
+        if (depth == 1 && xmlStrEqual(xmlTextReaderConstLocalName(reader.get()), BAD_CAST "indexList"))
+        {
+          if (found_list) { return -1; }
+          found_list = true;
+          in_list = !xmlTextReaderIsEmptyElement(reader.get());
+        }
+        else if (conversion_error) { continue; }
+        else if (in_list && depth == 2)
+        {
+          index_name = property(xmlTextReaderCurrentNode(reader.get()), "name");
+          if (xmlTextReaderIsEmptyElement(reader.get()) && !finish_index()) { return -1; }
+        }
+        else if (in_list && depth == 3)
+        {
+          // Expand this offset's descendants to preserve xmlNodeGetContent
+          // semantics (entities, CDATA and nested text), never the whole index.
+          xmlNode* offset = xmlTextReaderExpand(reader.get());
+          if (!offset) { return -1; }
+          xmlChar* content = xmlNodeGetContent(offset);
+          std::string text = content ? reinterpret_cast<const char*>(content) : "";
+          xmlFree(content);
+          try { offsets.emplace_back(property(offset, "idRef"), IndexedMzMLUtils::stringToStreampos(text)); }
+          catch (const Exception::ConversionError&)
+          {
+            // As with the old whole-document parse, malformed XML takes
+            // precedence over an invalid offset earlier in the document.
+            conversion_error = std::current_exception();
+          }
+        }
+      }
+      else if (type == XML_READER_TYPE_END_ELEMENT && in_list && !conversion_error)
+      {
+        if (depth == 2 && !finish_index()) { return -1; }
+        else if (depth == 1) { in_list = false; }
+      }
     }
+    if (status < 0 || !found_list) { return -1; }
+    if (conversion_error) { std::rethrow_exception(conversion_error); }
+    if (found_spectra) { spectra_offsets = std::move(spectra); }
+    if (found_chromatograms) { chromatograms_offsets = std::move(chromatograms); }
     return 0;
   }
 

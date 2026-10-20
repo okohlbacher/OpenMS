@@ -21,19 +21,19 @@
 # compiler-wise: build the dependencies with the same compiler as OpenMS!
 find_package(LibXml2 2.13 REQUIRED)
 
-# OpenMS uses push parsing, legacy qualified names, XSD validation and concurrent
+# OpenMS uses push parsing, the forward-only reader, legacy qualified names, XSD validation and concurrent
 # parser contexts. A version-compatible minimal libxml2 build can omit these.
 include(CheckSymbolExists)
 include(CMakePushCheckState)
 cmake_push_check_state(RESET)
 set(CMAKE_REQUIRED_INCLUDES ${LIBXML2_INCLUDE_DIRS})
-foreach(feature SAX1 PUSH SCHEMAS THREAD ICONV ICU)
+foreach(feature SAX1 PUSH READER SCHEMAS THREAD ICONV ICU)
   # Recheck when an existing build tree changes its libxml2 installation.
   unset(OPENMS_LIBXML2_${feature} CACHE)
   check_symbol_exists(LIBXML_${feature}_ENABLED "libxml/xmlversion.h" OPENMS_LIBXML2_${feature})
 endforeach()
 cmake_pop_check_state()
-foreach(feature SAX1 PUSH SCHEMAS THREAD)
+foreach(feature SAX1 PUSH READER SCHEMAS THREAD)
   if(NOT OPENMS_LIBXML2_${feature})
     message(FATAL_ERROR "OpenMS requires libxml2 built with ${feature} support")
   endif()
