@@ -75,7 +75,8 @@ class RemovalGuardTest(unittest.TestCase):
         build.mkdir()
         (build / 'libOpenMS.dylib').touch()
         for error in [FileNotFoundError('missing dependency inspector'),
-                      check.subprocess.CalledProcessError(1, ['inspector'])]:
+                      check.subprocess.CalledProcessError(1, ['inspector']),
+                      UnicodeDecodeError('utf-8', b'\xff', 0, 1, 'invalid inspector output')]:
             with self.subTest(error=error), patch.object(check.subprocess, 'check_output', side_effect=error):
                 self.assertEqual(self.run_guard('--build-dir', str(build)), 1)
 

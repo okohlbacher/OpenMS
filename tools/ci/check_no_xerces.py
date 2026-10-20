@@ -43,7 +43,7 @@ def main():
                 command = ['ldd', str(library)]
             try:
                 links = subprocess.check_output(command, text=True, stderr=subprocess.STDOUT)
-            except (OSError, subprocess.CalledProcessError) as error:
+            except (OSError, subprocess.CalledProcessError, UnicodeError) as error:
                 failures.append(f'{library}: could not inspect dependencies with {command[0]}: {error}')
                 continue
             if re.search(r'\b(?:lib)?xerces[-_A-Za-z0-9.]*\.(?:dylib|so(?:\.\d+)*|dll)\b', links, re.IGNORECASE):
