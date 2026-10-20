@@ -18,6 +18,7 @@
 #include <OpenMS/PROCESSING/FILTERING/ThresholdMower.h>
 #include <OpenMS/PROCESSING/SPECTRAMERGING/SpectraMerger.h>
 #include <OpenMS/SYSTEM/BuildInfo.h>
+#include <algorithm>
 #include <array>
 #include <exception>
 #include <iterator>
@@ -394,6 +395,16 @@ void FLASHDeconvAlgorithm::appendDecoyPeakGroups_(DeconvolvedSpectrum& deconvolv
   deconvolved_spectrum.sort();
 }
 
+namespace
+{
+  /// MS1 worker cap (private experiment, FD_MS1_CAP overrides the default 64)
+  Size ms1Cap_()
+  {
+    static const Size cap = [] { const char* e = std::getenv("FD_MS1_CAP"); return e ? (Size)std::max(1, std::atoi(e)) : (Size)64; }();
+    return cap;
+  }
+}
+
 void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vector<DeconvolvedSpectrum>& deconvolved_spectra)
 {
   startProgress(0, (SignedSize)map.size(), "running FLASHDeconv");
@@ -420,7 +431,7 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
       if (! spec.empty() && spec.getMSLevel() <= current_max_ms_level_) { ++level_counts[spec.getMSLevel()]; }
     }
     // Private experiment: cap MS1 allocation while preserving higher levels.
-    if (level_counts.size() > 1) { level_counts[1] = std::min<Size>(level_counts[1], 64); }
+    if (level_counts.size() > 1) { level_counts[1] = std::min<Size>(level_counts[1], ms1Cap_()); }
     worker_count = (int)std::min((Size)omp_get_max_threads(), *std::max_element(level_counts.begin(), level_counts.end()));
   }
 #endif
@@ -479,9 +490,18 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
         const PeakGroup empty_precursor;
         int level_workers = (int)std::min(spectrum_workers.size(), spectrum_indices.size());
         // MS2 and later levels retain the requested available team.
-        if (ms_level == 1) { level_workers = std::min(level_workers, 64); }
+        if (ms_level == 1) { level_workers = std::min(level_workers, (int)ms1Cap_()); }
+        // Experiment (FD_OPT=lpt): start the most expensive spectra first (peak count as cost proxy);
+        // results stay in input slots, so output order is unchanged.
+        std::vector<SignedSize> job_order(spectrum_indices.size());
+        std::iota(job_order.begin(), job_order.end(), 0);
+        if (FLASHTrace::opt("lpt"))
+        {
+          std::stable_sort(job_order.begin(), job_order.end(),
+                           [&](SignedSize a, SignedSize b) { return map[spectrum_indices[a]].size() > map[spectrum_indices[b]].size(); });
+        }
 #pragma omp parallel num_threads(level_workers) default(none) \
-  shared(map, spectrum_indices, scan_numbers, fallback_scans, precursors, empty_precursor, spectrum_workers, level_results, errors, ms_level)
+  shared(map, spectrum_indices, scan_numbers, fallback_scans, precursors, empty_precursor, spectrum_workers, level_results, errors, ms_level, job_order)
         {
           int worker_index = 0;
 #ifdef _OPENMP
@@ -489,8 +509,9 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
 #endif
           auto& worker = spectrum_workers[worker_index];
 #pragma omp for schedule(dynamic, 1)
-          for (SignedSize job = 0; job < (SignedSize)spectrum_indices.size(); ++job)
+          for (SignedSize job_position = 0; job_position < (SignedSize)spectrum_indices.size(); ++job_position)
           {
+            const SignedSize job = job_order[job_position];
             try
             {
               const Size index = spectrum_indices[job];
