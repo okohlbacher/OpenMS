@@ -1225,7 +1225,7 @@ void FLASHDeconvAlgorithm::runFeatureFinding_(std::vector<DeconvolvedSpectrum>& 
       std::vector<DeconvolvedSpectrum> tmp_dspec;
       tmp_dspec.reserve(element.second.size());
       for (Size i : element.second)
-        tmp_dspec.push_back(deconvolved_spectra[i]);
+        tmp_dspec.push_back(std::move(deconvolved_spectra[i]));
 
       const auto& df = mass_tracer.findFeaturesAndUpdateQscore2D(sd_.getAveragine(), tmp_dspec, ms_level, false);
       deconvolved_features.insert(deconvolved_features.end(), df.begin(), df.end());
@@ -1238,7 +1238,7 @@ void FLASHDeconvAlgorithm::runFeatureFinding_(std::vector<DeconvolvedSpectrum>& 
 
       Size j = 0;
       for (Size i : element.second)
-        deconvolved_spectra[i] = tmp_dspec[j++];
+        deconvolved_spectra[i] = std::move(tmp_dspec[j++]);
     }
   }
 }
