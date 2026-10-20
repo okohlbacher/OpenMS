@@ -8,6 +8,7 @@
 
 #include <OpenMS/ANALYSIS/TOPDOWN/DeconvolvedSpectrum.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/FLASHDeconvAlgorithm.h>
+#include <OpenMS/ANALYSIS/TOPDOWN/FLASHTrace.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/MassFeatureTrace.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/PeakGroup.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/Qvalue.h>
@@ -437,7 +438,12 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
 
   for (uint ms_level = 1; ms_level <= current_max_ms_level_; ms_level++)
   {
-    if (ms_level > 1) { findPrecursorPeakGroupsForMSnSpectra_(map, deconvolved_spectra, ms_level); }
+    if (ms_level > 1)
+    {
+      FLASHTrace::Scope trace_prec("precursor", ms_level);
+      findPrecursorPeakGroupsForMSnSpectra_(map, deconvolved_spectra, ms_level);
+    }
+    FLASHTrace::Scope trace_level("level", ms_level);
 
     if (merge_spec_ > 0)
     {
@@ -488,6 +494,7 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
             try
             {
               const Size index = spectrum_indices[job];
+              FLASHTrace::Scope trace_job(ms_level == 1 ? "job.ms1" : "job.ms2", (int64_t)index, (int64_t)map[index].size());
               const auto& precursor = precursors[job] == nullptr ? empty_precursor : *precursors[job];
               worker.performSpectrumDeconvolution(map[index], scan_numbers[index], precursor);
               auto& result = worker.getDeconvolvedSpectrum();
@@ -501,6 +508,7 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
             }
           }
         }
+        FLASHTrace::Scope trace_commit("level_commit", ms_level);
         // Commit in input order, including equal scan-number keys, after join.
         for (const auto& error : errors)
         {
@@ -676,15 +684,21 @@ void FLASHDeconvAlgorithm::run(MSExperiment& map,
                                std::vector<DeconvolvedSpectrum>& deconvolved_spectra,
                                std::vector<FLASHHelperClasses::MassFeature>& deconvolved_features)
 {
-  updateMSLevels_(map);
-  filterLowPeaks_(map);
+  {
+    FLASHTrace::Scope trace_filter("filter");
+    updateMSLevels_(map);
+    filterLowPeaks_(map);
+  }
 
   sd_ = SpectralDeconvolution();
   Param sd_param = param_.copy("SD:", true);
   sd_param.setValue("allowed_isotope_error", param_.getValue("allowed_isotope_error"));
   OPENMS_LOG_INFO << "Calculating Averagines ... " << std::flush;
   sd_.setParameters(sd_param);
-  sd_.calculateAveragine(use_RNA_averagine_);
+  {
+    FLASHTrace::Scope trace_avg("averagine");
+    sd_.calculateAveragine(use_RNA_averagine_);
+  }
   OPENMS_LOG_INFO << "Done" << std::endl;
   const auto& avg = sd_.getAveragine();
 
@@ -716,9 +730,16 @@ void FLASHDeconvAlgorithm::run(MSExperiment& map,
   runSpectralDeconvolution_(map, deconvolved_spectra);
 
   // feature tracing here and update FeatureQScores
-  runFeatureFinding_(deconvolved_spectra, deconvolved_features);
+  {
+    FLASHTrace::Scope trace_ft("feature_tracing");
+    runFeatureFinding_(deconvolved_spectra, deconvolved_features);
+  }
 
-  noise_decoy_weight_ = Qvalue::updatePeakGroupQvalues(deconvolved_spectra);
+  {
+    FLASHTrace::Scope trace_q("qvalues");
+    noise_decoy_weight_ = Qvalue::updatePeakGroupQvalues(deconvolved_spectra);
+  }
+  FLASHTrace::Scope trace_iq("isobaric_quant");
 
   TopDownIsobaricQuantification quantifier;
   Param quant_param = param_.copy("iq:", true);

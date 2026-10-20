@@ -9,6 +9,7 @@
 #include <OpenMS/CONCEPT/LogStream.h>
 #include <fstream>
 #include <OpenMS/ANALYSIS/TOPDOWN/FLASHDeconvAlgorithm.h>
+#include <OpenMS/ANALYSIS/TOPDOWN/FLASHTrace.h>
 #include <OpenMS/APPLICATIONS/TOPPBase.h>
 #include <OpenMS/DATASTRUCTURES/ListUtils.h>
 #include <OpenMS/FORMAT/FLASHDeconvFeatureFile.h>
@@ -213,6 +214,7 @@ protected:
   // the main_ function is called after all parameters are read
   ExitCodes main_(int, const char**) override
   {
+    FLASHTrace::Scope trace_main("main_with_teardown");
     OPENMS_LOG_INFO << "Initializing ... " << endl;
     //-------------------------------------------------------------
     // parsing parameters
@@ -296,6 +298,7 @@ protected:
     opt.setMaxDataPoolSize(512);
     fh.setOptions(opt);
     {
+      FLASHTrace::Scope trace_load("load");
       ScopedReaderThreads reader_threads;
       fh.loadExperiment(in_file, map, {FileTypes::MZML, FileTypes::RAW}, log_type_);
     }
@@ -307,7 +310,11 @@ protected:
     // Run FLASHDeconvAlgorithm here!
     OPENMS_LOG_INFO << "Processing : " << in_file << endl;
 
-    fd.run(map, deconvolved_spectra, deconvolved_features);
+    {
+      FLASHTrace::Scope trace_run("algorithm");
+      fd.run(map, deconvolved_spectra, deconvolved_features);
+    }
+    FLASHTrace::Scope trace_post("post_and_output");
     tols = fd.getTolerances();
     // collect statistics for information
     for (const auto& it : map)
@@ -351,6 +358,7 @@ protected:
         return CANNOT_WRITE_OUTPUT_FILE;
       }
 
+      FLASHTrace::Scope trace_wf("write_features");
       FLASHDeconvFeatureFile::writeHeader(out_stream, report_decoy);
       FLASHDeconvFeatureFile::writeFeatures(deconvolved_features, in_file, out_stream, report_decoy);
       out_stream.close();
@@ -381,6 +389,7 @@ protected:
         FLASHDeconvSpectrumFile::writeDeconvolvedMassesHeader(out_spec_streams[i], i + 1, write_detail, report_decoy);
       }
 
+      FLASHTrace::Scope trace_ws("write_spectra");
       FLASHDeconvSpectrumFile::writeDeconvolvedMassesParallel(deconvolved_spectra, out_spec_streams, out_spec_file,
                                                              in_file, fd.getAveragine(), fd.getDecoyAveragine(), tols,
                                                              write_detail, report_decoy, fd.getNoiseDecoyWeight());
@@ -482,6 +491,11 @@ protected:
 // the actual main function needed to create an executable
 int main(int argc, const char** argv)
 {
-  TOPPFLASHDeconv tool;
-  return tool.main(argc, argv);
+  int rc;
+  {
+    TOPPFLASHDeconv tool;
+    rc = tool.main(argc, argv);
+  }
+  FLASHTrace::registry().dump();
+  return rc;
 }

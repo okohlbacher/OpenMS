@@ -9,6 +9,8 @@
 #include <OpenMS/ANALYSIS/TOPDOWN/DeconvolvedSpectrum.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/PeakGroup.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/SpectralDeconvolution.h>
+#include <OpenMS/ANALYSIS/TOPDOWN/FLASHTrace.h>
+#include <optional>
 #include <OpenMS/CONCEPT/Exception.h>
 #include <OpenMS/CONCEPT/LogStream.h>
 #include <OpenMS/SYSTEM/BuildInfo.h>
@@ -1020,9 +1022,15 @@ inline const double tol_div_factor
       }
 
       // main algorithm to generate mass bins
-      const auto per_mass_abs_charge_ranges = updateMassBins_(binned_log_mz_peak_intensities);
+      Matrix<int> per_mass_abs_charge_ranges;
+      {
+        FLASHTrace::Scope trace_bins("sd.bins", ms_level_, (int64_t)log_mz_peaks_.size());
+        per_mass_abs_charge_ranges = updateMassBins_(binned_log_mz_peak_intensities);
+      }
       // main algorithm to generate peak groups
+      FLASHTrace::Scope trace_cand("sd.cand", ms_level_);
       getCandidatePeakGroups_(per_mass_abs_charge_ranges);
+      trace_cand.b = (int64_t)deconvolved_spectrum_.size();
     }
     scoreAndFilterPeakGroups_();
   }
@@ -1129,6 +1137,8 @@ inline const double tol_div_factor
 
       return true;
     };
+    std::optional<FLASHTrace::Scope> trace_score;
+    trace_score.emplace("sd.score", ms_level_, (int64_t)deconvolved_spectrum_.size());
     if (parallel_candidates)
     {
       // Checked compact setters may reject an isotope outside their domain.
@@ -1194,6 +1204,8 @@ inline const double tol_div_factor
 
     removeChargeErrorPeakGroups_(deconvolved_spectrum_, target_decoy_type_);
 
+    trace_score.reset();
+    trace_score.emplace("sd.harm", ms_level_, (int64_t)deconvolved_spectrum_.size());
     // final harmonics removal
     selected = boost::dynamic_bitset<>(deconvolved_spectrum_.size());
     filtered_peak_groups = std::vector<PeakGroup>();

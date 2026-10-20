@@ -7,6 +7,7 @@
 // --------------------------------------------------------------------------
 
 #include <OpenMS/FORMAT/FLASHDeconvSpectrumFile.h>
+#include <OpenMS/ANALYSIS/TOPDOWN/FLASHTrace.h>
 #include <OpenMS/FORMAT/MzMLFile.h>
 #include <random>
 
@@ -333,6 +334,7 @@ namespace OpenMS
         {
           auto& spectrum = spectra[jobs[begin + row]];
           const auto level = spectrum.getOriginalSpectrum().getMSLevel();
+          FLASHTrace::Scope trace_job("write.job", (int64_t)level, (int64_t)spectrum.size());
           std::ostringstream buffer;
           writeDeconvolvedMasses_(spectrum, buffer, file_name, avg, decoy_avg, tols[level - 1],
                                  write_detail, false, noise_decoy_weight, index);
@@ -346,6 +348,7 @@ namespace OpenMS
         }
       }
       // Commit in original order, with legacy per-MS indices and stream behavior.
+      FLASHTrace::Scope trace_commit("write.commit", (int64_t)count);
       for (SignedSize row = 0; row < count; ++row)
       {
         const auto level = spectra[jobs[begin + row]].getOriginalSpectrum().getMSLevel();
