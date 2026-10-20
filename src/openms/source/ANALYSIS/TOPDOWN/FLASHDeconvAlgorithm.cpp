@@ -30,6 +30,11 @@
 #include <optional>
 #include <set>
 #include <thread>
+#if defined(__linux__)
+  #include <sys/resource.h>
+  #include <sys/syscall.h>
+  #include <unistd.h>
+#endif
 #include <utility>
 
 #ifdef _OPENMP
@@ -412,6 +417,13 @@ void FLASHDeconvAlgorithm::deconvolveMS1Streaming(const std::function<const MSSp
     int w = 0;
 #ifdef _OPENMP
     w = omp_get_thread_num();
+#endif
+#if defined(__linux__)
+    // Experiment (FD_OPT=nice): the loader (XML parse + its decode team) is the critical path at high
+    // thread counts; lower the workers' priority so it always gets a core. Not reverted (unprivileged
+    // threads cannot raise priority again); later phases run without competing work.
+    static const bool lower_priority = FLASHTrace::opt("nice");
+    if (lower_priority) { setpriority(PRIO_PROCESS, (id_t)syscall(SYS_gettid), 5); }
 #endif
     std::optional<ThresholdMower> filter;
     while (true)
