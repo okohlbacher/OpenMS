@@ -30,6 +30,9 @@
 #if defined(__GLIBC__)
   #include <malloc.h>
 #endif
+#if defined(__linux__)
+  #include <sys/prctl.h>
+#endif
 #ifdef _OPENMP
   #include <omp.h>
 #endif
@@ -640,6 +643,10 @@ protected:
 // the actual main function needed to create an executable
 int main(int argc, const char** argv)
 {
+#if defined(__linux__)
+  // Profiling aid (FD_OPT=ptrace): allow a sampling debugger to attach under yama ptrace_scope=1.
+  if (FLASHTrace::opt("ptrace")) { prctl(PR_SET_PTRACER, PR_SET_PTRACER_ANY, 0, 0, 0); }
+#endif
 #if defined(__GLIBC__)
   // Experiment (FD_OPT=mallopt): keep freed heap memory in the per-thread arenas instead of trimming it back
   // to the kernel after every spectrum (trim + refault + mprotect churn serialises on the process mm lock).
