@@ -1,0 +1,690 @@
+Adversarial review requested by the user before publishing XML benchmark evidence. Review ONLY correctness of measurement, false performance claims, data integrity, memory/thread accounting, validation gaps, and runner reliability. Do not request product-parser changes. Proposed Linux phase: pinned OpenMS Xerces58aa and full-libxml2 runtime1858656/8f66 sources unchanged; compare identical release snapshots, same harness API. 7 inputs: synthetic matched 131072x2048 plain/internal-zlib and outer gzip of each (all actual files>=1GB), real published DDA617MB, real published PASEF1.453GB without mobility, separate real 600-1200sec TIMS subset retaining mobility (table-calibration RATIONAL, not claimed proprietary SDK equivalent). 5 fresh reps serial randomized, no simultaneous builds/prep, affinity0-95 on EPYC7763=64physical+32SMT. Cached-file throughput not coldstorage. Independent readers process N copies samefile, aggregate work N*bytes; fixed-file OMP work singlecopy separately. Native VmHWM in C++ avoids Python inherited wait4floor; CLI procfsHWM sample lowerbound at50ms, wait4raw retained. Native census must recordrequestedvsactual. pigz ordinary DEFLATE hasoneinflate+helper threads and-p96 doesnotmean96inflaters. rapidgzip--verify explicit, no saved/importindex. Full decoded outputSHAverification outside pure-decomp timing at1/96; CRC/exit checks everyrun; parserdigest everyrun. Sequential two-stage RAMfile decomp→OpenMS: noFIFOclaim, OpenMSmagicseekprecludesFIFO. File RAMfootprint reported besides max sequentialstageRSS; endtoendprocess clock comparedsamebasis tointernalgzip; no streaming-pipelineclaim. New auxiliarymobilityaudit excludedcanonical timing and testedIM-onlymutant. Historical Mac/olderLinux phase retainedseparately, no misattributedsourcecausalchange. Remainingcoldstorage/timedXSD/otherrealmodalities explicit. Identify actionable issues with severity and evidence; accept deliberate stated scope. No tools, files or network needed. Sources follow.
+
+FILE results/gap-bench/reproduce/run-gap.py
+#!/usr/bin/env python3
+"""Serial fresh-process gap matrix. Never run alongside build/conversion/preparation.
+Native benchmark VmHWM is authoritative; wait4 retains its inherited parent floor.
+CLI VmHWM is sampled (lower bound). Sequential staging uses max RSS plus tmpfs bytes.
+"""
+import argparse,hashlib,json,os,random,subprocess,tempfile,time,threading
+from pathlib import Path
+ROOT=Path('/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb')
+OUT=ROOT/'results/gap';OUT.mkdir(exist_ok=True)
+SHM=Path('/dev/shm/openms-xml-gap-bench-kohlbach-20261020-01a153cb')
+BINARY=ROOT/'extended-benchmark-build/xml_parser_benchmark'
+LAUNCHER=BINARY.with_name('xml_benchmark_launcher')
+THREADS=[1,2,4,8,16,32,64,96]
+BACKENDS=['xerces','libxml2-full']
+FILES=['large-matched-plain.mzML','large-matched-zlib.mzML','large-matched-plain.mzML.gz','large-matched-zlib.mzML.gz','dda-lumos.mzML','pasef-published.mzML','pasef-im-600-1200s.mzML']
+BASE=os.environ.copy();BASE.update(OMP_DYNAMIC='FALSE',OPENBLAS_NUM_THREADS='1',MKL_NUM_THREADS='1',BLIS_NUM_THREADS='1',VECLIB_MAXIMUM_THREADS='1',OPENMS_TMPDIR=str(ROOT/'tmp'),LC_ALL='C.UTF-8')
+
+def sha(p):
+ with open(p,'rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
+
+def env(backend='libxml2-full',omp=1):
+ e=BASE.copy();e.update(OMP_NUM_THREADS=str(omp),LD_LIBRARY_PATH=f'{ROOT}/snapshots/{backend}/lib:{ROOT}/dependencies/install/lib:/scratch/kohlbach/contrib/build/lib');return e
+
+def measure(cmd,environment,output=None,timeout=7200):
+ """Sample status of the actual PID, excluding Python-parent inherited wait4 RSS."""
+ with tempfile.TemporaryFile() as stdout,tempfile.TemporaryFile() as stderr:
+  destination=open(output,'wb') if output else stdout
+  start=time.perf_counter();p=subprocess.Popen(['taskset','-c','0-95',*map(str,cmd)],stdout=destination,stderr=stderr,env=environment)
+  peak=threads=0;maps=None;affinity=None; samples=0; timedout=False
+  while True:
+   try:
+    status=Path(f'/proc/{p.pid}/status').read_text()
+    values=dict(line.split(':',1) for line in status.splitlines() if ':' in line)
+    # taskset/launcher mm can briefly precede exec; these are native tiny programs.
+    peak=max(peak,int(values.get('VmHWM','0 kB').split()[0])*1024)
+    threads=max(threads,int(values.get('Threads','0')));samples+=1
+    if maps is None and threads>1:
+     maps=[line.split()[-1] for line in Path(f'/proc/{p.pid}/maps').read_text().splitlines() if 'libOpenMS' in line or 'libxerces' in line or 'libxml2' in line]
+     maps=sorted(set(maps));affinity=values.get('Cpus_allowed_list','').strip()
+   except (OSError,ValueError):pass
+   child,status,usage=os.wait4(p.pid,os.WNOHANG)
+   if child:break
+   if time.perf_counter()-start>timeout:
+    p.kill();child,status,usage=os.wait4(p.pid,0);timedout=True;break
+   time.sleep(.05)
+  elapsed=time.perf_counter()-start;p.returncode=os.waitstatus_to_exitcode(status)
+  if output:destination.close()
+  stdout.seek(0);stderr.seek(0);s=stdout.read().decode(errors='replace');err=stderr.read().decode(errors='replace')
+  row=dict(ok=p.returncode==0 and not timedout,exit_code=p.returncode,process_seconds=elapsed,user_seconds=usage.ru_utime,system_seconds=usage.ru_stime,wait4_max_rss_bytes=usage.ru_maxrss*1024,sampled_native_hwm_bytes=peak,sampled_native_threads=threads,procfs_samples=samples,cpu_affinity=affinity,loaded_library_maps=maps,command=list(map(str,cmd)),stderr=err[-16384:],timed_out=timedout)
+  lines=[l for l in s.splitlines() if l.startswith('{')]
+  if lines:row.update(json.loads(lines[-1]))
+  elif s:row['stdout']=s[-16384:]
+  if output:row['output_bytes']=Path(output).stat().st_size
+  return row
+
+def bench(file,backend,workers=1,omp=1,mode='stream'):
+ return measure([LAUNCHER,BINARY,mode,file,workers,2048],env(backend,omp))
+
+def inflate(file,tool,n,output=None):
+ if tool=='gzip':cmd=['/usr/bin/gzip','-dc',file]
+ elif tool=='pigz':cmd=['/usr/bin/pigz','-p',n,'-dc',file]
+ else:cmd=[ROOT/'decompress-env/bin/rapidgzip','--verify','-P',n,'-dc',file]
+ return measure(cmd,env(),output=output or '/dev/null')
+
+def require(row):
+ if not row['ok']:raise RuntimeError(json.dumps(row))
+ return row
+
+def fingerprint(row):return tuple(row[k] for k in ['spectra_per_worker','chromatograms_per_worker','points_per_worker','hash_per_worker'])
+
+def audit():
+ assert (ROOT/'results/EXTENDED_DATA_COMPLETE').exists()
+ assert (ROOT/'results/CONVERSION_COMPLETE').exists()
+ records=[];reference={};aux={}
+ for name in FILES:
+  for backend in BACKENDS:
+   row=require(bench(ROOT/'data'/name,backend,mode='stream-audit'))
+   row.update(input=name,backend=backend,phase='correctness-auxiliary');records.append(row)
+   fp=fingerprint(row)
+   if name in reference:assert reference[name]==fp,(name,backend,'base digest')
+   reference[name]=fp
+   extra=tuple(row[k] for k in ['aux_hash_per_worker','im_array_values_per_worker','im_scalar_spectra_per_worker','ms1_per_worker','ms2_per_worker','ms3plus_per_worker'])
+   if name in aux:assert aux[name]==extra,(name,backend,'auxiliary digest')
+   aux[name]=extra
+   if name=='pasef-im-600-1200s.mzML':assert row['im_array_values_per_worker']>0 or row['im_scalar_spectra_per_worker']>0
+  print('AUDIT',name,reference[name],aux[name],flush=True)
+ assert len({reference[n] for n in FILES[:4]})==1
+ (OUT/'correctness-audits.json').write_text(json.dumps(records,indent=2)+'\n')
+ (OUT/'references.json').write_text(json.dumps(reference,indent=2)+'\n')
+ # Native concurrency evidence: no N-thread warmup team retained in main.
+ controls=[]
+ for backend in BACKENDS:
+  for workers,omp in [(1,96),(96,1)]:
+   row=require(bench(ROOT/'data/large-matched-zlib.mzML',backend,workers,omp))
+   assert fingerprint(row)==reference['large-matched-zlib.mzML']
+   assert row['sampled_native_threads']>=96 and row['sampled_native_threads']<=100,row
+   assert row['native_peak_rss_bytes']>0
+   if backend=='libxml2-full':assert not any('xerces' in x.lower() for x in row['loaded_library_maps'])
+   row.update(backend=backend,phase='thread-census');controls.append(row)
+ (OUT/'thread-census.json').write_text(json.dumps(controls,indent=2)+'\n')
+ # Full byte verification is outside canonical timing, both endpoints per inflater.
+ SHM.mkdir(exist_ok=True);target=SHM/'correctness.xml';decomp=[]
+ for name in FILES[2:4]:
+  expected=sha(ROOT/'data'/name[:-3])
+  for tool in ['gzip','pigz','rapidgzip']:
+   for n in ([1] if tool=='gzip' else [1,96]):
+    row=require(inflate(ROOT/'data'/name,tool,n,target));actual=sha(target)
+    assert actual==expected,(name,tool,n)
+    assert row['output_bytes']==(ROOT/'data'/name[:-3]).stat().st_size
+    row.update(input=name,tool=tool,requested_threads=n,output_sha256=actual);decomp.append(row)
+    target.unlink();print('INFLATE VERIFIED',name,tool,n,flush=True)
+ (OUT/'decompressor-correctness.json').write_text(json.dumps(decomp,indent=2)+'\n')
+ inputs={name:dict(bytes=(ROOT/'data'/name).stat().st_size,sha256=sha(ROOT/'data'/name)) for name in FILES}
+ (OUT/'inputs.json').write_text(json.dumps(inputs,indent=2)+'\n')
+ (OUT/'CORRECTNESS_COMPLETE').touch()
+
+def monitor(stop):
+ with (OUT/'resources.jsonl').open('a') as f:
+  while not stop.is_set():
+   m=Path('/proc/meminfo').read_text();line=dict(timestamp=time.time(),loadavg=Path('/proc/loadavg').read_text().strip(),memory=[x for x in m.splitlines() if x.startswith(('MemAvailable:','SwapFree:','Dirty:'))]);f.write(json.dumps(line)+'\n');f.flush();stop.wait(15)
+
+def run():
+ assert (OUT/'CORRECTNESS_COMPLETE').exists()
+ reference=json.loads((OUT/'references.json').read_text())
+ cells=[]
+ for rep in range(5):
+  for name in FILES:
+   for backend in BACKENDS:
+    for n in THREADS:cells.append(dict(kind='readers',input=name,backend=backend,workers=n,omp=1,rep=rep))
+  for name in FILES[:2]:
+   for backend in BACKENDS:
+    for n in THREADS:cells.append(dict(kind='single-file-openmp',input=name,backend=backend,workers=1,omp=n,rep=rep))
+  for name in FILES[2:4]:
+   for tool in ['gzip','pigz','rapidgzip']:
+    for n in ([1] if tool=='gzip' else THREADS):
+     cells.append(dict(kind='decompress',input=name,tool=tool,requested_threads=n,rep=rep))
+     for backend in BACKENDS:cells.append(dict(kind='staged-pipeline',input=name,tool=tool,requested_threads=n,backend=backend,rep=rep))
+ random.Random(20261020).shuffle(cells)
+ def key(c):return json.dumps(c,sort_keys=True)
+ path=OUT/'records.jsonl';done=set()
+ if path.exists():
+  for l in path.read_text().splitlines():
+   r=json.loads(l)
+   if r['ok']:done.add(key(r['cell']))
+ (OUT/'schedule.json').write_text(json.dumps(cells,indent=2)+'\n')
+ SHM.mkdir(exist_ok=True);target=SHM/'staged.xml';stop=threading.Event();mon=threading.Thread(target=monitor,args=(stop,),daemon=True);mon.start()
+ try:
+  with path.open('a',buffering=1) as f:
+   for i,c in enumerate(cells):
+    if key(c) in done:continue
+    start=time.time();file=ROOT/'data'/c['input'];kind=c['kind']
+    if kind in ['readers','single-file-openmp']:
+     r=bench(file,c['backend'],c['workers'],c['omp']);require(r);assert fingerprint(r)==tuple(reference[c['input']]),c
+     assert str(ROOT/'snapshots'/c['backend']/'lib') in r['openms_library'],r['openms_library']
+    elif kind=='decompress':r=require(inflate(file,c['tool'],c['requested_threads']))
+    else:
+     if target.exists():target.unlink()
+     begin=time.perf_counter();d=require(inflate(file,c['tool'],c['requested_threads'],target));p=require(bench(target,c['backend']))
+     elapsed=time.perf_counter()-begin
+     assert d['output_bytes']==(ROOT/'data'/c['input'][:-3]).stat().st_size
+     assert fingerprint(p)==tuple(reference[c['input']]),c
+     r=dict(ok=True,process_seconds=elapsed,decompress=d,parse=p,staged_file_bytes=d['output_bytes'],sequential_component_native_peak_rss_bytes=max(d['sampled_native_hwm_bytes'],p['native_peak_rss_bytes']),rss_definition='max of sequential components; CLI sampled lower bound; tmpfs file additional',sampled_native_threads=max(d['sampled_native_threads'],p['sampled_native_threads']))
+     target.unlink()
+    r.update(cell=c,started_unix=start,completed_unix=time.time());f.write(json.dumps(r,sort_keys=True)+'\n');os.fsync(f.fileno())
+    print(f'{i+1}/{len(cells)} {c} {r["process_seconds"]:.3f}s',flush=True)
+ finally:stop.set();mon.join()
+ (OUT/'MATRIX_COMPLETE').touch()
+
+if __name__=='__main__':
+ p=argparse.ArgumentParser();p.add_argument('mode',choices=['audit','run']);a=p.parse_args();audit() if a.mode=='audit' else run()
+
+FILE results/gap-bench/reproduce/test-audit.py
+#!/usr/bin/env python3
+"""Prove metadata/mobility audit detects changes the peak-only digest cannot."""
+import base64,copy,json,struct,tempfile,xml.etree.ElementTree as ET
+from pathlib import Path
+import importlib.util
+spec=importlib.util.spec_from_file_location('gap',Path(__file__).with_name('run-gap.py'));g=importlib.util.module_from_spec(spec);spec.loader.exec_module(g)
+N='http://psi.hupo.org/ms/mzml';ET.register_namespace('',N)
+def tag(x):return '{'+N+'}'+x
+def cv(parent,accession,name,value='',**extra):
+ return ET.SubElement(parent,tag('cvParam'),dict(cvRef='MS',accession=accession,name=name,value=str(value),**extra))
+def execute():
+ with tempfile.TemporaryDirectory(dir=g.ROOT/'tmp') as d:
+  d=Path(d);plain=d/'base.mzML'
+  g.require(g.measure([g.LAUNCHER,g.BINARY,'generate',plain,2,4],g.env()))
+  tree=ET.parse(plain)
+  for i,spectrum in enumerate(tree.findall('.//'+tag('spectrum'))):
+   for v in spectrum.findall(tag('cvParam')):
+    if v.get('accession')=='MS:1000511':v.set('value',str(i+1))
+   scan=spectrum.find('.//'+tag('scan'))
+   cv(scan,'MS:1002815','inverse reduced ion mobility',1.2+i,unitCvRef='MS',unitAccession='MS:1002814',unitName='volt-second per square centimeter')
+   arrays=spectrum.find(tag('binaryDataArrayList'));arrays.set('count',str(len(arrays)+1))
+   data=base64.b64encode(struct.pack('<4f',1.0,1.1,1.2,1.3)).decode()
+   a=ET.SubElement(arrays,tag('binaryDataArray'),dict(encodedLength=str(len(data))))
+   cv(a,'MS:1000521','32-bit float');cv(a,'MS:1000576','no compression')
+   cv(a,'MS:1003008','raw inverse reduced ion mobility array',unitCvRef='MS',unitAccession='MS:1002814',unitName='volt-second per square centimeter')
+   ET.SubElement(a,tag('binary')).text=data
+  good=d/'im.mzML';tree.write(good,encoding='UTF-8',xml_declaration=True)
+  mutant=copy.deepcopy(tree)
+  mutant.findall('.//'+tag('spectrum'))[0].findall('.//'+tag('binary'))[-1].text=base64.b64encode(struct.pack('<4f',9.0,1.1,1.2,1.3)).decode()
+  changed=d/'changed-im.mzML';mutant.write(changed,encoding='UTF-8',xml_declaration=True)
+  results=[]
+  for backend in g.BACKENDS:
+   a=g.require(g.bench(good,backend,mode='stream-audit'));b=g.require(g.bench(changed,backend,mode='stream-audit'))
+   assert g.fingerprint(a)==g.fingerprint(b)
+   assert a['aux_hash_per_worker']!=b['aux_hash_per_worker']
+   assert a['im_array_values_per_worker']==8 and a['im_scalar_spectra_per_worker']==2,a
+   assert a['ms1_per_worker']==1 and a['ms2_per_worker']==1,a
+   results.append(dict(backend=backend,original=a,mutated=b))
+  assert results[0]['original']['aux_hash_per_worker']==results[1]['original']['aux_hash_per_worker']
+  # Raised Python RSS floor must not contaminate native post-exec VmHWM.
+  parent=bytearray(128*1024*1024)
+  for i in range(0,len(parent),4096):parent[i]=1
+  small=g.require(g.bench(good,'libxml2-full',mode='stream-audit'))
+  assert small['native_peak_rss_bytes']<small['wait4_max_rss_bytes'],small
+  assert small['native_peak_rss_bytes']>0
+  result=dict(tests=['finite scalar and per-peak mobility recognized','IM-only mutation changes auxiliary digest while peak digest stays fixed','MS-level counts recognized','both XML backends agree','native HWM excludes raised Python-parent wait4 floor'],results=results,parent_rss_floor_control=small)
+  (g.OUT/'audit-tests.json').write_text(json.dumps(result,indent=2)+'\n')
+  print('All audit and RSS-floor tests passed',flush=True)
+if __name__=='__main__':execute()
+
+FILE results/gap-bench/staging/extended-benchmark-source/benchmark.cpp
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// SPDX-License-Identifier: BSD-3-Clause
+// $Maintainer: Timo Sachsenberg $
+// $Authors: OpenMS contributors $
+
+#include <OpenMS/FORMAT/DATAACCESS/MSDataWritingConsumer.h>
+#include <OpenMS/FORMAT/MzMLFile.h>
+#include <OpenMS/INTERFACES/IMSDataConsumer.h>
+#include <OpenMS/KERNEL/MSExperiment.h>
+#include <OpenMS/KERNEL/OnDiscMSExperiment.h>
+
+#include <barrier>
+#include <omp.h>
+#include <array>
+#include <bit>
+#include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <exception>
+#include <filesystem>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <memory>
+#include <random>
+#include <stdexcept>
+#include <string>
+#include <thread>
+#include <vector>
+#if defined(__APPLE__)
+#include <mach-o/dyld.h>
+#include <mach/mach.h>
+#elif defined(__linux__)
+#include <link.h>
+#include <unistd.h>
+#endif
+
+namespace
+{
+  using Clock = std::chrono::steady_clock;
+  bool audit_auxiliary = false;
+  std::uint64_t nativePeakRssBytes()
+  {
+    std::ifstream status("/proc/self/status");
+    std::string line;
+    while (std::getline(status, line))
+    {
+      if (line.starts_with("VmHWM:")) { return std::stoull(line.substr(6)) * 1024; }
+    }
+    return 0;
+  }
+
+  std::uint64_t currentRssBytes()
+  {
+#if defined(__APPLE__)
+    mach_task_basic_info_data_t info{};
+    mach_msg_type_number_t count = MACH_TASK_BASIC_INFO_COUNT;
+    if (task_info(mach_task_self(), MACH_TASK_BASIC_INFO,
+                  reinterpret_cast<task_info_t>(&info), &count) == KERN_SUCCESS)
+    {
+      return info.resident_size;
+    }
+#elif defined(__linux__)
+    std::ifstream statm("/proc/self/statm");
+    std::uint64_t virtual_pages = 0, resident_pages = 0;
+    if (statm >> virtual_pages >> resident_pages)
+    {
+      return resident_pages * static_cast<std::uint64_t>(sysconf(_SC_PAGESIZE));
+    }
+#endif
+    return 0;
+  }
+
+  std::string loadedLibrary()
+  {
+    std::string result;
+#if defined(__APPLE__)
+    for (std::uint32_t i = 0; i < _dyld_image_count(); ++i)
+    {
+      const std::string path(_dyld_get_image_name(i));
+      if (std::filesystem::path(path).filename() == "libOpenMS.dylib") { result = path; }
+    }
+#elif defined(__linux__)
+    dl_iterate_phdr([](dl_phdr_info* info, std::size_t, void* data)
+    {
+      const std::string path(info->dlpi_name);
+      if (std::filesystem::path(path).filename().string().starts_with("libOpenMS.so"))
+      {
+        *static_cast<std::string*>(data) = path;
+      }
+      return 0;
+    }, &result);
+#endif
+    return result;
+  }
+
+  // Hash every decoded coordinate/intensity, independently of XML text formatting.
+  struct Digest final : OpenMS::Interfaces::IMSDataConsumer
+  {
+    std::uint64_t hash = 14695981039346656037ULL;
+    std::uint64_t spectra = 0, chromatograms = 0, points = 0;
+    std::uint64_t aux_hash = 14695981039346656037ULL, im_values = 0, im_scalars = 0;
+    std::array<std::uint64_t, 4> ms_levels{};
+    void auxWord(std::uint64_t value)
+    {
+      for (unsigned i = 0; i < 8; ++i) { aux_hash = (aux_hash ^ ((value >> (8 * i)) & 255)) * 1099511628211ULL; }
+    }
+    void auxText(const std::string& text)
+    {
+      auxWord(text.size());
+      for (unsigned char c : text) { aux_hash = (aux_hash ^ c) * 1099511628211ULL; }
+    }
+
+
+    void word(std::uint64_t value)
+    {
+      for (unsigned i = 0; i < 8; ++i)
+      {
+        hash = (hash ^ ((value >> (8 * i)) & 255)) * 1099511628211ULL;
+      }
+    }
+
+    void text(const std::string& value)
+    {
+      word(value.size());
+      for (const unsigned char character : value) { hash = (hash ^ character) * 1099511628211ULL; }
+    }
+
+    void consumeSpectrum(OpenMS::MSSpectrum& spectrum) override
+    {
+      ++spectra;
+      if (audit_auxiliary)
+      {
+        const auto level = spectrum.getMSLevel();
+        ++ms_levels[std::min<unsigned>(level, 3)];
+        auxWord(level);
+        auxWord(std::bit_cast<std::uint64_t>(spectrum.getRT()));
+        auxWord(static_cast<std::uint64_t>(spectrum.getDriftTimeUnit()));
+        auxWord(std::bit_cast<std::uint64_t>(spectrum.getDriftTime()));
+        if (std::isfinite(spectrum.getDriftTime()) && spectrum.getDriftTime() >= 0) { ++im_scalars; }
+        for (const auto& array : spectrum.getFloatDataArrays())
+        {
+          auxText(array.getName()); auxWord(array.size());
+          for (float value : array) { auxWord(std::bit_cast<std::uint32_t>(value)); }
+        }
+        if (spectrum.containsIMData())
+        {
+          const auto index = spectrum.getIMData().first;
+          const auto& array = spectrum.getFloatDataArrays().at(index);
+          if (array.size() != spectrum.size()) { throw std::runtime_error("IM array length differs from peak count"); }
+          for (float value : array) { if (std::isfinite(value)) { ++im_values; } }
+        }
+      }
+      points += spectrum.size();
+      word(1);
+      word(spectrum.size());
+      text(spectrum.getNativeID());
+      for (const auto& peak : spectrum)
+      {
+        word(std::bit_cast<std::uint64_t>(peak.getMZ()));
+        word(std::bit_cast<std::uint64_t>(static_cast<double>(peak.getIntensity())));
+      }
+    }
+
+    void consumeChromatogram(OpenMS::MSChromatogram& chromatogram) override
+    {
+      ++chromatograms;
+      points += chromatogram.size();
+      word(2);
+      word(chromatogram.size());
+      text(chromatogram.getNativeID());
+      for (const auto& peak : chromatogram)
+      {
+        word(std::bit_cast<std::uint64_t>(peak.getRT()));
+        word(std::bit_cast<std::uint64_t>(static_cast<double>(peak.getIntensity())));
+      }
+    }
+
+    void setExpectedSize(std::size_t, std::size_t) override {}
+    void setExperimentalSettings(const OpenMS::ExperimentalSettings&) override {}
+    bool operator==(const Digest& other) const
+    {
+      return hash == other.hash && spectra == other.spectra &&
+        chromatograms == other.chromatograms && points == other.points && aux_hash == other.aux_hash && im_values == other.im_values && im_scalars == other.im_scalars && ms_levels == other.ms_levels;
+    }
+  };
+
+  struct Result
+  {
+    Digest digest;
+    // Keep opened contexts alive until every worker has completed.
+    std::shared_ptr<OpenMS::OnDiscMSExperiment> retained_context;
+    std::shared_ptr<OpenMS::MSExperiment> retained_experiment;
+    double open_seconds = 0;
+    double read_seconds = 0;
+    std::size_t index_spectra = 0, index_chromatograms = 0;
+  };
+
+  Result run(const std::string& mode, const std::string& path, std::size_t queries)
+  {
+    Result result;
+    const auto begin = Clock::now();
+    if (mode == "stream")
+    {
+      OpenMS::MzMLFile().transform(path, &result.digest, true, true);
+    }
+    else if (mode == "load")
+    {
+      result.retained_experiment = std::make_shared<OpenMS::MSExperiment>();
+      auto& experiment = *result.retained_experiment;
+      OpenMS::MzMLFile().load(path, experiment);
+      for (auto& spectrum : experiment) { result.digest.consumeSpectrum(spectrum); }
+      for (auto& chromatogram : experiment.getChromatograms()) { result.digest.consumeChromatogram(chromatogram); }
+    }
+    else if (mode == "idle")
+    {
+      // Warmup and worker creation are common; no input/context allocations.
+    }
+    else if (mode == "contexts" || mode == "contexts-metadata")
+    {
+      result.retained_context = std::make_shared<OpenMS::OnDiscMSExperiment>();
+      if (!result.retained_context->openFile(path, mode != "contexts-metadata"))
+      {
+        throw std::runtime_error("Input has no usable mzML index");
+      }
+      result.open_seconds = std::chrono::duration<double>(Clock::now() - begin).count();
+      result.index_spectra = result.retained_context->getNrSpectra();
+      result.index_chromatograms = result.retained_context->getNrChromatograms();
+    }
+    else if (mode == "indexed" || mode == "index-open" || mode == "indexed-metadata")
+    {
+      OpenMS::OnDiscMSExperiment experiment;
+      if (!experiment.openFile(path, mode != "indexed-metadata"))
+      {
+        throw std::runtime_error("Input has no usable mzML index");
+      }
+      const auto opened = Clock::now();
+      result.open_seconds = std::chrono::duration<double>(opened - begin).count();
+      result.index_spectra = experiment.getNrSpectra();
+      result.index_chromatograms = experiment.getNrChromatograms();
+      if (mode == "indexed" || mode == "indexed-metadata")
+      {
+        if (experiment.getNrSpectra() == 0)
+        {
+          throw std::runtime_error("Indexed input has no spectra");
+        }
+        std::mt19937_64 random(20261019);
+        for (std::size_t i = 0; i < queries; ++i)
+        {
+          auto spectrum = experiment.getSpectrum(random() % experiment.getNrSpectra());
+          result.digest.consumeSpectrum(spectrum);
+        }
+      }
+      result.read_seconds = std::chrono::duration<double>(Clock::now() - opened).count();
+    }
+    else
+    {
+      throw std::runtime_error("Expected stream, load, indexed[-metadata], index-open, contexts[-metadata], or idle");
+    }
+    if (mode == "stream" || mode == "load" || mode == "idle")
+    {
+      result.read_seconds = std::chrono::duration<double>(Clock::now() - begin).count();
+    }
+    return result;
+  }
+
+  void generate(const std::string& path, std::size_t count, std::size_t points, bool compressed)
+  {
+    OpenMS::PlainMSDataWritingConsumer writer(path);
+    OpenMS::PeakFileOptions options;
+    options.setCompression(compressed);
+    options.setWriteIndex(true);
+    writer.setOptions(options);
+    writer.setExpectedSize(count, 1);
+    writer.setExperimentalSettings(OpenMS::ExperimentalSettings());
+    std::mt19937 random(20261019);
+    for (std::size_t i = 0; i < count; ++i)
+    {
+      OpenMS::MSSpectrum spectrum;
+      spectrum.setNativeID("scan=" + std::to_string(i + 1));
+      spectrum.setRT(static_cast<double>(i) * 0.5);
+      spectrum.setMSLevel(1);
+      spectrum.setType(OpenMS::SpectrumSettings::SpectrumType::CENTROID);
+      spectrum.setMetaValue("xml_poc_note", std::string("Unicode \xCE\xB2 & <escaped> \"value\""));
+      spectrum.reserve(points);
+      for (std::size_t p = 0; p < points; ++p)
+      {
+        OpenMS::Peak1D peak;
+        peak.setMZ(100.0 + static_cast<double>(p) * 0.01 + static_cast<double>(i % 17) * 0.00001);
+        peak.setIntensity(static_cast<float>(random() % 1000000) / 8.0F);
+        spectrum.push_back(peak);
+      }
+      writer.consumeSpectrum(spectrum);
+    }
+    OpenMS::MSChromatogram chromatogram;
+    chromatogram.setNativeID("TIC");
+    for (std::size_t i = 0; i < count; ++i)
+    {
+      OpenMS::ChromatogramPeak peak;
+      peak.setRT(static_cast<double>(i) * 0.5);
+      peak.setIntensity(static_cast<float>(i % 101));
+      chromatogram.push_back(peak);
+    }
+    writer.consumeChromatogram(chromatogram);
+  }
+
+  void verify(const std::string& path)
+  {
+    OpenMS::MSExperiment loaded;
+    OpenMS::MzMLFile().load(path, loaded);
+    Digest expected;
+    for (auto& spectrum : loaded) { expected.consumeSpectrum(spectrum); }
+    for (auto& chromatogram : loaded.getChromatograms()) { expected.consumeChromatogram(chromatogram); }
+    const auto streamed = run("stream", path, 0).digest;
+    OpenMS::OnDiscMSExperiment indexed;
+    if (!indexed.openFile(path)) { throw std::runtime_error("Index verification failed"); }
+    Digest actual;
+    for (std::size_t i = 0; i < indexed.getNrSpectra(); ++i)
+    {
+      auto spectrum = indexed.getSpectrum(i);
+      const auto& original = loaded.getSpectra().at(i);
+      if (spectrum.getRT() != original.getRT() || spectrum.getMSLevel() != original.getMSLevel() ||
+          spectrum.getFloatDataArrays() != original.getFloatDataArrays() ||
+          spectrum.getIntegerDataArrays() != original.getIntegerDataArrays() ||
+          spectrum.getStringDataArrays() != original.getStringDataArrays() ||
+          spectrum.getMetaValue("xml_poc_note") != original.getMetaValue("xml_poc_note"))
+      {
+        throw std::runtime_error("Indexed spectrum metadata differ from full load");
+      }
+      actual.consumeSpectrum(spectrum);
+    }
+    for (std::size_t i = 0; i < indexed.getNrChromatograms(); ++i)
+    {
+      auto chromatogram = indexed.getChromatogram(i);
+      actual.consumeChromatogram(chromatogram);
+    }
+    if (!(expected == streamed) || !(expected == actual))
+    {
+      throw std::runtime_error("Decoded data differ between load, streaming and indexed access");
+    }
+    std::cout << "{\"verified\":true,\"spectra\":" << expected.spectra
+              << ",\"points\":" << expected.points << ",\"hash\":\"" << expected.hash << "\"}\n";
+  }
+}
+
+int main(int argc, char** argv)
+{
+  std::cerr << "XML_BENCHMARK_MAIN_STARTED\n";
+  try
+  {
+    if (argc < 3) { throw std::runtime_error("Usage: xml_parser_benchmark MODE FILE [WORKERS|SPECTRA] [QUERIES|POINTS] [ZLIB]"); }
+    const std::string requested_mode(argv[1]), path(argv[2]);
+    audit_auxiliary = requested_mode == "stream-audit";
+    const std::string mode = audit_auxiliary ? "stream" : requested_mode;
+    const std::size_t workers = argc > 3 ? std::stoull(argv[3]) : 1;
+    const std::size_t queries = argc > 4 ? std::stoull(argv[4]) : 1000;
+    if (workers == 0) { throw std::runtime_error("Worker/spectrum count must be positive"); }
+    if (mode == "generate")
+    {
+      generate(path, workers, queries, argc > 5 && std::string(argv[5]) == "zlib");
+      return 0;
+    }
+    if (mode == "verify") { verify(path); return 0; }
+
+    // Warm shared initialization with one thread, then set each worker team explicitly.
+    // This avoids retaining an unused N-thread main-thread team during fixed-work runs.
+    const int requested_team = omp_get_max_threads();
+    omp_set_num_threads(1);
+    // Warm shared CV/parser initialization before independent worker jobs.
+    OpenMS::MzMLFile warmup;
+    OpenMS::MSExperiment empty;
+    std::string warmup_xml;
+    warmup.storeBuffer(warmup_xml, empty);
+    warmup.loadBuffer(warmup_xml, empty);
+    std::vector<Result> results(workers);
+    std::vector<std::exception_ptr> errors(workers);
+    std::barrier start(static_cast<std::ptrdiff_t>(workers + 1));
+    std::vector<std::jthread> threads;
+    for (std::size_t i = 0; i < workers; ++i)
+    {
+      threads.emplace_back([&, i]
+      {
+        omp_set_num_threads(requested_team);
+        start.arrive_and_wait();
+        try { results[i] = run(mode, path, queries); }
+        catch (...) { errors[i] = std::current_exception(); }
+      });
+    }
+    const auto begin = Clock::now();
+    start.arrive_and_wait();
+    threads.clear();
+    const double seconds = std::chrono::duration<double>(Clock::now() - begin).count();
+    for (const auto& error : errors) { if (error) { std::rethrow_exception(error); } }
+    for (const auto& result : results)
+    {
+      if (!(result.digest == results.front().digest)) { throw std::runtime_error("Worker digest mismatch"); }
+      if (result.index_spectra != results.front().index_spectra ||
+          result.index_chromatograms != results.front().index_chromatograms)
+      {
+        throw std::runtime_error("Worker index count mismatch");
+      }
+    }
+    // Query after joining, while retained contexts/experiments remain alive.
+    const auto resident_rss = currentRssBytes();
+    std::cout << std::setprecision(12) << "{\"mode\":\"" << mode << "\",\"workers\":" << workers
+              << ",\"openms_library\":" << std::quoted(loadedLibrary())
+              << ",\"resident_rss_bytes\":" << resident_rss
+              << ",\"native_peak_rss_bytes\":" << nativePeakRssBytes()
+              << ",\"requested_openmp_threads\":" << requested_team
+              << ",\"auxiliary_audit\":" << (audit_auxiliary ? "true" : "false")
+              << ",\"aux_hash_per_worker\":\"" << results.front().digest.aux_hash << "\""
+              << ",\"im_array_values_per_worker\":" << results.front().digest.im_values
+              << ",\"im_scalar_spectra_per_worker\":" << results.front().digest.im_scalars
+              << ",\"ms1_per_worker\":" << results.front().digest.ms_levels[1]
+              << ",\"ms2_per_worker\":" << results.front().digest.ms_levels[2]
+              << ",\"ms3plus_per_worker\":" << results.front().digest.ms_levels[3]
+              << ",\"seconds\":" << seconds << ",\"file_bytes\":" << std::filesystem::file_size(path)
+              << ",\"spectra_per_worker\":" << results.front().digest.spectra
+              << ",\"chromatograms_per_worker\":" << results.front().digest.chromatograms
+              << ",\"points_per_worker\":" << results.front().digest.points
+              << ",\"index_spectra\":" << results.front().index_spectra
+              << ",\"index_chromatograms\":" << results.front().index_chromatograms
+              << ",\"hash_per_worker\":\"" << results.front().digest.hash << "\",\"jobs\":[";
+    for (std::size_t i = 0; i < workers; ++i)
+    {
+      if (i) { std::cout << ','; }
+      std::cout << "{\"open_seconds\":" << results[i].open_seconds
+                << ",\"read_seconds\":" << results[i].read_seconds << '}';
+    }
+    std::cout << "]}\n";
+  }
+  catch (const std::exception& error)
+  {
+    std::cerr << error.what() << '\n';
+    return 1;
+  }
+  return 0;
+}
+
+FILE results/gap-bench/staging/converter-source/convert_tims.cpp
+#include <OpenMS/FORMAT/BrukerTimsFile.h>
+#include <OpenMS/FORMAT/DATAACCESS/MSDataWritingConsumer.h>
+#include <OpenMS/FORMAT/OPTIONS/PeakFileOptions.h>
+#include <iostream>
+int main(int argc, char** argv)
+{
+  if (argc != 3) { return 2; }
+  try
+  {
+    OpenMS::PlainMSDataWritingConsumer writer(argv[2]);
+    OpenMS::PeakFileOptions options;
+    options.setCompression(true);
+    options.setWriteIndex(true);
+    writer.setOptions(options);
+    OpenMS::BrukerTimsFile::Config config;
+    config.rt_min_sec = 600.0;
+    config.rt_max_sec = 1200.0;
+    config.rt_selects_spectra = true;
+    config.tims_calibration_strategy = OpenMS::BrukerTimsFile::Config::TimsCalibrationStrategy::RATIONAL;
+    OpenMS::BrukerTimsFile().transform(argv[1], &writer, config);
+    return 0;
+  }
+  catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
+}

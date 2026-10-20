@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.24)
+project(MobilityCorpusConversion LANGUAGES CXX)
+find_package(OpenMS CONFIG REQUIRED)
+add_executable(convert_tims convert_tims.cpp)
+target_compile_features(convert_tims PRIVATE cxx_std_23)
+target_link_libraries(convert_tims PRIVATE OpenMS::OpenMS)

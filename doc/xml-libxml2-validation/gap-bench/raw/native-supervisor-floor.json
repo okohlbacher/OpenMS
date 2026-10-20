@@ -1,0 +1,28 @@
+{
+  "ok": true,
+  "exit_code": 0,
+  "process_seconds": 0.004467915743589401,
+  "user_seconds": 0.0015379999999999999,
+  "system_seconds": 0.002803,
+  "wait4_max_rss_bytes": 35651584,
+  "sampled_native_hwm_bytes": 0,
+  "sampled_native_threads": 0,
+  "procfs_samples": 0,
+  "cpu_affinity": null,
+  "loaded_library_maps": [],
+  "command": [
+    "/usr/bin/true"
+  ],
+  "stderr": "",
+  "timed_out": false,
+  "native_wait4_peak_rss_bytes": 1048576,
+  "native_user_seconds": 0,
+  "native_system_seconds": 0.001264,
+  "native_process_seconds": 0.00139075,
+  "native_inblock": 0,
+  "native_majflt": 0,
+  "native_minflt": 63,
+  "native_nvcsw": 1,
+  "native_nivcsw": 0,
+  "native_exit_code": 0
+}

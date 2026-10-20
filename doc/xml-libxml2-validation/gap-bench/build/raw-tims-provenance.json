@@ -1,0 +1,25 @@
+{
+  "query": "SELECT MsMsType,count(*),sum(NumPeaks),min(Time),max(Time) FROM Frames GROUP BY MsMsType",
+  "rows": [
+    [
+      0,
+      9307,
+      712444583,
+      0.700204,
+      4799.859052
+    ],
+    [
+      8,
+      34989,
+      109528566,
+      94.841601,
+      4655.184272
+    ]
+  ],
+  "conversion_rt_seconds": [
+    600,
+    1200
+  ],
+  "calibration": "OpenMS RATIONAL from TDF calibration tables; no proprietary SDK",
+  "conversion_library": "WITH_OPENTIMS=ON; timed snapshots remain OFF"
+}

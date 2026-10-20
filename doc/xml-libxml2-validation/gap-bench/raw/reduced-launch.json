@@ -1,0 +1,22 @@
+{
+  "started_unix": 1792516504.0795577,
+  "reason": "Explicit user-requested reduction",
+  "scheduler_sha256": "193d86a3bae3e9669ff8e365109e3a8bf6f5d0d750eecdc9452dc565c19842a1",
+  "repetitions": 3,
+  "largest_throughput_files": [
+    "large-matched-plain.mzML",
+    "large-matched-zlib.mzML",
+    "large-matched-plain.mzML.gz"
+  ],
+  "scaling": [
+    1,
+    32,
+    64,
+    96
+  ],
+  "completed_selection": "Prefer completed, then original rep number; never timing",
+  "excluded_pilot": "pilot-before-identity-fix",
+  "measurement_identity_sha256": "f3101cf78fae01f3b282f5201116e841148b4abb527afb98c791e82d735fb353",
+  "status": "complete",
+  "completed_unix": 1792523534.294287
+}

@@ -1,0 +1,50 @@
+{
+  "rapidgzip_version": "0.16.0",
+  "rapidgzip_wheel": {
+    "comment_text": null,
+    "core-metadata": {
+      "sha256": "51fed6353416796d7b89735d2bd9ba30b788e2348a45de3493e72d8e1fba9735"
+    },
+    "digests": {
+      "blake2b_256": "0a4f6403de43caeaa61ccbf97824d761c70b074bce9ab23ed8152be5a05bf3ba",
+      "md5": "0fddd4d06157996340044c9fe5d5f266",
+      "sha256": "7162822e9e7aeb7f427420a7b9c6f9ee08212e41e5fba65c65ac3c564403a058"
+    },
+    "downloads": -1,
+    "filename": "rapidgzip-0.16.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+    "has_sig": false,
+    "md5_digest": "0fddd4d06157996340044c9fe5d5f266",
+    "packagetype": "bdist_wheel",
+    "python_version": "cp312",
+    "requires_python": ">=3.9",
+    "size": 8480243,
+    "upload_time": "2025-11-30T22:34:18",
+    "upload_time_iso_8601": "2025-11-30T22:34:18.668541Z",
+    "url": "https://files.pythonhosted.org/packages/0a/4f/6403de43caeaa61ccbf97824d761c70b074bce9ab23ed8152be5a05bf3ba/rapidgzip-0.16.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+    "yanked": false,
+    "yanked_reason": null
+  },
+  "commands": {
+    "/usr/bin/gzip --version": {
+      "stdout": "gzip 1.12\nCopyright (C) 2018 Free Software Foundation, Inc.\nCopyright (C) 1993 Jean-loup Gailly.\nThis is free software.  You may redistribute copies of it under the terms of\nthe GNU General Public License <https://www.gnu.org/licenses/gpl.html>.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Jean-loup Gailly.\n",
+      "stderr": ""
+    },
+    "/usr/bin/pigz --version": {
+      "stdout": "pigz 2.8\n",
+      "stderr": ""
+    },
+    "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/decompress-env/bin/rapidgzip --version": {
+      "stdout": "rapidgzip, CLI to the parallelized, indexed, and seekable gzip decoding library rapidgzip version 0.16.0\n",
+      "stderr": ""
+    },
+    "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/decompress-env/bin/rapidgzip --help": {
+      "stdout": "A gzip decompressor tool based on the rapidgzip backend from ratarmount\nUsage:\n  rapidgzip [OPTION...] positional parameters\n\n Decompression options:\n  -c, --stdout                  Output to standard output. This is the \n                                default, when reading from standard input.\n  -f, --force                   Force overwriting existing output files. \n                                Also forces decompression even when piped \n                                to /dev/null.\n  -o, --output arg              Output file. If none is given, use the \n                                input file name with '.gz' stripped or \n                                '<input file>.out'. If no input is read \n                                from standard input and not output file is \n                                given, then will write to standard output.\n  -k, --keep                    Keep (do not delete) input file. Only for \n                                compatibility. This tool will not delete \n                                anything automatically!\n  -P, --decoder-parallelism arg\n                                Use the parallel decoder. If an optional \n                                integer >= 1 is given, then that is the \n                                number of decoder threads to use. Note that \n                                there might be further threads being \n                                started with non-decoding work. If 0 is \n                                given, then the parallelism will be \n                                determined automatically. (default: 0)\n      --ranges arg              Decompress only the specified byte ranges. \n                                Example: 10@0,1KiB@15KiB,5L@20L,inf@40L to \n                                decompress the first 10 bytes, 1024 bytes \n                                at offset 15 KiB, as well as the 5 lines \n                                after skipping the first 20 lines, and \n                                lastly, everything after skipping the first \n                                40.\n\n Advanced options:\n      --chunk-size arg      The chunk size decoded by the parallel workers \n                            in KiB. (default: 4096)\n      --verify              Verify CRC32 checksum during decompression. \n                            Will slow down decompression and there are \n                            already some implicit and explicit checks like \n                            whether the end of the file could be reached \n                            and whether the stream size is correct. If no \n                            action is specified, this will do nothing. Use \n                            --test to force checksum verification.\n      --no-verify           Do not verify CRC32 checksum during \n                            decompression. Might speed up decompression and \n                            there are already some implicit and explicit \n                            checks like whether the end of the file could \n                            be reached and whether the stream size is \n                            correct.\n      --io-read-method arg  Option to force a certain I/O method for \n                            reading. By default, pread will be used when \n                            possible. Possible values: pread, sequential, \n                            locked-read (default: pread)\n      --index-format arg    Option to select an output index format. \n                            Possible values: gztool, gztool-with-lines, \n                            indexed_gzip. (default: indexed_gzip)\n      --sparse-windows      On by default. Reduce index compressibility by \n                            zeroing out window data that is not referenced \n                            in the subsequent stream.\n      --no-sparse-windows   Do not zero out unreferenced data in index \n                            windows. This may very slightly improve \n                            first-time decompression speed, but may also \n                            lead to higher memory usage. It can also be \n                            useful to create exported index that are binary \n                            identical to other those created by other tools \n                            such as gztool to debug indexes. In normal \n                            usage the sparsity is an index modification \n                            that is fully compatible with the original \n                            tools.\n\n Output options:\n  -h, --help                   Print this help message.\n  -q, --quiet                  Suppress non-critical error messages.\n  -v, --verbose                Print debug output and profiling statistics.\n  -V, --version                Display software version.\n      --oss-attributions       Display open-source software licenses.\n      --oss-attributions-yaml  Display open-source software licenses in \n                               YAML format for use with Conda.\n\n Actions options:\n  -d, --decompress        Force decompression. Only for compatibility. No \n                          compression supported anyways.\n      --import-index arg  Uses an existing gzip index.\n      --export-index arg  Write out a gzip index file.\n      --count             Prints the decompressed size.\n  -l, --count-lines       Prints the number of newline characters in the \n                          decompressed data.\n      --analyze           Print output about the internal file format \n                          structure like the block types.\n  -t, --test              Verify decompression and checksums, if not \n                          disabled with --no-verify. Note that this does \n                          not have any additional effect when combined with \n                          --decompress or --ranges because it is equivalent \n                          to --decompress -o /dev/null.\n\nIf no file names are given, rapidgzip decompresses from standard input to standard output.\nIf the output is discarded by piping to /dev/null, then the actual decoding step might\nbe omitted if neither -l nor -L nor --force are given.\n\nExamples:\n\nDecompress a file:\n  rapidgzip -d file.gz\n\nDecompress a file in parallel:\n  rapidgzip -d -P 0 file.gz\n\nList information about all gzip streams and deflate blocks:\n  rapidgzip --analyze file.gz\n\n",
+      "stderr": ""
+    }
+  },
+  "binaries": {
+    "/usr/bin/gzip": "afea077ce127d4fa9ad410d3066ba2b54dea19c0b44f04adf56c72d5f7b7a9bb",
+    "/usr/bin/pigz": "53528c9cc662ccb6f7ca19c5b9a1e2823fd1f055136ad6706d67429d9be34824",
+    "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/decompress-env/bin/rapidgzip": "fde8b72dad3660294e7809474edd589dd2db59ad87ed3d811e77a32a9ed3125e"
+  }
+}

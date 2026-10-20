@@ -1,0 +1,9 @@
+{
+  "selected_cells": 200,
+  "selected_workloads": 600,
+  "selected_native_processes": 660,
+  "original_historical_cells_unchanged": 3288,
+  "combined_cells": 3488,
+  "selection_independent_of_speed": true,
+  "median_rate_and_rss_arithmetic_passed": true
+}

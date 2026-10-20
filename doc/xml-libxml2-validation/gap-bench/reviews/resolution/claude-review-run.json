@@ -1,0 +1,14 @@
+{
+  "requested_model": "claude-opus-5-5",
+  "version": "2.1.288 (Claude Code)",
+  "candidate": "final identity/SDK/failure-accounting fix and empirical counterexamples",
+  "started_utc": "2026-10-20T14:16:48.339237+00:00",
+  "input_sha256": "bac2c42e8af15848439eb5dd27cdf05999f63cd7a57a52afff073a11c51effc9",
+  "mode": "tool-free self-contained complete-diff review; no model fallback configured",
+  "returncode": 0,
+  "elapsed_seconds": 44.36268901824951,
+  "reported_models": [
+    "claude-opus-5-5"
+  ],
+  "is_error": false
+}

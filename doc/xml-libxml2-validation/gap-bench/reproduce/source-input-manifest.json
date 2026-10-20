@@ -1,0 +1,28 @@
+{
+  "source_commits": {
+    "xerces": "58aa37348c968a12e3285295f28c197cc0b7bdbe",
+    "libxml2-full": "8f66b3d921c9512e1e5968f494c77715ff71c696"
+  },
+  "note": "Xerces is the previously published optimized baseline; full replacement includes guard/test final commit; later feature-branch commits only publish documentation.",
+  "files": {
+    "results/full-scaling/staging/libxml2-full.tar.gz": {
+      "bytes": 339628075,
+      "sha256": "facea08f452382d13226ab81bf8a97698f3f701489f01ce79a0b0835e04bfa7c"
+    },
+    "results/full-scaling/staging/xerces.tar.gz": {
+      "bytes": 331284736,
+      "sha256": "ab29f33bd264f11a4b6ba1b4a2c5319ffd31708aa6c08bec08a626d0a38f9443"
+    },
+    "benchmark-data/huge-array.mzML": {
+      "bytes": 16783199,
+      "sha256": "a7afeee51a600050eb7e8f03e63d82cf8231781362a5c52e17e0a21c0487a81f"
+    }
+  },
+  "benchmark_affinity": "CPUs0-95:64 physical cores plus32SMT siblings; OpenMP1 for independent readers",
+  "baseline_public_reproduction": {
+    "base": "77cccda7caf40b46a4919d33748450270eccd565",
+    "patch": "xerces-optimized.patch",
+    "patch_sha256": "b1e3866179bf9e1339aebbc67b35298f1f63bc2f248da04262598e35a3523087",
+    "note": "The Xerces control includes the previously reviewed common character/indexed-reader optimizations; it is not a deliberately unoptimized control."
+  }
+}

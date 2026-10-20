@@ -1,0 +1,16 @@
+{
+  "plain": {
+    "native_sdk": "xerces58aa; same SDK as timing binary",
+    "original_sha256": "bbd284fbe3c34aa49c82caa2efd754d1d7bee6676ffa2c2818c58087bf41eeb3",
+    "native_regenerated_sha256": "bbd284fbe3c34aa49c82caa2efd754d1d7bee6676ffa2c2818c58087bf41eeb3",
+    "bytes": 4505085414,
+    "byte_identical": true
+  },
+  "zlib": {
+    "native_sdk": "xerces58aa; same SDK as timing binary",
+    "original_sha256": "4982dbc3a1fe3a833b248afd85b9d9dc9b7584c5b0765f1f41ae3f5ed7dfbeca",
+    "native_regenerated_sha256": "4982dbc3a1fe3a833b248afd85b9d9dc9b7584c5b0765f1f41ae3f5ed7dfbeca",
+    "bytes": 2206059192,
+    "byte_identical": true
+  }
+}

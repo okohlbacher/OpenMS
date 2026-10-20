@@ -1,0 +1,146 @@
+--- historical/benchmark.cpp
++++ gap-phase/benchmark.cpp
+@@ -10,6 +10,8 @@
+ #include <OpenMS/KERNEL/OnDiscMSExperiment.h>
+ 
+ #include <barrier>
++#include <omp.h>
++#include <array>
+ #include <bit>
+ #include <chrono>
+ #include <cmath>
+@@ -36,6 +38,17 @@
+ namespace
+ {
+   using Clock = std::chrono::steady_clock;
++  bool audit_auxiliary = false;
++  std::uint64_t nativePeakRssBytes()
++  {
++    std::ifstream status("/proc/self/status");
++    std::string line;
++    while (std::getline(status, line))
++    {
++      if (line.starts_with("VmHWM:")) { return std::stoull(line.substr(6)) * 1024; }
++    }
++    return 0;
++  }
+ 
+   std::uint64_t currentRssBytes()
+   {
+@@ -86,6 +99,18 @@
+   {
+     std::uint64_t hash = 14695981039346656037ULL;
+     std::uint64_t spectra = 0, chromatograms = 0, points = 0;
++    std::uint64_t aux_hash = 14695981039346656037ULL, im_values = 0, im_scalars = 0;
++    std::array<std::uint64_t, 4> ms_levels{};
++    void auxWord(std::uint64_t value)
++    {
++      for (unsigned i = 0; i < 8; ++i) { aux_hash = (aux_hash ^ ((value >> (8 * i)) & 255)) * 1099511628211ULL; }
++    }
++    void auxText(const std::string& text)
++    {
++      auxWord(text.size());
++      for (unsigned char c : text) { aux_hash = (aux_hash ^ c) * 1099511628211ULL; }
++    }
++
+ 
+     void word(std::uint64_t value)
+     {
+@@ -104,6 +129,28 @@
+     void consumeSpectrum(OpenMS::MSSpectrum& spectrum) override
+     {
+       ++spectra;
++      if (audit_auxiliary)
++      {
++        const auto level = spectrum.getMSLevel();
++        ++ms_levels[std::min<unsigned>(level, 3)];
++        auxWord(level);
++        auxWord(std::bit_cast<std::uint64_t>(spectrum.getRT()));
++        auxWord(static_cast<std::uint64_t>(spectrum.getDriftTimeUnit()));
++        auxWord(std::bit_cast<std::uint64_t>(spectrum.getDriftTime()));
++        if (std::isfinite(spectrum.getDriftTime()) && spectrum.getDriftTime() >= 0) { ++im_scalars; }
++        for (const auto& array : spectrum.getFloatDataArrays())
++        {
++          auxText(array.getName()); auxWord(array.size());
++          for (float value : array) { auxWord(std::bit_cast<std::uint32_t>(value)); }
++        }
++        if (spectrum.containsIMData())
++        {
++          const auto index = spectrum.getIMData().first;
++          const auto& array = spectrum.getFloatDataArrays().at(index);
++          if (array.size() != spectrum.size()) { throw std::runtime_error("IM array length differs from peak count"); }
++          for (float value : array) { if (std::isfinite(value)) { ++im_values; } }
++        }
++      }
+       points += spectrum.size();
+       word(1);
+       word(spectrum.size());
+@@ -134,7 +181,7 @@
+     bool operator==(const Digest& other) const
+     {
+       return hash == other.hash && spectra == other.spectra &&
+-        chromatograms == other.chromatograms && points == other.points;
++        chromatograms == other.chromatograms && points == other.points && aux_hash == other.aux_hash && im_values == other.im_values && im_scalars == other.im_scalars && ms_levels == other.ms_levels;
+     }
+   };
+ 
+@@ -302,7 +349,9 @@
+   try
+   {
+     if (argc < 3) { throw std::runtime_error("Usage: xml_parser_benchmark MODE FILE [WORKERS|SPECTRA] [QUERIES|POINTS] [ZLIB]"); }
+-    const std::string mode(argv[1]), path(argv[2]);
++    const std::string requested_mode(argv[1]), path(argv[2]);
++    audit_auxiliary = requested_mode == "stream-audit";
++    const std::string mode = audit_auxiliary ? "stream" : requested_mode;
+     const std::size_t workers = argc > 3 ? std::stoull(argv[3]) : 1;
+     const std::size_t queries = argc > 4 ? std::stoull(argv[4]) : 1000;
+     if (workers == 0) { throw std::runtime_error("Worker/spectrum count must be positive"); }
+@@ -313,6 +362,10 @@
+     }
+     if (mode == "verify") { verify(path); return 0; }
+ 
++    // Warm shared initialization with one thread, then set each worker team explicitly.
++    // This avoids retaining an unused N-thread main-thread team during fixed-work runs.
++    const int requested_team = omp_get_max_threads();
++    omp_set_num_threads(1);
+     // Warm shared CV/parser initialization before independent worker jobs.
+     OpenMS::MzMLFile warmup;
+     OpenMS::MSExperiment empty;
+@@ -327,6 +380,7 @@
+     {
+       threads.emplace_back([&, i]
+       {
++        omp_set_num_threads(requested_team);
+         start.arrive_and_wait();
+         try { results[i] = run(mode, path, queries); }
+         catch (...) { errors[i] = std::current_exception(); }
+@@ -351,6 +405,15 @@
+     std::cout << std::setprecision(12) << "{\"mode\":\"" << mode << "\",\"workers\":" << workers
+               << ",\"openms_library\":" << std::quoted(loadedLibrary())
+               << ",\"resident_rss_bytes\":" << resident_rss
++              << ",\"native_peak_rss_bytes\":" << nativePeakRssBytes()
++              << ",\"requested_openmp_threads\":" << requested_team
++              << ",\"auxiliary_audit\":" << (audit_auxiliary ? "true" : "false")
++              << ",\"aux_hash_per_worker\":\"" << results.front().digest.aux_hash << "\""
++              << ",\"im_array_values_per_worker\":" << results.front().digest.im_values
++              << ",\"im_scalar_spectra_per_worker\":" << results.front().digest.im_scalars
++              << ",\"ms1_per_worker\":" << results.front().digest.ms_levels[1]
++              << ",\"ms2_per_worker\":" << results.front().digest.ms_levels[2]
++              << ",\"ms3plus_per_worker\":" << results.front().digest.ms_levels[3]
+               << ",\"seconds\":" << seconds << ",\"file_bytes\":" << std::filesystem::file_size(path)
+               << ",\"spectra_per_worker\":" << results.front().digest.spectra
+               << ",\"chromatograms_per_worker\":" << results.front().digest.chromatograms
+--- historical/CMakeLists.txt
++++ gap-phase/CMakeLists.txt
+@@ -3,9 +3,10 @@
+ 
+ find_package(OpenMS CONFIG REQUIRED)
+ find_package(Threads REQUIRED)
++find_package(OpenMP REQUIRED)
+ add_executable(xml_parser_benchmark benchmark.cpp)
+ target_compile_features(xml_parser_benchmark PRIVATE cxx_std_23)
+-target_link_libraries(xml_parser_benchmark PRIVATE OpenMS::OpenMS Threads::Threads ${CMAKE_DL_LIBS})
++target_link_libraries(xml_parser_benchmark PRIVATE OpenMS::OpenMS Threads::Threads OpenMP::OpenMP_CXX ${CMAKE_DL_LIBS})
+ add_executable(xml_schema_validation_probe schema_validation_probe.cpp)
+ target_compile_features(xml_schema_validation_probe PRIVATE cxx_std_23)
+ target_link_libraries(xml_schema_validation_probe PRIVATE OpenMS::OpenMS)

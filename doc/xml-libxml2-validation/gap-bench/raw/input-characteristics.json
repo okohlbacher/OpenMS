@@ -1,0 +1,57 @@
+{
+  "inputs": {
+    "large-matched-plain.mzML": {
+      "xml_encoding_declaration": "ISO-8859-1",
+      "bytes": 4505085414
+    },
+    "large-matched-zlib.mzML": {
+      "xml_encoding_declaration": "ISO-8859-1",
+      "bytes": 2206059192
+    },
+    "large-matched-plain.mzML.gz": {
+      "xml_encoding_declaration": "ISO-8859-1",
+      "bytes": 1947895300
+    },
+    "large-matched-zlib.mzML.gz": {
+      "xml_encoding_declaration": "ISO-8859-1",
+      "bytes": 1369727708
+    },
+    "dda-lumos.mzML": {
+      "xml_encoding_declaration": "utf-8",
+      "bytes": 617171864,
+      "mobility_related_cv_counts": {},
+      "mobility_array_or_finite_scalar_cv_counts": {}
+    },
+    "pasef-published.mzML": {
+      "xml_encoding_declaration": "UTF-8",
+      "bytes": 1453824675,
+      "mobility_related_cv_counts": {},
+      "mobility_array_or_finite_scalar_cv_counts": {}
+    },
+    "pasef-im-600-1200s.mzML": {
+      "xml_encoding_declaration": "ISO-8859-1",
+      "bytes": 961668867,
+      "mobility_related_cv_counts": {
+        "MS:1002815 inverse reduced ion mobility": 22032,
+        "MS:1003008 raw inverse reduced ion mobility array": 512
+      },
+      "mobility_array_or_finite_scalar_cv_counts": {
+        "MS:1002815 inverse reduced ion mobility": 22032,
+        "MS:1003008 raw inverse reduced ion mobility array": 512
+      }
+    }
+  },
+  "zlib_runtimes": {
+    "OpenMS both backends": {
+      "path": "/scratch/kohlbach/contrib/build/lib/libz.so.1",
+      "version": "1.3.1",
+      "sha256": "cc9ca6258f4a6eaa4a130a9f79074d413a0d91cb1adafe0c439abbe35c9b8010"
+    },
+    "system pigz": {
+      "path": "/lib/x86_64-linux-gnu/libz.so.1",
+      "version": "1.3",
+      "sha256": "86200da370f20476a2507e9097a789b5ef97269b4ca8d5e164ad82dab9d99892"
+    }
+  },
+  "page_size_bytes": 4096
+}

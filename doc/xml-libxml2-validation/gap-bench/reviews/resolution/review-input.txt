@@ -1,0 +1,219 @@
+Focused final resolution review. User requested Kimi and actual Opus5.5 review before publishing. No product code changed. Return plain concise findings. The complete sources were reviewed in two previous packets; now inspect fixes and counter-evidence to remaining findings below. Canonical runs restart from scratch after the guard fix; all28 pilot results preserved/excluded before seeing final cell medians. Frozen dependency paths eliminate the regenerated-audit identity bug. All per-cell exceptions now logged; analysis computes failures and marks seconds bases. SDK-matched regeneration yields exact same XML SHA, both nativeSDKsmokes pass. Do not repeat unsupported claims: prior KimiXMLpruning finding was based on incorrect indentation and strictRSScontrolactuallypasses;Linux6.8fs/exec.cexec_mmap explicitlycallssetmax_mm_hiwater_rss(&tsk->signal->maxrss,old_mm) before mmput, so wait4neednotresetwithnewmmVmHWM. Actual hostlibgompnotlibomp. CPU/walllabelisCPUconsumptioninclspin/startup notactivedecoderproof. Check remaining substantive measurement/identity errors only, accept stated benchmark scope; no speculative newwork.
+
+decisions
+```
+# Adversarial review decisions — gap measurement phase
+
+Product sources remain pinned and unchanged. Codex performed the measurement-path review; actual tool-free Kimi 2.2.0 and Claude Opus 5.5 outputs/identity receipts are retained. These are findings, not approval votes. Reviewer stderr stays private.
+
+| Finding | Decision and evidence |
+|---|---|
+| Exit detection quantizes fast CLI timings | Fixed before canonical runs with pidfd/select; native monotonic elapsed time retained. The sleep-clock control passes. CLI startup stays included; 25 empty-gzip controls are retained, never subtracted. |
+| Inflaters inherit OpenMS library search paths | Fixed: whitelisted environment, no OpenMS LD paths. Final output SHA checks at 1/96 pass under the actual clean environment; mapped libraries and native/Python entry-point types recorded. |
+| Backend attribution/ABI provenance | Both mapping directions, affinity and distinct realpath/SHA checks added. The existing header audit covers the timed parser/storage API only. The shared timing binary was compiled against Xerces SDK58aa. Writer inheritance differs and is excluded from a blanket ABI claim: generation now uses the matching Xerces SDK/backend. Full and Xerces smoke suites each pass with their own SDK; proper native regeneration produces byte-identical 4.505GB and 2.206GB XML inputs. General OpenMS consumers must rebuild. |
+| Missing matched aux/size/count and real IM assertions | Full matched auxiliary equality, actual ≥1GB sizes, exact spectrum/point counts, published-PASEF zero IM and substantive real-window IM counts gated. Independent XML audit gives 600.0164655–1199.99744683333s and22,032 precursor IM CV terms. Decoded scalar/per-peak equivalence is checked on both backends; this is not exhaustive every-field metadata equivalence. |
+| Mutable access audit changes identity after run | Fixed at root: freeze dependency paths separately from regenerated audit output, hash actual files on binding/resume/end. Regression gate rewrites the access audit and proves identity unchanged. All28 completed pilot records and operator-stop receipt remain verbatim in a separate excluded phase; the complete canonical matrix restarts from scratch. |
+| Unlogged assertions / hardcoded zero failures | Every per-cell exception is recorded and re-raised; negative control passes. Launch monitor preserves failed/interrupted launches and hashes exception logs. Collation computes process/cell/launch failures from evidence and requires complete receipts. No retry-until-pass or silent mixing. |
+| Clock bases mixed in combined CSV | Explicit seconds_basis column added. C++ workload clocks and whole-process clocks remain separate; staged-vs-internal comparison uses whole-process clocks on both sides. |
+| Thread counts mistaken for active decoding | Process-thread sampling is a lower bound; CPU/wall is CPU consumption, including runtime spin, CRC and startup, not proof of useful parallel decoding. Main warmupOMP1 then worker-specific teams; 96 controls observe97 process threads. Pigz requested settings are not96 parallel DEFLATE decoders. |
+| libomp spin-wait assertion | Reviewer inferred libomp from the cross-platform launcher helper. Actual Linux maps/ldd show GCC libgomp, not libomp. No libomp-specific causal claim retained. CPU-consumption wording remains conservative for any runtime. |
+| Cache/topology and environment | Whitelisted env, driver affinity96–127, benchmark0–95; fresh topology/sysfs/filesystem evidence. Mincore requires100% input pages resident before every timed cell; warming outside timing. Native I/O/fault/cswitch and resource history retained. /scratch is local ext4; RAM staging is tmpfs. Scheduler may place low-N workers on SMT siblings. |
+| Context labels | Retained-context overhead only names actually retained contexts. Streaming/random post-join residue gets a different field; statm/difference-of-medians approximation and index/allocator scope disclosed. |
+
+## Final Kimi counterexamples checked against code and execution
+
+Kimi's second pass reported two defects that are not reproduced by the supplied code/evidence:
+
+1. **XML pruning:** `e.clear()` and parent removal are inside the spectrum-end branch; only `stack.pop()` is unconditional. Thus scan/precursor descendants are available when the spectrum is audited. The real metadata receipt and final inflater gates were produced successfully, and the timed matrix starts after their markers. The source packet preserves indentation; no unconditional-pruning change was applied.
+2. **RSS-floor premise:** the actual raised-parent control records C++ VmHWM39,436,288 bytes, native-child wait4 peak39,845,888 and outer Python wait4 peak154,140,672. The native meters agree while the outer floor persists; all strict control assertions pass on Linux6.8.0-124. `exec` resets the new mm's VmHWM, but Linux also saves the old mm high water in `signal->maxrss` ([Linux6.8 exec_mmap](https://github.com/torvalds/linux/blob/v6.8/fs/exec.c#L990)). Treating wait4 as only the new mm's hiwater is incorrect. The native supervisor's tiny launch floor is separately calibrated at1MiB and disclosed. The suggested equal-outer-RSS assertion would contradict this host's measured control, so it was not applied.
+
+The final summaries require all450 cells×5 repetitions, consistent identity and fingerprints, complete launch/post-validation receipts and unchanged source/input/DLL hashes. Superseded pilots and expected-negative controls are reported separately.
+
+```
+
+Final immutable identity and per-cell exception guard
+```
+def identity():
+    files = [
+        BINARY,
+        LAUNCHER,
+        ROOT / "native-meter",
+        ROOT / "run-gap.py",
+        ROOT / "run-access.py",
+        ROOT / "native-meter.cpp",
+        Path("/usr/bin/gzip"),
+        Path("/usr/bin/pigz"),
+        ROOT / "decompress-env/bin/rapidgzip",
+        ROOT / "decompress-env/bin/python",
+    ]
+    files += list((ROOT / "staging/extended-benchmark-source").glob("*.cpp")) + list(
+        (ROOT / "staging/extended-benchmark-source").glob("CMakeLists.txt")
+    )
+    files += list((ROOT / "snapshots").glob("*/lib/*"))
+    files += list((ROOT / "dependencies/install/lib").glob("libxml2.so*")) + list(
+        (ROOT / "dependencies/install/lib").glob("libxerces-c*.so*")
+    )
+    # Frozen dependency paths are immutable configuration, not regenerated audit output.
+    paths_file = OUT / "identity-dependency-paths.json"
+    paths = json.loads(paths_file.read_text())
+    files += [paths_file] + [Path(p) for p in paths]
+    files = sorted(set(files))
+    payload = dict(
+        files={
+            str(p): dict(realpath=str(p.resolve()), sha256=sha(p)) for p in files if p.is_file()
+        },
+        inputs={
+            name: dict(
+                bytes=(ROOT / "data" / name).stat().st_size, sha256=sha(ROOT / "data" / name)
+            )
+            for name in FILES
+        },
+        environment=BASE,
+        openms_environments={b: env(b) for b in BACKENDS},
+        source_commits={
+            "xerces": "58aa37348c968a12e3285295f28c197cc0b7bdbe",
+            "libxml2-full": "8f66b3d921c9512e1e5968f494c77715ff71c696",
+        },
+    )
+    expected = json.loads((OUT / "inputs.json").read_text())
+    assert payload["inputs"] == expected, "Input changed since correctness audit"
+    real = json.loads((ROOT / "staging/real-input-manifest.json").read_text())
+    for row in real["files"]:
+        if row["destination"] in FILES:
+            assert payload["inputs"][row["destination"]] == {k: row[k] for k in ["bytes", "sha256"]}
+    matched = json.loads((ROOT / "results/matched-inputs.json").read_text())
+    for name, row in matched.items():
+        assert payload["inputs"][name] == row
+    assert (
+        payload["inputs"]["pasef-im-600-1200s.mzML"]["sha256"]
+        == (ROOT / "results/converted-im.sha256").read_text().split()[0]
+    )
+    # Distinct copied libraries, not labels on two symlinks to one binary.
+    libs = {b: (ROOT / "snapshots" / b / "lib/libOpenMS.so").resolve() for b in BACKENDS}
+    assert libs["xerces"] != libs["libxml2-full"] and sha(libs["xerces"]) != sha(
+        libs["libxml2-full"]
+    )
+    return payload
+
+
+def bind_identity():
+    payload = identity()
+    path = OUT / "measurement-identity.json"
+    if path.exists():
+        assert (
+            json.loads(path.read_text()) == payload
+        ), "Measurement identity changed: refuse mixed-config resume"
+    else:
+        path.write_text(json.dumps(payload, indent=2) + "\n")
+    return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
+
+
+@contextlib.contextmanager
+def cell_attempt(cell):
+    try:
+        yield
+    except BaseException as error:
+        row = dict(
+            cell=cell,
+            error_type=type(error).__name__,
+            error=str(error),
+            traceback=traceback.format_exc(),
+            unix=time.time(),
+        )
+        with (OUT / "cell-failures.jsonl").open("a") as f:
+            f.write(json.dumps(row) + "\n")
+            f.flush()
+            os.fsync(f.fileno())
+        raise
+
+
+
+```
+
+XML pruning, exact indentation
+```
+for event, e in ET.iterparse(g.ROOT / "data/pasef-im-600-1200s.mzML", events=("start", "end")):
+    if event == "start":
+        stack.append(e)
+        continue
+    if e.tag == N + "spectrum":
+        for scan in e.findall(".//" + N + "scan"):
+            for cv in scan.findall(N + "cvParam"):
+                if cv.get("accession") == "MS:1000016":
+                    t = float(cv.get("value"))
+                    t *= 60 if cv.get("unitAccession") == "UO:0000031" else 1
+                    times.append(t)
+        for precursor in e.findall(".//" + N + "precursor"):
+            for cv in precursor.findall(".//" + N + "cvParam"):
+                if cv.get("accession") in ["MS:1002815", "MS:1002476"] and math.isfinite(
+                    float(cv.get("value"))
+                ):
+                    precursor_im += 1
+        e.clear()
+        if len(stack) > 1:
+            stack[-2].remove(e)
+    stack.pop()
+assert times and min(times) >= 600 and max(times) <= 1200, (min(times), max(times))
+metadata = dict(
+    spectra_with_rt=len(times),
+    min_rt_seconds=min(times),
+    max_rt_seconds=max(times),
+    finite_precursor_im_cv_terms=precursor_im,
+    note="Independent XML metadata audit; decoded per-peak/scalar IM equivalence is checked by both OpenMS backends. Not exhaustive equivalence of every metadata field.",
+)
+(g.OUT / "im-window-metadata.json").write_text(json.dumps(metadata, indent=2) + "\n")
+
+```
+
+native-sdk-generation-control.json
+```
+{
+  "plain": {
+    "native_sdk": "xerces58aa; same SDK as timing binary",
+    "original_sha256": "bbd284fbe3c34aa49c82caa2efd754d1d7bee6676ffa2c2818c58087bf41eeb3",
+    "native_regenerated_sha256": "bbd284fbe3c34aa49c82caa2efd754d1d7bee6676ffa2c2818c58087bf41eeb3",
+    "bytes": 4505085414,
+    "byte_identical": true
+  },
+  "zlib": {
+    "native_sdk": "xerces58aa; same SDK as timing binary",
+    "original_sha256": "4982dbc3a1fe3a833b248afd85b9d9dc9b7584c5b0765f1f41ae3f5ed7dfbeca",
+    "native_regenerated_sha256": "4982dbc3a1fe3a833b248afd85b9d9dc9b7584c5b0765f1f41ae3f5ed7dfbeca",
+    "bytes": 2206059192,
+    "byte_identical": true
+  }
+}
+
+```
+
+identity-rewrite-test.json
+```
+{
+  "identity_before": "f3101cf78fae01f3b282f5201116e841148b4abb527afb98c791e82d735fb353",
+  "identity_after": "f3101cf78fae01f3b282f5201116e841148b4abb527afb98c791e82d735fb353",
+  "access_audit_rewritten": true,
+  "unchanged": true
+}
+
+```
+
+im-window-metadata.json
+```
+{
+  "spectra_with_rt": 22544,
+  "min_rt_seconds": 600.0164655,
+  "max_rt_seconds": 1199.99744683333,
+  "finite_precursor_im_cv_terms": 22032,
+  "note": "Independent XML metadata audit; decoded per-peak/scalar IM equivalence is checked by both OpenMS backends. Not exhaustive equivalence of every metadata field."
+}
+
+```
+
+Actual RSS control
+```
+{
+  "native_peak_rss_bytes": 39436288,
+  "native_wait4_peak_rss_bytes": 39845888,
+  "wait4_max_rss_bytes": 154140672
+}
+```

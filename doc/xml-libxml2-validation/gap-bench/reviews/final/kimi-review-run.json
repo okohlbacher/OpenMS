@@ -1,0 +1,10 @@
+{
+  "reviewer": "kimi",
+  "version": "2.2.0",
+  "started_utc": "2026-10-20T13:55:48.773593+00:00",
+  "input_sha256": "647016baa80948a8dd43700e542ac3bd25c27d3417aee0cd3f997bea1f2b72ca",
+  "input_bytes": 63195,
+  "mode": "self-contained review; Claude/Kimi tools disabled, Vibe ask mode; no automatic permission bypass",
+  "returncode": 0,
+  "elapsed_seconds": 1033.9554209709167
+}

@@ -1,0 +1,59 @@
+• Verdict: I would not publish the Linux-phase evidence as-is. The packet is much stronger than a peak-only digest harness, but several core attribution/validation gates are still self-referential or asymmetric. I found no evidence of an OpenMS product-parser regression in the supplied sources; the issues below are harness/evidence gaps in this packet unless a prior baseline shows otherwise.
+
+  ## Findings
+
+  ### 1. High — XML-backend attribution is only negatively checked in one direction
+  - **Source:** `results/gap-bench/reproduce/run-gap.py:37-39`, `:94-99`; `benchmark.cpp:77-99`, `:361-369`
+  - **Evidence:** census records `loaded_library_maps` only once after `threads>1`, then asserts only `libxml2-full` has no `xerces` (`run-gap.py:98`). There is no positive assertion that `xerces` rows contain `libxerces`, no assertion that `xerces` rows lack `libxml2`, and no assertion that `libxml2-full` rows positively contain `libxml2`. The benchmark self-reports only `libOpenMS` path via `loadedLibrary()`, not the XML backend SONAME.
+  - **Trigger:** swapped/stale snapshot `LD_LIBRARY_PATH`, dlopen fallback, or an early empty maps sample that is never refreshed because `maps` becomes `[]`/non-`None`.
+  - **Impact:** the central Xerces58aa vs full-libxml2 runtime1858656/8f66 claim can be misattributed while digests still match and `openms_library` still points at the expected OpenMS snapshot.
+  - **Minimal fix/test:** require non-empty maps for census and assert both directions: `xerces => has libxerces and not libxml2`; `libxml2-full => has libxml2 and not libxerces`. Add a negative test with intentionally swapped backend env that must fail audit. Classification: harness validation gap, not a shown parser regression.
+
+  ### 2. Medium — “matched” synthetic variants are proven matched only for peaks, not for auxiliary/mobility metadata
+  - **Source:** `run-gap.py:79-87`; `test-audit.py:36-45`; `benchmark.cpp:139-176`
+  - **Evidence:** `audit()` asserts per-file aux equality across backends (`run-gap.py:82-84`) and asserts the four synthetic files share one peak fingerprint (`:87`), but never asserts `aux[n]` equality across `FILES[:4]`. `test-audit.py` proves the aux digest detects an IM-only mutation while the peak digest stays fixed, but that detector is not applied to the matched plain/internal-zlib/outer-gzip equivalence claim.
+  - **Trigger:** internal-zlib or outer-gzip path preserves m/z–intensity peaks but drops/alters RT, MS level, scalar IM, or IM float-array metadata.
+  - **Impact:** “matched 131072x2048” variants can be called identical for timing while differing in exactly the metadata/mobility surface the new audit was designed to protect.
+  - **Minimal fix/test:** add `assert len({aux[n] for n in FILES[:4]}) == 1`. Negative control: apply the `test-audit.py` IM-only mutant to one synthetic variant and require audit failure. Classification: new-harness coverage gap; no product change requested.
+
+  ### 3. Medium — “PASEF without mobility” is not gated; only the TIMS subset has a positive mobility assertion
+  - **Source:** `run-gap.py:85`; `converter-source/convert_tims.cpp:12-17`
+  - **Evidence:** audit positively asserts mobility only for `pasef-im-600-1200s.mzML`. There is no negative assertion for `pasef-published.mzML` such as `im_array_values_per_worker == 0 and im_scalar_spectra_per_worker == 0`. The converter source supports the positive provenance for the 600–1200 s RATIONAL subset, but not the claimed absence of mobility in the separate published PASEF file.
+  - **Trigger:** the “without mobility” real file actually contains scalar IM, an IM float array, or was accidentally swapped with the mobility-retaining subset.
+  - **Impact:** a published modality claim could be false, and timing comparisons could silently mix IM and non-IM workloads.
+  - **Minimal fix/test:** in `audit()`, assert zero IM array values and zero finite nonnegative scalar IM spectra for `pasef-published.mzML`; keep the existing `>0` assertion for the subset. Reuse the `test-audit.py` IM-only mutant as the negative control that must trip the zero-IM assertion. Classification: evidence gap, not a converter/parser change request.
+
+  ### 4. Medium — requested-vs-actual concurrency/affinity evidence is coarse outside two census extremes
+  - **Source:** `run-gap.py:35-39`, `:49-54`, `:91-99`, `:127-138`; `benchmark.cpp:361-386`, output JSON around `benchmark.cpp:412-447`
+  - **Evidence:** actual threads are a 50 ms procfs maximum/lower bound; affinity is captured only when the one-time maps capture fires; canonical `readers`, `single-file-openmp`, `decompress`, and `staged-pipeline` cells have no requested-vs-actual assertion. Census checks only `(workers,omp)=(1,96),(96,1)` on one zlib file with a broad `96..100` sampled-thread window.
+  - **Trigger:** OpenMP creates fewer/more threads than requested in intermediate `THREADS` cells, helper-thread counts differ by tool, a short phase escapes 50 ms sampling, or single-thread gzip cells never record `Cpus_allowed_list` because `threads>1` is false.
+  - **Impact:** scaling claims at 2/4/8/16/32/64 and the “affinity 0-95” claim are weaker than the stated methodology; oversubscription or undersubscription in canonical cells can pass unnoticed.
+  - **Minimal fix/test:** record `Cpus_allowed_list` on every sample and keep first/last; extend census across all `THREADS` with an explicit expected accounting model for main+workers+OMP/helpers and minimum `procfs_samples`; assert representative canonical cells, not only the two extremes. Negative test: force `OMP_NUM_THREADS=1` for an `omp=96` census cell and require failure. Classification: runner reliability limitation; the 50 ms lower bound itself is accepted scope, the missing gates are not.
+
+  ### 5. Medium — decompressor processes inherit the OpenMS snapshot library path
+  - **Source:** `run-gap.py:21-22`, `:56-63`
+  - **Evidence:** `inflate()` calls `measure(..., env())`, and default `env()` prepends `snapshots/libxml2-full/lib`, `dependencies/install/lib`, and contrib `lib` to `LD_LIBRARY_PATH` for `/usr/bin/gzip`, `/usr/bin/pigz`, and rapidgzip.
+  - **Trigger:** any snapshot/dependency directory exports a SONAME also needed by gzip/pigz/rapidgzip, e.g. zlib/liblzma-style dependencies.
+  - **Impact:** “ordinary gzip/pigz” may not be measured against the ordinary system runtime; cross-decompressor timing can be confounded even though all three tools share the same altered search path.
+  - **Minimal fix/test:** use clean `BASE` for gzip/pigz and a minimal explicit env only for rapidgzip. Publish `ldd`/maps evidence for each decompressor under the exact measured env showing no OpenMS snapshot libraries are resolved. Classification: measurement-hygiene gap; direction/size of any effect is not claimed because none is measured in the packet.
+
+  ### 6. Low — size/provenance claims are recorded but not independently gated
+  - **Source:** `run-gap.py:71-87`, `:103-115`, `:141-146`
+  - **Evidence:** audit requires only sentinel files, then writes self-generated `inputs.json` with sizes/SHA256. There is no expected-manifest check for “all actual files >=1GB”, DDA ≈617 MB, PASEF ≈1.453 GB, or known published-input hashes.
+  - **Trigger:** stale `EXTENDED_DATA_COMPLETE`/`CONVERSION_COMPLETE`, truncated/regenerated synthetic data, or wrong real file copied into `ROOT/data` before audit.
+  - **Impact:** published byte-size/provenance statements remain reproducible only if the same self-referential inputs are trusted; an incorrect input set can be internally consistent and still pass.
+  - **Minimal fix/test:** add a locked expected manifest with size/SHA256 where available and minimum-size assertions for synthetic files; audit must fail before references are written. Negative test: truncate a temp copy or point one entry at the wrong real file and require audit failure. Classification: evidence-integrity gap, not a regression claim.
+
+  ### 7. Low — stdout JSON scraping is fragile to any `{`-prefixed noise
+  - **Source:** `run-gap.py:50-52`; `benchmark.cpp` JSON emit around `:412-447`
+  - **Evidence:** the runner updates the row from the last stdout line beginning with `{`. Any library/loader diagnostic to stdout that starts with `{`, or trailing output after the benchmark JSON, can select the wrong line or make JSON parsing fail.
+  - **Trigger:** backend/loader warning on stdout, future harness log line beginning with `{`, or buffered stdout interleaving in staged/decompress commands.
+  - **Impact:** intermittent audit/run aborts or silently wrong merged fields.
+  - **Minimal fix/test:** use a unique sentinel-framed JSON record or move all non-protocol output to stderr and reject unparsed stdout. Test by injecting a harmless `{"noise":1}` stdout line before the real record and confirming the row still uses the benchmark record. Classification: runner robustness gap.
+
+  ## Deliberate scope accepted, not counted as findings
+  Cached-file rather than cold-storage timing; CLI procfs HWM as a 50 ms lower bound with wait4 raw retained; full decoded SHA only at 1/96 with CRC/exit checks every run; pigz `-p96` not meaning 96 inflaters; sequential tmpfs decomp→OpenMS with no FIFO/streaming-pipeline claim and tmpfs bytes reported separately; RATIONAL table calibration not claimed as proprietary-SDK equivalence; auxiliary mobility audit excluded from canonical timing; historical Mac/older-Linux phases kept separate; remaining cold-storage/timed-XSD/other-modalities limitations stated.
+
+  ## Regression attribution
+  No supplied source shows changed OpenMS/Xerces/libxml2 product code, and I found no proof here of an introduced parser regression. All actionable items are evidence/runner-side and should be fixed in `run-gap.py`, `test-audit.py`, or the benchmark harness output/reporting, not by requesting product-parser changes.
+

@@ -1,0 +1,9 @@
+{
+  "candidate": "gap measurement harness/protocol; unchanged pinned production sources",
+  "files": {
+    "results/gap-bench/reproduce/run-gap.py": "8906f19c2d43de9562560aa7c3eb4d0e6455788190540e7ae4f8b32f253bfa69",
+    "results/gap-bench/reproduce/test-audit.py": "134ca79f0d5a2d9a36748a1a8521d9c539d795ac888a3256a69012e18ee81bb8",
+    "results/gap-bench/staging/extended-benchmark-source/benchmark.cpp": "65f1fdb335cad50d045919367ae46bcfad454081233c30f09dd3fd88c9f82fa1",
+    "results/gap-bench/staging/converter-source/convert_tims.cpp": "e36beaf0271487e860303c9b276d4a7b01ca5a0a45c608132ba2a5b2e425ce57"
+  }
+}

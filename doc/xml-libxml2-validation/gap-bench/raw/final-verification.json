@@ -1,0 +1,26 @@
+{
+  "utc": "2026-10-20T19:12:40.771051+00:00",
+  "source_archives": {
+    "xerces": {
+      "archive_sha256": "ab29f33bd264f11a4b6ba1b4a2c5319ffd31708aa6c08bec08a626d0a38f9443",
+      "regular_files": 9029,
+      "all_match": true,
+      "differences": []
+    },
+    "libxml2-full": {
+      "archive_sha256": "facea08f452382d13226ab81bf8a97698f3f701489f01ce79a0b0835e04bfa7c",
+      "regular_files": 9307,
+      "all_match": true,
+      "differences": []
+    }
+  },
+  "measurement_identity_sha256": "f3101cf78fae01f3b282f5201116e841148b4abb527afb98c791e82d735fb353",
+  "canonical_workloads": 600,
+  "preserved_total_workloads": 879,
+  "canonical_native_processes": 660,
+  "all_preserved_native_processes": 1019,
+  "inputs_and_timed_dlls_unchanged": true,
+  "all_input_pages_resident_before_each_cell": true,
+  "all_observed_mapped_libraries_bound_to_frozen_identity": true,
+  "im_xml_rt_terms_equal_decoded_spectrum_count": true
+}

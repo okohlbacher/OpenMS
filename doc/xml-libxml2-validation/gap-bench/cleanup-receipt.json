@@ -1,0 +1,10 @@
+{
+  "utc": "2026-10-20T19:22:58.202768+00:00",
+  "task_scratch_removed": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb",
+  "task_ram_directory_removed": "/dev/shm/openms-xml-gap-bench-kohlbach-20261020-01a153cb",
+  "no_active_process_in_task_root": true,
+  "post_validation_passed": true,
+  "remote_manifest_rechecked_files": 177,
+  "shared_contrib_preserved": true,
+  "other_project_cache_untouched": true
+}

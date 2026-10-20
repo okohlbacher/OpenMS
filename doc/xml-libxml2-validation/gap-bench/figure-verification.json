@@ -1,0 +1,15 @@
+{
+  "visually_inspected_png": [
+    "context-overhead.png",
+    "matched-formats.png",
+    "platforms.png",
+    "random-access.png",
+    "real-acquisitions.png",
+    "single-file-decompression.png",
+    "single-file-openmp.png",
+    "staged-pipeline.png",
+    "whole-document.png"
+  ],
+  "svg_counterparts_present": true,
+  "phase_boundaries_preserved": true
+}

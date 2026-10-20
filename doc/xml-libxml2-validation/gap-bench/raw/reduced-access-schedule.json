@@ -1,0 +1,3134 @@
+[
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 96,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "idle",
+    "mode": "idle",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 96,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "idle",
+    "mode": "idle",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "idle",
+    "mode": "idle",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "idle",
+    "mode": "idle",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 96,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 96,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-zlib.mzML.gz",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 96,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "idle",
+    "mode": "idle",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-zlib.mzML.gz",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 96,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "idle",
+    "mode": "idle",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-zlib.mzML.gz",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 96,
+    "rep": 2
+  },
+  {
+    "kind": "idle",
+    "mode": "idle",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 96,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 96,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "idle",
+    "mode": "idle",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-zlib.mzML.gz",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 96,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "idle",
+    "mode": "idle",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 96,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 96,
+    "rep": 2
+  },
+  {
+    "kind": "idle",
+    "mode": "idle",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "idle",
+    "mode": "idle",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-zlib.mzML.gz",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 96,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "idle",
+    "mode": "idle",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 96,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 96,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 96,
+    "rep": 1
+  },
+  {
+    "kind": "idle",
+    "mode": "idle",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-zlib.mzML.gz",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 96,
+    "rep": 0
+  },
+  {
+    "kind": "idle",
+    "mode": "idle",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "idle",
+    "mode": "idle",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 96,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "idle",
+    "mode": "idle",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 96,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "idle",
+    "mode": "idle",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 96,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "idle",
+    "mode": "idle",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 96,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 96,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 96,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "idle",
+    "mode": "idle",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 96,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 96,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 96,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-zlib.mzML.gz",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 96,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 96,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-zlib.mzML.gz",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 96,
+    "rep": 0
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 96,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-zlib.mzML.gz",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 96,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 96,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 96,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "idle",
+    "mode": "idle",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-zlib.mzML.gz",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 96,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 96,
+    "rep": 0
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-zlib.mzML.gz",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "idle",
+    "mode": "idle",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 96,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 96,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 96,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-zlib.mzML.gz",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 96,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 96,
+    "rep": 0
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 96,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "idle",
+    "mode": "idle",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "random-access",
+    "mode": "indexed",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "idle",
+    "mode": "idle",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "idle",
+    "mode": "idle",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "whole-document",
+    "mode": "load",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 96,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "retained-contexts",
+    "mode": "contexts",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  }
+]

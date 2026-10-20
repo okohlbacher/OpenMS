@@ -1,0 +1,14 @@
+{
+  "requested_model": "claude-opus-5-5",
+  "version": "2.1.288 (Claude Code)",
+  "candidate": "gap measurement harness/protocol; unchanged pinned production sources",
+  "started_utc": "2026-10-20T13:41:01.361391+00:00",
+  "input_sha256": "875bbcd93d967c6289a0df31b9b947be34ec107e15c6bb7406eb2dc36fabf5f5",
+  "mode": "tool-free self-contained complete-diff review; no model fallback configured",
+  "returncode": 0,
+  "elapsed_seconds": 356.44958782196045,
+  "reported_models": [
+    "claude-opus-5-5"
+  ],
+  "is_error": false
+}

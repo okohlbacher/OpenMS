@@ -1,0 +1,265 @@
+{
+  "cpu": {
+    "command": [
+      "lscpu"
+    ],
+    "returncode": 0,
+    "stdout": "Architecture:                            x86_64\nCPU op-mode(s):                          32-bit, 64-bit\nAddress sizes:                           48 bits physical, 48 bits virtual\nByte Order:                              Little Endian\nCPU(s):                                  128\nOn-line CPU(s) list:                     0-127\nVendor ID:                               AuthenticAMD\nModel name:                              AMD EPYC 7763 64-Core Processor\nCPU family:                              25\nModel:                                   1\nThread(s) per core:                      2\nCore(s) per socket:                      64\nSocket(s):                               1\nStepping:                                1\nFrequency boost:                         enabled\nCPU(s) scaling MHz:                      52%\nCPU max MHz:                             3530.4929\nCPU min MHz:                             1500.0000\nBogoMIPS:                                4900.28\nFlags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 pcid sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local user_shstk clzero irperf xsaveerptr rdpru wbnoinvd amd_ppin brs arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm debug_swap ibpb_exit_to_user\nVirtualization:                          AMD-V\nL1d cache:                               2 MiB (64 instances)\nL1i cache:                               2 MiB (64 instances)\nL2 cache:                                32 MiB (64 instances)\nL3 cache:                                256 MiB (8 instances)\nNUMA node(s):                            1\nNUMA node0 CPU(s):                       0-127\nVulnerability Gather data sampling:      Not affected\nVulnerability Indirect target selection: Not affected\nVulnerability Itlb multihit:             Not affected\nVulnerability L1tf:                      Not affected\nVulnerability Mds:                       Not affected\nVulnerability Meltdown:                  Not affected\nVulnerability Mmio stale data:           Not affected\nVulnerability Reg file data sampling:    Not affected\nVulnerability Retbleed:                  Not affected\nVulnerability Spec rstack overflow:      Mitigation; Safe RET\nVulnerability Spec store bypass:         Mitigation; Speculative Store Bypass disabled via prctl\nVulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization\nVulnerability Spectre v2:                Mitigation; Retpolines; IBPB conditional; IBRS_FW; STIBP always-on; RSB filling; PBRSB-eIBRS Not affected; BHI Not affected\nVulnerability Srbds:                     Not affected\nVulnerability Tsa:                       Vulnerable: Clear CPU buffers attempted, no microcode\nVulnerability Tsx async abort:           Not affected\nVulnerability Vmscape:                   Mitigation; IBPB before exit to userspace\n",
+    "stderr": ""
+  },
+  "numa": {
+    "command": [
+      "numactl",
+      "--hardware"
+    ],
+    "returncode": 0,
+    "stdout": "available: 1 nodes (0)\nnode 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120 121 122 123 124 125 126 127\nnode 0 size: 1019408 MB\nnode 0 free: 204911 MB\nnode distances:\nnode   0 \n  0:  10 \n",
+    "stderr": ""
+  },
+  "scratch": {
+    "command": [
+      "findmnt",
+      "-T",
+      "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb",
+      "-o",
+      "TARGET,SOURCE,FSTYPE,OPTIONS"
+    ],
+    "returncode": 0,
+    "stdout": "TARGET   SOURCE         FSTYPE OPTIONS\n/scratch /dev/nvme0n1p1 ext4   rw,relatime\n",
+    "stderr": ""
+  },
+  "tmpfs": {
+    "command": [
+      "findmnt",
+      "-T",
+      "/dev/shm/openms-xml-gap-bench-kohlbach-20261020-01a153cb",
+      "-o",
+      "TARGET,SOURCE,FSTYPE,OPTIONS"
+    ],
+    "returncode": 0,
+    "stdout": "TARGET   SOURCE FSTYPE OPTIONS\n/dev/shm tmpfs  tmpfs  rw,nosuid,nodev,inode64\n",
+    "stderr": ""
+  },
+  "compiler": {
+    "command": [
+      "g++",
+      "--version"
+    ],
+    "returncode": 0,
+    "stdout": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0\nCopyright (C) 2023 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+    "stderr": ""
+  },
+  "kernel": {
+    "command": [
+      "uname",
+      "-a"
+    ],
+    "returncode": 0,
+    "stdout": "Linux ibminode05 6.8.0-124-generic #124-Ubuntu SMP PREEMPT_DYNAMIC Tue May 26 13:00:45 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux\n",
+    "stderr": ""
+  },
+  "sysfs": {
+    "/sys/devices/system/cpu/cpu88/topology/thread_siblings_list": "24,88",
+    "/sys/devices/system/cpu/cpu21/topology/thread_siblings_list": "21,85",
+    "/sys/devices/system/cpu/cpu116/topology/thread_siblings_list": "52,116",
+    "/sys/devices/system/cpu/cpu78/topology/thread_siblings_list": "14,78",
+    "/sys/devices/system/cpu/cpu11/topology/thread_siblings_list": "11,75",
+    "/sys/devices/system/cpu/cpu106/topology/thread_siblings_list": "42,106",
+    "/sys/devices/system/cpu/cpu9/topology/thread_siblings_list": "9,73",
+    "/sys/devices/system/cpu/cpu68/topology/thread_siblings_list": "4,68",
+    "/sys/devices/system/cpu/cpu96/topology/thread_siblings_list": "32,96",
+    "/sys/devices/system/cpu/cpu124/topology/thread_siblings_list": "60,124",
+    "/sys/devices/system/cpu/cpu58/topology/thread_siblings_list": "58,122",
+    "/sys/devices/system/cpu/cpu86/topology/thread_siblings_list": "22,86",
+    "/sys/devices/system/cpu/cpu114/topology/thread_siblings_list": "50,114",
+    "/sys/devices/system/cpu/cpu48/topology/thread_siblings_list": "48,112",
+    "/sys/devices/system/cpu/cpu76/topology/thread_siblings_list": "12,76",
+    "/sys/devices/system/cpu/cpu104/topology/thread_siblings_list": "40,104",
+    "/sys/devices/system/cpu/cpu7/topology/thread_siblings_list": "7,71",
+    "/sys/devices/system/cpu/cpu38/topology/thread_siblings_list": "38,102",
+    "/sys/devices/system/cpu/cpu66/topology/thread_siblings_list": "2,66",
+    "/sys/devices/system/cpu/cpu94/topology/thread_siblings_list": "30,94",
+    "/sys/devices/system/cpu/cpu28/topology/thread_siblings_list": "28,92",
+    "/sys/devices/system/cpu/cpu122/topology/thread_siblings_list": "58,122",
+    "/sys/devices/system/cpu/cpu56/topology/thread_siblings_list": "56,120",
+    "/sys/devices/system/cpu/cpu84/topology/thread_siblings_list": "20,84",
+    "/sys/devices/system/cpu/cpu18/topology/thread_siblings_list": "18,82",
+    "/sys/devices/system/cpu/cpu112/topology/thread_siblings_list": "48,112",
+    "/sys/devices/system/cpu/cpu46/topology/thread_siblings_list": "46,110",
+    "/sys/devices/system/cpu/cpu74/topology/thread_siblings_list": "10,74",
+    "/sys/devices/system/cpu/cpu102/topology/thread_siblings_list": "38,102",
+    "/sys/devices/system/cpu/cpu5/topology/thread_siblings_list": "5,69",
+    "/sys/devices/system/cpu/cpu36/topology/thread_siblings_list": "36,100",
+    "/sys/devices/system/cpu/cpu64/topology/thread_siblings_list": "0,64",
+    "/sys/devices/system/cpu/cpu92/topology/thread_siblings_list": "28,92",
+    "/sys/devices/system/cpu/cpu26/topology/thread_siblings_list": "26,90",
+    "/sys/devices/system/cpu/cpu120/topology/thread_siblings_list": "56,120",
+    "/sys/devices/system/cpu/cpu54/topology/thread_siblings_list": "54,118",
+    "/sys/devices/system/cpu/cpu82/topology/thread_siblings_list": "18,82",
+    "/sys/devices/system/cpu/cpu16/topology/thread_siblings_list": "16,80",
+    "/sys/devices/system/cpu/cpu110/topology/thread_siblings_list": "46,110",
+    "/sys/devices/system/cpu/cpu44/topology/thread_siblings_list": "44,108",
+    "/sys/devices/system/cpu/cpu72/topology/thread_siblings_list": "8,72",
+    "/sys/devices/system/cpu/cpu100/topology/thread_siblings_list": "36,100",
+    "/sys/devices/system/cpu/cpu3/topology/thread_siblings_list": "3,67",
+    "/sys/devices/system/cpu/cpu34/topology/thread_siblings_list": "34,98",
+    "/sys/devices/system/cpu/cpu62/topology/thread_siblings_list": "62,126",
+    "/sys/devices/system/cpu/cpu90/topology/thread_siblings_list": "26,90",
+    "/sys/devices/system/cpu/cpu24/topology/thread_siblings_list": "24,88",
+    "/sys/devices/system/cpu/cpu119/topology/thread_siblings_list": "55,119",
+    "/sys/devices/system/cpu/cpu52/topology/thread_siblings_list": "52,116",
+    "/sys/devices/system/cpu/cpu80/topology/thread_siblings_list": "16,80",
+    "/sys/devices/system/cpu/cpu14/topology/thread_siblings_list": "14,78",
+    "/sys/devices/system/cpu/cpu109/topology/thread_siblings_list": "45,109",
+    "/sys/devices/system/cpu/cpu42/topology/thread_siblings_list": "42,106",
+    "/sys/devices/system/cpu/cpu70/topology/thread_siblings_list": "6,70",
+    "/sys/devices/system/cpu/cpu1/topology/thread_siblings_list": "1,65",
+    "/sys/devices/system/cpu/cpu99/topology/thread_siblings_list": "35,99",
+    "/sys/devices/system/cpu/cpu32/topology/thread_siblings_list": "32,96",
+    "/sys/devices/system/cpu/cpu127/topology/thread_siblings_list": "63,127",
+    "/sys/devices/system/cpu/cpu60/topology/thread_siblings_list": "60,124",
+    "/sys/devices/system/cpu/cpu89/topology/thread_siblings_list": "25,89",
+    "/sys/devices/system/cpu/cpu22/topology/thread_siblings_list": "22,86",
+    "/sys/devices/system/cpu/cpu117/topology/thread_siblings_list": "53,117",
+    "/sys/devices/system/cpu/cpu50/topology/thread_siblings_list": "50,114",
+    "/sys/devices/system/cpu/cpu79/topology/thread_siblings_list": "15,79",
+    "/sys/devices/system/cpu/cpu12/topology/thread_siblings_list": "12,76",
+    "/sys/devices/system/cpu/cpu107/topology/thread_siblings_list": "43,107",
+    "/sys/devices/system/cpu/cpu40/topology/thread_siblings_list": "40,104",
+    "/sys/devices/system/cpu/cpu69/topology/thread_siblings_list": "5,69",
+    "/sys/devices/system/cpu/cpu97/topology/thread_siblings_list": "33,97",
+    "/sys/devices/system/cpu/cpu30/topology/thread_siblings_list": "30,94",
+    "/sys/devices/system/cpu/cpu125/topology/thread_siblings_list": "61,125",
+    "/sys/devices/system/cpu/cpu59/topology/thread_siblings_list": "59,123",
+    "/sys/devices/system/cpu/cpu87/topology/thread_siblings_list": "23,87",
+    "/sys/devices/system/cpu/cpu20/topology/thread_siblings_list": "20,84",
+    "/sys/devices/system/cpu/cpu115/topology/thread_siblings_list": "51,115",
+    "/sys/devices/system/cpu/cpu49/topology/thread_siblings_list": "49,113",
+    "/sys/devices/system/cpu/cpu77/topology/thread_siblings_list": "13,77",
+    "/sys/devices/system/cpu/cpu10/topology/thread_siblings_list": "10,74",
+    "/sys/devices/system/cpu/cpu105/topology/thread_siblings_list": "41,105",
+    "/sys/devices/system/cpu/cpu8/topology/thread_siblings_list": "8,72",
+    "/sys/devices/system/cpu/cpu39/topology/thread_siblings_list": "39,103",
+    "/sys/devices/system/cpu/cpu67/topology/thread_siblings_list": "3,67",
+    "/sys/devices/system/cpu/cpu95/topology/thread_siblings_list": "31,95",
+    "/sys/devices/system/cpu/cpu29/topology/thread_siblings_list": "29,93",
+    "/sys/devices/system/cpu/cpu123/topology/thread_siblings_list": "59,123",
+    "/sys/devices/system/cpu/cpu57/topology/thread_siblings_list": "57,121",
+    "/sys/devices/system/cpu/cpu85/topology/thread_siblings_list": "21,85",
+    "/sys/devices/system/cpu/cpu19/topology/thread_siblings_list": "19,83",
+    "/sys/devices/system/cpu/cpu113/topology/thread_siblings_list": "49,113",
+    "/sys/devices/system/cpu/cpu47/topology/thread_siblings_list": "47,111",
+    "/sys/devices/system/cpu/cpu75/topology/thread_siblings_list": "11,75",
+    "/sys/devices/system/cpu/cpu103/topology/thread_siblings_list": "39,103",
+    "/sys/devices/system/cpu/cpu6/topology/thread_siblings_list": "6,70",
+    "/sys/devices/system/cpu/cpu37/topology/thread_siblings_list": "37,101",
+    "/sys/devices/system/cpu/cpu65/topology/thread_siblings_list": "1,65",
+    "/sys/devices/system/cpu/cpu93/topology/thread_siblings_list": "29,93",
+    "/sys/devices/system/cpu/cpu27/topology/thread_siblings_list": "27,91",
+    "/sys/devices/system/cpu/cpu121/topology/thread_siblings_list": "57,121",
+    "/sys/devices/system/cpu/cpu55/topology/thread_siblings_list": "55,119",
+    "/sys/devices/system/cpu/cpu83/topology/thread_siblings_list": "19,83",
+    "/sys/devices/system/cpu/cpu17/topology/thread_siblings_list": "17,81",
+    "/sys/devices/system/cpu/cpu111/topology/thread_siblings_list": "47,111",
+    "/sys/devices/system/cpu/cpu45/topology/thread_siblings_list": "45,109",
+    "/sys/devices/system/cpu/cpu73/topology/thread_siblings_list": "9,73",
+    "/sys/devices/system/cpu/cpu101/topology/thread_siblings_list": "37,101",
+    "/sys/devices/system/cpu/cpu4/topology/thread_siblings_list": "4,68",
+    "/sys/devices/system/cpu/cpu35/topology/thread_siblings_list": "35,99",
+    "/sys/devices/system/cpu/cpu63/topology/thread_siblings_list": "63,127",
+    "/sys/devices/system/cpu/cpu91/topology/thread_siblings_list": "27,91",
+    "/sys/devices/system/cpu/cpu25/topology/thread_siblings_list": "25,89",
+    "/sys/devices/system/cpu/cpu53/topology/thread_siblings_list": "53,117",
+    "/sys/devices/system/cpu/cpu81/topology/thread_siblings_list": "17,81",
+    "/sys/devices/system/cpu/cpu15/topology/thread_siblings_list": "15,79",
+    "/sys/devices/system/cpu/cpu43/topology/thread_siblings_list": "43,107",
+    "/sys/devices/system/cpu/cpu71/topology/thread_siblings_list": "7,71",
+    "/sys/devices/system/cpu/cpu2/topology/thread_siblings_list": "2,66",
+    "/sys/devices/system/cpu/cpu33/topology/thread_siblings_list": "33,97",
+    "/sys/devices/system/cpu/cpu61/topology/thread_siblings_list": "61,125",
+    "/sys/devices/system/cpu/cpu23/topology/thread_siblings_list": "23,87",
+    "/sys/devices/system/cpu/cpu118/topology/thread_siblings_list": "54,118",
+    "/sys/devices/system/cpu/cpu51/topology/thread_siblings_list": "51,115",
+    "/sys/devices/system/cpu/cpu13/topology/thread_siblings_list": "13,77",
+    "/sys/devices/system/cpu/cpu108/topology/thread_siblings_list": "44,108",
+    "/sys/devices/system/cpu/cpu41/topology/thread_siblings_list": "41,105",
+    "/sys/devices/system/cpu/cpu0/topology/thread_siblings_list": "0,64",
+    "/sys/devices/system/cpu/cpu98/topology/thread_siblings_list": "34,98",
+    "/sys/devices/system/cpu/cpu31/topology/thread_siblings_list": "31,95",
+    "/sys/devices/system/cpu/cpu126/topology/thread_siblings_list": "62,126",
+    "/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor": "schedutil",
+    "/sys/devices/system/cpu/cpufreq/boost": "1"
+  },
+  "load": "1.45 11.11 12.07 3/3077 3362528\n",
+  "memory": "MemTotal:       1043874712 kB\nMemFree:        209828332 kB\nMemAvailable:   1023446104 kB\nBuffers:         2634292 kB\nCached:         791450376 kB\nSwapCached:        21248 kB\nActive:         42495144 kB\nInactive:       752554556 kB\nActive(anon):    3110924 kB\nInactive(anon):    59656 kB\nActive(file):   39384220 kB\nInactive(file): 752494900 kB\nUnevictable:        5184 kB\nMlocked:              64 kB\nSwapTotal:       3999740 kB\nSwapFree:        3706068 kB\nZswap:                 0 kB\nZswapped:              0 kB\nDirty:              1148 kB\nWriteback:             0 kB\nAnonPages:        961564 kB\nMapped:           417816 kB\nShmem:           2205700 kB\nKReclaimable:   28914668 kB\nSlab:           33602504 kB\nSReclaimable:   28914668 kB\nSUnreclaim:      4687836 kB\nKernelStack:       51312 kB\nPageTables:        33060 kB\nSecPageTables:         0 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:    525937096 kB\nCommitted_AS:   13485508 kB\nVmallocTotal:   34359738367 kB\nVmallocUsed:      558080 kB\nVmallocChunk:          0 kB\nPercpu:           445952 kB\nHardwareCorrupted:     0 kB\nAnonHugePages:         0 kB\nShmemHugePages:        0 kB\nShmemPmdMapped:        0 kB\nFileHugePages:         0 kB\nFilePmdMapped:         0 kB\nUnaccepted:            0 kB\nHugePages_Total:       0\nHugePages_Free:        0\nHugePages_Rsvd:        0\nHugePages_Surp:        0\nHugepagesize:       2048 kB\nHugetlb:               0 kB\nDirectMap4k:      421148 kB\nDirectMap2M:    13062144 kB\nDirectMap1G:    1048576000 kB\n",
+  "tools": {
+    "gzip": {
+      "executable": "/usr/bin/gzip",
+      "realpath": "/usr/bin/gzip",
+      "sha256": "afea077ce127d4fa9ad410d3066ba2b54dea19c0b44f04adf56c72d5f7b7a9bb",
+      "type": "ELF native executable",
+      "header": null,
+      "linked_libraries": {
+        "command": [
+          "/usr/bin/ldd",
+          "/usr/bin/gzip"
+        ],
+        "returncode": 0,
+        "stdout": "\tlinux-vdso.so.1 (0x00007fffd837c000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007773e5c00000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007773e6020000)\n",
+        "stderr": ""
+      }
+    },
+    "pigz": {
+      "executable": "/usr/bin/pigz",
+      "realpath": "/usr/bin/pigz",
+      "sha256": "53528c9cc662ccb6f7ca19c5b9a1e2823fd1f055136ad6706d67429d9be34824",
+      "type": "ELF native executable",
+      "header": null,
+      "linked_libraries": {
+        "command": [
+          "/usr/bin/ldd",
+          "/usr/bin/pigz"
+        ],
+        "returncode": 0,
+        "stdout": "\tlinux-vdso.so.1 (0x00007fffde4c2000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007908d6e28000)\n\tlibz.so.1 => /lib/x86_64-linux-gnu/libz.so.1 (0x00007908d6e0c000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007908d6a00000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007908d6f62000)\n",
+        "stderr": ""
+      }
+    },
+    "rapidgzip": {
+      "executable": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/decompress-env/bin/rapidgzip",
+      "realpath": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/decompress-env/bin/rapidgzip",
+      "sha256": "fde8b72dad3660294e7809474edd589dd2db59ad87ed3d811e77a32a9ed3125e",
+      "type": "interpreter entry point; startup and interpreter RSS included",
+      "header": "#!/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/decompress-env/bin/python\n# -*- coding: utf-8 -*-\nimport sys\nfrom rapidgzip import cli\nif __name__ ==",
+      "linked_libraries": {
+        "command": [
+          "/usr/bin/ldd",
+          "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/decompress-env/bin/rapidgzip"
+        ],
+        "returncode": 1,
+        "stdout": "",
+        "stderr": "\tnot a dynamic executable\n"
+      }
+    }
+  },
+  "openms_linked_libraries": {
+    "xerces": {
+      "command": [
+        "/usr/bin/ldd",
+        "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/snapshots/xerces/lib/libOpenMS.so"
+      ],
+      "returncode": 0,
+      "stdout": "\tlinux-vdso.so.1 (0x00007ffff1ce3000)\n\tlibOpenSwathAlgo.so => /scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/snapshots/xerces/lib/libOpenSwathAlgo.so (0x00007b4aeb783000)\n\tlibxerces-c-3.3.so => /scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/dependencies/install/lib/libxerces-c-3.3.so (0x00007b4ae7600000)\n\tlibz.so.1 => /scratch/kohlbach/contrib/build/lib/libz.so.1 (0x00007b4aeb765000)\n\tlibzip.so.5 => /scratch/kohlbach/contrib/build/lib/libzip.so.5 (0x00007b4aeb735000)\n\tlibzstd.so.1 => /scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/dependencies/install/lib/libzstd.so.1 (0x00007b4aeb619000)\n\tlibgomp.so.1 => /lib/x86_64-linux-gnu/libgomp.so.1 (0x00007b4aeb5b6000)\n\tlibssl.so.3 => /lib/x86_64-linux-gnu/libssl.so.3 (0x00007b4ae7556000)\n\tlibcrypto.so.3 => /lib/x86_64-linux-gnu/libcrypto.so.3 (0x00007b4ae7000000)\n\tlibstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007b4ae6c00000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007b4ae6f17000)\n\tlibgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007b4ae7528000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007b4ae6800000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007b4aeb79f000)\n",
+      "stderr": ""
+    },
+    "libxml2-full": {
+      "command": [
+        "/usr/bin/ldd",
+        "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/snapshots/libxml2-full/lib/libOpenMS.so"
+      ],
+      "returncode": 0,
+      "stdout": "\tlinux-vdso.so.1 (0x00007ffcef19b000)\n\tlibOpenSwathAlgo.so => /scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/snapshots/libxml2-full/lib/libOpenSwathAlgo.so (0x00007375ad56b000)\n\tlibxml2.so.16 => /scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/dependencies/install/lib/libxml2.so.16 (0x00007375ad408000)\n\tlibz.so.1 => /scratch/kohlbach/contrib/build/lib/libz.so.1 (0x00007375ad3ea000)\n\tlibzip.so.5 => /scratch/kohlbach/contrib/build/lib/libzip.so.5 (0x00007375ad3ba000)\n\tlibzstd.so.1 => /scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/dependencies/install/lib/libzstd.so.1 (0x00007375a96e6000)\n\tlibgomp.so.1 => /lib/x86_64-linux-gnu/libgomp.so.1 (0x00007375a9690000)\n\tlibssl.so.3 => /lib/x86_64-linux-gnu/libssl.so.3 (0x00007375a95e6000)\n\tlibcrypto.so.3 => /lib/x86_64-linux-gnu/libcrypto.so.3 (0x00007375a9000000)\n\tlibstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007375a8c00000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007375a8f17000)\n\tlibgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007375a95b8000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007375a8800000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007375ad587000)\n",
+      "stderr": ""
+    }
+  }
+}

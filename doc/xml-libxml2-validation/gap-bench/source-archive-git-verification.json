@@ -1,0 +1,32 @@
+{
+  "xerces": {
+    "commit": "58aa37348c968a12e3285295f28c197cc0b7bdbe",
+    "archive_sha256": "ab29f33bd264f11a4b6ba1b4a2c5319ffd31708aa6c08bec08a626d0a38f9443",
+    "regular_files_checked": 9029,
+    "differences": [],
+    "verified_export_substitutions": [
+      {
+        "path": ".git_archival.txt",
+        "content": "node: 58aa37348c968a12e3285295f28c197cc0b7bdbe\nnode-date: 2026-10-19T18:43:37+02:00\ndescribe-name: v3.6.0-291-g58aa37348c968a12e3285295f28c197cc0b7bdbe\n",
+        "verified_against_git_archive": true
+      }
+    ],
+    "all_archive_regular_files_match_commit_or_export_substitution": true,
+    "git_regular_blobs_not_in_archive": []
+  },
+  "libxml2-full": {
+    "commit": "8f66b3d921c9512e1e5968f494c77715ff71c696",
+    "archive_sha256": "facea08f452382d13226ab81bf8a97698f3f701489f01ce79a0b0835e04bfa7c",
+    "regular_files_checked": 9307,
+    "differences": [],
+    "verified_export_substitutions": [
+      {
+        "path": ".git_archival.txt",
+        "content": "node: 8f66b3d921c9512e1e5968f494c77715ff71c696\nnode-date: 2026-10-20T08:24:02+02:00\ndescribe-name: v3.6.0-317-g8f66b3d921c9512e1e5968f494c77715ff71c696\n",
+        "verified_against_git_archive": true
+      }
+    ],
+    "all_archive_regular_files_match_commit_or_export_substitution": true,
+    "git_regular_blobs_not_in_archive": []
+  }
+}

@@ -1,5 +1,7 @@
 # Complete replacement: Linux through 96 threads and macOS options
 
+**Later measured phase (20 October):** [large matched inputs, real DDA/PASEF/IM, single-file gzip/pigz/rapidgzip, and expanded RSS/access checks](../gap-bench/REPORT.md). The [combined table now has 3,488 cells](../gap-bench/all-comparisons.csv), with 200 new three-repetition cells alongside the 3,288 historical five-repetition cells. This report preserves the earlier phase and its original measurements.
+
 This follow-up measures the **complete** replacement at `8f66b3d921c9512e1e5968f494c77715ff71c696` against the previously reviewed optimized Xerces control `58aa37348c968a12e3285295f28c197cc0b7bdbe`, not the old libxml2 PoC. Later feature-branch commits only publish documents. Both Linux backends were rebuilt with GCC 13.3, C++23 and `-O3 -DNDEBUG`, using private unpatched libxml2 2.15.4 / Xerces 3.3.0 and the same dependencies, inputs and harness. The full-replacement process maps no Xerces library.
 
 Linux uses ibminode05, EPYC 7763: 64 physical cores / 128 hardware threads, with CPUs 0–95 available to the timed processes. Thus 96 includes 32 SMT siblings. Each measured cell has five randomized fresh-process runs; inputs are cached, not a cold-storage benchmark. Independent-reader tests use OpenMP/BLAS=1; separate fixed-work tests vary the requested OpenMP team through 96. Workers in each cell read the same cached file and deterministic query sequence, each owning its own state; this is neither a 96-file storage test nor proof of shared-object thread safety.
@@ -57,11 +59,11 @@ The CSV contains every measured reader count: 1, 2, 4, 8, 16, 32, 64 and 96. Sel
 | Same medium data, internal zlib + outer gzip | 64 | 1,422.2 | 1,413.2 |
 | Same medium data, internal zlib + outer gzip | 96 | 1,510.2 | 1,535.0 |
 
-The separate fixed-work single-reader OpenMP matrix also has derived MB/s in the CSV, but varies binary decoding teams, not an outer-gzip inflater. Its 96-thread setting is qualified by the native-thread census in the main report. **No pigz or one-stream parallel-inflation benchmark was run.** Pigz’s [own manual](https://zlib.net/pigz/pigz.pdf) describes one main inflation thread for ordinary gzip and helper threads for reading, writing and checksum calculation; its compression parallelism should not be assumed for inflation.
+The separate fixed-work single-reader OpenMP matrix also has derived MB/s in the CSV, but varies binary decoding teams, not an outer-gzip inflater. Its 96-thread setting is qualified by the native-thread census in the main report. **No pigz or one-stream parallel-inflation benchmark was run in this earlier phase; the [later phase](../gap-bench/DETAILS.md#one-file-gzip-decompression-and-staged-end-to-end-workflow) measures both.** Pigz’s [own manual](https://zlib.net/pigz/pigz.pdf) describes one main inflation thread for ordinary gzip and helper threads for reading, writing and checksum calculation; its compression parallelism should not be assumed for inflation.
 
 ![Measured throughput and scaling](throughput/throughput.png)
 
-### Still unmeasured
+### Gaps at the end of this earlier phase
 
 - A matched **at least 1 GB** corpus covering uncompressed arrays, internal zlib and outer gzip. The current matched compression fixture is 140.8 MB plain / 68.9 MB zlib / 42.3 MB gzip, not the large 1,126.2 MB file. Outer-gzip-only wrapping of the uncompressed-array form is also absent.
 - Single-file outer-gzip decompression and end-to-end pipelines with 1–N decompression threads, including a separately measured pigz comparison or other explicitly named decompressor.

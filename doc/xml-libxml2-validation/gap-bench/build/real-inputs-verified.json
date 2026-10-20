@@ -1,0 +1,43 @@
+{
+  "files": [
+    {
+      "local_source": "/Users/kohlbach/Claude/mzpeak-example-data/data/general-ms/thermo-fusion-lumos/01_CPTAC_TMTS1-NCI7_P_JHUZ_20170509_LUMOS.mzML",
+      "destination": "dda-lumos.mzML",
+      "bytes": 617171864,
+      "sha256": "6416ec25f73efa3fefc0758b06eb6ae8e94bbb08de7b3fc02474d256de757656",
+      "accession": "PXD008952",
+      "source_url": "https://ftp.pride.ebi.ac.uk/pride/data/archive/2018/05/PXD008952/01_CPTAC_TMTS1-NCI7_P_JHUZ_20170509_LUMOS.mzML",
+      "note": "Thermo Fusion Lumos DDA/TMT, native published mzML"
+    },
+    {
+      "local_source": "/Users/kohlbach/Claude/mzpeak-example-data/data/general-ms/bruker-timstof-pro/SBA415.mzML",
+      "destination": "pasef-published.mzML",
+      "bytes": 1453824675,
+      "sha256": "852c735ed508fdf178f3dc0a834b0907562a2af53cbc106d724bca596d1140a4",
+      "accession": "MSV000101607",
+      "source_url": "https://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?file=f.MSV000101607/peak/SBA415.mzML&forceDownload=true",
+      "note": "Published PASEF spectra; mobility not retained in this conversion"
+    },
+    {
+      "local_source": "/Users/kohlbach/Claude/mzpeak-example-data/data/general-ms/bruker-timstof-pro/SBA415_Try.d/SBA415(1) Try_Slot1-2_1_8271.d/analysis.tdf",
+      "destination": "SBA415.d/analysis.tdf",
+      "bytes": 205651968,
+      "sha256": "825cd6aec11dce7c98c489435aec888d65a8a6aaa4b36d297cc63292b181202f",
+      "accession": "MSV000101607",
+      "source_url": "https://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?file=f.MSV000101607/raw/SBA415_Try.d/SBA415%281%29%20Try_Slot1-2_1_8271.d/analysis.tdf&forceDownload=true",
+      "note": "Public real DDA-PASEF vendor data for mobility-preserving conversion"
+    },
+    {
+      "local_source": "/Users/kohlbach/Claude/mzpeak-example-data/data/general-ms/bruker-timstof-pro/SBA415_Try.d/SBA415(1) Try_Slot1-2_1_8271.d/analysis.tdf_bin",
+      "destination": "SBA415.d/analysis.tdf_bin",
+      "bytes": 1972764672,
+      "sha256": "430963e7c4954de57d98336d35e7fc85e315ec6b06181b829b867646bbe0015b",
+      "accession": "MSV000101607",
+      "source_url": "https://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?file=f.MSV000101607/raw/SBA415_Try.d/SBA415%281%29%20Try_Slot1-2_1_8271.d/analysis.tdf_bin&forceDownload=true",
+      "note": "Public real DDA-PASEF vendor data for mobility-preserving conversion"
+    }
+  ],
+  "cache_provenance": "Existing read-only public-data cache; verify copied bytes, retain accession and public reconstruction URL. Mobility fields are audited before classifying an input as IM.",
+  "excluded": "CEMS_10ppm: all982 scalar drift times NaN; not accepted as meaningful IM coverage.",
+  "remote_verified": true
+}

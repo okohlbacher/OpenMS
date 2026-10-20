@@ -1,0 +1,7 @@
+{
+  "spectra_with_rt": 22544,
+  "min_rt_seconds": 600.0164655,
+  "max_rt_seconds": 1199.99744683333,
+  "finite_precursor_im_cv_terms": 22032,
+  "note": "Independent XML metadata audit; decoded per-peak/scalar IM equivalence is checked by both OpenMS backends. Not exhaustive equivalence of every metadata field."
+}

@@ -1,0 +1,15 @@
+{
+  "candidate": "final gap benchmark measurement harness; pinned unchanged OpenMS source",
+  "files": {
+    "results/gap-bench/reproduce/run-gap.py": "e1b8124d4a728daeeaf677f67990c9021e910f922e3e31be4ed423d88f4cfb9e",
+    "results/gap-bench/reproduce/run-access.py": "e91c713ec1cebe15358228af1e18f7207d9af37ab7e92f87f6303450969df737",
+    "results/gap-bench/reproduce/native-meter.cpp": "0e66b27607aa406747faf47454d57d1473f121ba50638a784ead00d68a249a80",
+    "results/gap-bench/reproduce/test-audit.py": "192b9641b801b2938248723f9f05accb83b8ab3a910d45e10f739a4c6ca97eb6",
+    "results/gap-bench/reproduce/final-gates.py": "fc777d160664cca1bb2a26a94ad762ea55b9726d2e0ad218710098bbda4a9840",
+    "results/gap-bench/reproduce/control-startup.py": "6abf43c4b08cc59520ce799377853aa9c1c15b7b5f0658bfba553640b2724f38",
+    "results/gap-bench/reproduce/analyze.py": "d633ce659ea26609824db3dc7f1082f97cd612bcff916f73eaf3fd5b44183ab3",
+    "results/gap-bench/staging/extended-benchmark-source/benchmark.cpp": "65f1fdb335cad50d045919367ae46bcfad454081233c30f09dd3fd88c9f82fa1",
+    "results/gap-bench/staging/extended-benchmark-source/launcher.cpp": "66122201244d9cfa2b1d31b1f50f1debd6104661a1ffcbc0c630317eb8f9f57d",
+    "OpenMS-libxml2/doc/xml-libxml2-validation/full-scaling/harness-header-audit.json": "ae6b2b63270c0339da7591d8e63f5823552fabce7b71de0a1549ea397ba2b651"
+  }
+}

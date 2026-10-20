@@ -1,0 +1,248 @@
+{
+  "files": {
+    "/etc/ld.so.cache": {
+      "realpath": "/etc/ld.so.cache",
+      "sha256": "442cb324ed9aa7ab8477ea8e0260ca979e3d6439fc6d50d61b9fc3b88c3f1033"
+    },
+    "/scratch/kohlbach/contrib/build/lib/libz.so.1.3.1": {
+      "realpath": "/scratch/kohlbach/contrib/build/lib/libz.so.1.3.1",
+      "sha256": "cc9ca6258f4a6eaa4a130a9f79074d413a0d91cb1adafe0c439abbe35c9b8010"
+    },
+    "/scratch/kohlbach/contrib/build/lib/libzip.so.5.5": {
+      "realpath": "/scratch/kohlbach/contrib/build/lib/libzip.so.5.5",
+      "sha256": "badeb02a90eba2403efcde2bd4a3dbd4e8ac446afbefa09aaabf4ddc26fa6c18"
+    },
+    "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/decompress-env/bin/python": {
+      "realpath": "/usr/bin/python3.12",
+      "sha256": "e50d468e8b0adfb05733f5b87b3cff34829c4a8c1aea50c865aa8bdfe4bb150f"
+    },
+    "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/decompress-env/bin/rapidgzip": {
+      "realpath": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/decompress-env/bin/rapidgzip",
+      "sha256": "fde8b72dad3660294e7809474edd589dd2db59ad87ed3d811e77a32a9ed3125e"
+    },
+    "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/decompress-env/lib/python3.12/site-packages/rapidgzip.cpython-312-x86_64-linux-gnu.so": {
+      "realpath": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/decompress-env/lib/python3.12/site-packages/rapidgzip.cpython-312-x86_64-linux-gnu.so",
+      "sha256": "ba56962904efd2a9cf9ff9a826c7f5fb84b4b288ec631fb025adb7393d237450"
+    },
+    "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/dependencies/install/lib/libxerces-c-3.3.so": {
+      "realpath": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/dependencies/install/lib/libxerces-c-3.3.so",
+      "sha256": "5891c47d797782e976192ebdb5305ce53e27d0f15f271790d215373ed032fcaf"
+    },
+    "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/dependencies/install/lib/libxerces-c.so": {
+      "realpath": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/dependencies/install/lib/libxerces-c-3.3.so",
+      "sha256": "5891c47d797782e976192ebdb5305ce53e27d0f15f271790d215373ed032fcaf"
+    },
+    "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/dependencies/install/lib/libxml2.so": {
+      "realpath": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/dependencies/install/lib/libxml2.so.16.1.4",
+      "sha256": "8f73941508f7b6008ddd9f91a7f89773e1edc47f462c286d88f308332191e071"
+    },
+    "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/dependencies/install/lib/libxml2.so.16": {
+      "realpath": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/dependencies/install/lib/libxml2.so.16.1.4",
+      "sha256": "8f73941508f7b6008ddd9f91a7f89773e1edc47f462c286d88f308332191e071"
+    },
+    "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/dependencies/install/lib/libxml2.so.16.1.4": {
+      "realpath": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/dependencies/install/lib/libxml2.so.16.1.4",
+      "sha256": "8f73941508f7b6008ddd9f91a7f89773e1edc47f462c286d88f308332191e071"
+    },
+    "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/dependencies/install/lib/libzstd.so.1.5.7": {
+      "realpath": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/dependencies/install/lib/libzstd.so.1.5.7",
+      "sha256": "7a339857ef9327fd614534d5f22ad6301d8b528e91581620a74a9a2ef7bfd246"
+    },
+    "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/extended-benchmark-build/xml_benchmark_launcher": {
+      "realpath": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/extended-benchmark-build/xml_benchmark_launcher",
+      "sha256": "7b890e9af36acd06978b60267556bf48449058e53b77ad5fe24dc4c624479fdb"
+    },
+    "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/extended-benchmark-build/xml_parser_benchmark": {
+      "realpath": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/extended-benchmark-build/xml_parser_benchmark",
+      "sha256": "980bf23354b48a94c9eb035a717e1aceb6af429d164c94b14b32983b5cd482c7"
+    },
+    "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/native-meter": {
+      "realpath": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/native-meter",
+      "sha256": "63c2239cfd3396fba5c01fe57cd8fc9fc05ce5d1cf7640a11c523de2697ef1d7"
+    },
+    "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/native-meter.cpp": {
+      "realpath": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/native-meter.cpp",
+      "sha256": "191573535221daf704b737165a6045a2b3b95eae26541eff016cb55cdfdfeae8"
+    },
+    "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/results/gap/identity-dependency-paths.json": {
+      "realpath": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/results/gap/identity-dependency-paths.json",
+      "sha256": "4040d293cb78c925a862dd56aab051ab03afd3f6f9cc19cace88700d838ce30d"
+    },
+    "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/run-access.py": {
+      "realpath": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/run-access.py",
+      "sha256": "bf5491b54ddde957b9bcc24bebd8cbd40edcc12d0042f66ed5762d603d480f2d"
+    },
+    "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/run-gap.py": {
+      "realpath": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/run-gap.py",
+      "sha256": "e85702a6680cda6fee4f37d42fb4a3694495bc1a8eaa66868f4eb37ef406b208"
+    },
+    "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/snapshots/libxml2-full/lib/libOpenMS.so": {
+      "realpath": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/snapshots/libxml2-full/lib/libOpenMS.so",
+      "sha256": "bbbe3ab42428aaa187000fc114bcd67c3e68b5a8913182d13bba4923b9f98684"
+    },
+    "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/snapshots/libxml2-full/lib/libOpenSwathAlgo.so": {
+      "realpath": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/snapshots/libxml2-full/lib/libOpenSwathAlgo.so",
+      "sha256": "6a096aef64506e49d4273882fd2a4a4d61dff38d7207bb5b7525186b09675edb"
+    },
+    "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/snapshots/xerces/lib/libOpenMS.so": {
+      "realpath": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/snapshots/xerces/lib/libOpenMS.so",
+      "sha256": "1cf09381c7679d46f43877072a2b9691a53a962b50ebba455f6d23ff3edda042"
+    },
+    "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/snapshots/xerces/lib/libOpenSwathAlgo.so": {
+      "realpath": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/snapshots/xerces/lib/libOpenSwathAlgo.so",
+      "sha256": "6a096aef64506e49d4273882fd2a4a4d61dff38d7207bb5b7525186b09675edb"
+    },
+    "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/staging/extended-benchmark-source/CMakeLists.txt": {
+      "realpath": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/staging/extended-benchmark-source/CMakeLists.txt",
+      "sha256": "92e6dcd16bc77b348f41927899e76463c3e0b25e769b2e7c8a1b49aa7e6a25ab"
+    },
+    "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/staging/extended-benchmark-source/benchmark.cpp": {
+      "realpath": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/staging/extended-benchmark-source/benchmark.cpp",
+      "sha256": "65f1fdb335cad50d045919367ae46bcfad454081233c30f09dd3fd88c9f82fa1"
+    },
+    "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/staging/extended-benchmark-source/conformance_probe.cpp": {
+      "realpath": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/staging/extended-benchmark-source/conformance_probe.cpp",
+      "sha256": "c3f59d7dce1560e3eacfc95860a17bd8b108d8f9532a250d09eabd31a2c02449"
+    },
+    "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/staging/extended-benchmark-source/launcher.cpp": {
+      "realpath": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/staging/extended-benchmark-source/launcher.cpp",
+      "sha256": "66122201244d9cfa2b1d31b1f50f1debd6104661a1ffcbc0c630317eb8f9f57d"
+    },
+    "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/staging/extended-benchmark-source/schema_validation_probe.cpp": {
+      "realpath": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/staging/extended-benchmark-source/schema_validation_probe.cpp",
+      "sha256": "36dff739490a9e75e08280d89e831df543e1275e63077235fd664b09f311f665"
+    },
+    "/usr/bin/gzip": {
+      "realpath": "/usr/bin/gzip",
+      "sha256": "afea077ce127d4fa9ad410d3066ba2b54dea19c0b44f04adf56c72d5f7b7a9bb"
+    },
+    "/usr/bin/pigz": {
+      "realpath": "/usr/bin/pigz",
+      "sha256": "53528c9cc662ccb6f7ca19c5b9a1e2823fd1f055136ad6706d67429d9be34824"
+    },
+    "/usr/lib/x86_64-linux-gnu/gconv/UTF-16.so": {
+      "realpath": "/usr/lib/x86_64-linux-gnu/gconv/UTF-16.so",
+      "sha256": "4e4a6460835164b61349f52573c9531f066d27b5cd6fa54c835240d0f1960b36"
+    },
+    "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2": {
+      "realpath": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+      "sha256": "c20a2dc8917c755f02b94049356320fe1f62ac7d9f8994731f807d9df39302da"
+    },
+    "/usr/lib/x86_64-linux-gnu/libc.so.6": {
+      "realpath": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+      "sha256": "3a15d66867d83762c7f2f1e37359cb8f6c5743edb369c65285cb0b1c4f7498bf"
+    },
+    "/usr/lib/x86_64-linux-gnu/libcrypto.so.3": {
+      "realpath": "/usr/lib/x86_64-linux-gnu/libcrypto.so.3",
+      "sha256": "6866ed711dab8927e1bf82bf1cd30e828bdfc34f3cc1e83b1c9eb01ce6c37d9a"
+    },
+    "/usr/lib/x86_64-linux-gnu/libexpat.so.1.9.1": {
+      "realpath": "/usr/lib/x86_64-linux-gnu/libexpat.so.1.9.1",
+      "sha256": "286682ecbc5e59a638963b1a4e6351e65eb32fcf4bdcb9cb7569b6a61fe06a8d"
+    },
+    "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1": {
+      "realpath": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1",
+      "sha256": "d93224d2b0dab4247598be683adca02f5cf00586f99c187579cd7e92058fb7cb"
+    },
+    "/usr/lib/x86_64-linux-gnu/libgomp.so.1.0.0": {
+      "realpath": "/usr/lib/x86_64-linux-gnu/libgomp.so.1.0.0",
+      "sha256": "135f3c8f006d2fe5e68e51281c7974cb991a03de3bfb3593d68d174dfcf854d1"
+    },
+    "/usr/lib/x86_64-linux-gnu/libm.so.6": {
+      "realpath": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+      "sha256": "fce00b6f25f459cf4ae0b7fae4257909a1a8a86f9149e7c029a5d617baf1ccd0"
+    },
+    "/usr/lib/x86_64-linux-gnu/libpthread.so.0": {
+      "realpath": "/usr/lib/x86_64-linux-gnu/libpthread.so.0",
+      "sha256": "90491a21ce44efcf3bd4b65ec82501c091d7ebe7f8d9b341dd01d721001d9ecd"
+    },
+    "/usr/lib/x86_64-linux-gnu/libssl.so.3": {
+      "realpath": "/usr/lib/x86_64-linux-gnu/libssl.so.3",
+      "sha256": "a40e7b67489bbd257e432c700ff8f6a1ad796425b5eccecdc2930127fdd86624"
+    },
+    "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33": {
+      "realpath": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33",
+      "sha256": "1fd75fe70354a416d75aef22bcae68c47bd25d20e2d0568c30b1a9838cf62f11"
+    },
+    "/usr/lib/x86_64-linux-gnu/libz.so.1.3": {
+      "realpath": "/usr/lib/x86_64-linux-gnu/libz.so.1.3",
+      "sha256": "86200da370f20476a2507e9097a789b5ef97269b4ca8d5e164ad82dab9d99892"
+    }
+  },
+  "inputs": {
+    "large-matched-plain.mzML": {
+      "bytes": 4505085414,
+      "sha256": "bbd284fbe3c34aa49c82caa2efd754d1d7bee6676ffa2c2818c58087bf41eeb3"
+    },
+    "large-matched-zlib.mzML": {
+      "bytes": 2206059192,
+      "sha256": "4982dbc3a1fe3a833b248afd85b9d9dc9b7584c5b0765f1f41ae3f5ed7dfbeca"
+    },
+    "large-matched-plain.mzML.gz": {
+      "bytes": 1947895300,
+      "sha256": "22ba4f5353b5dad66fc8ed064d3033b630ffdd3aaca194615f19725e5ab821a0"
+    },
+    "large-matched-zlib.mzML.gz": {
+      "bytes": 1369727708,
+      "sha256": "1fb132dce1a63d553ebf6ae9b135d4c05d313be6672428299b162fb08a895763"
+    },
+    "dda-lumos.mzML": {
+      "bytes": 617171864,
+      "sha256": "6416ec25f73efa3fefc0758b06eb6ae8e94bbb08de7b3fc02474d256de757656"
+    },
+    "pasef-published.mzML": {
+      "bytes": 1453824675,
+      "sha256": "852c735ed508fdf178f3dc0a834b0907562a2af53cbc106d724bca596d1140a4"
+    },
+    "pasef-im-600-1200s.mzML": {
+      "bytes": 961668867,
+      "sha256": "294351b644aca2be19367d04cefacf492cc2f4d6a2eb0f364e23f2c6cc042105"
+    }
+  },
+  "environment": {
+    "PATH": "/usr/bin:/bin",
+    "HOME": "/home/kohlbach",
+    "TMPDIR": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/tmp",
+    "OMP_DYNAMIC": "FALSE",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "BLIS_NUM_THREADS": "1",
+    "VECLIB_MAXIMUM_THREADS": "1",
+    "OPENMS_TMPDIR": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/tmp",
+    "LC_ALL": "C.UTF-8"
+  },
+  "openms_environments": {
+    "xerces": {
+      "PATH": "/usr/bin:/bin",
+      "HOME": "/home/kohlbach",
+      "TMPDIR": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/tmp",
+      "OMP_DYNAMIC": "FALSE",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "BLIS_NUM_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1",
+      "OPENMS_TMPDIR": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/tmp",
+      "LC_ALL": "C.UTF-8",
+      "OMP_NUM_THREADS": "1",
+      "LD_LIBRARY_PATH": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/snapshots/xerces/lib:/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/dependencies/install/lib:/scratch/kohlbach/contrib/build/lib"
+    },
+    "libxml2-full": {
+      "PATH": "/usr/bin:/bin",
+      "HOME": "/home/kohlbach",
+      "TMPDIR": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/tmp",
+      "OMP_DYNAMIC": "FALSE",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "BLIS_NUM_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1",
+      "OPENMS_TMPDIR": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/tmp",
+      "LC_ALL": "C.UTF-8",
+      "OMP_NUM_THREADS": "1",
+      "LD_LIBRARY_PATH": "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/snapshots/libxml2-full/lib:/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/dependencies/install/lib:/scratch/kohlbach/contrib/build/lib"
+    }
+  },
+  "source_commits": {
+    "xerces": "58aa37348c968a12e3285295f28c197cc0b7bdbe",
+    "libxml2-full": "8f66b3d921c9512e1e5968f494c77715ff71c696"
+  }
+}

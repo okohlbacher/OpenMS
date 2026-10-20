@@ -1,0 +1,22 @@
+• ## Final resolution review
+
+  **Prior findings:** The decisions table and supplied evidence resolve the remaining substantive items. Specifically verified against the packet:
+
+  - **Identity/audit bug:** `identity()` now hashes frozen dependency paths (`identity-dependency-paths.json` plus its referenced paths) separately from regenerated output, and `bind_identity()` refuses a changed configuration on resume. `identity-rewrite-test.json` shows identical before/after hashes with the access audit rewritten. Resolved.
+  - **Exception logging:** `cell_attempt` catches `BaseException`, appends a fsynced JSONL record (type, message, traceback, timestamp), and re-raises. No swallowing path remains. Resolved.
+  - **XML pruning (Kimi counterexample 1):** Confirmed not reproduced. `e.clear()` and `stack[-2].remove(e)` are inside the `if e.tag == N + "spectrum"` branch; only `stack.pop()` is unconditional, keeping start/end push/pop balanced. Scan and precursor descendants are intact at spectrum end; `im-window-metadata.json` (22,544 spectra, 600.0164655–1199.99744683333 s, 22,032 finite precursor IM CV terms) is consistent with a successful audit. The unit conversion `t *= 60 if ... else 1` binds correctly. No defect.
+  - **RSS-floor premise (Kimi counterexample 2):** Correctly rejected. Linux 6.8 `exec_mmap` saves the old mm high-water via `setmax_mm_hiwater_rss(&tsk->signal->maxrss, old_mm)` before `mmput`, so parent `wait4` can legitimately exceed the new mm's VmHWM. The measured control (native VmHWM 39,436,288; native wait4 39,845,888; outer Python wait4 154,140,672) is consistent with that behavior; the suggested equal-outer-RSS assertion would be wrong on this host.
+  - **SDK-matched regeneration:** Both inputs regenerate byte-identically under Xerces 58aa (`native-sdk-generation-control.json`); writer-inheritance exclusion from the ABI claim is sound.
+
+  **Remaining finding (Low, identity robustness — residual, not a regression):**
+
+  - **Severity:** Low
+  - **Location:** `identity()`, the files dict comprehension: `for p in files if p.is_file()`
+  - **Trigger:** Any enumerated path (binary, launcher, snapshot lib, dependency glob, frozen dependency path) that does not exist or is not a regular file at bind time.
+  - **Impact:** Missing paths are silently omitted rather than failing. If a dependency or snapshot glob matches nothing at first bind (e.g., a wrong frozen path), the identity baseline is established for an incomplete file set with no error; the omission is undetectable thereafter because later recomputation omits the same path. Deletions *after* a complete baseline bind are still caught (payload diff), so this only affects baseline completeness, not post-bind tamper detection.
+  - **Minimal fix/test:** Replace the silent filter with an existence assertion, e.g. `missing = [str(p) for p in files if not p.is_file()]; assert not missing, missing`. Test: point one frozen dependency path at a nonexistent file and confirm `bind_identity()` fails loudly instead of binding.
+
+  **Informational (not substantive):** In the XML audit, `assert times and ... , (min(times), max(times))` evaluates `min(times)` while constructing the failure message when `times` is empty, raising `ValueError` instead of `AssertionError`. The empty case still fails and is captured by `cell_attempt`; only the exception type is misleading.
+
+  No other substantive measurement or identity errors are supported by the supplied packet. The stated benchmark scope and the two rejected Kimi counterexamples are accepted as presented.
+

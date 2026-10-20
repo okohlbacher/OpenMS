@@ -1,0 +1,1964 @@
+[
+  {
+    "kind": "decompress",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 64,
+    "rep": 1
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 96,
+    "backend": "libxml2-full",
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 4
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 96,
+    "backend": "libxml2-full",
+    "rep": 4
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 96,
+    "rep": 0
+  },
+  {
+    "kind": "single-file-openmp",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 96,
+    "rep": 2
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 64,
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "single-file-openmp",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML.gz",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 96,
+    "backend": "xerces",
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 1,
+    "backend": "xerces",
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "single-file-openmp",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 96,
+    "rep": 3
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 1,
+    "rep": 4
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 96,
+    "backend": "xerces",
+    "rep": 1
+  },
+  {
+    "kind": "readers",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 1,
+    "backend": "libxml2-full",
+    "rep": 2
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 1,
+    "backend": "libxml2-full",
+    "rep": 1
+  },
+  {
+    "kind": "single-file-openmp",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "readers",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 32,
+    "rep": 0
+  },
+  {
+    "kind": "single-file-openmp",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 3
+  },
+  {
+    "kind": "readers",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 3
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 1,
+    "backend": "xerces",
+    "rep": 1
+  },
+  {
+    "kind": "single-file-openmp",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 3
+  },
+  {
+    "kind": "readers",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "gzip",
+    "requested_threads": 1,
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 1,
+    "rep": 4
+  },
+  {
+    "kind": "readers",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "gzip",
+    "requested_threads": 1,
+    "backend": "libxml2-full",
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 96,
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 3
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 96,
+    "backend": "libxml2-full",
+    "rep": 3
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 96,
+    "backend": "xerces",
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 4
+  },
+  {
+    "kind": "readers",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 4
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 32,
+    "rep": 3
+  },
+  {
+    "kind": "single-file-openmp",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 96,
+    "backend": "xerces",
+    "rep": 0
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 1,
+    "rep": 3
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 1,
+    "backend": "xerces",
+    "rep": 4
+  },
+  {
+    "kind": "single-file-openmp",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 96,
+    "rep": 1
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 1,
+    "backend": "libxml2-full",
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "single-file-openmp",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 96,
+    "rep": 4
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 96,
+    "backend": "xerces",
+    "rep": 1
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 96,
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 1,
+    "rep": 0
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 96,
+    "backend": "xerces",
+    "rep": 0
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 32,
+    "rep": 3
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 96,
+    "rep": 1
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "gzip",
+    "requested_threads": 1,
+    "backend": "libxml2-full",
+    "rep": 1
+  },
+  {
+    "kind": "readers",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 64,
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 64,
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 4
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "gzip",
+    "requested_threads": 1,
+    "backend": "libxml2-full",
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 64,
+    "rep": 0
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 32,
+    "rep": 2
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 1,
+    "backend": "libxml2-full",
+    "rep": 1
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 96,
+    "backend": "libxml2-full",
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML.gz",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 64,
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML.gz",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 96,
+    "rep": 3
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 3
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 3
+  },
+  {
+    "kind": "single-file-openmp",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 96,
+    "rep": 2
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 96,
+    "backend": "libxml2-full",
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 96,
+    "backend": "libxml2-full",
+    "rep": 0
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 32,
+    "rep": 1
+  },
+  {
+    "kind": "readers",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 1,
+    "backend": "xerces",
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 1,
+    "backend": "libxml2-full",
+    "rep": 1
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 96,
+    "rep": 1
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "single-file-openmp",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 4
+  },
+  {
+    "kind": "single-file-openmp",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 96,
+    "rep": 1
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 3
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 32,
+    "rep": 1
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML.gz",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 1,
+    "backend": "xerces",
+    "rep": 1
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 4
+  },
+  {
+    "kind": "readers",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 4
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 32,
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 64,
+    "rep": 3
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 96,
+    "backend": "xerces",
+    "rep": 3
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 96,
+    "backend": "libxml2-full",
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 1,
+    "rep": 4
+  },
+  {
+    "kind": "readers",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "single-file-openmp",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 1,
+    "backend": "libxml2-full",
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 1,
+    "backend": "libxml2-full",
+    "rep": 1
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 1,
+    "backend": "xerces",
+    "rep": 1
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML.gz",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 32,
+    "rep": 4
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 1,
+    "backend": "xerces",
+    "rep": 0
+  },
+  {
+    "kind": "single-file-openmp",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 96,
+    "rep": 1
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "gzip",
+    "requested_threads": 1,
+    "backend": "xerces",
+    "rep": 1
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 64,
+    "rep": 3
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "gzip",
+    "requested_threads": 1,
+    "rep": 3
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 3
+  },
+  {
+    "kind": "readers",
+    "input": "dda-lumos.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 3
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 32,
+    "rep": 2
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "gzip",
+    "requested_threads": 1,
+    "rep": 1
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "gzip",
+    "requested_threads": 1,
+    "rep": 0
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 1,
+    "backend": "xerces",
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "single-file-openmp",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 1,
+    "backend": "xerces",
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 96,
+    "backend": "libxml2-full",
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 1,
+    "rep": 1
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 96,
+    "backend": "libxml2-full",
+    "rep": 4
+  },
+  {
+    "kind": "readers",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "single-file-openmp",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "single-file-openmp",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML.gz",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 4
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 96,
+    "backend": "libxml2-full",
+    "rep": 1
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 64,
+    "rep": 1
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 32,
+    "rep": 0
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 1,
+    "backend": "libxml2-full",
+    "rep": 3
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "gzip",
+    "requested_threads": 1,
+    "rep": 2
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 96,
+    "rep": 0
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "gzip",
+    "requested_threads": 1,
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "gzip",
+    "requested_threads": 1,
+    "backend": "xerces",
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "readers",
+    "input": "pasef-published.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 64,
+    "rep": 4
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 1,
+    "rep": 1
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "readers",
+    "input": "pasef-published.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "gzip",
+    "requested_threads": 1,
+    "backend": "xerces",
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 3
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 1,
+    "backend": "libxml2-full",
+    "rep": 0
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "gzip",
+    "requested_threads": 1,
+    "backend": "libxml2-full",
+    "rep": 4
+  },
+  {
+    "kind": "readers",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 1,
+    "backend": "libxml2-full",
+    "rep": 2
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 32,
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 4
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 96,
+    "backend": "libxml2-full",
+    "rep": 1
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 1,
+    "backend": "libxml2-full",
+    "rep": 4
+  },
+  {
+    "kind": "single-file-openmp",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 96,
+    "rep": 0
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 96,
+    "rep": 1
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 1,
+    "rep": 1
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 1,
+    "rep": 0
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 1,
+    "rep": 0
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 64,
+    "rep": 0
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 96,
+    "backend": "xerces",
+    "rep": 4
+  },
+  {
+    "kind": "readers",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 3
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 1,
+    "rep": 1
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 96,
+    "rep": 0
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 32,
+    "rep": 4
+  },
+  {
+    "kind": "readers",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 1,
+    "backend": "xerces",
+    "rep": 0
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 1,
+    "backend": "libxml2-full",
+    "rep": 0
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 1,
+    "backend": "xerces",
+    "rep": 3
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "gzip",
+    "requested_threads": 1,
+    "backend": "libxml2-full",
+    "rep": 2
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "gzip",
+    "requested_threads": 1,
+    "backend": "xerces",
+    "rep": 3
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "readers",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "single-file-openmp",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 96,
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 96,
+    "backend": "xerces",
+    "rep": 2
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 96,
+    "backend": "libxml2-full",
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 4
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 96,
+    "rep": 1
+  },
+  {
+    "kind": "single-file-openmp",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 96,
+    "rep": 0
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 1,
+    "rep": 0
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 64,
+    "rep": 1
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "gzip",
+    "requested_threads": 1,
+    "backend": "xerces",
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 96,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "readers",
+    "input": "pasef-im-600-1200s.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 3
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "xerces",
+    "workers": 32,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "single-file-openmp",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 96,
+    "rep": 1
+  },
+  {
+    "kind": "readers",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 96,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-zlib.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 1,
+    "rep": 4
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 64,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "single-file-openmp",
+    "input": "large-matched-zlib.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "gzip",
+    "requested_threads": 1,
+    "backend": "libxml2-full",
+    "rep": 1
+  },
+  {
+    "kind": "decompress",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 96,
+    "rep": 0
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 96,
+    "backend": "xerces",
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 32,
+    "omp": 1,
+    "rep": 0
+  },
+  {
+    "kind": "single-file-openmp",
+    "input": "large-matched-plain.mzML",
+    "backend": "libxml2-full",
+    "workers": 1,
+    "omp": 96,
+    "rep": 0
+  },
+  {
+    "kind": "readers",
+    "input": "large-matched-plain.mzML.gz",
+    "backend": "xerces",
+    "workers": 64,
+    "omp": 1,
+    "rep": 1
+  },
+  {
+    "kind": "readers",
+    "input": "dda-lumos.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 1,
+    "rep": 2
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 1,
+    "backend": "xerces",
+    "rep": 2
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "pigz",
+    "requested_threads": 96,
+    "backend": "xerces",
+    "rep": 4
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-plain.mzML.gz",
+    "tool": "rapidgzip",
+    "requested_threads": 96,
+    "backend": "xerces",
+    "rep": 1
+  },
+  {
+    "kind": "single-file-openmp",
+    "input": "large-matched-plain.mzML",
+    "backend": "xerces",
+    "workers": 1,
+    "omp": 96,
+    "rep": 0
+  },
+  {
+    "kind": "staged-pipeline",
+    "input": "large-matched-zlib.mzML.gz",
+    "tool": "gzip",
+    "requested_threads": 1,
+    "backend": "xerces",
+    "rep": 2
+  }
+]

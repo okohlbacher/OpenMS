@@ -1,0 +1,14 @@
+{
+  "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/staging/libxml2-full.tar.gz": {
+    "bytes": 339628075,
+    "sha256": "facea08f452382d13226ab81bf8a97698f3f701489f01ce79a0b0835e04bfa7c"
+  },
+  "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/staging/xerces.tar.gz": {
+    "bytes": 331284736,
+    "sha256": "ab29f33bd264f11a4b6ba1b4a2c5319ffd31708aa6c08bec08a626d0a38f9443"
+  },
+  "/scratch/kohlbach/openms-xml-gap-bench-20261020-01a153cb/data/huge-array.mzML": {
+    "bytes": 16783199,
+    "sha256": "a7afeee51a600050eb7e8f03e63d82cf8231781362a5c52e17e0a21c0487a81f"
+  }
+}
