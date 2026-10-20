@@ -10,6 +10,7 @@
 #include <OpenMS/test_config.h>
 #include <fstream>
 #include <future>
+#include <map>
 #include <stdexcept>
 
 using namespace OpenMS;
@@ -76,7 +77,7 @@ START_SECTION(Malformed XML and exception propagation)
   reader.parseBuffer_("<root><ignored/></root>", &stopped);
   TEST_EQUAL(stopped.starts, 1)
 END_SECTION
-START_SECTION(SAX1 parser errors retain the actual diagnostic and location)
+START_SECTION(Parser errors retain the actual diagnostic and location)
   Reader reader;
   Handler handler;
   bool caught = false;
@@ -95,6 +96,61 @@ START_SECTION(SAX1 parser errors retain the actual diagnostic and location)
     TEST_TRUE(message.find("column ") != std::string::npos)
   }
   TEST_TRUE(caught)
+END_SECTION
+START_SECTION(SAX2 rejects namespace-invalid XML)
+  for (const std::string xml : {
+      "<root ghost:flag='1'/>",
+      "<ghost:root/>",
+      "<root xmlns:a='urn:same' xmlns:b='urn:same' a:value='1' b:value='2'/>",
+      "<root xmlns:xml='urn:wrong'/>",
+      "<root xmlns:xmlns='urn:forbidden'/>",
+      "<root xmlns:p='http://www.w3.org/XML/1998/namespace'/>"})
+  {
+    Reader reader;
+    Handler handler;
+    TEST_EXCEPTION(Exception::ParseError, reader.parseBuffer_(xml, &handler))
+  }
+END_SECTION
+START_SECTION(SAX2 preserves qualified names namespace declarations and bounded attribute values)
+  struct Namespaces : Internal::XMLHandler
+  {
+    Namespaces() : XMLHandler("namespaces", "1.0") {}
+    std::vector<std::u16string> starts, ends;
+    std::map<std::u16string, std::u16string> values;
+    void onStartElement(const char16_t* name, const Internal::XMLAttributes& attrs) override
+    {
+      starts.emplace_back(name);
+      for (const char16_t* key : {u"xmlns", u"xmlns:p", u"xmlns:xsi", u"value", u"xsi:schemaLocation",
+                                  u"mzML:version", u"p:attr", u"tail"})
+      {
+        if (const auto* value = attrs.value(key)) values[key] = value;
+      }
+    }
+    void onEndElement(const char16_t* name) override { ends.emplace_back(name); }
+    void onCharacters(const char16_t*, Size) override {}
+  } handler;
+  Reader reader;
+  reader.parseBuffer_("<!DOCTYPE root [<!ENTITY named 'entity'>]>"
+      "<root xmlns='urn:default' xmlns:p='urn:prefix' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' "
+      "xmlns:mzML='urn:mzml' value='&named; &amp; &#x1F9EC;' xsi:schemaLocation='urn:default schema.xsd' mzML:version='1.1'>"
+      "<p:child p:attr='é &lt; &#946;' tail='last'/></root>", &handler);
+  TEST_TRUE(handler.starts == std::vector<std::u16string>({u"root", u"p:child"}))
+  TEST_TRUE(handler.ends == std::vector<std::u16string>({u"p:child", u"root"}))
+  TEST_TRUE(handler.values[u"xmlns"] == u"urn:default")
+  TEST_TRUE(handler.values[u"xmlns:p"] == u"urn:prefix")
+  TEST_TRUE(handler.values[u"xmlns:xsi"] == u"http://www.w3.org/2001/XMLSchema-instance")
+  TEST_TRUE(handler.values[u"value"] == u"entity & 🧬")
+  TEST_TRUE(handler.values[u"xsi:schemaLocation"] == u"urn:default schema.xsd")
+  TEST_TRUE(handler.values[u"mzML:version"] == u"1.1")
+  TEST_TRUE(handler.values[u"p:attr"] == u"é < β")
+  TEST_TRUE(handler.values[u"tail"] == u"last")
+  Handler stopped;
+  stopped.stop = true;
+  reader.parseBuffer_("<p:root xmlns:p='urn:prefix'><p:ignored/></p:root>", &stopped);
+  TEST_EQUAL(stopped.starts, 1)
+  Handler failed;
+  failed.fail = true;
+  TEST_EXCEPTION(std::runtime_error, reader.parseBuffer_("<p:root xmlns:p='urn:prefix'/>", &failed))
 END_SECTION
 START_SECTION(External entity loading is disabled)
   std::string filename;

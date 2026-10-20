@@ -71,7 +71,29 @@ namespace OpenMS::Internal
 
     std::string name_(const xmlNode* node)
     {
-      return node && node->name ? reinterpret_cast<const char*>(node->name) : "";
+      if (!node || !node->name) { return {}; }
+      // Prefixes are arbitrary, but extension namespaces must not impersonate
+      // mzIdentML elements. Retain support for historical unqualified files.
+      if (node->ns && node->ns->href && *node->ns->href &&
+          !xmlStrEqual(node->ns->href, BAD_CAST "http://psidev.info/psi/pi/mzIdentML/1.0") &&
+          !xmlStrEqual(node->ns->href, BAD_CAST "http://psidev.info/psi/pi/mzIdentML/1.1") &&
+          !xmlStrEqual(node->ns->href, BAD_CAST "http://psidev.info/psi/pi/mzIdentML/1.2") &&
+          !xmlStrEqual(node->ns->href, BAD_CAST "http://psidev.info/psi/pi/mzIdentML/1.3")) { return {}; }
+      return reinterpret_cast<const char*>(node->name);
+    }
+
+    xmlNode* nextElement_(xmlNode* node)
+    {
+      node = xmlNextElementSibling(node);
+      while (node && name_(node).empty()) { node = xmlNextElementSibling(node); }
+      return node;
+    }
+
+    xmlNode* firstElement_(xmlNode* node)
+    {
+      node = xmlFirstElementChild(node);
+      if (node && name_(node).empty()) { return nextElement_(node); }
+      return node;
     }
 
     bool boolean_(std::string value)
@@ -124,7 +146,13 @@ namespace OpenMS::Internal
 
     std::vector<xmlNode*> descendants_(const xmlDoc* doc, const std::string& name)
     {
-      return descendants_(reinterpret_cast<const xmlNode*>(doc), name);
+      // DTD entity declarations can themselves own parsed element trees. They
+      // describe replacement content and must not be counted as document data.
+      xmlNode* root = xmlDocGetRootElement(doc);
+      if (!root) { return {}; }
+      auto result = descendants_(root, name);
+      if (name_(root) == name) { result.insert(result.begin(), root); }
+      return result;
     }
 
     xmlNode* element_(xmlDoc* doc, const std::string& name)
@@ -281,7 +309,7 @@ namespace OpenMS::Internal
           error && error->message ? error->message : "Failed to parse mzIdentML file.");
       }
       auto* xmlDoc = document.get();
-      if (!xmlDocGetRootElement(xmlDoc) || !xmlStrEqual(xmlDocGetRootElement(xmlDoc)->name, BAD_CAST "MzIdentML"))
+      if (!xmlDocGetRootElement(xmlDoc) || name_(xmlDocGetRootElement(xmlDoc)) != "MzIdentML")
       {
         throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, mzid_file, "Expected MzIdentML root element.");
       }
@@ -296,7 +324,7 @@ namespace OpenMS::Internal
 
           xmlNode* element_SearchParams = current_sp;
           std::string cross_linking_search = attribute_(element_SearchParams, "id");
-          xmlNode* child = xmlFirstElementChild(element_SearchParams);
+          xmlNode* child = firstElement_(element_SearchParams);
 
           while (child && !xl_ms_search_)
           {
@@ -305,7 +333,7 @@ namespace OpenMS::Internal
             {
               xl_ms_search_ = true;
             }
-            child = xmlNextElementSibling(child);
+            child = nextElement_(child);
           }
         }
 
@@ -644,7 +672,7 @@ namespace OpenMS::Internal
           // Found element node: re-cast as element
           xmlNode* element_AnalysisSoftware = current_as;
           std::string id = attribute_(element_AnalysisSoftware, "id");
-          xmlNode* child = xmlFirstElementChild(element_AnalysisSoftware);
+          xmlNode* child = firstElement_(element_AnalysisSoftware);
           std::string swname, swversion;
           while (child)
           {
@@ -683,7 +711,7 @@ namespace OpenMS::Internal
                 }
               }
             }
-            child = xmlNextElementSibling(child);
+            child = nextElement_(child);
           }
           if (!swname.empty() && !swversion.empty())
           {
@@ -715,7 +743,7 @@ namespace OpenMS::Internal
           std::string acc = attribute_(element_dbs, "accession");
           CVTermList cvs;
 
-          xmlNode* child = xmlFirstElementChild(element_dbs);
+          xmlNode* child = firstElement_(element_dbs);
           while (child)
           {
             if (equal_(name_(child), "Seq"))
@@ -726,7 +754,7 @@ namespace OpenMS::Internal
             {
               cvs.addCVTerm(parseCvParam_(child));
             }
-            child = xmlNextElementSibling(child);
+            child = nextElement_(child);
           }
           if (!acc.empty())
           {
@@ -862,7 +890,7 @@ namespace OpenMS::Internal
 
           std::string searchDatabase_ref;
           std::string spectra_data_ref;
-          xmlNode* child = xmlFirstElementChild(element_si);
+          xmlNode* child = firstElement_(element_si);
           while (child)
           {
             if (equal_(name_(child), "InputSpectra"))
@@ -873,7 +901,7 @@ namespace OpenMS::Internal
             {
               searchDatabase_ref = attribute_(child, "searchDatabase_ref");
             }
-            child = xmlNextElementSibling(child);
+            child = nextElement_(child);
           }
           SpectrumIdentification temp_struct = {spectra_data_ref, searchDatabase_ref, spectrumIdentificationProtocol_ref, spectrumIdentificationList_ref};
           si_map_.insert(make_pair(id, temp_struct));
@@ -931,12 +959,12 @@ namespace OpenMS::Internal
           double f_tol = 0;
           CVTermList tcv;
           map<std::string, DataValue> tup;
-          xmlNode* child = xmlFirstElementChild(element_sip);
+          xmlNode* child = firstElement_(element_sip);
           while (child)
           {
             if (equal_(name_(child), "SearchType"))
             {
-              searchtype = parseCvParam_(xmlFirstElementChild(child));
+              searchtype = parseCvParam_(firstElement_(child));
             }
             else if (equal_(name_(child), "AdditionalSearchParams"))
             {
@@ -946,7 +974,7 @@ namespace OpenMS::Internal
             else if (equal_(name_(child), "ModificationParams")) // TODO @all where to store the specificities?
             {
               vector<std::string> fix, var;
-              xmlNode* sm = xmlFirstElementChild(child);
+              xmlNode* sm = firstElement_(child);
               while (sm)
               {
                 std::string residues = attribute_(sm, "residues");
@@ -964,7 +992,7 @@ namespace OpenMS::Internal
 
                 std::string mname;
                 CVTermList specificity_rules;
-                xmlNode* sub = xmlFirstElementChild(sm);
+                xmlNode* sub = firstElement_(sm);
                 while (sub)
                 {
                   if (equal_(name_(sub), "cvParam"))
@@ -1001,7 +1029,7 @@ namespace OpenMS::Internal
                   {
                     OPENMS_LOG_ERROR << "Misplaced information in 'ModificationParams' ignored." << endl;
                   }
-                  sub = xmlNextElementSibling(sub);
+                  sub = nextElement_(sub);
                 }
 
                 if (!mname.empty())
@@ -1058,14 +1086,14 @@ namespace OpenMS::Internal
                     var.push_back(mod);
                   }
                 }
-                sm = xmlNextElementSibling(sm);
+                sm = nextElement_(sm);
               }
               sp.fixed_modifications = fix;
               sp.variable_modifications = var;
             }
             else if (equal_(name_(child), "Enzymes")) // TODO @all : where store multiple enzymes for one identificationrun?
             {
-              xmlNode* enzyme = xmlFirstElementChild(child); //Enzyme elements
+              xmlNode* enzyme = firstElement_(child); //Enzyme elements
               while (enzyme)
               {
                 int missedCleavages = -1;
@@ -1097,7 +1125,7 @@ namespace OpenMS::Internal
 //                    OPENMS_LOG_WARN << "Search engine settings for 'minDistance' unreadable." << endl;
 //                }
                 enzymename = "UNKNOWN";
-                xmlNode* sub = xmlFirstElementChild(enzyme);
+                xmlNode* sub = firstElement_(enzyme);
                 while (sub)
                 {
                   //SiteRegex unstorable just now
@@ -1118,13 +1146,13 @@ namespace OpenMS::Internal
                       }
                     }
                   }
-                  sub = xmlNextElementSibling(sub);
+                  sub = nextElement_(sub);
                 }
                 if (ProteaseDB::getInstance()->hasEnzyme(enzymename))
                 {
                   sp.digestion_enzyme = *(ProteaseDB::getInstance()->getEnzyme(enzymename));
                 }
-                enzyme = xmlNextElementSibling(enzyme);
+                enzyme = nextElement_(enzyme);
               }
             }
             else if (equal_(name_(child), "FragmentTolerance"))
@@ -1162,7 +1190,7 @@ namespace OpenMS::Internal
               tcv = params.first;
               tup = params.second;
             }
-            child = xmlNextElementSibling(child);
+            child = nextElement_(child);
             //      <DatabaseFilters> omitted for now, not reflectable by our member structures
             //      <DatabaseTranslation> omitted for now, not reflectable by our member structures
             //      <MassTable> omitted for now, not reflectable by our member structures
@@ -1250,12 +1278,12 @@ namespace OpenMS::Internal
 //            releaseDate.set(attribute_(element_in, "releaseDate"));
             std::string version = attribute_(element_in, "version");
             std::string dbname;
-            xmlNode* element_dbn = xmlFirstElementChild(element_in);
+            xmlNode* element_dbn = firstElement_(element_in);
             while (element_dbn)
             {
               if (equal_(name_(element_dbn), "DatabaseName"))
               {
-                xmlNode* databasename_param = xmlFirstElementChild(element_dbn);
+                xmlNode* databasename_param = firstElement_(element_dbn);
                 while (databasename_param)
                 {
                   if (equal_(name_(databasename_param), "cvParam"))
@@ -1270,11 +1298,11 @@ namespace OpenMS::Internal
                     // in this case, just use the "name"
                     dbname = param.second.isEmpty() ? dbname = param.first : param.second.toString();
                   }
-                  databasename_param = xmlNextElementSibling(databasename_param);
+                  databasename_param = nextElement_(databasename_param);
                 }
                 //each SearchDatabase element may have one DatabaseName, each DatabaseName only one param
               }
-              element_dbn = xmlNextElementSibling(element_dbn);
+              element_dbn = nextElement_(element_dbn);
             }
             if (dbname.empty())
             {
@@ -1314,7 +1342,7 @@ namespace OpenMS::Internal
           std::string id = attribute_(element_lis, "id");
 //          std::string name = attribute_(element_res, "name");
 
-          xmlNode* element_res = xmlFirstElementChild(element_lis);
+          xmlNode* element_res = firstElement_(element_lis);
           while (element_res)
           {
             if (equal_(name_(element_res), "SpectrumIdentificationResult"))
@@ -1328,7 +1356,7 @@ namespace OpenMS::Internal
                 std::multimap<std::string, int> xl_val_map;
                 std::set<std::string> xl_val_set;
                 int index_counter = 0;
-                xmlNode* sii = xmlFirstElementChild(element_res);
+                xmlNode* sii = firstElement_(element_res);
 
                 // loop over all SIIs of a spectrum and group together the SIIs belonging to the same cross-link spectrum match
                 while (sii)
@@ -1348,7 +1376,7 @@ namespace OpenMS::Internal
                       }
                     }
                   }
-                  sii = xmlNextElementSibling(sii);
+                  sii = nextElement_(sii);
                   ++index_counter;
                 }
 
@@ -1375,14 +1403,14 @@ namespace OpenMS::Internal
                 xmlNode* parent = element_res->parent;
                 std::string sil = attribute_(parent, "id");
 
-                xmlNode* child = xmlFirstElementChild(element_res);
+                xmlNode* child = firstElement_(element_res);
                 while (child)
                 {
                   if (equal_(name_(child), "SpectrumIdentificationItem"))
                   {
                     parseSpectrumIdentificationItemElement_(child, pep_id_->back(), sil);
                   }
-                  child = xmlNextElementSibling(child);
+                  child = nextElement_(child);
                 }
 
               } // end of "not-XLMS-results"
@@ -1428,7 +1456,7 @@ namespace OpenMS::Internal
                 OPENMS_LOG_WARN << "No retention time found for 'SpectrumIdentificationResult'" << endl;
               }
             }
-            element_res = xmlNextElementSibling(element_res);
+            element_res = nextElement_(element_res);
           }
         }
       }
@@ -1799,14 +1827,14 @@ namespace OpenMS::Internal
 
         // Reuse the regular SII parser so per-SII score type/userParams/passThreshold/calcMZ handling and
         // pro_id_ protein-hit population behave exactly like the normal non-XL path.
-        xmlNode* reg_sii = xmlFirstElementChild(element_res);
+        xmlNode* reg_sii = firstElement_(element_res);
         while (reg_sii)
         {
           if (equal_(name_(reg_sii), "SpectrumIdentificationItem"))
           {
             parseSpectrumIdentificationItemElement_(reg_sii, current_pep_id, sil);
           }
-          reg_sii = xmlNextElementSibling(reg_sii);
+          reg_sii = nextElement_(reg_sii);
         }
         current_pep_id.setIdentifier(runOfList_(sil).getIdentifier());
         current_pep_id.sort();
@@ -2289,7 +2317,7 @@ namespace OpenMS::Internal
         spectrum_identification.insertHit(hit);
 
         // due to redundant references this is not needed! peptideref already maps to all those PeptideEvidence elements
-        //      xmlNode* child = xmlFirstElementChild(spectrumIdentificationItemElement);
+        //      xmlNode* child = firstElement_(spectrumIdentificationItemElement);
         //      while ( child )
         //      {
         //        if (equal_(name_(child), "PeptideEvidenceRef"))
@@ -2300,7 +2328,7 @@ namespace OpenMS::Internal
         //          spectrum_identification.getHits().back().setAAAfter (char acid);
         //          break;
         //        }
-        //        child = xmlNextElementSibling(child);
+        //        child = nextElement_(child);
         //      }
       }
       // <Fragmentation> omitted for the time being
@@ -2332,14 +2360,14 @@ namespace OpenMS::Internal
           //      std::string protein_score_type_ <- from ProteinDetectionProtocol
           //      DoubleReal    protein_significance_threshold_ <- from ProteinDetectionProtocol
 
-          xmlNode* child = xmlFirstElementChild(element_pr);
+          xmlNode* child = firstElement_(element_pr);
           while (child)
           {
             if (equal_(name_(child), "ProteinAmbiguityGroup"))
             {
               parseProteinAmbiguityGroupElement_(child, pro_id_->back());
             }
-            child = xmlNextElementSibling(child);
+            child = nextElement_(child);
           }
         }
       }
@@ -2351,14 +2379,14 @@ namespace OpenMS::Internal
 //      pair<CVTermList, map<std::string, DataValue> > params = parseParamGroup_(children_(proteinAmbiguityGroupElement));
 
       //fill pro_id_->back() with content,
-      xmlNode* child = xmlFirstElementChild(proteinAmbiguityGroupElement);
+      xmlNode* child = firstElement_(proteinAmbiguityGroupElement);
       while (child)
       {
         if (equal_(name_(child), "ProteinDetectionHypothesis"))
         {
           parseProteinDetectionHypothesisElement_(child, protein_identification);
         }
-        child = xmlNextElementSibling(child);
+        child = nextElement_(child);
       }
     }
 
@@ -2405,7 +2433,7 @@ namespace OpenMS::Internal
       }
 
       const ModificationsDB* mod_db = ModificationsDB::getInstance();
-      for (xmlNode* cvp = xmlFirstElementChild(modification_element); cvp != nullptr; cvp = xmlNextElementSibling(cvp))
+      for (xmlNode* cvp = firstElement_(modification_element); cvp != nullptr; cvp = nextElement_(cvp))
       {
         const std::string mod_name = attribute_(cvp, "name");
         // guard with has() first: searchModifications() would otherwise log a "not found" warning for
@@ -2584,7 +2612,7 @@ namespace OpenMS::Internal
             {
               std::string pep_id = attribute_(peptide, "id");
               //std::vector<xmlNode*> cvParams = descendants_(element_sib, "cvParam");
-              xmlNode* cvp = xmlFirstElementChild(element_sib);
+              xmlNode* cvp = firstElement_(element_sib);
               //for (Size i = 0; i < cvParams.length(); ++i)
               bool donor_acceptor_found = false;
               bool xlink_mod_found = false;
@@ -2602,7 +2630,7 @@ namespace OpenMS::Internal
 
                   // Find the actual modification name from UNIMOD/XLMOD cvParam
                   std::string xl_mod_name;
-                  xmlNode* cvp1 = xmlFirstElementChild(element_sib);
+                  xmlNode* cvp1 = firstElement_(element_sib);
                   while (cvp1)
                   {
                     std::string cvref = attribute_(cvp1, "cvRef");
@@ -2611,12 +2639,12 @@ namespace OpenMS::Internal
                       xl_mod_name = attribute_(cvp1, "name");
                       break;
                     }
-                    cvp1 = xmlNextElementSibling(cvp1);
+                    cvp1 = nextElement_(cvp1);
                   }
                   if (xl_mod_name.empty())
                   {
                     // fallback
-                    xl_mod_name = attribute_(xmlFirstElementChild(element_sib), "name");
+                    xl_mod_name = attribute_(firstElement_(element_sib), "name");
                   }
                   xl_mod_map_.insert(make_pair(pep_id, xl_mod_name));
                   donor_acceptor_found = true;
@@ -2645,7 +2673,7 @@ namespace OpenMS::Internal
                     if ( (cv.getCVIdentifierRef() != "UNIMOD") && (cv.getCVIdentifierRef() != "XLMOD") )
                     {
                       // e.g.  <cvParam accession="MS:1001524" name="fragment neutral loss" cvRef="PSI-MS" value="0" unitAccession="UO:0000221" unitName="dalton" unitCvRef="UO"/>
-                      cvp = xmlNextElementSibling(cvp);
+                      cvp = nextElement_(cvp);
                       continue;
                     }
                     if (index == 0)
@@ -2664,7 +2692,7 @@ namespace OpenMS::Internal
                         {
                           aas.setNTerminalModification(cvname);
                         }
-                        cvp = xmlNextElementSibling(cvp);
+                        cvp = nextElement_(cvp);
                         continue;
                       }
                       catch (...)
@@ -2700,7 +2728,7 @@ namespace OpenMS::Internal
                           // TODO? @enetz look it up in XLDB?
                         }
                       }
-                      cvp = xmlNextElementSibling(cvp);
+                      cvp = nextElement_(cvp);
                       continue;
                     }
                     else
@@ -2730,7 +2758,7 @@ namespace OpenMS::Internal
                           // TODO? @enetz look it up in XLDB?
                         }
                       }
-                      cvp = xmlNextElementSibling(cvp);
+                      cvp = nextElement_(cvp);
                       continue;
 /* TODO enetz: look up in XLDB and remove this ha
                         // this is a bad hack to avoid a long list of warnings in the case of XL-MS data
@@ -2742,7 +2770,7 @@ namespace OpenMS::Internal
                     }
                   }
                 }
-                cvp = xmlNextElementSibling(cvp);
+                cvp = nextElement_(cvp);
               }
               if ( (!donor_acceptor_found) && (xlink_mod_found) ) // mono-link, here using pep_id also as the CV value, since mono-links don't have a cross-linking CV term
               {
@@ -2752,7 +2780,7 @@ namespace OpenMS::Internal
             }
             else // general case: no XL-MS result
             {
-              xmlNode* cvp = xmlFirstElementChild(element_sib);
+              xmlNode* cvp = firstElement_(element_sib);
               while (cvp)
               {
                 CVTerm cv = parseCvParam_(cvp);
@@ -2777,7 +2805,7 @@ namespace OpenMS::Internal
                     {
                       aas.setModification(index - 1, mname);
                     }
-                    cvp = xmlNextElementSibling(cvp);
+                    cvp = nextElement_(cvp);
                     continue;
                   }
                   else
@@ -2831,7 +2859,7 @@ namespace OpenMS::Internal
                       }
 
                       aas.setNTerminalModification(residue_id);
-                      cvp = xmlNextElementSibling(cvp);
+                      cvp = nextElement_(cvp);
                       continue;
                     }
                     else if (index == (int)aas.size() +1)
@@ -2854,7 +2882,7 @@ namespace OpenMS::Internal
                         mod_db->addModification(std::move(new_mod));
                       }
                       aas.setCTerminalModification(residue_id);
-                      cvp = xmlNextElementSibling(cvp);
+                      cvp = nextElement_(cvp);
                       continue;
                     }
                     else if (index > 0 && index <= (int)aas.size() )
@@ -2897,7 +2925,7 @@ namespace OpenMS::Internal
                       // weight to the weight of the modification (set above)
                       //
                       aas.setModification(index-1, res_mod->getFullId());
-                      cvp = xmlNextElementSibling(cvp);
+                      cvp = nextElement_(cvp);
                       continue;
                     }
                   }
@@ -2905,7 +2933,7 @@ namespace OpenMS::Internal
                 if (cv.getCVIdentifierRef() != "UNIMOD")
                 {
                   // e.g.  <cvParam accession="MS:1001524" name="fragment neutral loss" cvRef="PSI-MS" value="0" unitAccession="UO:0000221" unitName="dalton" unitCvRef="UO"/>
-                  cvp = xmlNextElementSibling(cvp);
+                  cvp = nextElement_(cvp);
                   continue;
                 }
 
@@ -2914,20 +2942,20 @@ namespace OpenMS::Internal
                   if (cv.getName() == "unknown modification")
                   {
                     aas.setNTerminalModification(cv.getValue());
-                    cvp = xmlNextElementSibling(cvp);
+                    cvp = nextElement_(cvp);
                     continue;
                   }
                   else
                   {
                     aas.setNTerminalModification(cv.getName());
-                    cvp = xmlNextElementSibling(cvp);
+                    cvp = nextElement_(cvp);
                     continue;
                   }
                 }
                 else if (index == static_cast<SignedSize>(aas.size() + 1))
                 {
                   aas.setCTerminalModification(cv.getName());
-                  cvp = xmlNextElementSibling(cvp);
+                  cvp = nextElement_(cvp);
                   continue;
                 }
                 else
@@ -2935,7 +2963,7 @@ namespace OpenMS::Internal
                   try
                   {
                      aas.setModification(index - 1, cv.getName()); //TODO @mths,Timo : do this via UNIMOD accessions
-                     cvp = xmlNextElementSibling(cvp);
+                     cvp = nextElement_(cvp);
                      continue;
                   }
                   catch (Exception::BaseException& e)
@@ -2944,7 +2972,7 @@ namespace OpenMS::Internal
                   }
                 }
 
-                cvp = xmlNextElementSibling(cvp);
+                cvp = nextElement_(cvp);
               }
             }
           }
@@ -2981,22 +3009,24 @@ namespace OpenMS::Internal
 
     void MzIdentMLDOMHandler::buildAnalysisSoftwareList_(xmlNode* analysisSoftwareElements)
     {
+      const std::string engine = cpro_id_->empty() || cpro_id_->front().getSearchEngine().empty()
+        ? "TOPP software" : cpro_id_->front().getSearchEngine();
+      const std::string version = cpro_id_->empty() ? "" : cpro_id_->front().getSearchEngineVersion();
       xmlNode* current_as = element_(analysisSoftwareElements->doc, "AnalysisSoftware");
-      setAttribute_(current_as, "id", (std::string("OpenMS") + UniqueIdGenerator::getUniqueId()));
-      setAttribute_(current_as, "version", "search_engine_version_");
-      setAttribute_(current_as, "name", "search_engine_");
+      setAttribute_(current_as, "id", "OpenMS" + StringUtils::toStr(UniqueIdGenerator::getUniqueId()));
+      setAttribute_(current_as, "version", version);
+      setAttribute_(current_as, "name", engine);
       append_(analysisSoftwareElements, current_as);
       xmlNode* current_sw = element_(current_as->doc, "SoftwareName");
-
-      //TODO build extract as function and insert cv
-      xmlNode* current_cv = element_(current_sw->doc, "cvParam");
-      setAttribute_(current_cv, "name", "search_engine_");
-      setAttribute_(current_cv, "cvRef", "PSI-MS");
-
-      //TODO this needs error handling
-      setAttribute_(current_cv, "accession", cv_.getTermByName("search_engine_").id);
-      append_(current_sw, current_cv);
-      append_(analysisSoftwareElements, current_sw);
+      xmlNode* parameter = element_(current_as->doc, cv_.hasTermWithName(engine) ? "cvParam" : "userParam");
+      setAttribute_(parameter, "name", engine);
+      if (cv_.hasTermWithName(engine))
+      {
+        setAttribute_(parameter, "cvRef", "PSI-MS");
+        setAttribute_(parameter, "accession", cv_.getTermByName(engine).id);
+      }
+      append_(current_sw, parameter);
+      append_(current_as, current_sw);
     }
 
     void MzIdentMLDOMHandler::buildSequenceCollection_(xmlNode* sequenceCollectionElements)

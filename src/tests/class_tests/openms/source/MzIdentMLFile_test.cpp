@@ -950,6 +950,43 @@ START_SECTION(([EXTRA] native DOM namespace Unicode entity and malformed-input r
   TEST_TRUE(accessions.contains("Pröt🧬&\""))
   TEST_TRUE(accessions.contains("PROT2"))
 
+  // Foreign element names do not enter the mzIdentML identifier/score maps.
+  const double reference_score = peptides[0].getHits()[0].getScore();
+  std::string foreign = prefixed;
+  foreign.insert(foreign.find("<mzid:DBSequence "),
+    "<foreign:DBSequence xmlns:foreign='urn:unrelated' accession='POISON' id='5172702226708088127'>"
+    "<foreign:Seq>AAAAAAAA</foreign:Seq></foreign:DBSequence>");
+  const auto item_begin = foreign.find("<mzid:SpectrumIdentificationItem ");
+  ABORT_IF(item_begin == std::string::npos)
+  foreign.insert(foreign.find('>', item_begin) + 1,
+    "<foreign:cvParam xmlns:foreign='urn:unrelated' accession='MS:1001171' cvRef='PSI-MS' name='Mascot:score' value='999999'/>");
+  save_xml(filename, foreign);
+  MzIdentMLFile().load(filename, proteins, peptides);
+  ABORT_IF(proteins.size() != 1 || peptides.size() != 3 || peptides[0].getHits().empty())
+  TEST_REAL_SIMILAR(peptides[0].getHits()[0].getScore(), reference_score)
+  for (const auto& hit : proteins[0].getHits())
+  {
+    TEST_NOT_EQUAL(hit.getAccession(), "POISON")
+    TEST_NOT_EQUAL(hit.getSequence(), "AAAAAAAA")
+  }
+
+  // An entity's declaration tree is not a second copy of its expanded content.
+  std::string entity_wrapped = original;
+  const auto sil_begin = entity_wrapped.find("<SpectrumIdentificationList ");
+  const auto sil_end_tag = entity_wrapped.find("</SpectrumIdentificationList>", sil_begin);
+  ABORT_IF(sil_begin == std::string::npos || sil_end_tag == std::string::npos)
+  const auto sil_length = sil_end_tag + std::string("</SpectrumIdentificationList>").size() - sil_begin;
+  std::string entity_value = entity_wrapped.substr(sil_begin, sil_length);
+  StringUtils::substitute(entity_value, "'", "&#39;");
+  StringUtils::substitute(entity_value, "%", "&#37;");
+  entity_wrapped.replace(sil_begin, sil_length, "&identification_list;");
+  entity_wrapped.insert(entity_wrapped.find("?>") + 2,
+    "\n<!DOCTYPE MzIdentML [<!ENTITY identification_list '" + entity_value + "'>]>");
+  save_xml(filename, entity_wrapped);
+  MzIdentMLFile().load(filename, proteins, peptides);
+  TEST_EQUAL(proteins.size(), 1)
+  TEST_EQUAL(peptides.size(), 3)
+
   // A real existing local file is never loaded through an external entity.
   std::string secret_file;
   NEW_TMP_FILE(secret_file)
@@ -990,6 +1027,8 @@ START_SECTION(([EXTRA] legacy DOM writer emits UTF8 namespaces and propagates ou
   hit.setAccession("Pröt🧬&\"");
   hit.setSequence("PEPTIDER");
   protein.insertHit(hit);
+  protein.setSearchEngine("Mascot");
+  protein.setSearchEngineVersion("2.1.0");
   const std::vector<ProteinIdentification> proteins{protein};
   const PeptideIdentificationList peptides;
   MzIdentMLFile logger;

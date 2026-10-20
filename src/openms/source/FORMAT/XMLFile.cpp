@@ -91,6 +91,7 @@ private:
       static std::u16string utf16(const xmlChar* text, int length = -1)
       {
         std::u16string result;
+        if (!text) return result;
         const unsigned char* cursor = text;
         const unsigned char* end = text + (length < 0 ? xmlStrlen(text) : length);
         while (cursor < end)
@@ -124,21 +125,47 @@ private:
           xmlStopParser(static_cast<xmlParserCtxt*>(ctx));
         }
       }
-      static void start(void* ctx, const xmlChar* name, const xmlChar** attrs)
+      static std::u16string qualifiedName(const xmlChar* local, const xmlChar* prefix)
+      {
+        if (!prefix) return utf16(local);
+        auto name = utf16(prefix);
+        name += u':';
+        name += utf16(local);
+        return name;
+      }
+      static void start(void* ctx, const xmlChar* local, const xmlChar* prefix,
+                        const xmlChar*, int namespace_count, const xmlChar** namespaces,
+                        int attribute_count, int, const xmlChar** attrs)
       {
         callback(ctx, [&](LibxmlState& s)
         {
-          std::vector<std::pair<std::u16string, std::u16string>> values;
-          if (attrs)
+          XMLAttributes::Values values;
+          values.reserve(namespace_count + attribute_count);
+          // Existing handlers consume qualified names and can inspect xmlns declarations.
+          for (int i = 0; i < namespace_count; ++i)
           {
-            for (Size i = 0; attrs[i]; i += 2) { values.emplace_back(utf16(attrs[i]), utf16(attrs[i + 1])); }
+            std::u16string name = u"xmlns";
+            if (namespaces[2 * i]) { name += u':'; name += utf16(namespaces[2 * i]); }
+            values.emplace_back(std::move(name), utf16(namespaces[2 * i + 1]));
           }
-          s.handler->onStartElement(utf16(name).c_str(), XMLAttributes(values));
+          for (int i = 0; i < attribute_count; ++i)
+          {
+            const xmlChar** attr = attrs + 5 * i;
+            // SAX2 values are bounded slices, not null-terminated strings.
+            values.emplace_back(qualifiedName(attr[0], attr[1]),
+                                utf16(attr[3], static_cast<int>(attr[4] - attr[3])));
+          }
+          const auto name = qualifiedName(local, prefix);
+          s.handler->onStartElement(name.c_str(), XMLAttributes(values));
         });
       }
-      static void end(void* ctx, const xmlChar* name)
+      static void end(void* ctx, const xmlChar* local, const xmlChar* prefix, const xmlChar*)
       {
-        callback(ctx, [&](LibxmlState& s) { s.handler->onEndElement(utf16(name).c_str()); });
+        callback(ctx, [&](LibxmlState& s)
+        {
+          const auto name = qualifiedName(local, prefix);
+          s.handler->onEndElement(name.c_str());
+        });
       }
       static void characters(void* ctx, const xmlChar* text, int length)
       {
@@ -165,13 +192,13 @@ private:
       libxmlInitialize();
       LibxmlState state{handler, {}};
       xmlSAXHandler sax{};
-      if (xmlSAXVersion(&sax, 1) != 0)
+      if (xmlSAXVersion(&sax, 2) != 0)
       {
         throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename,
-                                    "libxml2 was built without SAX1 support");
+                                    "libxml2 could not initialize SAX2 callbacks");
       }
-      sax.startElement = LibxmlState::start;
-      sax.endElement = LibxmlState::end;
+      sax.startElementNs = LibxmlState::start;
+      sax.endElementNs = LibxmlState::end;
       sax.characters = LibxmlState::characters;
       sax.cdataBlock = LibxmlState::characters;
       auto free_parser = [](xmlParserCtxt* ctx)
@@ -183,7 +210,7 @@ private:
       if (!parser) { throw std::bad_alloc(); }
       parser->_private = &state;
       parser->userData = parser.get();
-      // SAX1 ignores sax.serror; the context-local API works in both SAX modes.
+      // Keep diagnostics local to this parser, including namespace errors.
       xmlCtxtSetErrorHandler(parser.get(), LibxmlState::error, parser.get());
       xmlCtxtUseOptions(parser.get(), XML_PARSE_NONET | XML_PARSE_NO_XXE | XML_PARSE_NOENT);
       if (!encoding.empty())
