@@ -26,6 +26,9 @@
 #include <thread>
 
 #include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <iostream>
 #include <limits>
 #if defined(__GLIBC__)
   #include <malloc.h>
@@ -668,5 +671,14 @@ int main(int argc, const char** argv)
     rc = tool.main(argc, argv);
   }
   FLASHTrace::registry().dump();
+  // Experiment (FD_OPT=quickexit): all outputs are closed at this point; skip static destructors and
+  // atexit work (the kernel reclaims memory either way).
+  if (FLASHTrace::opt("quickexit"))
+  {
+    std::cout.flush();
+    std::cerr.flush();
+    std::fflush(nullptr);
+    std::_Exit(rc);
+  }
   return rc;
 }
