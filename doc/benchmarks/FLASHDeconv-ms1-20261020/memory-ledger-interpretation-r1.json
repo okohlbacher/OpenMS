@@ -1,0 +1,249 @@
+{
+  "schema": "recorded-worker-memory-ledger-analysis-r1",
+  "passed": true,
+  "scope": "Local replay and source/layout interpretation of recorded artifacts only; no local ELF/fullinput/largeTSV rehash and no run/build/instrumentation",
+  "base_commit": "d07664d8431ebf1c2d9deb86d0ebc298108718f7",
+  "levels": [
+    {
+      "ms_level": 1,
+      "worker_records": 64,
+      "jobs": 2019,
+      "score_entry_pg_objects_sum": 25084443,
+      "score_entry_pg_objects_per_job_mean": 12424.191679049034,
+      "worker_max_score_entry_pg_count_min": 34466,
+      "worker_max_score_entry_pg_count_max": 36840,
+      "partial_workspace_worker_maxima": {
+        "candidate_core_bytes_max": {
+          "minimum_worker_max_bytes": 14249142,
+          "median_worker_max_bytes": 14665202.0,
+          "maximum_worker_max_bytes": 14692274,
+          "largest_worker_max_MiB": 14.01164436340332
+        },
+        "filter_core_bytes_max": {
+          "minimum_worker_max_bytes": 25651644,
+          "median_worker_max_bytes": 26067704.0,
+          "maximum_worker_max_bytes": 26094776,
+          "largest_worker_max_MiB": 24.88591766357422
+        },
+        "extract_core_bytes_max": {
+          "minimum_worker_max_bytes": 18289976,
+          "median_worker_max_bytes": 18633970.0,
+          "maximum_worker_max_bytes": 18721284,
+          "largest_worker_max_MiB": 17.854007720947266
+        }
+      },
+      "charge_matrix_constructor_requests_sum": 64278583,
+      "charge_matrix_logical_cells_sum": 8531975195,
+      "charge_matrix_logical_bytes_max": 35552,
+      "noise_calls_sum": 64116711,
+      "noise_empty_input_returns_sum": 64116711,
+      "noise_graph_calls_sum": 0,
+      "persistent_buffer_capacity_fields": [
+        "log_peak_capacity_max",
+        "mass_bit_capacity_max",
+        "mz_bit_capacity_max"
+      ]
+    },
+    {
+      "ms_level": 2,
+      "worker_records": 64,
+      "jobs": 11166,
+      "score_entry_pg_objects_sum": 8632580,
+      "score_entry_pg_objects_per_job_mean": 773.1130216729357,
+      "worker_max_score_entry_pg_count_min": 6127,
+      "worker_max_score_entry_pg_count_max": 18806,
+      "partial_workspace_worker_maxima": {
+        "candidate_core_bytes_max": {
+          "minimum_worker_max_bytes": 14561942,
+          "median_worker_max_bytes": 14646194.0,
+          "maximum_worker_max_bytes": 14682862,
+          "largest_worker_max_MiB": 14.002668380737305
+        },
+        "filter_core_bytes_max": {
+          "minimum_worker_max_bytes": 25964444,
+          "median_worker_max_bytes": 26048696.0,
+          "maximum_worker_max_bytes": 26085364,
+          "largest_worker_max_MiB": 24.876941680908203
+        },
+        "extract_core_bytes_max": {
+          "minimum_worker_max_bytes": 18370584,
+          "median_worker_max_bytes": 18458386.0,
+          "maximum_worker_max_bytes": 18514084,
+          "largest_worker_max_MiB": 17.65640640258789
+        }
+      },
+      "charge_matrix_constructor_requests_sum": 21654777,
+      "charge_matrix_logical_cells_sum": 1294627867,
+      "charge_matrix_logical_bytes_max": 35552,
+      "noise_calls_sum": 14967958,
+      "noise_empty_input_returns_sum": 14967958,
+      "noise_graph_calls_sum": 0,
+      "persistent_buffer_capacity_fields": [
+        "log_peak_capacity_max",
+        "mass_bit_capacity_max",
+        "mz_bit_capacity_max"
+      ]
+    }
+  ],
+  "three_counter_definitions": {
+    "candidate_core_bytes_max": {
+      "expression": "states.capacity()*sizeof(state)+(mass_intensities.capacity()+mz_intensities.capacity())*sizeof(float)",
+      "counter_source": "Scale16Diagnostics.h:215",
+      "hook_source": "SpectralDeconvolution.cpp:393",
+      "scope": "Partial same-call candidate stage capacity sum, max over jobs; excludes bitsets/log peaks/PG/model and other locals"
+    },
+    "filter_core_bytes_max": {
+      "expression": "range_matrix_cells*sizeof(int)+(mass_float_capacity+current_mz_float_capacity)*sizeof(float)",
+      "counter_source": "Scale16Diagnostics.h:224",
+      "hook_source": "SpectralDeconvolution.cpp:637",
+      "scope": "Partial same-call filter stage size/capacity sum, max over jobs; excludes bitsets/log/PG/model and other locals"
+    },
+    "extract_core_bytes_max": {
+      "expression": "range_matrix_cells*sizeof(int)+current_mz_float_capacity*sizeof(float)+peak_bin_numbers.capacity()*sizeof(Size)",
+      "counter_source": "Scale16Diagnostics.h:231",
+      "hook_source": "SpectralDeconvolution.cpp:758",
+      "scope": "Partial same-call extraction stage selected capacity sum, max over jobs; excludes growing PG/model/input and other locals"
+    }
+  },
+  "typed_layout": {
+    "sizeof_PG": 296,
+    "alignof_PG": 8,
+    "sizeof_SD": 2520,
+    "alignof_SD": 8,
+    "sizeof_DS": 1376,
+    "alignof_DS": 8
+  },
+  "logical_inline_arithmetic": {
+    "count_SD_objects": 192,
+    "sizeof_SD": 2520,
+    "logical_inline_bytes": 483840,
+    "logical_inline_MiB": 0.46142578125,
+    "embedded_DS_is_already_in_SD": true,
+    "scope": "Hypothetical full192 live SD slots at recorded exact sizeof; logical shells only, not vector capacity or pointed-to heap allocation"
+  },
+  "recorded_RSS_context": {
+    "private_PG2_64_peak_rss_kib": 24460220,
+    "earlier_native_BCDF192_peak_rss_kib": 66421132,
+    "earlier_native_BCDF192_peak_rss_GiB": 63.3441276550293,
+    "limits": "Different diagnostic/native executions and counts; no phase-owner attribution or scaling of perworker maxima"
+  },
+  "findings": [
+    {
+      "kind": "measured",
+      "finding": "MS1 score-entry PG counts total25084443 across2019 jobs; largest perjob count seen by a worker34466..36840. These are entry object counts, not allocation calls, vector capacities, nested peak counts or bytes.",
+      "source": "FDWorker::candidates at privateSD1058 and header234\u2013238"
+    },
+    {
+      "kind": "source",
+      "finding": "Each PG owns8vectors (2Log peak and6float vectors); initial extraction copies pg into DS, and survivor handoff also copies. Source proves potential payload overlap/allocation churn, not actual live/capacity totals.",
+      "source": "PeakGroup.h371\u2013382; SD887\u2013918,1152\u20131171; DS273\u2013275,334\u2013337"
+    },
+    {
+      "kind": "source",
+      "finding": "The eager initial pg.reserve(charge_range*12) is temporary: pg.swap(new_peaks) precedes DS.push_back(pg). Do not multiply that reserve by retained candidate counts or assume its capacity survives the copy.",
+      "source": "SDgetCandidatePeakGroups_ localpg/new_peaks/swap/copyhandoff"
+    },
+    {
+      "kind": "source+measured",
+      "finding": "192 SD inline shells are483840bytes (0.461MiB), including embedded DS shell; this cannot account for63.344GiB process RSS. Exact pointed-to heaps remain unmeasured by sizeof. Matrix max logical35552bytes is also a small percall buffer, while its64m construction frequency is a separate allocator-cost hypothesis."
+    },
+    {
+      "kind": "source+measured",
+      "finding": "The three partial stage maxima are separate phases and may be different jobs/workers; never add them or multiply requested192 to claim measured live bytes/RSS. The source scope ends binning arrays before scoring.",
+      "source": "privateSD989\u20131041; header215\u2013232"
+    },
+    {
+      "kind": "source",
+      "finding": "SD log_mz_peaks_ clear+reserve and bitset resize can retain capacity across jobs and MS1\u2192MS2. MS2 records mix such carried capacities with actual MS2-local stage geometry; similar maxima cannot establish typical MS2 work or an independent MS2 allocation footprint.",
+      "source": "SD309\u2013319,337\u2013338,performSpectrumDeconvolution/setFilters; SDheader196\u2013224"
+    },
+    {
+      "kind": "sampled callpath",
+      "finding": "First GDB stop shows35mprotect/grow_heap stacks in candidate renewal:14raw-noise reserve and21signal reserve/pushback. Static exactELF return-PC proof identifies these sites. Later stops have no mprotect. This is stronger site evidence than Matrix frequency alone, not a duration share or full attribution."
+    },
+    {
+      "kind": "hypothesis",
+      "finding": "Concurrent candidate PG payloads/copies, renew-time signal allocation/free churn and allocator retention are plausible missing storage/cost. Current counters cannot divide RSS among them; no allocator arena/cache/NUMA/DRAM cause measured."
+    }
+  ],
+  "priorities_before_any_new_change": [
+    "Retain exact scientific/failure/borrow-last-read analysis. No new signal reuse or early-free implementation in this turn.",
+    "If a future bounded signal-renew trial is approved, use one current PG/score-call lease and ensure survivor compaction; changing clear_ to clear globally would retain slack across many candidates.",
+    "Quantify actual coexisting PG outer capacity and nested Log/negative/percharge/isotope vector sizes/capacities at selected ownership boundaries before promising RSS savings; do not infer from25m summed entries or perworker maxima.",
+    "Early freeing failed groups needs all subsequent selection/decoy/harmonic/error/read-order consumers checked and exact tests. No blanket replace-copy-with-move: prior capacity-retention tradeoff remains relevant."
+  ],
+  "explicit_limits": [
+    "PG2 Qscore noise input is filtered returned noise, not raw recruitment pushes",
+    "Matrix constructor counts/sourcezero elements are not malloc/syscall counts or DRAM bytes",
+    "Perworker PG/candidate maxima are not simultaneous across workers",
+    "No sum of phase maxima; no count-average multiplied into invented allocation bytes",
+    "Recorded producer tests/goldens/layout accepted; metadata locally rehashed only",
+    "No new profiling, benchmarks, builds, source edits or instrumentation"
+  ],
+  "provenance": {
+    "PG2_manifest": {
+      "path": "ms1-20261020/evidence/bcdf64-pg-observed-capture-r2/bcdf64-pg-observed-r2/manifest.json",
+      "sha256": "b73def63f5aafb4899ac0514eec8c43d58967b130bdd9513a5b9ee53217e6230"
+    },
+    "PG2_stdout": {
+      "path": "ms1-20261020/evidence/bcdf64-pg-observed-capture-r2/bcdf64-pg-observed-r2/runs/t064-r01/stdout.log",
+      "sha256": "716e47f27225faaf1e83a3bd3f6929e0c4d7e7ff4aa92a8a9834d542435e332a"
+    },
+    "PG2_source_manifest": {
+      "path": "ms1-20261020/instrumentation/bcdf-pg-r2/manifest.json",
+      "sha256": "601657c84b1b80d1ae0a4e55b337eb627cf6268efa54c831cc822224a626c3b9"
+    },
+    "PG2_private_header": {
+      "path": "ms1-20261020/instrumentation/bcdf-pg-r2/Scale16Diagnostics.h",
+      "sha256": "53f3bdf354c66cd2df01b53709ccb27dae41d547c9297cb6a29ee5cefc2413df"
+    },
+    "PG2_SD_source": {
+      "path": "ms1-20261020/instrumentation/bcdf-pg-r2/src/openms/source/ANALYSIS/TOPDOWN/SpectralDeconvolution.cpp",
+      "sha256": "46feaa11f4224462fc6c0cebf361849c9d506416536f5288082c5cc661c70bf0"
+    },
+    "typed_layout_receipt": {
+      "path": "ms1-20261020/evidence/memory-screens-and-gates-capture-r1/variant-inputs-r1/matrix-reuse-r1/receipt.json",
+      "sha256": "5a1b9703519dcc5166e7568d891422c4c7b9e1c4aaa6da016f0de2869e20b9d1"
+    },
+    "typed_layout_bcdf_log": {
+      "path": "ms1-20261020/evidence/memory-screens-and-gates-capture-r1/variant-inputs-r1/matrix-reuse-r1/logs/layout-bcdf.log",
+      "sha256": "0a231e88049a2d9743c15674146b1f72f92d62e526e56360a1537a26d6116f23"
+    },
+    "typed_layout_new_log": {
+      "path": "ms1-20261020/evidence/memory-screens-and-gates-capture-r1/variant-inputs-r1/matrix-reuse-r1/logs/layout-new.log",
+      "sha256": "0a231e88049a2d9743c15674146b1f72f92d62e526e56360a1537a26d6116f23"
+    },
+    "typed_layout_probe": {
+      "path": "ms1-20261020/evidence/memory-screens-and-gates-capture-r1/variant-inputs-r1/matrix-reuse-r1/layout-probe.cpp",
+      "sha256": "1d91240a79b2187afc9fb75e3df4f8bac83f6c856d792621d86a557c5a70677f"
+    },
+    "native_BCDF10_manifest": {
+      "path": "scaling16-20261020/evidence/selected-final-capture-r1/selected-native-r2/manifest.json",
+      "sha256": "079b29b324e474fb49b04f4df9dcd3078e73734ac4928f6823ea62de82fbfd0c"
+    },
+    "source_PG": {
+      "path": "/Users/kohlbach/.codex/worktrees/flashdeconv-scaling16/OpenMS/src/openms/source/ANALYSIS/TOPDOWN/PeakGroup.cpp",
+      "sha256": "8b83575ca0e751c06b5326507ec49a0b8d4dcac51ea81cfab6bae775a45fd750"
+    },
+    "source_PG_header": {
+      "path": "/Users/kohlbach/.codex/worktrees/flashdeconv-scaling16/OpenMS/src/openms/include/OpenMS/ANALYSIS/TOPDOWN/PeakGroup.h",
+      "sha256": "e6485eea9a228455d2ac10da6c69747876008303a884b187813f0c7a6527c3db"
+    },
+    "source_SD_header": {
+      "path": "/Users/kohlbach/.codex/worktrees/flashdeconv-scaling16/OpenMS/src/openms/include/OpenMS/ANALYSIS/TOPDOWN/SpectralDeconvolution.h",
+      "sha256": "0637ad5245bf5f3a04381a736843d0c56a9277204e6a60ff6f2df3c3a1d57cc0"
+    },
+    "source_DS": {
+      "path": "/Users/kohlbach/.codex/worktrees/flashdeconv-scaling16/OpenMS/src/openms/source/ANALYSIS/TOPDOWN/DeconvolvedSpectrum.cpp",
+      "sha256": "6cdba0fee6a522787712e63aff38c10bb5a96458eb9262f52f7ef585d8fe31bc"
+    },
+    "saved_PC_resolution": {
+      "path": "ms1-20261020/alternatives/reuse/saved-pg-pc-resolution-r1.json",
+      "sha256": "f63498382c60e2b5aa9ca1133c33629d3c51605c843377e0896dc261d99e34cc"
+    },
+    "saved_GDB_caller_census": {
+      "path": "ms1-20261020/alternatives/reuse/gdb-recruit-caller-audit-r1.json",
+      "sha256": "2086cc1ddd16f9679a0609db5e9e002237b3f2ef30b3217202b319a598695b65"
+    }
+  }
+}

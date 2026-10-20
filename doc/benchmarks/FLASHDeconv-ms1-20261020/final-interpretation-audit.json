@@ -1,0 +1,35 @@
+{
+  "schema": "final-ms1-report-interpretation-audit-r1",
+  "passed": true,
+  "material_findings": [],
+  "report": {
+    "path": "ms1-20261020/report-final-r1/FLASHDeconv-ms1-20261020.md",
+    "sha256": "686d37ce39dc44f8c847e56f10fe029e169e1ecb1a1b9486018dc7ee4fa378e4"
+  },
+  "scope": "Read-only final interpretation/source review; numerical table audit owned separately by scaling agent. No source/report edits, builds, experiments or remote actions.",
+  "verified_claim_boundaries": [
+    "The headline names high-concurrency regression avoidance; requested192 does not imply192MS1workers. The best-count1.97%contrast and n1/shared-host limits prevent inflated practical gain claims.",
+    "MC mixed small changes and Matrix near-neutral five-grid remain alternatives; no additive or universal-optimum claim. N0 trace increase is a separate perturbed observation, not native syscall cost.",
+    "Phase CPU is charged process work, including kernel/runtime; source/child timers are not added. Whole-writer23.92-core label corrected; microspan CPU attribution remains limited.",
+    "All35 first-stop mprotect/grow_heap contexts retain exact-site proof; later absence narrowed to those paths while allocations continue. Shared-mm serialization supported as a mechanism, with no measured hold-time/kernel-share claim.",
+    "Cap192 realized64/192teams and complete13185jobs are source/record bound. Arrival tail25.06% describes elapsed arrival imbalance and is not a scheduler duration or extra sum with barrier.",
+    "The5.742GiB cumulative high-water increase is bracketed by precursor-end/MS2-end, not assigned to currentRSS or specific owner; .002311s pre-wave gap falls inside this stated bracket.",
+    "Inline shell0.461MiB arithmetic excludes heaps; partial workspace maxima and25m scoring-entry counts are not converted into invented simultaneous allocation bytes. MS2 carried capacity and cold graph limitations are explicit.",
+    "Future bounded renewal/early-free work requires coexisting capacity and last-reader evidence; no new signal-pool implementation or measured cache/NUMA fix is implied.",
+    "Correctness is stated as actual gates/full-output parity; no blanket race/sanitizer/Windows/deployment proof is claimed. Producer-large-artifact hashes are distinguished from local compact replay."
+  ],
+  "remaining_limits": [
+    "Final native numerical/source table audit is separate; this receipt does not claim to rehash remote input/ELF/fullTSV bytes.",
+    "No actual cache/DRAM/IPC/scheduler wait measurement or unique allocator ownership is inferred."
+  ],
+  "provenance_local_sha256": {
+    "ms1-20261020/report-template-and-mc-review-r1.json": "1bf6f97a131f4d96f3cf5f1c116575372ef8a0dc2433e89b24096def7770d8b2",
+    "ms1-20261020/cap192-diagnostic-independent-audit-r1/audit.json": "9e16c9e26a787785fbc7f04c5178eb57c11c8e44b7750dc33a958c89293ee76e",
+    "ms1-20261020/memory-ledger-interpretation-r1.json": "d30de64dab1dc0275a40ba23161a4cb672030a8a5f11b41551ca4aa81ac4f9ca",
+    "ms1-20261020/analysis-bcdf64-observed-r1/receipt.json": "6e71ee63471a5a1b86fcbfc4e4ed6964845ba12546a481e9798252eb5809d5ab",
+    "ms1-20261020/alternatives/reuse/saved-pg-pc-resolution-r1.json": "f63498382c60e2b5aa9ca1133c33629d3c51605c843377e0896dc261d99e34cc",
+    "ms1-20261020/alternatives/reuse/source-matrix-r1/manifest.json": "18d076706da85c68bef0c9135c2ed3bf3de4a9881a69d8b3545b398f2f8c2234",
+    "ms1-20261020/alternatives/compositions-mc-r1/source-mc-r1/manifest.json": "b1626783078f43fae530d2cc4d876860d07c5a2b7544907418237643bd30e51d",
+    "ms1-20261020/alternatives/cap64/manifest.json": "49542bb9ab6daeca96b8a8874fbce7a9b2f397a5afc03fe4f1ffa45132cee9dc"
+  }
+}
