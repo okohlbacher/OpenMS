@@ -629,7 +629,7 @@ protected:
 #pragma omp parallel for schedule(dynamic, 16)
       for (SignedSize i = 0; i < (SignedSize)map.size(); ++i)
       {
-        MSSpectrum().swap(map[i]);
+        map[i] = MSSpectrum();
       }
     }
     return EXECUTION_OK;
