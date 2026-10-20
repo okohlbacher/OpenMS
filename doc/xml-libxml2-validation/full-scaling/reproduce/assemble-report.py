@@ -36,4 +36,7 @@ for host in ['macOS M4 Max','Linux EPYC']:
    diffs.append(f'{(b/a-1)*100:+.1f}%')
   extra.append(f'| {host} | {enc} | {diffs[0]} | {diffs[1]} |')
 extra.append('');at=lines.index('![Within-host encoding/build controls across platforms](figures/platform-encoding.png)');lines[at:at]=extra
+section=out/'throughput-section.md'
+if section.exists():
+ at=lines.index('## Linux performance');lines[at:at]=section.read_text().splitlines()+['']
 (out/'REPORT.md').write_text('\n'.join(lines)+'\n');print('Wrote complete scaling handoff')

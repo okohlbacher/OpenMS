@@ -12,10 +12,13 @@ def copy(p,d,compress=False):
   with d.with_name(d.name+'.gz').open('wb') as raw:
    with gzip.GzipFile(filename='',mode='wb',fileobj=raw,mtime=0) as out:out.write(p.read_bytes())
  else:shutil.copyfile(p,d)
-for n in ['REPORT.md','MACOS_OPTIONS.md','all-comparisons.csv','table-provenance.json','harness-header-audit.json','harness-source-manifest.json']:copy(src/n,dest/n)
+for n in ['REPORT.md','MACOS_OPTIONS.md','all-comparisons.csv','table-provenance.json','harness-header-audit.json','harness-source-manifest.json','throughput-section.md']:copy(src/n,dest/n)
 for folder in ['figures','reproduce']:
  for p in (src/folder).iterdir():
   if p.is_file() and p.suffix in ['.py','.sh','.json','.patch','.svg','.png']:copy(p,dest/folder/p.name)
+if (src/'throughput').is_dir():
+ for p in (src/'throughput').iterdir():
+  if p.is_file():copy(p,dest/'throughput'/p.name)
 for p in (src/'linux').rglob('*'):
  if not p.is_file() or p.name.endswith('.pyc'):continue
  relative=p.relative_to(src/'linux');compress=p.suffix in ['.log','.txt'] or (p.suffix=='.json' and p.stat().st_size>250000)

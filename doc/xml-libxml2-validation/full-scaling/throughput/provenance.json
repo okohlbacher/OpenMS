@@ -1,0 +1,75 @@
+{
+  "derived_from": "results/full-scaling/all-comparisons.csv",
+  "source_sha256": "7870cc0091f5aeb6037f4d49b31ac0e75e3c47e60819a605d0e6cf5ea1ea34b3",
+  "all_summary_cells": 3288,
+  "new_summary_cells": 512,
+  "new_benchmark_runs": 0,
+  "inputs": {
+    "small.mzML": {
+      "bytes": 4605393,
+      "sha256": "109da062313c3e25d9b10643b424e51a21cffe9ea250f502fbdde913c4270959",
+      "points": 262400,
+      "spectra": 256,
+      "digest": "8139875027927760403"
+    },
+    "medium.mzML": {
+      "bytes": 140758760,
+      "sha256": "241f4c42b2315c011551875a1b74e964b513d4e5f440dafb89975e75546c0519",
+      "points": 8392704,
+      "spectra": 4096,
+      "digest": "5495910545189168999"
+    },
+    "large.mzML": {
+      "bytes": 1126185409,
+      "sha256": "8f2c671efe432f61f21e682c8fd5a58dc4fd9f83ee2bb2020f38e8d0cc61abf7",
+      "points": 67141632,
+      "spectra": 32768,
+      "digest": "4299646233721013837"
+    },
+    "medium-zlib.mzML": {
+      "bytes": 68885049,
+      "sha256": "adca5a3f2d35aa26d2d52102c3b61e4d6d69381a7b5adea18a7f502709bc81b7",
+      "points": 8392704,
+      "spectra": 4096,
+      "digest": "5495910545189168999"
+    },
+    "medium-zlib.mzML.gz": {
+      "bytes": 42269997,
+      "sha256": "8c46ed3fb7809e8f665a3faa986cc25330fe6080b8c879e6b2aca21aaa54b99c",
+      "points": 8392704,
+      "spectra": 4096,
+      "digest": "5495910545189168999"
+    },
+    "BSA1_F1.mzML": {
+      "bytes": 5788763,
+      "sha256": "c3eb9b13f423d89997d14ca68470951026a387afa3959b7dd1c59ceb9c16b2f4",
+      "points": 193060,
+      "spectra": 767,
+      "digest": "1749160251384388948"
+    },
+    "large-utf8.mzML": {
+      "bytes": 1126185409,
+      "sha256": "b864ae517f17976e50f3ffcbb2d205db6532f28b76b27b44d93dbe3b3600b81d",
+      "points": 67141632,
+      "spectra": 32768,
+      "digest": "4299646233721013837"
+    }
+  },
+  "definitions": {
+    "MB": "1000000 bytes",
+    "MiB": "1048576 bytes",
+    "file_MB_per_s": "reader_count * actual file bytes / median workload seconds / 1e6; streaming/load only",
+    "plain_XML_equivalent_MB_per_s": "same formula using140758760 bytes for the three matched medium forms; nominal work normalization, not actual compressed bytes read",
+    "outer_inflated_XML_MB_per_s": "uses68885049 bytes for outer gzip, otherwise actual XML file size",
+    "Mpoints_per_s": "reader_count * decoded spectrum+chromatogram point count / median seconds /1e6",
+    "indexed": "queries/s, not fictitious whole-file MB/s",
+    "timing": "C++ workload interval, warmed shared initialization excluded; cached inputs; medians of five; no XSD validation timed",
+    "historical": "phase labels, clock caveats and source distinctions retained; source CSV untouched. Blank historical OpenMP worker/mode fields are resolved as1reader/stream only in added effective fields"
+  },
+  "limitations": [
+    "Compressed matched corpus is140.8MB plain /68.9MB internal-zlib /42.3MB outer-gzip, not the1.126GB large input.",
+    "Outer gzip thread scaling is independent full-file readers, not one-stream parallel inflation or pigz.",
+    "No acquisition-stratified PASEF/IM/DDA benchmark corpus measured.",
+    "Current native macOS controls have one reader; historical Mac reader scaling remains separately labeled."
+  ]
+}
