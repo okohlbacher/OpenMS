@@ -16,6 +16,7 @@
 #include <OpenMS/FORMAT/FLASHDeconvSpectrumFile.h>
 #include <OpenMS/FORMAT/FileTypes.h>
 #include <OpenMS/FORMAT/FileHandler.h>
+#include <OpenMS/FORMAT/HANDLERS/IndexedMzMLDecoder.h>
 #include <OpenMS/FORMAT/HANDLERS/MzMLHandler.h>
 #include <OpenMS/FORMAT/MzMLFile.h>
 #include <OpenMS/INTERFACES/IMSDataConsumer.h>
@@ -134,6 +135,90 @@ namespace
     std::string accession_;
     bool finished_ = false;
   };
+
+  /**
+    Experiment (FD_OPT=pload): parse an indexed mzML in parallel. The spectrum list is cut at index offsets into
+    byte-balanced chunks of whole <spectrum> elements; each chunk is parsed by its own handler as the original
+    header + chunk + closing tags, and the parts are concatenated in order. Returns false (map untouched) when the
+    file has no usable index, so the caller can load it the ordinary way.
+  */
+  bool parallelLoadIndexedMzML(const std::string& file, const PeakFileOptions& options, MSExperiment& map, int threads)
+  {
+    IndexedMzMLDecoder decoder;
+    const std::streampos index_offset = decoder.findIndexListOffset(file);
+    if (index_offset == std::streampos(-1)) { return false; }
+    IndexedMzMLDecoder::OffsetVector spectrum_offsets, chromatogram_offsets;
+    if (decoder.parseOffsets(file, index_offset, spectrum_offsets, chromatogram_offsets) != 0 || spectrum_offsets.size() < 2) { return false; }
+    for (Size i = 1; i < spectrum_offsets.size(); ++i)
+    {
+      if (spectrum_offsets[i].second <= spectrum_offsets[i - 1].second) { return false; } // index not in document order
+    }
+    std::ifstream in(file, std::ios::binary);
+    if (! in) { return false; }
+    in.seekg(0, std::ios::end);
+    const std::streamoff file_size = in.tellg();
+    const std::streamoff first = spectrum_offsets.front().second;
+    std::string header((Size)first, '\0');
+    in.seekg(0);
+    in.read(header.data(), first);
+    if (header.find("<spectrumList") == std::string::npos) { return false; }
+    const bool indexed = header.find("<indexedmzML") != std::string::npos;
+    const std::string closing = std::string("\n</spectrumList>\n</run>\n</mzML>\n") + (indexed ? "</indexedmzML>\n" : "");
+
+    // byte-balanced chunk boundaries (indices into spectrum_offsets); the last chunk runs to the end of the file
+    const Size chunk_count = std::min<Size>(spectrum_offsets.size(), (Size)std::max(1, threads) * 2);
+    const double target = double(file_size - first) / chunk_count;
+    std::vector<Size> starts {0};
+    for (Size i = 1; i < spectrum_offsets.size() && starts.size() < chunk_count; ++i)
+    {
+      if (double(spectrum_offsets[i].second - first) >= target * starts.size()) { starts.push_back(i); }
+    }
+    const Size parts_n = starts.size();
+    std::vector<MSExperiment> parts(parts_n);
+    std::vector<std::exception_ptr> errors(parts_n);
+    const auto parse = [&](Size c) {
+      const std::streamoff begin = spectrum_offsets[starts[c]].second;
+      const std::streamoff end = c + 1 < parts_n ? (std::streamoff)spectrum_offsets[starts[c + 1]].second : file_size;
+      std::ifstream f(file, std::ios::binary);
+      std::string buffer = header;
+      buffer.resize(header.size() + (Size)(end - begin));
+      f.seekg(begin);
+      f.read(buffer.data() + header.size(), end - begin);
+      if (c + 1 < parts_n) { buffer += closing; }
+      MzMLFile mzml;
+      mzml.getOptions() = options;
+      mzml.setLogType(ProgressLogger::NONE);
+      mzml.loadBuffer(buffer, parts[c]);
+    };
+    parse(0); // serially first: warms lazily initialised parser and CV singletons
+#pragma omp parallel for schedule(dynamic, 1) num_threads(threads)
+    for (SignedSize c = 1; c < (SignedSize)parts_n; ++c)
+    {
+      try
+      {
+        parse((Size)c);
+      }
+      catch (...)
+      {
+        errors[c] = std::current_exception();
+      }
+    }
+    for (const auto& e : errors)
+    {
+      if (e) { std::rethrow_exception(e); }
+    }
+    map = std::move(parts[0]);
+    for (Size c = 1; c < parts_n; ++c)
+    {
+      for (auto& spectrum : parts[c].getSpectra()) { map.addSpectrum(std::move(spectrum)); }
+      for (auto& chromatogram : parts[c].getChromatograms()) { map.addChromatogram(std::move(chromatogram)); }
+      parts[c] = MSExperiment();
+    }
+    map.setLoadedFileType(file);
+    map.setLoadedFilePath(file);
+    map.updateRanges();
+    return true;
+  }
 
   /// MzMLFile::load with a consumer: header metadata goes to the map, spectra to the consumer.
   class StreamingMzMLFile : public MzMLFile
@@ -393,7 +478,19 @@ protected:
     // Experiment: FD_POOL overrides the decode batch (smaller batches hand spectra to streaming workers sooner)
     opt.setMaxDataPoolSize(std::getenv("FD_POOL") ? (Size)std::max(1, std::atoi(std::getenv("FD_POOL"))) : 512);
     fh.setOptions(opt);
-    if (FLASHTrace::opt("stream") && FileHandler::getType(in_file) == FileTypes::MZML)
+    bool loaded_in_parallel = false;
+    if (FLASHTrace::opt("pload") && FileHandler::getType(in_file) == FileTypes::MZML)
+    {
+      FLASHTrace::Scope trace_load("load_parallel");
+      int threads = 1;
+#ifdef _OPENMP
+      threads = omp_get_max_threads();
+#endif
+      loaded_in_parallel = parallelLoadIndexedMzML(in_file, fh.getOptions(), map, threads);
+      if (loaded_in_parallel) { ChromatogramTools().convertSpectraToChromatograms<PeakMap>(map, true); }
+    }
+    if (loaded_in_parallel) {}
+    else if (FLASHTrace::opt("stream") && FileHandler::getType(in_file) == FileTypes::MZML)
     {
       // Experiment: overlap parsing/decoding with MS1 deconvolution, then assemble the map exactly as
       // FileHandler::loadExperiment would (same spectra, order, ranges and chromatogram conversion).
