@@ -772,6 +772,7 @@ inline const double tol_div_factor
     // Reuse the previous spectrum's candidate vector capacity (worker-owned pool).
     candidate_pool_.clear();
     deconvolved_spectrum_.swapPeakGroups(candidate_pool_);
+    candidate_pool_.clear(); // whatever the spectrum held before is dropped, never resurrected
     deconvolved_spectrum_.reserve(binned_log_masses_.count());
     Size mass_bin_index = binned_log_masses_.find_first();
     auto& peak_bin_numbers = peak_bin_numbers_pool_;

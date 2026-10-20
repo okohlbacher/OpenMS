@@ -399,11 +399,21 @@ void FLASHDeconvAlgorithm::deconvolveMS1Streaming(const std::function<const MSSp
 #ifdef _OPENMP
     w = omp_get_thread_num();
 #endif
-    ThresholdMower filter = makeLowPeakFilter_();
+    std::optional<ThresholdMower> filter;
     while (true)
     {
       const Size index = next_index.fetch_add(1);
-      const MSSpectrum* input = next_spectrum(index);
+      const MSSpectrum* input = nullptr;
+      try
+      {
+        if (! filter) { filter.emplace(makeLowPeakFilter_()); }
+        input = next_spectrum(index);
+      }
+      catch (...)
+      {
+        failed = true; // no exception may leave the OpenMP region; run() recomputes MS1
+        break;
+      }
       if (input == nullptr) { break; }
       if (failed.load(std::memory_order_relaxed) || input->getMSLevel() != 1) { continue; }
       try
@@ -411,7 +421,7 @@ void FLASHDeconvAlgorithm::deconvolveMS1Streaming(const std::function<const MSSp
         FLASHTrace::Scope trace_job("job.ms1", (int64_t)index, (int64_t)input->size());
         // The input stays untouched (run() filters the assembled map exactly as before).
         MSSpectrum spec = *input;
-        filter.filterSpectrum(spec);
+        filter->filterSpectrum(spec);
         trimSpectrum_(spec);
         compactSpectrum_(spec);
         if (spec.empty()) { continue; }
@@ -622,7 +632,9 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
             try
             {
               const Size index = spectrum_indices[job];
-              if (ms_level == 1 && streamed_ms1_valid_ && index < streamed_ms1_.size() && streamed_ms1_[index].has_value())
+              if (ms_level == 1 && streamed_ms1_valid_ && index < streamed_ms1_.size() && streamed_ms1_[index].has_value()
+                  && streamed_ms1_[index]->getOriginalSpectrum().getNativeID() == map[index].getNativeID()
+                  && streamed_ms1_[index]->getOriginalSpectrum().getRT() == map[index].getRT())
               {
                 level_results[job].emplace(std::move(*streamed_ms1_[index]));
                 continue;
@@ -706,6 +718,7 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
     }
     std::sort(deconvolved_spectra.begin(), deconvolved_spectra.end());
   }
+  discardStreamedMS1(); // streamed results never outlive the run they were made for
   endProgress();
 }
 

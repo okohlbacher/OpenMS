@@ -332,8 +332,9 @@ namespace OpenMS
       Size next_commit = 0;
       bool commit_failed = false;
       std::mutex commit_mutex;
-      const auto drain = [&]() { // caller holds commit_mutex
+      const auto drain = [&]() noexcept { // caller holds commit_mutex
         while (! commit_failed && next_commit < n && ready[next_commit].load(std::memory_order_acquire))
+        try
         {
           const Size row = next_commit;
           const auto level = spectra[jobs[row]].getOriginalSpectrum().getMSLevel();
@@ -348,6 +349,11 @@ namespace OpenMS
           streams[level - 1] << buffers[row];
           std::string().swap(buffers[row]);
           ++next_commit;
+        }
+        catch (...)
+        {
+          errors[next_commit] = std::current_exception(); // rethrown after the join, like a formatting error
+          commit_failed = true;
         }
       };
 #pragma omp parallel for num_threads(worker_count) schedule(dynamic, 1) default(none) shared(spectra, jobs, first_indices, end_indices, buffers, errors, ready, commit_mutex, drain, file_name, avg, decoy_avg, tols, write_detail, noise_decoy_weight, n)
@@ -369,11 +375,8 @@ namespace OpenMS
         }
         end_indices[row] = index;
         ready[row].store(true, std::memory_order_release);
-        if (commit_mutex.try_lock())
-        {
-          drain();
-          commit_mutex.unlock();
-        }
+        std::unique_lock<std::mutex> lock(commit_mutex, std::try_to_lock);
+        if (lock.owns_lock()) { drain(); }
       }
       drain(); // everything not yet committed, after the join
       if (commit_failed) { std::rethrow_exception(errors[next_commit]); }

@@ -12,11 +12,14 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <optional>
 #include <mutex>
 #include <string>
 #include <vector>
-#include <sys/syscall.h>
-#include <unistd.h>
+#if defined(__linux__)
+  #include <sys/syscall.h>
+  #include <unistd.h>
+#endif
 #if defined(__GLIBC__)
   #include <malloc.h>
 #endif
@@ -30,6 +33,7 @@ namespace OpenMS::FLASHTrace
     int64_t a, b;
   };
 
+#if defined(__linux__)
   inline double wallNow()
   {
     timespec ts;
@@ -42,12 +46,19 @@ namespace OpenMS::FLASHTrace
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
     return ts.tv_sec + ts.tv_nsec * 1e-9;
   }
-
+  inline long threadId() { return (long)syscall(SYS_gettid); }
   inline const char* tracePath()
   {
     static const char* p = std::getenv("FD_TRACE");
     return p;
   }
+#else
+  // ponytail: tracing is Linux-only (thread CPU clock, gettid); elsewhere it is compiled in but disabled
+  inline double wallNow() { return 0; }
+  inline double cpuNow() { return 0; }
+  inline long threadId() { return 0; }
+  inline const char* tracePath() { return nullptr; }
+#endif
   inline bool enabled() { return tracePath() != nullptr; }
 
   /// FD_OPT feature switch, e.g. FD_OPT=pool,lpt
@@ -88,7 +99,7 @@ namespace OpenMS::FLASHTrace
       auto* v = new std::vector<Event>(); // ponytail: leaked on purpose, OpenMP threads outlive main
       v->reserve(1 << 14);
       std::lock_guard<std::mutex> g(registry().m);
-      registry().bufs.emplace_back((long)syscall(SYS_gettid), v);
+      registry().bufs.emplace_back(threadId(), v);
       return v;
     }();
     return *b;
