@@ -36,6 +36,14 @@ struct Filter
 };
 template struct Access<Filter, &FLASHDeconvAlgorithm::filterLowPeaks_>;
 
+// Exercise the zero-level allocation guard without a public testing API.
+struct SpectralRun
+{
+  using Type = void (FLASHDeconvAlgorithm::*)(MSExperiment&, std::vector<DeconvolvedSpectrum>&);
+  friend Type member(SpectralRun);
+};
+template struct Access<SpectralRun, &FLASHDeconvAlgorithm::runSpectralDeconvolution_>;
+
 void compareGroups(const PeakGroup& left, const PeakGroup& right, uint feature_index_offset)
 {
   TEST_EQUAL(left.size(), right.size())
@@ -224,6 +232,17 @@ START_SECTION([EXTRA] serial and parallel public runs preserve positive results 
   omp_set_num_threads(saved_threads);
   omp_set_dynamic(saved_dynamic);
 #endif
+}
+END_SECTION
+
+START_SECTION([EXTRA] empty spectral map retains zero level worker guard)
+{
+  FLASHDeconvAlgorithm algorithm;
+  MSExperiment input;
+  std::vector<DeconvolvedSpectrum> spectra;
+  (algorithm.*member(SpectralRun {}))(input, spectra);
+  TEST_TRUE(input.empty())
+  TEST_TRUE(spectra.empty())
 }
 END_SECTION
 

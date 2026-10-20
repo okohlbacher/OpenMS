@@ -394,6 +394,8 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
     {
       if (! spec.empty() && spec.getMSLevel() <= current_max_ms_level_) { ++level_counts[spec.getMSLevel()]; }
     }
+    // Private experiment: cap MS1 allocation while preserving higher levels.
+    if (level_counts.size() > 1) { level_counts[1] = std::min<Size>(level_counts[1], 64); }
     worker_count = (int)std::min((Size)omp_get_max_threads(), *std::max_element(level_counts.begin(), level_counts.end()));
   }
 #endif
@@ -446,6 +448,8 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
         std::vector<std::exception_ptr> errors(spectrum_indices.size());
         const PeakGroup empty_precursor;
         int level_workers = (int)std::min(spectrum_workers.size(), spectrum_indices.size());
+        // MS2 and later levels retain the requested available team.
+        if (ms_level == 1) { level_workers = std::min(level_workers, 64); }
 #pragma omp parallel num_threads(level_workers) default(none) \
   shared(map, spectrum_indices, scan_numbers, fallback_scans, precursors, empty_precursor, spectrum_workers, level_results, errors, ms_level)
         {
