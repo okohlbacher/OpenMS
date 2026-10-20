@@ -505,7 +505,7 @@ namespace OpenMS
       throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, in, "Root element does not contain defaultArrayLength XML tag.");
     }
     const int length = StringUtils::toInt32(xmlProperty(root, "defaultArrayLength"));
-    // Depth-first traversal replaces Xerces getElementsByTagName without a second list.
+    // Visit descendant binary arrays without allocating a second node list.
     for (xmlNode* node = root->children; node;)
     {
       if (node->type == XML_ELEMENT_NODE && xmlStrEqual(node->name, BAD_CAST "binaryDataArray"))

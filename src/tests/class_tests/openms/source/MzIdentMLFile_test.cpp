@@ -17,7 +17,10 @@
 #include <OpenMS/CHEMISTRY/CrossLinksDB.h>
 #include <OpenMS/CONCEPT/Constants.h>
 
+#include <OpenMS/FORMAT/HANDLERS/MzIdentMLDOMHandler.h>
+
 #include <set>
+#include <regex>
 #include <fstream>
 #include <sstream>
 
@@ -918,4 +921,91 @@ END_SECTION
 
 /////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////
+START_SECTION(([EXTRA] native DOM namespace Unicode entity and malformed-input regressions))
+{
+  std::ifstream source(OPENMS_GET_TEST_DATA_PATH("MzIdentMLFile_whole.mzid"));
+  const std::string original((std::istreambuf_iterator<char>(source)), std::istreambuf_iterator<char>());
+  ABORT_IF(original.empty())
+  auto save_xml = [](const std::string& path, const std::string& contents)
+  {
+    std::ofstream output(path, std::ios::binary);
+    output << contents;
+  };
+  std::string filename;
+  NEW_TMP_FILE(filename)
+  std::vector<ProteinIdentification> proteins;
+  PeptideIdentificationList peptides;
+
+  // All element names may carry a namespace prefix; attributes stay unqualified.
+  std::string prefixed = std::regex_replace(original, std::regex("<(/?)([A-Za-z][A-Za-z0-9]*)"), "<$1mzid:$2");
+  StringUtils::substitute(prefixed, "xmlns=", "xmlns:mzid=");
+  StringUtils::substitute(prefixed, "<mzid:DBSequence accession=", "<mzid:DBSequence xmlns:foreign=\"urn:foreign\" foreign:accession=\"ignored\" accession=");
+  StringUtils::substitute(prefixed, "accession=\"PROT1\"", "accession=\"Pröt&#x1F9EC;&amp;&quot;\"");
+  save_xml(filename, prefixed);
+  MzIdentMLFile().load(filename, proteins, peptides);
+  ABORT_IF(proteins.size() != 1)
+  TEST_EQUAL(peptides.size(), 3)
+  std::set<std::string> accessions;
+  for (const auto& hit : proteins[0].getHits()) { accessions.insert(hit.getAccession()); }
+  TEST_TRUE(accessions.contains("Pröt🧬&\""))
+  TEST_TRUE(accessions.contains("PROT2"))
+
+  // A real existing local file is never loaded through an external entity.
+  std::string secret_file;
+  NEW_TMP_FILE(secret_file)
+  save_xml(secret_file, "EXTERNAL_ENTITY_MUST_NOT_BE_READ");
+  std::string external = original;
+  const auto declaration = external.find("?>");
+  ABORT_IF(declaration == std::string::npos)
+  external.insert(declaration + 2, "\n<!DOCTYPE MzIdentML [<!ENTITY secret SYSTEM 'file://" + secret_file + "'>]>");
+  StringUtils::substitute(external, "<Seq>PRGTEIN</Seq>", "<Seq>&secret;</Seq>");
+  save_xml(filename, external);
+  MzIdentMLFile().load(filename, proteins, peptides);
+  for (const auto& protein : proteins)
+  {
+    for (const auto& hit : protein.getHits())
+    {
+      TEST_NOT_EQUAL(hit.getSequence(), "EXTERNAL_ENTITY_MUST_NOT_BE_READ")
+    }
+  }
+
+  // Do not traverse a partial DOM after a malformed tail, invalid reference or UTF8.
+  save_xml(filename, original.substr(0, original.rfind("</MzIdentML>")));
+  TEST_EXCEPTION(Exception::ParseError, MzIdentMLFile().load(filename, proteins, peptides))
+  std::string malformed = original;
+  StringUtils::substitute(malformed, "accession=\"PROT1\"", "accession=\"bad&-\"");
+  save_xml(filename, malformed);
+  TEST_EXCEPTION(Exception::ParseError, MzIdentMLFile().load(filename, proteins, peptides))
+  malformed = original;
+  StringUtils::substitute(malformed, "accession=\"PROT1\"", std::string("accession=\"bad") + char(0xff) + "\"");
+  save_xml(filename, malformed);
+  TEST_EXCEPTION(Exception::ParseError, MzIdentMLFile().load(filename, proteins, peptides))
+}
+END_SECTION
+
+START_SECTION(([EXTRA] legacy DOM writer emits UTF8 namespaces and propagates output failures))
+{
+  ProteinIdentification protein;
+  ProteinHit hit;
+  hit.setAccession("Pröt🧬&\"");
+  hit.setSequence("PEPTIDER");
+  protein.insertHit(hit);
+  const std::vector<ProteinIdentification> proteins{protein};
+  const PeptideIdentificationList peptides;
+  MzIdentMLFile logger;
+  Internal::MzIdentMLDOMHandler writer(proteins, peptides, "1.1.0", logger);
+  std::string filename;
+  NEW_TMP_FILE(filename)
+  writer.writeMzIdentMLFile(filename);
+  std::ifstream stream(filename, std::ios::binary);
+  const std::string xml((std::istreambuf_iterator<char>(stream)), std::istreambuf_iterator<char>());
+  TEST_TRUE(xml.find("xmlns=\"http://psidev.info/psi/pi/mzIdentML/1.1\"") != std::string::npos)
+  TEST_TRUE(xml.find("xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"") != std::string::npos)
+  TEST_TRUE(xml.find("xsi:schemaLocation=") != std::string::npos)
+  TEST_TRUE(xml.find("Pröt🧬&amp;&quot;") != std::string::npos)
+  // An existing regular file cannot be used as the parent directory of an output.
+  TEST_EXCEPTION(Exception::UnableToCreateFile, writer.writeMzIdentMLFile(filename + "/unwritable.mzid"))
+}
+END_SECTION
+
 END_TEST

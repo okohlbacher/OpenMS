@@ -51,9 +51,8 @@
     "curl",
     "eigen3",
     "libsvm",
-    "libxml2",
+    { "name": "libxml2", "version>=": "2.13.0" },
     "libzip",
-    "xerces-c",
     "zlib",
     "zstd"
   ],

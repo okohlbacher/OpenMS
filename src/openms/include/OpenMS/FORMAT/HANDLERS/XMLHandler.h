@@ -32,8 +32,7 @@ namespace OpenMS
   namespace Internal
   {
 
-    // XMLCh string handling lives in StringManager (Xerces-free public API);
-    // shared_xerces_ptr / unique_xerces_ptr / CONST_XMLCH are declared there.
+    // UTF-16 string handling lives in StringManager.
 
     /**
         @brief Base class for XML handlers.
@@ -88,9 +87,8 @@ public:
           @name Native (Xerces-free) SAX callbacks
 
           Subclasses override these. @c qname / @c chars are UTF-16 code units (as
-          delivered by the parser); attributes are exposed through the Xerces-free
-          @ref XMLAttributes view. The Xerces SAX parser is bridged to these
-          callbacks by the internal SAX2HandlerAdapter.
+          delivered by the parser); attributes are exposed through the native
+          @ref XMLAttributes view. The XML parser adapter dispatches these callbacks.
       */
       //@{
       /// Parsing method for opening tags

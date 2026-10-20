@@ -19,7 +19,6 @@
 #   * never mix Release/Debug versions of libraries. Leads to strange segfaults,
 #     stack corruption etc, due to different runtime libs ...
 # compiler-wise: build the dependencies with the same compiler as OpenMS!
-find_package(XercesC REQUIRED)
 find_package(LibXml2 2.13 REQUIRED)
 
 #------------------------------------------------------------------------------

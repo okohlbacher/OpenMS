@@ -18,6 +18,7 @@ namespace
   struct Reader : Internal::XMLFile
   {
     using XMLFile::parseBuffer_;
+    using XMLFile::parse_;
     using XMLFile::enforceEncoding_;
   };
   struct Handler : Internal::XMLHandler
@@ -199,5 +200,19 @@ START_SECTION(Native ASCII attribute lookup and UTF8 fallback)
   TEST_TRUE(attributes.value("β") == attributes.value(u"β"))
   TEST_TRUE(attributes.value("naïve") == attributes.value(u"naïve"))
   TEST_TRUE(attributes.value("βmissing") == nullptr)
+END_SECTION
+START_SECTION(File input handles empty and one-byte files without reading uninitialized magic)
+  std::string filename;
+  NEW_TMP_FILE(filename)
+  Reader reader;
+  Handler handler;
+  { std::ofstream out(filename, std::ios::binary); }
+  TEST_EXCEPTION(Exception::ParseError, reader.parse_(filename, &handler))
+  { std::ofstream out(filename, std::ios::binary); out << "<"; }
+  TEST_EXCEPTION(Exception::ParseError, reader.parse_(filename, &handler))
+  { std::ofstream out(filename, std::ios::binary); out << "<root value='file'>text</root>"; }
+  reader.parse_(filename, &handler);
+  TEST_EQUAL(handler.text == u"text", true)
+  TEST_EQUAL(handler.attribute == u"file", true)
 END_SECTION
 END_TEST

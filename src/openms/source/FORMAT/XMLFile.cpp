@@ -7,8 +7,8 @@
 // --------------------------------------------------------------------------
 
 #include <OpenMS/FORMAT/XMLFile.h>
-
 #include <OpenMS/CONCEPT/Init.h>
+
 
 #include <OpenMS/CONCEPT/Macros.h>
 
@@ -22,21 +22,20 @@
 
 #include <libxml/parser.h>
 #include <libxml/parserInternals.h>
-#include <xercesc/util/BinInputStream.hpp>
 #include <exception>
-#include <xercesc/framework/LocalFileInputSource.hpp>
-#include <xercesc/framework/MemBufInputSource.hpp>
+#include <algorithm>
+#include <cstring>
 
 
 #include <zlib.h>
 #include <bzlib.h>
 
 #include <fstream>
+#include <filesystem>
 #include <iomanip> // setprecision etc.
 #include <streambuf>
 
 #include <memory>
-#include <xercesc/util/XMLString.hpp>
 
 using namespace std;
 
@@ -80,7 +79,6 @@ private:
       enforced_encoding_ = encoding;
     }
 
-    // POC: keep the existing decompression streams, replace their XML parser.
     // C callbacks capture every exception: no C++ exception crosses libxml2 frames.
     struct LibxmlState
     {
@@ -161,11 +159,17 @@ private:
         });
       }
     };
-    void parse(xercesc::InputSource* const source, XMLHandler* handler)
+    template <typename Read>
+    void parse(Read&& read, XMLHandler* handler, const std::string& encoding, const std::string& filename)
     {
+      libxmlInitialize();
       LibxmlState state{handler, {}};
       xmlSAXHandler sax{};
-      xmlSAXVersion(&sax, 1);
+      if (xmlSAXVersion(&sax, 1) != 0)
+      {
+        throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename,
+                                    "libxml2 was built without SAX1 support");
+      }
       sax.startElement = LibxmlState::start;
       sax.endElement = LibxmlState::end;
       sax.characters = LibxmlState::characters;
@@ -175,28 +179,25 @@ private:
         if (ctx->myDoc) { xmlFreeDoc(ctx->myDoc); }
         xmlFreeParserCtxt(ctx);
       };
-      unique_ptr<xmlParserCtxt, decltype(free_parser)> parser(xmlCreatePushParserCtxt(&sax, nullptr, nullptr, 0, nullptr), free_parser);
+      unique_ptr<xmlParserCtxt, decltype(free_parser)> parser(xmlCreatePushParserCtxt(&sax, nullptr, nullptr, 0, filename.c_str()), free_parser);
       if (!parser) { throw std::bad_alloc(); }
       parser->_private = &state;
       parser->userData = parser.get();
       // SAX1 ignores sax.serror; the context-local API works in both SAX modes.
       xmlCtxtSetErrorHandler(parser.get(), LibxmlState::error, parser.get());
       xmlCtxtUseOptions(parser.get(), XML_PARSE_NONET | XML_PARSE_NO_XXE | XML_PARSE_NOENT);
-      if (source->getEncoding())
+      if (!encoding.empty())
       {
-        const auto encoding = StringManager::convert(reinterpret_cast<const char16_t*>(source->getEncoding()));
         if (xmlSwitchEncodingName(parser.get(), encoding.c_str()) != 0)
         {
           throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "", "Unsupported XML encoding: " + encoding);
         }
       }
-      unique_ptr<xercesc::BinInputStream> stream(source->makeStream());
-      if (!stream) { throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "", "Cannot open XML input stream"); }
       char buffer[65536];
       int status = 0;
       while (!state.exception)
       {
-        const auto count = stream->readBytes(reinterpret_cast<XMLByte*>(buffer), sizeof(buffer));
+        const auto count = read(reinterpret_cast<unsigned char*>(buffer), sizeof(buffer));
         status = xmlParseChunk(parser.get(), buffer, static_cast<int>(count), count == 0);
         if (status || count == 0) { break; }
       }
@@ -211,104 +212,58 @@ private:
       }
     }
 
-    void XMLFile::parse_(const std::string & filename, XMLHandler * handler)
+    void XMLFile::parse_(const std::string& filename, XMLHandler* handler)
     {
-      // ensure handler->reset() is called to save memory (in case the XMLFile
-      // reader, e.g. FeatureXMLFile, is used again)
       XMLCleaner_ clean(handler);
-
-      StringManager sm;
-      //try to open file
       if (!File::exists(filename))
       {
         throw Exception::FileNotFound(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename);
       }
-
-      // initialize parser
-      try
+      std::ifstream file(std::filesystem::u8path(filename), std::ios::binary);
+      if (!file)
       {
-        Internal::xercesInitialize(); // serialised: Xerces requires it, and parseBuffer_() runs on several threads at once
+        throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename, "Cannot open XML file");
       }
-      catch (const xercesc::XMLException & toCatch)
+      char magic[2]{};
+      file.read(magic, sizeof(magic));
+      const std::string header(magic, static_cast<Size>(file.gcount()));
+      file.clear();
+      file.seekg(0);
+      if (header == "BZ" || header == "PK" || header == std::string("\x1f\x8b", 2))
       {
-        throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION,
-            "",std::string("Error during initialization: ") + StringManager().convert(toCatch.getMessage()));
-      }
-
-
-      // peak ahead into the file: is it bzip2 or gzip compressed?
-      std::string bz;
-      {
-        std::ifstream file(filename.c_str());
-        char tmp_bz[3];
-        file.read(tmp_bz, 2);
-        tmp_bz[2] = '\0';
-        bz =std::string(tmp_bz);
-      }
-
-      unique_ptr<xercesc::InputSource> source;
-
-      char g1 = 0x1f;
-      char g2 = 0;
-      g2 |= 1 << 7;
-      g2 |= 1 << 3;
-      g2 |= 1 << 1;
-      g2 |= 1 << 0;
-      //g2 = static_cast<char>(0x8b); // can make troubles if it is casted to 0x7F which is the biggest number signed char can save
-      if ((bz[0] == 'B' && bz[1] == 'Z') || (bz[0] == g1 && bz[1] == g2) || (bz[0] == 'P' && bz[1] == 'K'))
-      {
-        source.reset(new CompressedInputSource(sm.convert(filename).c_str(), bz));
+        file.close();
+        std::unique_ptr<InputStream> stream(CompressedInputSource(filename, header).makeStream());
+        if (!stream)
+        {
+          throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename, "Cannot open compressed XML stream");
+        }
+        parse([&](unsigned char* target, Size capacity) { return stream->readBytes(target, capacity); }, handler, enforced_encoding_, filename);
       }
       else
       {
-        source.reset(new xercesc::LocalFileInputSource(sm.convert(filename).c_str()));
+        parse([&](unsigned char* target, Size capacity)
+        {
+          file.read(reinterpret_cast<char*>(target), static_cast<std::streamsize>(capacity));
+          if (file.bad())
+          {
+            throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename, "Error reading XML file");
+          }
+          return static_cast<Size>(file.gcount());
+        }, handler, enforced_encoding_, filename);
       }
-      // what if no encoding given http://xerces.apache.org/xerces-c/apiDocs-3/classInputSource.html
-      if (!enforced_encoding_.empty())
-      {
-        const auto encoding = sm.convert(enforced_encoding_);
-        source->setEncoding(reinterpret_cast<const XMLCh*>(encoding.c_str()));
-      }
-      
-      parse(source.get(), handler);
     }
 
-    void XMLFile::parseBuffer_(const std::string & buffer, XMLHandler * handler)
+    void XMLFile::parseBuffer_(const std::string& buffer, XMLHandler* handler)
     {
-      // ensure handler->reset() is called to save memory (in case the XMLFile
-      // reader, e.g. FeatureXMLFile, is used again)
       XMLCleaner_ clean(handler);
-
-      StringManager sm;
-
-      // initialize parser
-      try
+      Size offset = 0;
+      parse([&](unsigned char* target, Size capacity)
       {
-        Internal::xercesInitialize(); // serialised: Xerces requires it, and parseBuffer_() runs on several threads at once
-      }
-      catch (const xercesc::XMLException & toCatch)
-      {
-        throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION,
-            "",std::string("Error during initialization: ") + StringManager().convert(toCatch.getMessage()));
-      }
-
-      // TODO: handle non-plain text
-      // peak ahead into the file: is it bzip2 or gzip compressed?
-      // std::string bz = StringUtils::substr(buffer, 0, 2);
-
-      unique_ptr<xercesc::InputSource> source;
-      {
-        auto fake_id = sm.convert("inMemory");
-        source.reset(new xercesc::MemBufInputSource(reinterpret_cast<const unsigned char *>(buffer.c_str()), buffer.size(), fake_id.c_str()));
-      }
-      // what if no encoding given http://xerces.apache.org/xerces-c/apiDocs-3/classInputSource.html
-      if (!enforced_encoding_.empty())
-      {
-        const auto encoding = sm.convert(enforced_encoding_);
-        source->setEncoding(reinterpret_cast<const XMLCh*>(encoding.c_str()));
-      }
-      
-      parse(source.get(), handler);
+        const Size count = std::min(capacity, buffer.size() - offset);
+        std::memcpy(target, buffer.data() + offset, count);
+        offset += count;
+        return count;
+      }, handler, enforced_encoding_, "inMemory");
     }
 
     void XMLFile::save_(const std::string & filename, XMLHandler * handler) const

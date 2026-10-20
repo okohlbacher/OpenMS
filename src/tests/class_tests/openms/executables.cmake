@@ -71,6 +71,7 @@ set(datastructures_executables_list
   QTCluster_test
   RangeManager_test
   StringListUtils_test
+  StringManager_test
   StringUtils_test
   String_test
   #ToolDescription_test

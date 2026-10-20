@@ -8,25 +8,12 @@
 
 #include <OpenMS/FORMAT/HANDLERS/XMLAttributes.h>
 
-#include <xercesc/sax2/Attributes.hpp>
-#include <xercesc/util/XMLString.hpp>
-#include <xercesc/util/TransService.hpp>
-#include <cstring>
+#include <OpenMS/FORMAT/HANDLERS/StringManager.h>
 
 namespace OpenMS::Internal
 {
-  // XMLCh is guaranteed to match char16_t in size; the attribute values are
-  // consumed purely as UTF-16 code units, so the reinterpret_cast at this
-  // boundary is well-defined for our use.
-  static_assert(sizeof(::XMLCh) == sizeof(char16_t), "XMLCh is not sized correctly for UTF-16.");
-
   namespace
   {
-    inline const xercesc::Attributes* attrs(const void* handle)
-    {
-      return static_cast<const xercesc::Attributes*>(handle);
-    }
-
     bool equalsASCII(const char16_t* wide, const char* ascii)
     {
       while (*ascii && *wide == static_cast<unsigned char>(*ascii))
@@ -40,58 +27,43 @@ namespace OpenMS::Internal
 
   const char16_t* XMLAttributes::value(const char16_t* qname) const
   {
-    if (native_attributes_)
-    {
-      const SignedSize i = index(qname);
-      return i < 0 ? nullptr : (*native_attributes_)[i].second.c_str();
-    }
-    return reinterpret_cast<const char16_t*>(attrs(attributes_)->getValue(reinterpret_cast<const ::XMLCh*>(qname)));
+    const SignedSize i = index(qname);
+    return i < 0 ? nullptr : attributes_[i].second.c_str();
   }
 
   const char16_t* XMLAttributes::value(const char* qname) const
   {
-    if (native_attributes_)
+    if (!qname) return nullptr;
+    bool ascii = true;
+    for (const auto* ch = qname; *ch; ++ch)
     {
-      bool ascii = true;
-      for (const auto* ch = qname; *ch; ++ch)
-      {
-        if (static_cast<unsigned char>(*ch) > 127) { ascii = false; break; }
-      }
-      if (ascii)
-      {
-        // XML vocabulary names are usually ASCII; avoid allocating a transcoder.
-        for (const auto& item : *native_attributes_)
-        {
-          if (equalsASCII(item.first.c_str(), qname)) return item.second.c_str();
-        }
-        return nullptr;
-      }
-      const xercesc::TranscodeFromStr transcoded(reinterpret_cast<const XMLByte*>(qname), std::strlen(qname), "UTF-8");
-      return value(reinterpret_cast<const char16_t*>(transcoded.str()));
+      if (static_cast<unsigned char>(*ch) > 127) { ascii = false; break; }
     }
-    ::XMLCh* transcoded = xercesc::XMLString::transcode(qname);
-    const char16_t* val = reinterpret_cast<const char16_t*>(attrs(attributes_)->getValue(transcoded));
-    xercesc::XMLString::release(&transcoded);
-    return val;
+    if (ascii)
+    {
+      // XML vocabulary names are usually ASCII; avoid allocating a transcoder.
+      for (const auto& item : attributes_)
+      {
+        if (equalsASCII(item.first.c_str(), qname)) return item.second.c_str();
+      }
+      return nullptr;
+    }
+    const auto name = StringManager::convert(qname);
+    return value(name.c_str());
   }
 
   SignedSize XMLAttributes::index(const char16_t* qname) const
   {
-    if (native_attributes_)
+    if (!qname) return -1;
+    for (Size i = 0; i < attributes_.size(); ++i)
     {
-      for (Size i = 0; i < native_attributes_->size(); ++i)
-      {
-        if ((*native_attributes_)[i].first == qname) { return static_cast<SignedSize>(i); }
-      }
-      return -1;
+      if (attributes_[i].first == qname) return static_cast<SignedSize>(i);
     }
-    return static_cast<SignedSize>(attrs(attributes_)->getIndex(reinterpret_cast<const ::XMLCh*>(qname)));
+    return -1;
   }
 
   const char16_t* XMLAttributes::valueByIndex(Size i) const
   {
-    if (native_attributes_) { return i < native_attributes_->size() ? (*native_attributes_)[i].second.c_str() : nullptr; }
-    return reinterpret_cast<const char16_t*>(attrs(attributes_)->getValue(static_cast<XMLSize_t>(i)));
+    return i < attributes_.size() ? attributes_[i].second.c_str() : nullptr;
   }
-
-} // namespace OpenMS::Internal
+}
