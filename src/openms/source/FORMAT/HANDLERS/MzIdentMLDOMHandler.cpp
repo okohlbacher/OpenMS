@@ -3011,7 +3011,8 @@ namespace OpenMS::Internal
     {
       const std::string engine = cpro_id_->empty() || cpro_id_->front().getSearchEngine().empty()
         ? "TOPP software" : cpro_id_->front().getSearchEngine();
-      const std::string version = cpro_id_->empty() ? "" : cpro_id_->front().getSearchEngineVersion();
+      const std::string version = cpro_id_->empty() || cpro_id_->front().getSearchEngineVersion().empty()
+        ? "unknown" : cpro_id_->front().getSearchEngineVersion();
       xmlNode* current_as = element_(analysisSoftwareElements->doc, "AnalysisSoftware");
       setAttribute_(current_as, "id", "OpenMS" + StringUtils::toStr(UniqueIdGenerator::getUniqueId()));
       setAttribute_(current_as, "version", version);

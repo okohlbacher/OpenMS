@@ -1042,6 +1042,46 @@ START_SECTION(([EXTRA] legacy DOM writer emits UTF8 namespaces and propagates ou
   TEST_TRUE(xml.find("xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"") != std::string::npos)
   TEST_TRUE(xml.find("xsi:schemaLocation=") != std::string::npos)
   TEST_TRUE(xml.find("Pröt🧬&amp;&quot;") != std::string::npos)
+  struct SoftwareAttributes : Internal::XMLHandler
+  {
+    SoftwareAttributes() : XMLHandler("memory", "1.1.0") {}
+    Size count = 0;
+    std::u16string engine, version;
+    void onStartElement(const char16_t* name, const Internal::XMLAttributes& attributes) override
+    {
+      if (std::u16string_view(name) == u"AnalysisSoftware")
+      {
+        ++count;
+        if (const auto* value = attributes.value("name")) { engine = value; }
+        if (const auto* value = attributes.value("version")) { version = value; }
+      }
+    }
+  };
+  struct Reader : Internal::XMLFile
+  {
+    using XMLFile::parse_;
+    using XMLFile::parseBuffer_;
+  } reader;
+  SoftwareAttributes explicit_version;
+  reader.parseBuffer_(xml, &explicit_version);
+  TEST_EQUAL(explicit_version.count, 1)
+  TEST_TRUE(explicit_version.engine == u"Mascot")
+  TEST_TRUE(explicit_version.version == u"2.1.0")
+
+  // The reader ignores AnalysisSoftware entries with an empty version. Preserve
+  // the real engine name and emit a nonempty fallback when no version is known.
+  protein.setSearchEngineVersion("");
+  const std::vector<ProteinIdentification> missing_version_proteins{protein};
+  Internal::MzIdentMLDOMHandler missing_version_writer(missing_version_proteins, peptides, "1.1.0", logger);
+  std::string missing_version_file;
+  NEW_TMP_FILE(missing_version_file)
+  missing_version_writer.writeMzIdentMLFile(missing_version_file);
+  SoftwareAttributes missing_version;
+  reader.parse_(missing_version_file, &missing_version);
+  TEST_EQUAL(missing_version.count, 1)
+  TEST_TRUE(missing_version.engine == u"Mascot")
+  TEST_TRUE(missing_version.version == u"unknown")
+
   // An existing regular file cannot be used as the parent directory of an output.
   TEST_EXCEPTION(Exception::UnableToCreateFile, writer.writeMzIdentMLFile(filename + "/unwritable.mzid"))
 }
