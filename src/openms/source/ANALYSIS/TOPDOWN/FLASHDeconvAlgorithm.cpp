@@ -20,6 +20,7 @@
 #include <OpenMS/SYSTEM/BuildInfo.h>
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <exception>
 #include <iterator>
 #include <memory>
@@ -141,15 +142,19 @@ void FLASHDeconvAlgorithm::updateMSLevels_(MSExperiment& map)
   current_max_ms_level_ = current_max_ms_level_ > max_ms_level_ ? max_ms_level_ : current_max_ms_level_;
 }
 
-void FLASHDeconvAlgorithm::filterLowPeaks_(MSExperiment& map)
+namespace
 {
-  OPENMS_LOG_INFO << "Filtering low peaks in spectra ... ";
-  ThresholdMower threshold_mower_filter;                         // threshold
-  Param t_filter_param = threshold_mower_filter.getParameters(); //"threshold", .00001
-  t_filter_param.setValue("threshold", 1e-6);
-  threshold_mower_filter.setParameters(t_filter_param);
+  ThresholdMower makeLowPeakFilter_()
+  {
+    ThresholdMower threshold_mower_filter;                         // threshold
+    Param t_filter_param = threshold_mower_filter.getParameters(); //"threshold", .00001
+    t_filter_param.setValue("threshold", 1e-6);
+    threshold_mower_filter.setParameters(t_filter_param);
+    return threshold_mower_filter;
+  }
 
-  const auto trim_spectrum = [](MSSpectrum& it) {
+  void trimSpectrum_(MSSpectrum& it)
+  {
     if (it.empty()) return;
     Size count = it.getType(false) == SpectrumSettings::SpectrumType::CENTROID ? max_peak_count_for_centroid_ : max_peak_count_for_profile_;
     it.sortByIntensity(true);
@@ -163,11 +168,12 @@ void FLASHDeconvAlgorithm::filterLowPeaks_(MSExperiment& map)
       it.pop_back();
     }
     it.sortByPosition();
-  };
+  }
 
   // Release spare peak storage after trimming without replacing the spectrum
   // object or its metadata. Array shrink requests leave their values intact.
-  const auto compact_spectrum = [](MSSpectrum& it) {
+  void compactSpectrum_(MSSpectrum& it)
+  {
     MSSpectrum::ContainerType compact_peaks(it.cbegin(), it.cend());
     it.swap(compact_peaks);
     for (auto& array : it.getFloatDataArrays())
@@ -182,7 +188,15 @@ void FLASHDeconvAlgorithm::filterLowPeaks_(MSExperiment& map)
     {
       array.shrink_to_fit();
     }
-  };
+  }
+} // namespace
+
+void FLASHDeconvAlgorithm::filterLowPeaks_(MSExperiment& map)
+{
+  OPENMS_LOG_INFO << "Filtering low peaks in spectra ... ";
+  ThresholdMower threshold_mower_filter = makeLowPeakFilter_();
+  const auto trim_spectrum = [](MSSpectrum& it) { trimSpectrum_(it); };
+  const auto compact_spectrum = [](MSSpectrum& it) { compactSpectrum_(it); };
 
   // Array selection can throw before filtering or after peak-only trimming.
   // Preserve the original threshold pass and use serial exception construction
@@ -332,6 +346,97 @@ int FLASHDeconvAlgorithm::getScanNumber(const MSExperiment& map, Size index)
 
 std::vector<double> FLASHDeconvAlgorithm::getTolerances() const
 { return tols_; }
+
+void FLASHDeconvAlgorithm::discardStreamedMS1()
+{
+  streamed_ms1_.clear();
+  streamed_ms1_valid_ = false;
+}
+
+void FLASHDeconvAlgorithm::deconvolveMS1Streaming(const std::function<const MSSpectrum*(Size)>& next_spectrum, const std::function<std::string()>& accession)
+{
+  FLASHTrace::Scope trace_stream("stream.ms1");
+  discardStreamedMS1();
+  // Same eligibility as the outer-parallel path in runSpectralDeconvolution_, plus fixed tolerances
+  // (tolerance estimation needs the whole map) and no forced MS level.
+  bool eligible = ! report_decoy_ && merge_spec_ == 0 && ida_log_file_.empty() && forced_ms_level_ == 0
+                  && ! Internal::OpenMSBuildInfo::isOpenMPParallelRegion();
+  for (double t : tols_) { eligible &= t > 0; }
+  Param sd_param = param_.copy("SD:", true);
+  sd_param.setValue("allowed_isotope_error", param_.getValue("allowed_isotope_error"));
+  eligible &= (int)sd_param.getValue("precursor_charge") == 0 && (double)sd_param.getValue("precursor_mz") == 0;
+  int worker_count = 1;
+#ifdef _OPENMP
+  worker_count = (int)std::min((Size)omp_get_max_threads(), ms1Cap_());
+#endif
+  if (! eligible || worker_count < 2)
+  {
+    // drain nothing: the caller still assembles the map and run() computes MS1 as usual
+    return;
+  }
+  // Prototype with the parameters run() will use (tols_ are fixed, so "tol" already equals them).
+  SpectralDeconvolution proto;
+  sd_param.setValue("tol", tols_);
+  proto.setParameters(sd_param);
+  proto.calculateAveragine(use_RNA_averagine_);
+  // Workers and their pools live only for this stage.
+  std::vector<SpectralDeconvolution> workers(worker_count);
+  const auto shared_averagine = std::make_shared<const SpectralDeconvolution::PrecalculatedAveragine>(proto.getAveragine());
+  for (auto& worker : workers)
+  {
+    worker.setParameters(sd_param);
+    worker.setSharedAveragine_(shared_averagine);
+  }
+  std::vector<std::vector<std::pair<Size, DeconvolvedSpectrum>>> per_worker(worker_count);
+  std::atomic<Size> next_index {0};
+  std::atomic<bool> failed {false};
+  const PeakGroup empty_precursor;
+#pragma omp parallel num_threads(worker_count) default(none) shared(workers, per_worker, next_index, failed, next_spectrum, accession, empty_precursor)
+  {
+    int w = 0;
+#ifdef _OPENMP
+    w = omp_get_thread_num();
+#endif
+    ThresholdMower filter = makeLowPeakFilter_();
+    while (true)
+    {
+      const Size index = next_index.fetch_add(1);
+      const MSSpectrum* input = next_spectrum(index);
+      if (input == nullptr) { break; }
+      if (failed.load(std::memory_order_relaxed) || input->getMSLevel() != 1) { continue; }
+      try
+      {
+        FLASHTrace::Scope trace_job("job.ms1", (int64_t)index, (int64_t)input->size());
+        // The input stays untouched (run() filters the assembled map exactly as before).
+        MSSpectrum spec = *input;
+        filter.filterSpectrum(spec);
+        trimSpectrum_(spec);
+        compactSpectrum_(spec);
+        if (spec.empty()) { continue; }
+        std::vector<std::string> native_ids;
+        StringUtils::split(spec.getNativeID(), ",", native_ids);
+        std::string type_accession = accession();
+        if (type_accession.empty()) { type_accession = "MS:1000768"; }
+        int scan_number = SpectrumLookup::extractScanNumber(native_ids.back(), type_accession);
+        if (scan_number < 0) { scan_number = (int)index + 1; }
+        workers[w].performSpectrumDeconvolution(spec, scan_number, empty_precursor);
+        per_worker[w].emplace_back(index, std::move(workers[w].getDeconvolvedSpectrum()));
+      }
+      catch (...)
+      {
+        failed = true; // run() recomputes and reports the error on the ordinary path
+      }
+    }
+  }
+  if (failed) { return; }
+  Size max_index = 0;
+  for (const auto& v : per_worker)
+    for (const auto& r : v) { max_index = std::max(max_index, r.first + 1); }
+  streamed_ms1_.resize(max_index);
+  for (auto& v : per_worker)
+    for (auto& r : v) { streamed_ms1_[r.first].emplace(std::move(r.second)); }
+  streamed_ms1_valid_ = true;
+}
 
 int FLASHDeconvAlgorithm::findPrecursorScanNumber_(const MSExperiment& map, Size index, uint ms_level) const
 {
@@ -515,6 +620,11 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
             try
             {
               const Size index = spectrum_indices[job];
+              if (ms_level == 1 && streamed_ms1_valid_ && index < streamed_ms1_.size() && streamed_ms1_[index].has_value())
+              {
+                level_results[job].emplace(std::move(*streamed_ms1_[index]));
+                continue;
+              }
               FLASHTrace::Scope trace_job(ms_level == 1 ? "job.ms1" : "job.ms2", (int64_t)index, (int64_t)map[index].size());
               const auto& precursor = precursors[job] == nullptr ? empty_precursor : *precursors[job];
               worker.performSpectrumDeconvolution(map[index], scan_numbers[index], precursor);
@@ -530,6 +640,7 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
           }
         }
         FLASHTrace::Scope trace_commit("level_commit", ms_level);
+        if (ms_level == 1) { discardStreamedMS1(); }
         // Commit in input order, including equal scan-number keys, after join.
         for (const auto& error : errors)
         {

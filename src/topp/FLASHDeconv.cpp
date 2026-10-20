@@ -16,6 +16,14 @@
 #include <OpenMS/FORMAT/FLASHDeconvSpectrumFile.h>
 #include <OpenMS/FORMAT/FileTypes.h>
 #include <OpenMS/FORMAT/FileHandler.h>
+#include <OpenMS/FORMAT/HANDLERS/MzMLHandler.h>
+#include <OpenMS/FORMAT/MzMLFile.h>
+#include <OpenMS/INTERFACES/IMSDataConsumer.h>
+#include <OpenMS/KERNEL/ChromatogramTools.h>
+#include <condition_variable>
+#include <deque>
+#include <mutex>
+#include <thread>
 
 #include <algorithm>
 #ifdef _OPENMP
@@ -56,6 +64,77 @@ namespace
 
 using namespace OpenMS;
 using namespace std;
+
+namespace
+{
+  /// Experiment (FD_OPT=stream): receives decoded spectra from the mzML handler and hands them to
+  /// MS1 workers while parsing continues. A deque keeps element addresses stable while it grows.
+  class StreamedSpectra : public Interfaces::IMSDataConsumer
+  {
+  public:
+    explicit StreamedSpectra(const MSExperiment& header) : header_(header) {}
+
+    void consumeSpectrum(SpectrumType& s) override
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      if (spectra_.empty() && ! header_.getSourceFiles().empty()) { accession_ = header_.getSourceFiles()[0].getNativeIDTypeAccession(); }
+      spectra_.push_back(std::move(s));
+      available_.notify_all();
+    }
+    void consumeChromatogram(ChromatogramType& c) override
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      chromatograms_.push_back(std::move(c));
+    }
+    void setExpectedSize(Size, Size) override {}
+    void setExperimentalSettings(const ExperimentalSettings&) override {}
+
+    /// blocks until spectrum @p i exists; nullptr once loading finished without it
+    const MSSpectrum* get(Size i)
+    {
+      std::unique_lock<std::mutex> lock(mutex_);
+      available_.wait(lock, [&] { return i < spectra_.size() || finished_; });
+      return i < spectra_.size() ? &spectra_[i] : nullptr;
+    }
+    std::string accession()
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      return accession_;
+    }
+    void finish()
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      finished_ = true;
+      available_.notify_all();
+    }
+
+    std::deque<MSSpectrum> spectra_;
+    std::deque<MSChromatogram> chromatograms_;
+
+  private:
+    const MSExperiment& header_;
+    std::mutex mutex_;
+    std::condition_variable available_;
+    std::string accession_;
+    bool finished_ = false;
+  };
+
+  /// MzMLFile::load with a consumer: header metadata goes to the map, spectra to the consumer.
+  class StreamingMzMLFile : public MzMLFile
+  {
+  public:
+    void stream(const std::string& filename, MSExperiment& map, Interfaces::IMSDataConsumer* consumer)
+    {
+      map.reset();
+      map.setLoadedFileType(filename);
+      map.setLoadedFilePath(filename);
+      Internal::MzMLHandler handler(map, filename, getVersion(), *this);
+      handler.setOptions(getOptions());
+      handler.setMSDataConsumer(consumer);
+      safeParse_(filename, &handler);
+    }
+  };
+}
 
 //-------------------------------------------------------------
 // Doxygen docu
@@ -297,6 +376,56 @@ protected:
 
     opt.setMaxDataPoolSize(512);
     fh.setOptions(opt);
+    if (FLASHTrace::opt("stream") && FileHandler::getType(in_file) == FileTypes::MZML)
+    {
+      // Experiment: overlap parsing/decoding with MS1 deconvolution, then assemble the map exactly as
+      // FileHandler::loadExperiment would (same spectra, order, ranges and chromatogram conversion).
+      FLASHTrace::Scope trace_load("load_stream");
+      StreamedSpectra consumer(map);
+      std::exception_ptr load_error;
+      int reader_threads = 1;
+#ifdef _OPENMP
+      reader_threads = std::min(omp_get_max_threads(), 64);
+#endif
+      std::thread loader([&] {
+        try
+        {
+#ifdef _OPENMP
+          omp_set_num_threads(reader_threads);
+#endif
+          StreamingMzMLFile f;
+          f.getOptions() = fh.getOptions();
+          f.setLogType(log_type_);
+          f.stream(in_file, map, &consumer);
+        }
+        catch (...)
+        {
+          load_error = std::current_exception();
+        }
+        consumer.finish();
+      });
+      try
+      {
+        fd.deconvolveMS1Streaming([&](Size i) { return consumer.get(i); }, [&] { return consumer.accession(); });
+      }
+      catch (...)
+      {
+        consumer.finish();
+        loader.join();
+        throw;
+      }
+      loader.join();
+      if (load_error) { std::rethrow_exception(load_error); }
+      const Size streamed = consumer.spectra_.size();
+      for (auto& s : consumer.spectra_) { map.addSpectrum(std::move(s)); }
+      for (auto& c : consumer.chromatograms_) { map.addChromatogram(std::move(c)); }
+      consumer.spectra_.clear();
+      consumer.chromatograms_.clear();
+      map.updateRanges();
+      ChromatogramTools().convertSpectraToChromatograms<PeakMap>(map, true);
+      if (map.size() != streamed) { fd.discardStreamedMS1(); }
+    }
+    else
     {
       FLASHTrace::Scope trace_load("load");
       ScopedReaderThreads reader_threads;

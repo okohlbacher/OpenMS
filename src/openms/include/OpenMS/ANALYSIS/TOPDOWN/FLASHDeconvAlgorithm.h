@@ -17,7 +17,9 @@
 #include <OpenMS/KERNEL/MSExperiment.h>
 #include <OpenMS/KERNEL/MSSpectrum.h>
 #include <boost/dynamic_bitset.hpp>
+#include <functional>
 #include <iostream>
+#include <optional>
 
 namespace OpenMS
 {
@@ -76,6 +78,18 @@ namespace OpenMS
     /// get scan number of the spectrum in @p index -th in @p map
     static int getScanNumber(const MSExperiment& map, Size index);
 
+    /**
+      @brief Experimental (FD_OPT=stream): deconvolve MS1 spectra while the input is still being read.
+
+      @p next_spectrum(i) blocks until input spectrum @p i is available and returns nullptr after the last one.
+      @p accession() returns the native ID type accession used for scan numbers. A later run() on the
+      assembled experiment reuses these results instead of recomputing MS1. Call setParameters() first.
+    */
+    void deconvolveMS1Streaming(const std::function<const MSSpectrum*(Size)>& next_spectrum, const std::function<std::string()>& accession);
+
+    /// Drop results of deconvolveMS1Streaming (e.g. when the assembled experiment differs from the stream).
+    void discardStreamedMS1();
+
   protected:
     void updateMembers_() override;
 
@@ -97,6 +111,10 @@ namespace OpenMS
 
     /// current minimum MS level.
     UInt current_min_ms_level_ = 0;
+
+    /// MS1 results computed while loading (indexed by input spectrum index), see deconvolveMS1Streaming
+    std::vector<std::optional<DeconvolvedSpectrum>> streamed_ms1_;
+    bool streamed_ms1_valid_ = false;
 
     /// the number of preceding full scans from which MS2 precursor mass will be searched.
     int precursor_MS1_window_ = 0;
