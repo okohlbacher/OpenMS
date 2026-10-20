@@ -23,12 +23,16 @@ def main():
         failures.append('vcpkg.json: xerces-c dependency')
     cmake_dependency = re.compile(r'\bXercesC\s*::|\bfind_(?:package|dependency)\s*\(\s*"?XercesC\b', re.IGNORECASE)
     package_dependency = re.compile(r'\b(?:lib)?xerces-c(?:[0-9][A-Za-z0-9_.-]*)?(?:[-_.][A-Za-z0-9]+)*\b', re.IGNORECASE)
-    excluded = {'extern', 'thirdparty', 'vcpkg', 'vcpkg_installed', '.git',
-                'xml-parser-benchmark', 'build', 'CMakeFiles', '_deps', 'node_modules', '.venv'}
+    excluded = {'.git', 'CMakeFiles', '_deps', 'node_modules', '.venv'}
+    excluded_root = {'build', 'vcpkg', 'vcpkg_installed'}
+    excluded_paths = {('src', 'openms', 'extern'), ('src', 'openms', 'thirdparty'),
+                      ('tools', 'xml-parser-benchmark')}
     for directory, directories, filenames in os.walk(source):
         parent = Path(directory)
         # Prune before descent: CI can contain very large dependency/build trees.
         directories[:] = [name for name in directories if name not in excluded
+                          and not (parent == source and name in excluded_root)
+                          and (parent / name).relative_to(source).parts not in excluded_paths
                           and not name.startswith('cmake-build-')
                           and not (parent / name / 'CMakeCache.txt').is_file()]
         for name in filenames:

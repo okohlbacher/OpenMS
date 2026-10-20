@@ -101,8 +101,7 @@ START_SECTION(Parser errors retain the actual diagnostic and location)
     TEST_TRUE(message.find("Opening and ending tag mismatch") != std::string::npos)
     TEST_TRUE(message.find("broken") != std::string::npos)
     TEST_TRUE(message.find("root") != std::string::npos)
-    TEST_TRUE(message.find("line 2") != std::string::npos)
-    TEST_TRUE(message.find("column ") != std::string::npos)
+    TEST_TRUE(message.find("( in line 2 column ") != std::string::npos)
   }
   TEST_TRUE(caught)
 END_SECTION
@@ -312,6 +311,12 @@ START_SECTION(Indexed decoder retains the entity amplification guard under HUGE)
   const std::string xml = dtd + "]><spectrum defaultArrayLength='0'>&e7;</spectrum>";
   MzMLSpectrumDecoder decoder;
   MSSpectrum spectrum;
+  // The same complete DTD must parse below the budget, including expansion.
+  // This prevents a missing/stripped DTD from making the negative test pass.
+  decoder.domParseSpectrum(dtd + "]><spectrum defaultArrayLength='0' id='&e2;'/>", spectrum);
+  std::string expanded;
+  for (int i = 0; i < 100; ++i) expanded += "0123456789";
+  TEST_STRING_EQUAL(spectrum.getNativeID(), expanded)
   TEST_EXCEPTION(Exception::ParseError, decoder.domParseSpectrum(xml, spectrum))
 END_SECTION
 START_SECTION(Independent parser contexts on eight threads)

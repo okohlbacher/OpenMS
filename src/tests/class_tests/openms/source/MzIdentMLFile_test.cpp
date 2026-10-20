@@ -1040,10 +1040,36 @@ START_SECTION(([EXTRA] native DOM namespace Unicode entity and malformed-input r
     declarations += "'>";
   }
   declarations += "]>";
-  amplified.insert(amplified.find("?>") + 2, declarations);
+  const auto xml_declaration_end = amplified.find("?>");
+  ABORT_IF(xml_declaration_end == std::string::npos)
+  amplified.insert(xml_declaration_end + 2, declarations);
+  // The same declaration and entity path must also work below the budget.
+  std::string below_limit = amplified;
+  StringUtils::substitute(below_limit, "<Seq>PRGTEIN</Seq>", "<Seq>&b;</Seq>");
+  save_xml(filename, below_limit);
+  MzIdentMLFile().load(filename, proteins, peptides);
+  ABORT_IF(proteins.size() != 1)
+  bool expanded_below_limit = false;
+  for (const auto& hit : proteins[0].getHits())
+  {
+    if (hit.getAccession() == "PROT1")
+    {
+      expanded_below_limit = hit.getSequence() == std::string(10000, 'A');
+    }
+  }
+  TEST_TRUE(expanded_below_limit)
   StringUtils::substitute(amplified, "<Seq>PRGTEIN</Seq>", "<Seq>&e;</Seq>");
   save_xml(filename, amplified);
-  TEST_EXCEPTION(Exception::ParseError, MzIdentMLFile().load(filename, proteins, peptides))
+  bool rejected_amplification = false;
+  try
+  {
+    MzIdentMLFile().load(filename, proteins, peptides);
+  }
+  catch (const Exception::ParseError& error)
+  {
+    rejected_amplification = std::string(error.getMessage()).find("amplification") != std::string::npos;
+  }
+  TEST_TRUE(rejected_amplification)
 
   // Diagnostics keep the actual input location in the exception, not stderr.
   save_xml(filename, "<MzIdentML>\n<broken></MzIdentML>");
@@ -1056,7 +1082,7 @@ START_SECTION(([EXTRA] native DOM namespace Unicode entity and malformed-input r
   {
     const std::string message = error.getMessage();
     reported_location = message.find(filename) != std::string::npos &&
-      message.find("line 2") != std::string::npos && message.find("column ") != std::string::npos;
+      message.find("(line 2, column ") != std::string::npos;
   }
   TEST_TRUE(reported_location)
 

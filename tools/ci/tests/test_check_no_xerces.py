@@ -70,6 +70,7 @@ class RemovalGuardTest(unittest.TestCase):
         for name, content in [
             ('dockerfiles/Dockerfile', 'RUN apt-get install libxerces-c-dev'),
             ('.github/workflows/build.yml', 'run: brew install xerces-c'),
+            ('.github/actions/build/action.yml', 'run: brew install xerces-c'),
             ('tools/ci/deps.sh', 'apt-get install libxerces-c3.2'),
             ('src/pyOpenMS/pyproject.toml', 'before-all = "brew install xerces-c"'),
         ]:
@@ -81,6 +82,15 @@ class RemovalGuardTest(unittest.TestCase):
                 path.write_text('# Removed xerces-c and libxerces-c-dev\n'
                                 'cmake -DCMAKE_DISABLE_FIND_PACKAGE_XercesC=ON\n')
                 self.assertEqual(self.run_guard(), 0)
+                path.unlink()
+
+    def test_nested_source_directories_are_not_build_trees(self):
+        for name in ['src/foo/build/CMakeLists.txt', 'src/foo/vcpkg/CMakeLists.txt']:
+            with self.subTest(name=name):
+                path = self.root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text('find_package(XercesC REQUIRED)')
+                self.assertEqual(self.run_guard(), 1)
                 path.unlink()
 
     def test_generated_and_vendor_trees_are_pruned(self):
