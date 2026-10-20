@@ -1,0 +1,28 @@
+{
+  "process_records": 2280,
+  "cells": 456,
+  "clock_flags": [],
+  "context_rows": 64,
+  "source": "8f66b3d921c9512e1e5968f494c77715ff71c696",
+  "canonical_native_library": "unpatched libxml2-2.15.4",
+  "independent_reader_threads": [
+    1,
+    2,
+    4,
+    8,
+    16,
+    32,
+    64,
+    96
+  ],
+  "fixed_work_OpenMP_threads": [
+    1,
+    2,
+    4,
+    8,
+    16,
+    32,
+    64,
+    96
+  ]
+}

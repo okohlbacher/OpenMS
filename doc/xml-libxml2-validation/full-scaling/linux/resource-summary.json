@@ -1,0 +1,13 @@
+{
+  "memory_samples": 325,
+  "minimum_MemAvailable_GiB": 880.2994995117188,
+  "swap_in_counter_first_last": [
+    824968,
+    824968
+  ],
+  "swap_out_counter_first_last": [
+    1768500,
+    1768500
+  ],
+  "swap_counters_unchanged": true
+}

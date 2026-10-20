@@ -1,0 +1,53 @@
+# macOS: answer to Timo’s performance question
+
+Encoding and build configuration both matter on this M4 Max. The complete replacement can improve substantially without importing the whole experimental adapter. The comparisons below keep installed-package results separate from matched native builds.
+
+All three phases use the same 1,126,185,409-byte ASCII-body input and a UTF-8-declared copy with identical file size/index offsets, one reader, cached input, OpenMP/BLAS=1, and five randomized fresh processes per cell: 140 option runs, 60 size-control runs and 80 matched-native runs. All **280 fingerprints agree**, libraries stay unchanged within each phase, and there are no elapsed/process/CPU consistency flags. Opening times exclude the following 2,048 queries; process peak RSS includes initialization and those queries. Absolute times vary between phases; compare within a phase.
+
+## Build flags: more than O2 versus O3
+
+The installed Homebrew formula’s `configure` command does not establish the effective compiler flags. Homebrew’s [Clang optimization default is `Os`](https://github.com/Homebrew/brew/blob/7b8d758/Library/Homebrew/extend/ENV/super.rb#L96), including the brew revision named in this bottle’s install receipt; its compiler wrapper can inject build settings. Thus `configure` versus CMake Release alone is insufficient evidence for the earlier “libxml2 O2 / Xerces O3” assumption. Exact historical bottle invocations were not recovered.
+
+A matched unpatched libxml2 2.15.4 source build at `-Os` reproduces the bottle’s Latin-1 times within 0.1%; changing that build to `-O2` reduces streaming by about 14% and opening by 23%. The earlier matched `-O2`/`-O3` comparison changes little and has overlapping ranges. This strongly supports a size-versus-speed optimization contribution, not a large O2-versus-O3 effect.
+
+| libxml2 build, Latin-1 | Stream s | Default open s |
+|---|---:|---:|
+| Homebrew bottle | 3.583 | 2.070 |
+| Same source, local -Os | 3.586 | 2.072 |
+| Same source, local -O2 | 3.084 | 1.602 |
+
+![Build controls](figures/macos-build-controls.png)
+
+## Source-level options and a fair Xerces control
+
+Two private experiments preserve the parser’s encoding/error machinery: an eight-byte ASCII copy path inside libxml2’s Latin-1 converter, with the original non-ASCII/capacity fallback; and an OpenMS shortcut that skips the ASCII scan only for binary text that a metadata-only read discards. General non-ASCII fallback and derived-handler dispatch remain intact. An earlier broad shortcut failed a direct handler-contract test and was discarded. No experimental patch changes the published production implementation or the canonical Linux runs.
+
+In the 140-run option phase, the combination reduces Latin-1 streaming/opening times by **23.1%/47.6%** versus the current Homebrew-backed replacement. Its RSS remains about 52 MiB for streaming and 104 MiB for open plus queries, versus about 57/118 MiB for the Xerces package reference. The [ablation graph](figures/macos-options.png) shows compiler, converter and ignored-text changes separately.
+
+Optimizing Xerces too changes the ranking, so the matched control is essential:
+
+| Native -O3 comparison | Declaration | Stream s | Default open s |
+|---|---|---:|---:|
+| Xerces 3.3.0 | ISO-8859-1 | 2.444 | 0.942 |
+| Xerces 3.3.0 | UTF-8 | 2.689 | 1.204 |
+| Complete libxml2 2.15.4 | ISO-8859-1 | 3.162 | 1.615 |
+| Complete libxml2 2.15.4 | UTF-8 | 2.681 | 1.176 |
+| Private combination | ISO-8859-1 | 2.780 | 1.101 |
+| Private combination | UTF-8 | 2.729 | 1.039 |
+
+Under matched native `-O3`, the private combination still trails Xerces by **13.7% for Latin-1 streaming and 16.9% for Latin-1 opening**. On UTF-8, the unpatched native builds are near parity (libxml2 −0.3%/−2.3%), and the combination opens 13.7% faster than native Xerces. The apparent win against the Xerces bottle is therefore not a universal library ranking. Building libxml2 alone improves end-user latency, but does not normalize the comparison: Xerces also benefits, and a large relative Latin-1 gap persists in matched builds. The declaration control is stronger evidence for the encoding contribution than a claim that build flags alone explain the macOS/Linux ratio difference. macOS Xerces uses its CoreFoundation transcoder; Linux uses GNU iconv, another reason not to attribute every platform difference solely to the operating system.
+
+## Practical choices
+
+1. **Build libxml2 for speed at -O2 or -O3.** This is the first option to try for Homebrew-backed macOS setups: a private, pinned parser build with the required SAX1/PUSH/SCHEMAS/THREAD features and encoding converters. OpenMS itself was already built at -O3. Test the resulting package rather than assuming a formula or Release label determines parser code generation.
+2. **Emit honest UTF-8 for new files where the serializer supports it.** This removes Latin-1 conversion altogether. The declaration-only experiment is valid because this generated body is entirely ASCII; arbitrary existing Latin-1 files require actual transcoding and regenerated indexes/checksums, not a blind header edit.
+3. **Consider the two isolated patches for upstreaming.** The native converter keeps BOM/declaration/enforced-encoding handling inside libxml2; it avoids a separate adapter that sniffs declarations and suppresses encoding handling. The ignored-binary shortcut is format-specific and smaller than a shared parser rewrite. Both remain prototypes requiring broader platform/sanitizer validation before adoption.
+4. **Profile remaining name/attribute costs before a larger adapter change.** Timo’s SAX2/UTF-8-attribute branch was inspected but not benchmarked here. A global SAX2 switch would revisit the legacy xQuest/idXML namespace behavior already covered by regression tests; it is not an automatic safe speed switch.
+
+## Validation and limits
+
+Each local libxml2 build passed all eight native CTest suites. The converter passed 51,472 byte/boundary/random oracle cases plus 65 exact in-place ASCII cases, matching unpatched output/status/consumption digests. The combined candidate passed 12 focused OpenMS regressions and 24 additional same-length payload controls: non-ASCII Latin-1/UTF-8 text can still be ignored by metadata-only reads, while invalid UTF-8 and undefined entities still reject; streaming outcomes/digests also match. Kimi and Claude Opus 5.5 reviewed the isolated patches with no blocking introduced defects; Codex checked the actual caller/fallback context. Partial overlapping converter buffers are unsupported, and skip-predicate duplication remains a maintenance consideration.
+
+The native Xerces control passed the OpenMS benchmark correctness suite and 79/80 upstream CTest cases. Its DOMTest relative-baseURI assertions also fail identically when the same unchanged test binary loads the installed Xerces bottle; a no-space working-directory control did not resolve them. This shared upstream-test failure is retained, not silently relabeled as a passing suite. A legacy curl framework accidentally selected during initial configuration was replaced with the system SDK library before any matched timing run.
+
+Raw records, hashes, build flags, tests, review receipts, and reproduction scripts accompany the report. No function-level Time Profiler trace was collected; the evidence isolates encoding/build/source changes but does not assign an exact sample share to a converter function.

@@ -1,0 +1,22 @@
+{
+  "utc": "2026-10-20T08:15:33.235739+00:00",
+  "backends": {
+    "xerces": {
+      "source_commit": "58aa37348c968a12e3285295f28c197cc0b7bdbe",
+      "archive_sha256": "ab29f33bd264f11a4b6ba1b4a2c5319ffd31708aa6c08bec08a626d0a38f9443",
+      "regular_files": 9029,
+      "all_match": true,
+      "differences": []
+    },
+    "libxml2-full": {
+      "source_commit": "8f66b3d921c9512e1e5968f494c77715ff71c696",
+      "archive_sha256": "facea08f452382d13226ab81bf8a97698f3f701489f01ce79a0b0835e04bfa7c",
+      "regular_files": 9307,
+      "all_match": true,
+      "differences": []
+    }
+  },
+  "harness_matches_public_frozen_source": true,
+  "harness_source_commit": "c5b68c645f80960cc033db79313978b1ad8fb058",
+  "harness_files": 10
+}

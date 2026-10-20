@@ -1,0 +1,286 @@
+{
+  "checks": 24,
+  "all_outcomes_and_digests_match": true,
+  "method": "Same-length payload mutations preserve raw index offsets; highLatin1/UTF8 payloads are ignored by metadata-only reads, invalidUTF8/entities must still reject; full streaming outcomes compared too.",
+  "results": [
+    {
+      "case": "latin1-high-byte",
+      "mode": "contexts-metadata",
+      "backend": "full-homebrew",
+      "accepted": true,
+      "returncode": 0,
+      "fingerprint": [
+        "14695981039346656037",
+        0,
+        0,
+        0,
+        256,
+        1
+      ],
+      "stderr": "XML_BENCHMARK_MAIN_STARTED\n"
+    },
+    {
+      "case": "latin1-high-byte",
+      "mode": "contexts-metadata",
+      "backend": "full-ascii-o3",
+      "accepted": true,
+      "returncode": 0,
+      "fingerprint": [
+        "14695981039346656037",
+        0,
+        0,
+        0,
+        256,
+        1
+      ],
+      "stderr": "XML_BENCHMARK_MAIN_STARTED\n"
+    },
+    {
+      "case": "latin1-high-byte",
+      "mode": "contexts-metadata",
+      "backend": "discard-ascii-o3",
+      "accepted": true,
+      "returncode": 0,
+      "fingerprint": [
+        "14695981039346656037",
+        0,
+        0,
+        0,
+        256,
+        1
+      ],
+      "stderr": "XML_BENCHMARK_MAIN_STARTED\n"
+    },
+    {
+      "case": "latin1-high-byte",
+      "mode": "stream",
+      "backend": "full-homebrew",
+      "accepted": true,
+      "returncode": 0,
+      "fingerprint": [
+        "8259213310797505071",
+        256,
+        1,
+        262400,
+        0,
+        0
+      ],
+      "stderr": "XML_BENCHMARK_MAIN_STARTED\n"
+    },
+    {
+      "case": "latin1-high-byte",
+      "mode": "stream",
+      "backend": "full-ascii-o3",
+      "accepted": true,
+      "returncode": 0,
+      "fingerprint": [
+        "8259213310797505071",
+        256,
+        1,
+        262400,
+        0,
+        0
+      ],
+      "stderr": "XML_BENCHMARK_MAIN_STARTED\n"
+    },
+    {
+      "case": "latin1-high-byte",
+      "mode": "stream",
+      "backend": "discard-ascii-o3",
+      "accepted": true,
+      "returncode": 0,
+      "fingerprint": [
+        "8259213310797505071",
+        256,
+        1,
+        262400,
+        0,
+        0
+      ],
+      "stderr": "XML_BENCHMARK_MAIN_STARTED\n"
+    },
+    {
+      "case": "utf8-high-bytes",
+      "mode": "contexts-metadata",
+      "backend": "full-homebrew",
+      "accepted": true,
+      "returncode": 0,
+      "fingerprint": [
+        "14695981039346656037",
+        0,
+        0,
+        0,
+        256,
+        1
+      ],
+      "stderr": "XML_BENCHMARK_MAIN_STARTED\n"
+    },
+    {
+      "case": "utf8-high-bytes",
+      "mode": "contexts-metadata",
+      "backend": "full-ascii-o3",
+      "accepted": true,
+      "returncode": 0,
+      "fingerprint": [
+        "14695981039346656037",
+        0,
+        0,
+        0,
+        256,
+        1
+      ],
+      "stderr": "XML_BENCHMARK_MAIN_STARTED\n"
+    },
+    {
+      "case": "utf8-high-bytes",
+      "mode": "contexts-metadata",
+      "backend": "discard-ascii-o3",
+      "accepted": true,
+      "returncode": 0,
+      "fingerprint": [
+        "14695981039346656037",
+        0,
+        0,
+        0,
+        256,
+        1
+      ],
+      "stderr": "XML_BENCHMARK_MAIN_STARTED\n"
+    },
+    {
+      "case": "utf8-high-bytes",
+      "mode": "stream",
+      "backend": "full-homebrew",
+      "accepted": false,
+      "returncode": 1,
+      "fingerprint": null,
+      "stderr": "XML_BENCHMARK_MAIN_STARTED\n  Parsing error: 'Malformed base64 input, length is not a multiple of 4.'\n  You could try to disable sorting spectra while loading.\n- due to that error of type Parse Error in: /Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/MzMLHandler.cpp@258-void OpenMS::Internal::MzMLHandler::populateSpectraWithData_()\n"
+    },
+    {
+      "case": "utf8-high-bytes",
+      "mode": "stream",
+      "backend": "full-ascii-o3",
+      "accepted": false,
+      "returncode": 1,
+      "fingerprint": null,
+      "stderr": "XML_BENCHMARK_MAIN_STARTED\n  Parsing error: 'Malformed base64 input, length is not a multiple of 4.'\n  You could try to disable sorting spectra while loading.\n- due to that error of type Parse Error in: /Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/MzMLHandler.cpp@258-void OpenMS::Internal::MzMLHandler::populateSpectraWithData_()\n"
+    },
+    {
+      "case": "utf8-high-bytes",
+      "mode": "stream",
+      "backend": "discard-ascii-o3",
+      "accepted": false,
+      "returncode": 1,
+      "fingerprint": null,
+      "stderr": "XML_BENCHMARK_MAIN_STARTED\n  Parsing error: 'Malformed base64 input, length is not a multiple of 4.'\n  You could try to disable sorting spectra while loading.\n- due to that error of type Parse Error in: /Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/MzMLHandler-discard-first.cpp@258-void OpenMS::Internal::MzMLHandler::populateSpectraWithData_()\n"
+    },
+    {
+      "case": "utf8-invalid-byte",
+      "mode": "contexts-metadata",
+      "backend": "full-homebrew",
+      "accepted": false,
+      "returncode": 1,
+      "fingerprint": null,
+      "stderr": "XML_BENCHMARK_MAIN_STARTED\n/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading '/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/ignored-text-fixtures/utf8-invalid-byte.mzML': Invalid bytes in character encoding\n( in line 63 column 15)\n- due to that error of type Parse Error in: /Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp@72-void OpenMS::Internal::XMLHandler::fatalError(ActionMode, const std::string &, UInt, UInt) const\n"
+    },
+    {
+      "case": "utf8-invalid-byte",
+      "mode": "contexts-metadata",
+      "backend": "full-ascii-o3",
+      "accepted": false,
+      "returncode": 1,
+      "fingerprint": null,
+      "stderr": "XML_BENCHMARK_MAIN_STARTED\n/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading '/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/ignored-text-fixtures/utf8-invalid-byte.mzML': Invalid bytes in character encoding\n( in line 63 column 15)\n- due to that error of type Parse Error in: /Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp@72-void OpenMS::Internal::XMLHandler::fatalError(ActionMode, const std::string &, UInt, UInt) const\n"
+    },
+    {
+      "case": "utf8-invalid-byte",
+      "mode": "contexts-metadata",
+      "backend": "discard-ascii-o3",
+      "accepted": false,
+      "returncode": 1,
+      "fingerprint": null,
+      "stderr": "XML_BENCHMARK_MAIN_STARTED\n/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading '/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/ignored-text-fixtures/utf8-invalid-byte.mzML': Invalid bytes in character encoding\n( in line 63 column 15)\n- due to that error of type Parse Error in: /Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp@72-void OpenMS::Internal::XMLHandler::fatalError(ActionMode, const std::string &, UInt, UInt) const\n"
+    },
+    {
+      "case": "utf8-invalid-byte",
+      "mode": "stream",
+      "backend": "full-homebrew",
+      "accepted": false,
+      "returncode": 1,
+      "fingerprint": null,
+      "stderr": "XML_BENCHMARK_MAIN_STARTED\n/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading '/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/ignored-text-fixtures/utf8-invalid-byte.mzML': Invalid bytes in character encoding\n( in line 63 column 15)\n- due to that error of type Parse Error in: /Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp@72-void OpenMS::Internal::XMLHandler::fatalError(ActionMode, const std::string &, UInt, UInt) const\n"
+    },
+    {
+      "case": "utf8-invalid-byte",
+      "mode": "stream",
+      "backend": "full-ascii-o3",
+      "accepted": false,
+      "returncode": 1,
+      "fingerprint": null,
+      "stderr": "XML_BENCHMARK_MAIN_STARTED\n/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading '/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/ignored-text-fixtures/utf8-invalid-byte.mzML': Invalid bytes in character encoding\n( in line 63 column 15)\n- due to that error of type Parse Error in: /Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp@72-void OpenMS::Internal::XMLHandler::fatalError(ActionMode, const std::string &, UInt, UInt) const\n"
+    },
+    {
+      "case": "utf8-invalid-byte",
+      "mode": "stream",
+      "backend": "discard-ascii-o3",
+      "accepted": false,
+      "returncode": 1,
+      "fingerprint": null,
+      "stderr": "XML_BENCHMARK_MAIN_STARTED\n/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading '/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/ignored-text-fixtures/utf8-invalid-byte.mzML': Invalid bytes in character encoding\n( in line 63 column 15)\n- due to that error of type Parse Error in: /Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp@72-void OpenMS::Internal::XMLHandler::fatalError(ActionMode, const std::string &, UInt, UInt) const\n"
+    },
+    {
+      "case": "undefined-entity",
+      "mode": "contexts-metadata",
+      "backend": "full-homebrew",
+      "accepted": false,
+      "returncode": 1,
+      "fingerprint": null,
+      "stderr": "XML_BENCHMARK_MAIN_STARTED\n/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading '/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/ignored-text-fixtures/undefined-entity.mzML': Entity 'undefined' not defined\n( in line 63 column 26)\n- due to that error of type Parse Error in: /Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp@72-void OpenMS::Internal::XMLHandler::fatalError(ActionMode, const std::string &, UInt, UInt) const\n"
+    },
+    {
+      "case": "undefined-entity",
+      "mode": "contexts-metadata",
+      "backend": "full-ascii-o3",
+      "accepted": false,
+      "returncode": 1,
+      "fingerprint": null,
+      "stderr": "XML_BENCHMARK_MAIN_STARTED\n/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading '/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/ignored-text-fixtures/undefined-entity.mzML': Entity 'undefined' not defined\n( in line 63 column 26)\n- due to that error of type Parse Error in: /Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp@72-void OpenMS::Internal::XMLHandler::fatalError(ActionMode, const std::string &, UInt, UInt) const\n"
+    },
+    {
+      "case": "undefined-entity",
+      "mode": "contexts-metadata",
+      "backend": "discard-ascii-o3",
+      "accepted": false,
+      "returncode": 1,
+      "fingerprint": null,
+      "stderr": "XML_BENCHMARK_MAIN_STARTED\n/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading '/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/ignored-text-fixtures/undefined-entity.mzML': Entity 'undefined' not defined\n( in line 63 column 26)\n- due to that error of type Parse Error in: /Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp@72-void OpenMS::Internal::XMLHandler::fatalError(ActionMode, const std::string &, UInt, UInt) const\n"
+    },
+    {
+      "case": "undefined-entity",
+      "mode": "stream",
+      "backend": "full-homebrew",
+      "accepted": false,
+      "returncode": 1,
+      "fingerprint": null,
+      "stderr": "XML_BENCHMARK_MAIN_STARTED\n/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading '/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/ignored-text-fixtures/undefined-entity.mzML': Entity 'undefined' not defined\n( in line 63 column 26)\n- due to that error of type Parse Error in: /Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp@72-void OpenMS::Internal::XMLHandler::fatalError(ActionMode, const std::string &, UInt, UInt) const\n"
+    },
+    {
+      "case": "undefined-entity",
+      "mode": "stream",
+      "backend": "full-ascii-o3",
+      "accepted": false,
+      "returncode": 1,
+      "fingerprint": null,
+      "stderr": "XML_BENCHMARK_MAIN_STARTED\n/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading '/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/ignored-text-fixtures/undefined-entity.mzML': Entity 'undefined' not defined\n( in line 63 column 26)\n- due to that error of type Parse Error in: /Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp@72-void OpenMS::Internal::XMLHandler::fatalError(ActionMode, const std::string &, UInt, UInt) const\n"
+    },
+    {
+      "case": "undefined-entity",
+      "mode": "stream",
+      "backend": "discard-ascii-o3",
+      "accepted": false,
+      "returncode": 1,
+      "fingerprint": null,
+      "stderr": "XML_BENCHMARK_MAIN_STARTED\n/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp(71): While loading '/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/ignored-text-fixtures/undefined-entity.mzML': Entity 'undefined' not defined\n( in line 63 column 26)\n- due to that error of type Parse Error in: /Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/src/openms/source/FORMAT/HANDLERS/XMLHandler.cpp@72-void OpenMS::Internal::XMLHandler::fatalError(ActionMode, const std::string &, UInt, UInt) const\n"
+    }
+  ]
+}

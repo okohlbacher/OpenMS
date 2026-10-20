@@ -1,0 +1,7 @@
+{
+  "records": 280,
+  "all_cross_phase_encoding_backend_fingerprints_match": true,
+  "xerces_bottle_hash_matches_previous_frozen_experiment": true,
+  "xerces_bottle_sha256": "f87fe3ff2681cc9d055ec5f896d956d3a1e23d48e2fbbb1a32ef41da8ec41718",
+  "production_OpenMS_unmodified": true
+}

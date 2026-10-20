@@ -1,0 +1,13 @@
+{
+  "utc": "2026-10-20T08:18:18.126002+00:00",
+  "removed": "/scratch/kohlbach/openms-libxml2-scaling-20261020-01a153cb",
+  "removed_exists_after": false,
+  "shared_contrib_preserved": true,
+  "shared_contrib": "/scratch/kohlbach/contrib/build",
+  "verified_transport_manifest_sha256": "3c5af606e95d2a3503600a7b25d1f018279b89a8ddb3094495794d2965869b4a",
+  "all_measured_runs_complete": true,
+  "source_commits": {
+    "xerces": "58aa37348c968a12e3285295f28c197cc0b7bdbe",
+    "libxml2-full": "8f66b3d921c9512e1e5968f494c77715ff71c696"
+  }
+}

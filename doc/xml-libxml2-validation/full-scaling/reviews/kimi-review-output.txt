@@ -1,0 +1,36 @@
+• ## Findings
+
+  ### Patch 1 — libxml2 `latin1ToUTF8` ASCII word fast path
+
+  **No correctness or security regression found.**
+
+  Verified against the original converter semantics:
+
+  - **Bounds:** The fast path requires `inend - in >= 8` and `outend - out >= 8`, so the 8-byte `memcpy` read never exceeds the caller-declared input buffer and the write never exceeds the output buffer. No over-read/over-write is introduced. For pure-ASCII words, 8 in → 8 out is exact, matching the byte loop's 1:1 ASCII mapping.
+  - **Fallback integrity:** Words with any high bit set, tail bytes (<8 remaining), or low output headroom fall through to the unchanged byte loop, which preserves the original per-byte space checks (`out >= outend`, `outend - out < 2`), the partial-consumption `*inlen`/`*outlen` accounting, and the `ret` contract (bytes written on full consumption, `XML_ENC_ERR_SPACE` otherwise).
+  - **Aliasing/alignment:** `memcpy` into/from a local `uint64_t` avoids strict-aliasing and alignment UB. Exact in-place conversion (`out == in`) is safe because the word is staged in a non-aliasing temporary — consistent with your 65-case in-place result.
+  - **Encoding contract:** No change to declared encoding, parser rules, or state (the converter is stateless).
+
+  **Informational (not a defect):**
+  - **Unsupported alias use — pre-existing, not introduced.** Partially overlapping in/out buffers (e.g., `out = in + k`, 0 < k < 8) were already broken in the original byte loop; libxml2 converters are never invoked that way internally. The fast path does not widen this unsupported case.
+  - **Portability nit (low):** `unsigned c = *in;` is now a declaration after a statement in the loop body (C99+). libxml2 2.15.x targets C99-capable compilers, so this is only relevant for hypothetical C89-only toolchains.
+
+  ### Patch 2 — `MzMLHandler::tryOnCharactersUTF8` binary-payload skip
+
+  **No regression found; behavior is equivalent under all reachable conditions.**
+
+  - **Equivalence of the early return:** For `open_tags_.back() == "binary"` with `skip_spectrum_ || skip_chromatogram_ || !options_.getFillData()`:
+    - ASCII payload (old path): passes the `any_of` scan → hits the identical skip condition → returns `true`, content discarded. New path: returns `true`, content discarded. Same.
+    - Non-ASCII payload (old path): scan returns `false` → falls back to `onCharacters` → its own identical skip guard returns immediately, content discarded. New path: returns `true`, content discarded. Same net effect; the fallback is bypassed only when it is provably a no-op.
+  - **Subclass guard intact:** The `typeid(*this) != typeid(MzMLHandler)` check runs first, so derived handlers that override only `onCharacters` still get the fallback dispatch for all payloads, including ignored binary. The new branch cannot be reached by subclasses.
+  - **Scope is narrow as claimed:** The bypass requires both the `binary` tag and an active skip condition; all other tags and all non-skipped binary payloads retain the full ASCII scan → append / non-ASCII fallback path. The pre-existing unguarded `bin_data_.back()` in the append branch is untouched and not made reachable by any new path.
+  - **Empty-tag safety:** The new branch checks `!open_tags_.empty()` before `back()`, matching the later existing check.
+
+  **Informational (not defects):**
+  - **Pre-existing limitation, unchanged:** `onCharacters` dereferences `open_tags_.back()` without an empty check — this exists in the original fallback and is not introduced or worsened here.
+  - **Maintenance note (low):** The skip condition `(skip_spectrum_ || skip_chromatogram_ || !options_.getFillData())` is now duplicated in three places (new branch, scan-path check, `onCharacters`). A future change to skip semantics must update all three or the equivalence argument above breaks. A small helper predicate would remove that hazard.
+
+  ### Verdict
+
+  Both experiments are sound as presented. The only items to distinguish are pre-existing/unsupported behaviors (overlapping converter buffers, unguarded `open_tags_.back()` in `onCharacters`) and a minor duplication/maintenance risk in the handler — none are introduced regressions, and none block either patch.
+

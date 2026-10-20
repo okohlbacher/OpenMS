@@ -1,0 +1,38 @@
+{
+  "/scratch/kohlbach/openms-libxml2-scaling-20261020-01a153cb/staging/libxml2-full.tar.gz": {
+    "bytes": 339628075,
+    "sha256": "facea08f452382d13226ab81bf8a97698f3f701489f01ce79a0b0835e04bfa7c"
+  },
+  "/scratch/kohlbach/openms-libxml2-scaling-20261020-01a153cb/staging/xerces.tar.gz": {
+    "bytes": 331284736,
+    "sha256": "ab29f33bd264f11a4b6ba1b4a2c5319ffd31708aa6c08bec08a626d0a38f9443"
+  },
+  "/scratch/kohlbach/openms-libxml2-scaling-20261020-01a153cb/data/medium.mzML": {
+    "bytes": 140758760,
+    "sha256": "241f4c42b2315c011551875a1b74e964b513d4e5f440dafb89975e75546c0519"
+  },
+  "/scratch/kohlbach/openms-libxml2-scaling-20261020-01a153cb/data/medium-zlib.mzML": {
+    "bytes": 68885049,
+    "sha256": "adca5a3f2d35aa26d2d52102c3b61e4d6d69381a7b5adea18a7f502709bc81b7"
+  },
+  "/scratch/kohlbach/openms-libxml2-scaling-20261020-01a153cb/data/large-utf8.mzML": {
+    "bytes": 1126185409,
+    "sha256": "b864ae517f17976e50f3ffcbb2d205db6532f28b76b27b44d93dbe3b3600b81d"
+  },
+  "/scratch/kohlbach/openms-libxml2-scaling-20261020-01a153cb/data/large.mzML": {
+    "bytes": 1126185409,
+    "sha256": "8f2c671efe432f61f21e682c8fd5a58dc4fd9f83ee2bb2020f38e8d0cc61abf7"
+  },
+  "/scratch/kohlbach/openms-libxml2-scaling-20261020-01a153cb/data/huge-array.mzML": {
+    "bytes": 16783199,
+    "sha256": "a7afeee51a600050eb7e8f03e63d82cf8231781362a5c52e17e0a21c0487a81f"
+  },
+  "/scratch/kohlbach/openms-libxml2-scaling-20261020-01a153cb/data/small.mzML": {
+    "bytes": 4605393,
+    "sha256": "109da062313c3e25d9b10643b424e51a21cffe9ea250f502fbdde913c4270959"
+  },
+  "/scratch/kohlbach/openms-libxml2-scaling-20261020-01a153cb/data/medium-zlib.mzML.gz": {
+    "bytes": 42269997,
+    "sha256": "8c46ed3fb7809e8f665a3faa986cc25330fe6080b8c879e6b2aca21aaa54b99c"
+  }
+}

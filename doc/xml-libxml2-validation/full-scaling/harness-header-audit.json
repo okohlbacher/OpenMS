@@ -1,0 +1,82 @@
+{
+  "source_commits": [
+    "58aa37348c968a12e3285295f28c197cc0b7bdbe",
+    "8f66b3d921c9512e1e5968f494c77715ff71c696"
+  ],
+  "scope": "Public storage/callback declarations used by timed harness; NOT a blanket ABI compatibility claim for all OpenMS XML APIs. General consumers must rebuild.",
+  "method": "Compare exact committed headers after stripping comments/whitespace; XMLFile exception manually restricted to two nonvirtual protected signatures. Actual linked-library selection and no direct Xerces dependency verified separately.",
+  "headers": [
+    {
+      "header": "FORMAT/MzMLFile.h",
+      "xerces_sha256": "afea184c76be31c629b0c5f845211e99c086d10743db49ded63604ede1b56d20",
+      "complete_sha256": "afea184c76be31c629b0c5f845211e99c086d10743db49ded63604ede1b56d20",
+      "audit": "Same declarations/layout; comments may differ"
+    },
+    {
+      "header": "FORMAT/XMLFile.h",
+      "xerces_sha256": "24ecfe2ccd081eba5b9bdf702f47a4f947a69b3cd3dbea1fefb5b0d68e5ce48a",
+      "complete_sha256": "3cb9397c9303080efc98dd993bebef0991d095ea049c1022f39545f06e44e21b",
+      "audit": "Only protected nonvirtual parse/parseBuffer bool parameter added; fields and virtual destructor unchanged; not called by harness"
+    },
+    {
+      "header": "FORMAT/OPTIONS/PeakFileOptions.h",
+      "xerces_sha256": "f5dc99e8d1ab28d83b6c0971454db18c3c35502a88fc4ed69461d6e0c847085d",
+      "complete_sha256": "f5dc99e8d1ab28d83b6c0971454db18c3c35502a88fc4ed69461d6e0c847085d",
+      "audit": "Same declarations/layout; comments may differ"
+    },
+    {
+      "header": "FORMAT/HANDLERS/IndexedMzMLHandler.h",
+      "xerces_sha256": "10e0d9ddc06913956ccc99366abdbef2d2cf61dc29fb1f8e5afc24a5a23fff17",
+      "complete_sha256": "10e0d9ddc06913956ccc99366abdbef2d2cf61dc29fb1f8e5afc24a5a23fff17",
+      "audit": "Same declarations/layout; comments may differ"
+    },
+    {
+      "header": "FORMAT/HANDLERS/MzMLSpectrumDecoder.h",
+      "xerces_sha256": "ca4dd1842161e6423e8c8024d8b4c8195c8f061a63bd24dc87a450f260c67dbd",
+      "complete_sha256": "2b7a1c763866a71dada4bdbab1e0c95a8a8f4c9e755272eaadc825e3807739d8",
+      "audit": "Same declarations/layout; comments may differ"
+    },
+    {
+      "header": "FORMAT/DATAACCESS/MSDataWritingConsumer.h",
+      "xerces_sha256": "6da398aea6515bed44fd9e99a0ea826cc059e97dd3fb4a24b8d4b7aafb64ceb9",
+      "complete_sha256": "6da398aea6515bed44fd9e99a0ea826cc059e97dd3fb4a24b8d4b7aafb64ceb9",
+      "audit": "Same declarations/layout; comments may differ"
+    },
+    {
+      "header": "KERNEL/OnDiscMSExperiment.h",
+      "xerces_sha256": "929654e0f2d7fbd5c217e60f53673071d7e30a9053ec8479911d3671fee27339",
+      "complete_sha256": "929654e0f2d7fbd5c217e60f53673071d7e30a9053ec8479911d3671fee27339",
+      "audit": "Same declarations/layout; comments may differ"
+    },
+    {
+      "header": "KERNEL/MSExperiment.h",
+      "xerces_sha256": "b019e4796acef1f05400fb7e2a4368494ed4698818f415bca2461e95e43aaccd",
+      "complete_sha256": "b019e4796acef1f05400fb7e2a4368494ed4698818f415bca2461e95e43aaccd",
+      "audit": "Same declarations/layout; comments may differ"
+    },
+    {
+      "header": "KERNEL/MSSpectrum.h",
+      "xerces_sha256": "ce7779212eb303dc95f704daad301a1a6574c3e690c9a16b70da26a0fbd317f3",
+      "complete_sha256": "ce7779212eb303dc95f704daad301a1a6574c3e690c9a16b70da26a0fbd317f3",
+      "audit": "Same declarations/layout; comments may differ"
+    },
+    {
+      "header": "KERNEL/MSChromatogram.h",
+      "xerces_sha256": "3f9f2f06c2e259dd719b328b160874c846ae24c73294c61b36f1573f46984117",
+      "complete_sha256": "3f9f2f06c2e259dd719b328b160874c846ae24c73294c61b36f1573f46984117",
+      "audit": "Same declarations/layout; comments may differ"
+    },
+    {
+      "header": "INTERFACES/IMSDataConsumer.h",
+      "xerces_sha256": "513bd99bffa60b542ab3ae892eafead238c4714c1ca748f08bcaa7569b54ea9a",
+      "complete_sha256": "513bd99bffa60b542ab3ae892eafead238c4714c1ca748f08bcaa7569b54ea9a",
+      "audit": "Same declarations/layout; comments may differ"
+    },
+    {
+      "header": "INTERFACES/DataStructures.h",
+      "xerces_sha256": "acbc67cf1b8df5da91effc079aa0bf5786b88ac08ba142a470477d05dc794d0c",
+      "complete_sha256": "acbc67cf1b8df5da91effc079aa0bf5786b88ac08ba142a470477d05dc794d0c",
+      "audit": "Same declarations/layout; comments may differ"
+    }
+  ]
+}

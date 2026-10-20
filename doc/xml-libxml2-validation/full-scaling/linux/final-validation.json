@@ -1,0 +1,32 @@
+{
+  "benchmarks": {
+    "records": 1280,
+    "cells": 256,
+    "all_fingerprints_match": true,
+    "library_hashes_unchanged": true
+  },
+  "memory-scaling": {
+    "records": 480,
+    "cells": 96,
+    "all_fingerprints_match": true,
+    "library_hashes_unchanged": true
+  },
+  "metadata-scaling": {
+    "records": 320,
+    "cells": 64,
+    "all_fingerprints_match": true,
+    "library_hashes_unchanged": true
+  },
+  "openmp-scaling": {
+    "records": 160,
+    "cells": 32,
+    "all_fingerprints_match": true,
+    "library_hashes_unchanged": true
+  },
+  "encoding-followup": {
+    "records": 40,
+    "cells": 8,
+    "all_fingerprints_match": true,
+    "library_hashes_unchanged": true
+  }
+}

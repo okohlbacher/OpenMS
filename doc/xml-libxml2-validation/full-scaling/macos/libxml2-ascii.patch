@@ -1,0 +1,28 @@
+--- dependencies/libxml2-speed/libxml2-2.15.4/encoding.c	2026-09-04 18:22:45
++++ dependencies/libxml2-speed/libxml2-ascii/encoding.c	2026-10-20 08:43:02
+@@ -24,6 +24,7 @@
+ #include "libxml.h"
+ 
+ #include <string.h>
++#include <stdint.h>
+ #include <limits.h>
+ #include <ctype.h>
+ #include <stdlib.h>
+@@ -2334,6 +2335,17 @@
+     inend = in + *inlen;
+ 
+     while (in < inend) {
++        /* Copy ASCII words without changing the declared encoding or state. */
++        if ((inend - in >= 8) && (outend - out >= 8)) {
++            uint64_t word;
++            memcpy(&word, in, 8);
++            if ((word & UINT64_C(0x8080808080808080)) == 0) {
++                memcpy(out, &word, 8);
++                in += 8;
++                out += 8;
++                continue;
++            }
++        }
+         unsigned c = *in;
+ 
+ 	if (c < 0x80) {

@@ -1,0 +1,24 @@
+{
+  "brew_source_commit": "41f40decfa0789cff312806606757300bb8bd1c3",
+  "receipt": {
+    "homebrew_version": "6.0.21-116-g7b8d758",
+    "built_as_bottle": true,
+    "poured_from_bottle": true,
+    "compiler": "clang",
+    "built_on": {
+      "os": "Macintosh",
+      "os_version": "macOS 26",
+      "cpu_family": "dunno",
+      "xcode": "26.6",
+      "clt": "26.6.0.0.1781586589",
+      "preferred_perl": "5.34"
+    }
+  },
+  "shim": "Library/Homebrew/shims/super/cc:324 injects HOMEBREW_OPTIMIZATION_LEVEL",
+  "default": "Library/Homebrew/extend/ENV/super.rb:105 chooses Os for Clang, O2 for GNU GCC",
+  "formula": "installed formula uses configure and with-legacy; absence of CFLAGS in formula does not imply configure default controls the compiler",
+  "limitation": "Exact bottle compiler invocation is not recorded in the install receipt; current shim plus controlled Os comparison provide supporting evidence, not exact recovery of historical bottle flags.",
+  "bottle_brew_source_ref": "7b8d758",
+  "bottle_brew_default_url": "https://github.com/Homebrew/brew/blob/7b8d758/Library/Homebrew/extend/ENV/super.rb#L96",
+  "bottle_brew_default_verified": "Clang defaults Os in the actual brew revision named by the bottle receipt; compiler shim may strip supplied O flags and inject that setting"
+}

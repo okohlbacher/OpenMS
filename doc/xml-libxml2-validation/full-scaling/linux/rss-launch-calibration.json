@@ -1,0 +1,16 @@
+{
+  "utc": "2026-10-20T08:14:41.499411+00:00",
+  "probe": "Same launcher and Popen/wait4 machinery, target /bin/true; checks whether parent address-space RSS can impose a pre-exec peak floor. No canonical timing records are changed.",
+  "results": [
+    {
+      "parent_allocation_bytes": 0,
+      "parent_resident_bytes": 12734464,
+      "child_wait4_max_rss_bytes": 11534336
+    },
+    {
+      "parent_allocation_bytes": 134217728,
+      "parent_resident_bytes": 146989056,
+      "child_wait4_max_rss_bytes": 145752064
+    }
+  ]
+}

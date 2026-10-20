@@ -1,0 +1,55 @@
+{
+  "public_source_commit": "c5b68c645f80960cc033db79313978b1ad8fb058",
+  "files": [
+    {
+      "file": "CMakeLists.txt",
+      "sha256": "9a052751cce93c86d401f06e832bc3577fd928218daf8a5482dff8a8dad3d2ef",
+      "matches_frozen_public_source": true
+    },
+    {
+      "file": "benchmark.cpp",
+      "sha256": "c8c523b8140948e1674ca48c74d8c741f35298774bd2d42bc8afe95e5f71e71c",
+      "matches_frozen_public_source": true
+    },
+    {
+      "file": "conformance_probe.cpp",
+      "sha256": "c3f59d7dce1560e3eacfc95860a17bd8b108d8f9532a250d09eabd31a2c02449",
+      "matches_frozen_public_source": true
+    },
+    {
+      "file": "launcher.cpp",
+      "sha256": "66122201244d9cfa2b1d31b1f50f1debd6104661a1ffcbc0c630317eb8f9f57d",
+      "matches_frozen_public_source": true
+    },
+    {
+      "file": "plot_optimization.py",
+      "sha256": "e78809adc79d609b9a2e68557ce61f6b8d950fe1de5b54bdc0e854ee42c889f3",
+      "matches_frozen_public_source": true
+    },
+    {
+      "file": "plot_results.py",
+      "sha256": "f96308c66dbb95bb9fe494fe1fbe7b7a389d53737f632e79bb62e8839d119834",
+      "matches_frozen_public_source": true
+    },
+    {
+      "file": "run_benchmarks.py",
+      "sha256": "a94e064bdb5c5d782ded33428656a87cbe1abf3f5b3bfa1ff349b9a6a886f40c",
+      "matches_frozen_public_source": true
+    },
+    {
+      "file": "run_openmp_scaling.py",
+      "sha256": "9a39facf08f5bf9f52823a20f7385c6e0e56147370d681854c8e205ae349230f",
+      "matches_frozen_public_source": true
+    },
+    {
+      "file": "schema_validation_probe.cpp",
+      "sha256": "36dff739490a9e75e08280d89e831df543e1275e63077235fd664b09f311f665",
+      "matches_frozen_public_source": true
+    },
+    {
+      "file": "test_benchmark.py",
+      "sha256": "a9437f8b7d6587fe740899fa34030ab3a7325762938db0dd6283850d2f94c19a",
+      "matches_frozen_public_source": true
+    }
+  ]
+}

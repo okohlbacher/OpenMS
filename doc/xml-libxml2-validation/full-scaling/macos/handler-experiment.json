@@ -1,0 +1,7 @@
+{
+  "source_commit": "8f66b3d921c9512e1e5968f494c77715ff71c696",
+  "production_source_sha256": "bc1aa346846cf2f5818d71b4c7d6981dae58b94b987d068e4a6c6d5ee9542d31",
+  "experimental_source_sha256": "2c2181f471d973318e196c82cdd98e864792b8ea301d144b9c2a8c667e38f52e",
+  "library_sha256": "f52d37b68d824f3f250d438c6f176516771e87c9593bcbdf84b3d85c02aa6978",
+  "method": "one translation unit rebuilt with original compile command; original library link command with only that object and output path replaced; production library/source untouched"
+}

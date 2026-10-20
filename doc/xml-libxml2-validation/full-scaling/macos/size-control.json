@@ -1,0 +1,2009 @@
+{
+  "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "python": "3.15.0 (main, Oct  9 2026, 11:16:41) [Clang 21.0.0 (clang-2100.3.34.2)]",
+  "cpu_count": 16,
+  "binary": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-optimized-build/xml_parser_benchmark",
+  "binary_sha256": "b1072ea244c5332aca467ed9f9bc457412b5b07f15c23de7e641da9329609730",
+  "backends": {
+    "full-homebrew": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-homebrew/lib",
+    "full-o2": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-o2/lib",
+    "full-os": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-os/lib"
+  },
+  "libraries": {
+    "full-homebrew": {
+      "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-homebrew/lib/libOpenSwathAlgo.dylib": "c37b9cd6f4268731899609f3232e1523fbaa5714ce3db16e926e81bf765ba42d",
+      "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-homebrew/lib/libOpenMS.dylib": "c70ca225e11ca26e6afd5c3bede4fa08862bbabd26fb636ac073577cbe8df2bf",
+      "/opt/homebrew/Cellar/libxml2/2.15.4/lib/libxml2.16.dylib": "bcd9f0c670d63a4bf4ed72d53ec88913c1795e65b642c1ecaa9c46288c64459a"
+    },
+    "full-o2": {
+      "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-o2/lib/libOpenSwathAlgo.dylib": "c37b9cd6f4268731899609f3232e1523fbaa5714ce3db16e926e81bf765ba42d",
+      "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-o2/lib/libOpenMS.dylib": "c70ca225e11ca26e6afd5c3bede4fa08862bbabd26fb636ac073577cbe8df2bf",
+      "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/dependencies/libxml2-speed/install-o2/lib/libxml2.16.1.4.dylib": "ed44ce333a2af22aa11d9e95aab7d5fdf38b069f847ed246b37f8fa3a6d4fb05"
+    },
+    "full-os": {
+      "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-os/lib/libOpenSwathAlgo.dylib": "c37b9cd6f4268731899609f3232e1523fbaa5714ce3db16e926e81bf765ba42d",
+      "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-os/lib/libOpenMS.dylib": "c70ca225e11ca26e6afd5c3bede4fa08862bbabd26fb636ac073577cbe8df2bf",
+      "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/dependencies/libxml2-speed/install-os/lib/libxml2.16.1.4.dylib": "973e4d0d4b2c5ec56558a6e070dc4780b97e6f36730f4d612a226464c36b7f9b"
+    }
+  },
+  "inputs": {
+    "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML": {
+      "bytes": 1126185409,
+      "sha256": "8f2c671efe432f61f21e682c8fd5a58dc4fd9f83ee2bb2020f38e8d0cc61abf7"
+    },
+    "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML": {
+      "bytes": 1126185409,
+      "sha256": "b864ae517f17976e50f3ffcbb2d205db6532f28b76b27b44d93dbe3b3600b81d"
+    }
+  },
+  "parameters": {
+    "binary": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-optimized-build/xml_parser_benchmark",
+    "backend": [
+      "full-homebrew=/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-homebrew/lib",
+      "full-o2=/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-o2/lib",
+      "full-os=/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-os/lib"
+    ],
+    "input": [
+      "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML"
+    ],
+    "workers": "1",
+    "modes": "stream,indexed-metadata",
+    "repetitions": 5,
+    "queries": 2048,
+    "timeout": 600,
+    "startup_retries": 1,
+    "output": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/size-control.json"
+  },
+  "launcher_sha256": "06f066400360e17bc2f9ac6f6ced695c6521ddc06db337cd55c06991b7d60108",
+  "records": [
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-o2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108740608,
+      "seconds": 1.785935125,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.607201084,
+          "read_seconds": 0.17580675
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.897608042000229,
+      "max_rss_bytes": 109543424,
+      "user_seconds": 1.701802,
+      "system_seconds": 0.171759,
+      "removed_stale_kmp": false,
+      "backend": "full-o2",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 0
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-homebrew/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108036096,
+      "seconds": 1.668629708,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.480795833,
+          "read_seconds": 0.185197542
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.7794995419999395,
+      "max_rss_bytes": 108773376,
+      "user_seconds": 1.5964209999999999,
+      "system_seconds": 0.16247699999999998,
+      "removed_stale_kmp": false,
+      "backend": "full-homebrew",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 4
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-os/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108167168,
+      "seconds": 1.663887042,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.472326417,
+          "read_seconds": 0.1885315
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.77882958400005,
+      "max_rss_bytes": 108904448,
+      "user_seconds": 1.595254,
+      "system_seconds": 0.16172399999999998,
+      "removed_stale_kmp": false,
+      "backend": "full-os",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 0
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-homebrew/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 110657536,
+      "seconds": 1.659204792,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.471295709,
+          "read_seconds": 0.185365291
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.7798419579999063,
+      "max_rss_bytes": 111378432,
+      "user_seconds": 1.589117,
+      "system_seconds": 0.16433599999999998,
+      "removed_stale_kmp": false,
+      "backend": "full-homebrew",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 0
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-o2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 54034432,
+      "seconds": 3.074431708,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 3.074393583
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.1886870000003,
+      "max_rss_bytes": 54870016,
+      "user_seconds": 3.003783,
+      "system_seconds": 0.158235,
+      "removed_stale_kmp": false,
+      "backend": "full-o2",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 3
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-homebrew/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108675072,
+      "seconds": 2.259046708,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 2.066754959,
+          "read_seconds": 0.189384166
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.381234458000108,
+      "max_rss_bytes": 109395968,
+      "user_seconds": 2.18352,
+      "system_seconds": 0.170837,
+      "removed_stale_kmp": false,
+      "backend": "full-homebrew",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 1
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-homebrew/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 54034432,
+      "seconds": 3.609573666,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 3.609535625
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.7291596670002036,
+      "max_rss_bytes": 54771712,
+      "user_seconds": 3.52269,
+      "system_seconds": 0.165209,
+      "removed_stale_kmp": false,
+      "backend": "full-homebrew",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 2
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-os/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 110231552,
+      "seconds": 2.280114458,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 2.088035584,
+          "read_seconds": 0.189509666
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.402388209000037,
+      "max_rss_bytes": 110952448,
+      "user_seconds": 2.195493,
+      "system_seconds": 0.17740899999999998,
+      "removed_stale_kmp": false,
+      "backend": "full-os",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 3
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-o2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108658688,
+      "seconds": 1.343998042,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.174306167,
+          "read_seconds": 0.167081416
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.465127415999632,
+      "max_rss_bytes": 109379584,
+      "user_seconds": 1.2789409999999999,
+      "system_seconds": 0.164768,
+      "removed_stale_kmp": false,
+      "backend": "full-o2",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 3
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-homebrew/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108625920,
+      "seconds": 2.276644792,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 2.087687125,
+          "read_seconds": 0.186354292
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.3912368749997768,
+      "max_rss_bytes": 109395968,
+      "user_seconds": 2.196275,
+      "system_seconds": 0.171825,
+      "removed_stale_kmp": false,
+      "backend": "full-homebrew",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 4
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-os/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108576768,
+      "seconds": 1.688898125,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.487780459,
+          "read_seconds": 0.198325666
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.8100730000001022,
+      "max_rss_bytes": 109297664,
+      "user_seconds": 1.615142,
+      "system_seconds": 0.163844,
+      "removed_stale_kmp": false,
+      "backend": "full-os",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 1
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-os/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 53723136,
+      "seconds": 3.009374333,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 3.00933075
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.126820874999794,
+      "max_rss_bytes": 54444032,
+      "user_seconds": 2.937096,
+      "system_seconds": 0.159363,
+      "removed_stale_kmp": false,
+      "backend": "full-os",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 0
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-o2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108675072,
+      "seconds": 1.356348833,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.183690958,
+          "read_seconds": 0.169868625
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.4794161659997371,
+      "max_rss_bytes": 109412352,
+      "user_seconds": 1.282494,
+      "system_seconds": 0.169042,
+      "removed_stale_kmp": false,
+      "backend": "full-o2",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 1
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-o2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108527616,
+      "seconds": 1.352270541,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.182843917,
+          "read_seconds": 0.166711833
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.4795985840000867,
+      "max_rss_bytes": 109330432,
+      "user_seconds": 1.278994,
+      "system_seconds": 0.17116699999999999,
+      "removed_stale_kmp": false,
+      "backend": "full-o2",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 4
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-os/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 53854208,
+      "seconds": 3.585583708,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 3.585542625
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.705693750000137,
+      "max_rss_bytes": 54657024,
+      "user_seconds": 3.502886,
+      "system_seconds": 0.171726,
+      "removed_stale_kmp": false,
+      "backend": "full-os",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 0
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-o2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108789760,
+      "seconds": 1.786389542,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.611439042,
+          "read_seconds": 0.172094875
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.910382583000228,
+      "max_rss_bytes": 109527040,
+      "user_seconds": 1.697799,
+      "system_seconds": 0.175725,
+      "removed_stale_kmp": false,
+      "backend": "full-o2",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 1
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-os/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 53985280,
+      "seconds": 3.004674834,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 3.004579542
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.117284916999779,
+      "max_rss_bytes": 54706176,
+      "user_seconds": 2.923607,
+      "system_seconds": 0.171586,
+      "removed_stale_kmp": false,
+      "backend": "full-os",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 4
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-os/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108593152,
+      "seconds": 2.259813209,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 2.065412709,
+          "read_seconds": 0.191634791
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.374384082999768,
+      "max_rss_bytes": 109412352,
+      "user_seconds": 2.181447,
+      "system_seconds": 0.17499199999999998,
+      "removed_stale_kmp": false,
+      "backend": "full-os",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 4
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-o2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 53723136,
+      "seconds": 2.687278875,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.687227833
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.805577916999937,
+      "max_rss_bytes": 54444032,
+      "user_seconds": 2.615258,
+      "system_seconds": 0.166608,
+      "removed_stale_kmp": false,
+      "backend": "full-o2",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 1
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-homebrew/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 53886976,
+      "seconds": 3.583488833,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 3.583453042
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.7034889999999905,
+      "max_rss_bytes": 54607872,
+      "user_seconds": 3.502383,
+      "system_seconds": 0.166533,
+      "removed_stale_kmp": false,
+      "backend": "full-homebrew",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 3
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-os/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 53919744,
+      "seconds": 3.65449875,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 3.654459375
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.7842917080001826,
+      "max_rss_bytes": 54788096,
+      "user_seconds": 3.559922,
+      "system_seconds": 0.184144,
+      "removed_stale_kmp": false,
+      "backend": "full-os",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 4
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-o2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 53837824,
+      "seconds": 2.66197075,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.661931916
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.774756959000115,
+      "max_rss_bytes": 54558720,
+      "user_seconds": 2.593441,
+      "system_seconds": 0.163249,
+      "removed_stale_kmp": false,
+      "backend": "full-o2",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 2
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-os/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 110329856,
+      "seconds": 2.258800167,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 2.071766667,
+          "read_seconds": 0.184442916
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.3685665420002806,
+      "max_rss_bytes": 111067136,
+      "user_seconds": 2.183753,
+      "system_seconds": 0.167378,
+      "removed_stale_kmp": false,
+      "backend": "full-os",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 2
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-o2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 53755904,
+      "seconds": 2.879964584,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.879924041
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.990628832999846,
+      "max_rss_bytes": 54476800,
+      "user_seconds": 2.631565,
+      "system_seconds": 0.160613,
+      "removed_stale_kmp": false,
+      "backend": "full-o2",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 3
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-o2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 53919744,
+      "seconds": 3.112826084,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 3.112777333
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.237859541999569,
+      "max_rss_bytes": 54640640,
+      "user_seconds": 3.043295,
+      "system_seconds": 0.159719,
+      "removed_stale_kmp": false,
+      "backend": "full-o2",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 1
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-os/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 53788672,
+      "seconds": 3.607543958,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 3.607496166
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.736362208999708,
+      "max_rss_bytes": 54624256,
+      "user_seconds": 3.535811,
+      "system_seconds": 0.152771,
+      "removed_stale_kmp": false,
+      "backend": "full-os",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 2
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-os/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 109297664,
+      "seconds": 1.704009,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.514890542,
+          "read_seconds": 0.186373792
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.8214940409998235,
+      "max_rss_bytes": 110100480,
+      "user_seconds": 1.601341,
+      "system_seconds": 0.164471,
+      "removed_stale_kmp": false,
+      "backend": "full-os",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 2
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-homebrew/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 53788672,
+      "seconds": 2.959820583,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.9597825
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.08883916700006,
+      "max_rss_bytes": 54640640,
+      "user_seconds": 2.901368,
+      "system_seconds": 0.148887,
+      "removed_stale_kmp": false,
+      "backend": "full-homebrew",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 0
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-o2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108544000,
+      "seconds": 1.759902458,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.588371542,
+          "read_seconds": 0.16886825
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.8726370829999723,
+      "max_rss_bytes": 109281280,
+      "user_seconds": 1.691989,
+      "system_seconds": 0.159574,
+      "removed_stale_kmp": false,
+      "backend": "full-o2",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 2
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-o2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 110739456,
+      "seconds": 1.772799625,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.601740875,
+          "read_seconds": 0.16765
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.8946862910001983,
+      "max_rss_bytes": 111476736,
+      "user_seconds": 1.702024,
+      "system_seconds": 0.16199,
+      "removed_stale_kmp": false,
+      "backend": "full-o2",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 4
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-homebrew/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 53837824,
+      "seconds": 2.95281925,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.95278175
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.0634130419998655,
+      "max_rss_bytes": 54640640,
+      "user_seconds": 2.89922,
+      "system_seconds": 0.143194,
+      "removed_stale_kmp": false,
+      "backend": "full-homebrew",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 2
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-homebrew/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 53919744,
+      "seconds": 2.953292334,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.953253209
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.075456457999735,
+      "max_rss_bytes": 54722560,
+      "user_seconds": 2.897304,
+      "system_seconds": 0.14274799999999999,
+      "removed_stale_kmp": false,
+      "backend": "full-homebrew",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 1
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-os/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 107970560,
+      "seconds": 1.634939,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.446400167,
+          "read_seconds": 0.185748667
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.7527028750000682,
+      "max_rss_bytes": 108691456,
+      "user_seconds": 1.5775489999999999,
+      "system_seconds": 0.154215,
+      "removed_stale_kmp": false,
+      "backend": "full-os",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 4
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-os/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 53886976,
+      "seconds": 3.57851675,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 3.578477833
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.684625207999943,
+      "max_rss_bytes": 54706176,
+      "user_seconds": 3.513315,
+      "system_seconds": 0.149426,
+      "removed_stale_kmp": false,
+      "backend": "full-os",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 3
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-homebrew/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 53854208,
+      "seconds": 2.955176375,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.955131875
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.0714442089997647,
+      "max_rss_bytes": 54575104,
+      "user_seconds": 2.899486,
+      "system_seconds": 0.148883,
+      "removed_stale_kmp": false,
+      "backend": "full-homebrew",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 4
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-homebrew/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 109248512,
+      "seconds": 1.664136417,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.478637583,
+          "read_seconds": 0.18286025
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.7867868339999404,
+      "max_rss_bytes": 109985792,
+      "user_seconds": 1.601515,
+      "system_seconds": 0.162352,
+      "removed_stale_kmp": false,
+      "backend": "full-homebrew",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 1
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-o2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 53788672,
+      "seconds": 3.084495917,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 3.084460792
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.1988411249999444,
+      "max_rss_bytes": 54558720,
+      "user_seconds": 3.028131,
+      "system_seconds": 0.15037399999999998,
+      "removed_stale_kmp": false,
+      "backend": "full-o2",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 4
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-homebrew/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108068864,
+      "seconds": 2.257495791,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 2.06732775,
+          "read_seconds": 0.187501375
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.366395417000149,
+      "max_rss_bytes": 108888064,
+      "user_seconds": 2.191147,
+      "system_seconds": 0.158845,
+      "removed_stale_kmp": false,
+      "backend": "full-homebrew",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 0
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-homebrew/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 53854208,
+      "seconds": 3.582906958,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 3.582859875
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.705906834000416,
+      "max_rss_bytes": 54575104,
+      "user_seconds": 3.523074,
+      "system_seconds": 0.15373699999999998,
+      "removed_stale_kmp": false,
+      "backend": "full-homebrew",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 4
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-os/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 107790336,
+      "seconds": 1.633965209,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.446627708,
+          "read_seconds": 0.184505625
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.7542922919997181,
+      "max_rss_bytes": 108511232,
+      "user_seconds": 1.577288,
+      "system_seconds": 0.153462,
+      "removed_stale_kmp": false,
+      "backend": "full-os",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 3
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-o2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108478464,
+      "seconds": 1.328713417,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.157736958,
+          "read_seconds": 0.16816175
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.4498717500000566,
+      "max_rss_bytes": 109297664,
+      "user_seconds": 1.263606,
+      "system_seconds": 0.154888,
+      "removed_stale_kmp": false,
+      "backend": "full-o2",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 0
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-os/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 53706752,
+      "seconds": 2.978112458,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.978067417
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.085708583000269,
+      "max_rss_bytes": 54444032,
+      "user_seconds": 2.916921,
+      "system_seconds": 0.145668,
+      "removed_stale_kmp": false,
+      "backend": "full-os",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 1
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-os/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 53919744,
+      "seconds": 3.551033291,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 3.550979791
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.6596100420001676,
+      "max_rss_bytes": 54673408,
+      "user_seconds": 3.483421,
+      "system_seconds": 0.157719,
+      "removed_stale_kmp": false,
+      "backend": "full-os",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 1
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-o2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108052480,
+      "seconds": 1.755955708,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.585909791,
+          "read_seconds": 0.167147209
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.87173037499997,
+      "max_rss_bytes": 108838912,
+      "user_seconds": 1.68211,
+      "system_seconds": 0.168068,
+      "removed_stale_kmp": false,
+      "backend": "full-o2",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 3
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-os/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 53968896,
+      "seconds": 3.005226458,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 3.005191834
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.131868250000025,
+      "max_rss_bytes": 54689792,
+      "user_seconds": 2.933895,
+      "system_seconds": 0.160054,
+      "removed_stale_kmp": false,
+      "backend": "full-os",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 2
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-os/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 53690368,
+      "seconds": 2.981393834,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.981348833
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.091999792000024,
+      "max_rss_bytes": 54411264,
+      "user_seconds": 2.914377,
+      "system_seconds": 0.157886,
+      "removed_stale_kmp": false,
+      "backend": "full-os",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 3
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-homebrew/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 53788672,
+      "seconds": 3.578301667,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 3.578266625
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.689635624999937,
+      "max_rss_bytes": 54542336,
+      "user_seconds": 3.50752,
+      "system_seconds": 0.164609,
+      "removed_stale_kmp": false,
+      "backend": "full-homebrew",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 0
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-homebrew/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108462080,
+      "seconds": 2.287661166,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 2.093257583,
+          "read_seconds": 0.191650417
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.403610583000045,
+      "max_rss_bytes": 109232128,
+      "user_seconds": 2.197956,
+      "system_seconds": 0.173129,
+      "removed_stale_kmp": false,
+      "backend": "full-homebrew",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 3
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-o2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 54018048,
+      "seconds": 3.112674792,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 3.112629792
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.238887624999734,
+      "max_rss_bytes": 54771712,
+      "user_seconds": 3.040439,
+      "system_seconds": 0.16225599999999998,
+      "removed_stale_kmp": false,
+      "backend": "full-o2",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 2
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-homebrew/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 54050816,
+      "seconds": 3.553064958,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 3.553011583
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.6598077910002758,
+      "max_rss_bytes": 54771712,
+      "user_seconds": 3.479898,
+      "system_seconds": 0.163797,
+      "removed_stale_kmp": false,
+      "backend": "full-homebrew",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 1
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-os/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108445696,
+      "seconds": 2.28204025,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 2.08192125,
+          "read_seconds": 0.197464833
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.4021880830000555,
+      "max_rss_bytes": 109248512,
+      "user_seconds": 2.204343,
+      "system_seconds": 0.165313,
+      "removed_stale_kmp": false,
+      "backend": "full-os",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 0
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-homebrew/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108167168,
+      "seconds": 1.680983041,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.491275042,
+          "read_seconds": 0.186906542
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.7990082500000426,
+      "max_rss_bytes": 108904448,
+      "user_seconds": 1.615715,
+      "system_seconds": 0.160877,
+      "removed_stale_kmp": false,
+      "backend": "full-homebrew",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 2
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-homebrew/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108593152,
+      "seconds": 1.675523,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.485523166,
+          "read_seconds": 0.187315834
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.802702292000049,
+      "max_rss_bytes": 109330432,
+      "user_seconds": 1.610199,
+      "system_seconds": 0.163513,
+      "removed_stale_kmp": false,
+      "backend": "full-homebrew",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 3
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-o2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 53952512,
+      "seconds": 2.638484,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.638451375
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.7643176669998866,
+      "max_rss_bytes": 54755328,
+      "user_seconds": 2.577629,
+      "system_seconds": 0.156597,
+      "removed_stale_kmp": false,
+      "backend": "full-o2",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 4
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-o2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 53919744,
+      "seconds": 2.632392584,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.632353333
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.7414492920001976,
+      "max_rss_bytes": 54722560,
+      "user_seconds": 2.574473,
+      "system_seconds": 0.153363,
+      "removed_stale_kmp": false,
+      "backend": "full-o2",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 0
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-homebrew/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 53657600,
+      "seconds": 2.969922208,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 2.969886
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.0885847919998923,
+      "max_rss_bytes": 54378496,
+      "user_seconds": 2.8942609999999998,
+      "system_seconds": 0.15522999999999998,
+      "removed_stale_kmp": false,
+      "backend": "full-homebrew",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 3
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-homebrew/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108527616,
+      "seconds": 2.256349084,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 2.06991025,
+          "read_seconds": 0.183741917
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.3596739159997924,
+      "max_rss_bytes": 109330432,
+      "user_seconds": 2.182039,
+      "system_seconds": 0.167977,
+      "removed_stale_kmp": false,
+      "backend": "full-homebrew",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 2
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-os/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 108068864,
+      "seconds": 2.247656625,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 2.05837225,
+          "read_seconds": 0.186574083
+        }
+      ],
+      "ok": true,
+      "process_seconds": 2.3679541249998692,
+      "max_rss_bytes": 108904448,
+      "user_seconds": 2.173171,
+      "system_seconds": 0.169705,
+      "removed_stale_kmp": false,
+      "backend": "full-os",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 1
+    },
+    {
+      "mode": "stream",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-o2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 53706752,
+      "seconds": 3.060731083,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 32768,
+      "chromatograms_per_worker": 1,
+      "points_per_worker": 67141632,
+      "index_spectra": 0,
+      "index_chromatograms": 0,
+      "hash_per_worker": "4299646233721013837",
+      "jobs": [
+        {
+          "open_seconds": 0,
+          "read_seconds": 3.06068075
+        }
+      ],
+      "ok": true,
+      "process_seconds": 3.18214454200006,
+      "max_rss_bytes": 54427648,
+      "user_seconds": 2.986497,
+      "system_seconds": 0.15859099999999998,
+      "removed_stale_kmp": false,
+      "backend": "full-o2",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "repetition": 0
+    },
+    {
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "openms_library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-o2/lib/libOpenMS.dylib",
+      "resident_rss_bytes": 107921408,
+      "seconds": 1.334577875,
+      "file_bytes": 1126185409,
+      "spectra_per_worker": 2048,
+      "chromatograms_per_worker": 0,
+      "points_per_worker": 4194304,
+      "index_spectra": 32768,
+      "index_chromatograms": 1,
+      "hash_per_worker": "8044413199707015275",
+      "jobs": [
+        {
+          "open_seconds": 1.161346416,
+          "read_seconds": 0.17063225
+        }
+      ],
+      "ok": true,
+      "process_seconds": 1.4578290419999576,
+      "max_rss_bytes": 108724224,
+      "user_seconds": 1.268038,
+      "system_seconds": 0.159213,
+      "removed_stale_kmp": false,
+      "backend": "full-o2",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "repetition": 2
+    }
+  ],
+  "failures": [],
+  "summary": [
+    {
+      "backend": "full-homebrew",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "repetitions": 5,
+      "seconds_median": 1.668629708,
+      "seconds_min": 1.659204792,
+      "seconds_max": 1.680983041,
+      "rss_mib_median": 104.265625,
+      "rss_mib_max": 106.21875,
+      "hash_per_worker": "8044413199707015275",
+      "resident_rss_mib_median": 103.5625,
+      "job_open_seconds_median": 1.480795833,
+      "job_read_seconds_median": 0.185365291,
+      "aggregate_spectra_per_second": 1227.3543915592325
+    },
+    {
+      "backend": "full-homebrew",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "mode": "stream",
+      "workers": 1,
+      "repetitions": 5,
+      "seconds_median": 2.955176375,
+      "seconds_min": 2.95281925,
+      "seconds_max": 2.969922208,
+      "rss_mib_median": 52.109375,
+      "rss_mib_max": 52.1875,
+      "hash_per_worker": "4299646233721013837",
+      "resident_rss_mib_median": 51.34375,
+      "job_open_seconds_median": 0,
+      "job_read_seconds_median": 2.955131875,
+      "aggregate_mib_per_second": 363.4348559228611
+    },
+    {
+      "backend": "full-homebrew",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "repetitions": 5,
+      "seconds_median": 2.259046708,
+      "seconds_min": 2.256349084,
+      "seconds_max": 2.287661166,
+      "rss_mib_median": 104.265625,
+      "rss_mib_max": 104.328125,
+      "hash_per_worker": "8044413199707015275",
+      "resident_rss_mib_median": 103.5,
+      "job_open_seconds_median": 2.06991025,
+      "job_read_seconds_median": 0.187501375,
+      "aggregate_spectra_per_second": 906.5770941111501
+    },
+    {
+      "backend": "full-homebrew",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "mode": "stream",
+      "workers": 1,
+      "repetitions": 5,
+      "seconds_median": 3.582906958,
+      "seconds_min": 3.553064958,
+      "seconds_max": 3.609573666,
+      "rss_mib_median": 52.078125,
+      "rss_mib_max": 52.234375,
+      "hash_per_worker": "4299646233721013837",
+      "resident_rss_mib_median": 51.390625,
+      "job_open_seconds_median": 0,
+      "job_read_seconds_median": 3.582859875,
+      "aggregate_mib_per_second": 299.7605331828904
+    },
+    {
+      "backend": "full-o2",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "repetitions": 5,
+      "seconds_median": 1.343998042,
+      "seconds_min": 1.328713417,
+      "seconds_max": 1.356348833,
+      "rss_mib_median": 104.265625,
+      "rss_mib_max": 104.34375,
+      "hash_per_worker": "8044413199707015275",
+      "resident_rss_mib_median": 103.5,
+      "job_open_seconds_median": 1.174306167,
+      "job_read_seconds_median": 0.16816175,
+      "aggregate_spectra_per_second": 1523.8117437674066
+    },
+    {
+      "backend": "full-o2",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "mode": "stream",
+      "workers": 1,
+      "repetitions": 5,
+      "seconds_median": 2.66197075,
+      "seconds_min": 2.632392584,
+      "seconds_max": 2.879964584,
+      "rss_mib_median": 52.03125,
+      "rss_mib_max": 52.21875,
+      "hash_per_worker": "4299646233721013837",
+      "resident_rss_mib_median": 51.34375,
+      "job_open_seconds_median": 0,
+      "job_read_seconds_median": 2.661931916,
+      "aggregate_mib_per_second": 403.4657781550635
+    },
+    {
+      "backend": "full-o2",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "repetitions": 5,
+      "seconds_median": 1.772799625,
+      "seconds_min": 1.755955708,
+      "seconds_max": 1.786389542,
+      "rss_mib_median": 104.453125,
+      "rss_mib_max": 106.3125,
+      "hash_per_worker": "8044413199707015275",
+      "resident_rss_mib_median": 103.703125,
+      "job_open_seconds_median": 1.601740875,
+      "job_read_seconds_median": 0.16886825,
+      "aggregate_spectra_per_second": 1155.2349014062997
+    },
+    {
+      "backend": "full-o2",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "mode": "stream",
+      "workers": 1,
+      "repetitions": 5,
+      "seconds_median": 3.084495917,
+      "seconds_min": 3.060731083,
+      "seconds_max": 3.112826084,
+      "rss_mib_median": 52.109375,
+      "rss_mib_max": 52.328125,
+      "hash_per_worker": "4299646233721013837",
+      "resident_rss_mib_median": 51.421875,
+      "job_open_seconds_median": 0,
+      "job_read_seconds_median": 3.084460792,
+      "aggregate_mib_per_second": 348.1976079642086
+    },
+    {
+      "backend": "full-os",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "repetitions": 5,
+      "seconds_median": 1.663887042,
+      "seconds_min": 1.633965209,
+      "seconds_max": 1.704009,
+      "rss_mib_median": 103.859375,
+      "rss_mib_max": 105.0,
+      "hash_per_worker": "8044413199707015275",
+      "resident_rss_mib_median": 103.15625,
+      "job_open_seconds_median": 1.472326417,
+      "job_read_seconds_median": 0.186373792,
+      "aggregate_spectra_per_second": 1230.8527852577627
+    },
+    {
+      "backend": "full-os",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+      "mode": "stream",
+      "workers": 1,
+      "repetitions": 5,
+      "seconds_median": 3.004674834,
+      "seconds_min": 2.978112458,
+      "seconds_max": 3.009374333,
+      "rss_mib_median": 51.921875,
+      "rss_mib_max": 52.171875,
+      "hash_per_worker": "4299646233721013837",
+      "resident_rss_mib_median": 51.234375,
+      "job_open_seconds_median": 0,
+      "job_read_seconds_median": 3.004579542,
+      "aggregate_mib_per_second": 357.4476971423152
+    },
+    {
+      "backend": "full-os",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "mode": "indexed-metadata",
+      "workers": 1,
+      "repetitions": 5,
+      "seconds_median": 2.259813209,
+      "seconds_min": 2.247656625,
+      "seconds_max": 2.28204025,
+      "rss_mib_median": 104.34375,
+      "rss_mib_max": 105.921875,
+      "hash_per_worker": "8044413199707015275",
+      "resident_rss_mib_median": 103.5625,
+      "job_open_seconds_median": 2.071766667,
+      "job_read_seconds_median": 0.189509666,
+      "aggregate_spectra_per_second": 906.26959424946
+    },
+    {
+      "backend": "full-os",
+      "input": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+      "mode": "stream",
+      "workers": 1,
+      "repetitions": 5,
+      "seconds_median": 3.585583708,
+      "seconds_min": 3.551033291,
+      "seconds_max": 3.65449875,
+      "rss_mib_median": 52.140625,
+      "rss_mib_max": 52.25,
+      "hash_per_worker": "4299646233721013837",
+      "resident_rss_mib_median": 51.390625,
+      "job_open_seconds_median": 0,
+      "job_read_seconds_median": 3.585542625,
+      "aggregate_mib_per_second": 299.53675260138925
+    }
+  ]
+}

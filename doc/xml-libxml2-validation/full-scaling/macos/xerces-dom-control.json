@@ -1,0 +1,7 @@
+{
+  "returncode": 4,
+  "binary_sha256": "a9212882addb45240d99bf977f29a52b14754379a2051a0db944c7b1966e7087",
+  "method": "Unchanged native DOMTest binary and byte-identical copied sample fixtures; only cwd changes from spaced workspace to actual no-space temporary directory. Original failure was relative baseURI expectations.",
+  "source_fixture": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/dependencies/libxml2-speed/xerces-c-3.3.0/samples/data",
+  "no_space_cwd": "/tmp/openms-xerces-dom-control-ycapcgqd/data"
+}

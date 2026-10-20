@@ -1,0 +1,1 @@
+{"library": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/dependencies/libxml2-speed/install-ascii/lib/libxml2.16.dylib", "sha256": "050289ec0401e6733682b82a11852896ee4154090b63d20ee36075c01c2e53b1", "cases": 51472, "inplace_ascii_cases": 65, "result_digest": "755009fa45e9a166216b2a7eeb0470aceb5a5418cf2fd903e7e42a335d63b95f", "all_against_python_latin1_oracle": true}

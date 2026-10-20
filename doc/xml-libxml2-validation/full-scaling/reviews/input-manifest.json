@@ -1,0 +1,6 @@
+{
+  "candidate": "private macOS experiments on full replacement8f66b3d921 and libxml2-2.15.4",
+  "input_bytes": 8132,
+  "input_sha256": "a91419e346813b17119eba6e1e0b801335e6e1685d4a0a01dbb9ff5692cbbae7",
+  "scope": "two isolated experimental patches, complete originalconverter/functionfallback and oracle"
+}

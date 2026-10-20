@@ -1,0 +1,28 @@
+{
+  "phase": "post-measurement provenance; no timings captured in this probe",
+  "utc": "2026-10-20T07:51:36.691097+00:00",
+  "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+  "commands": {
+    "sysctl machdep.cpu.brand_string hw.physicalcpu hw.logicalcpu": {
+      "returncode": 0,
+      "stdout": "machdep.cpu.brand_string: Apple M4 Max\nhw.physicalcpu: 16\nhw.logicalcpu: 16\n",
+      "stderr": ""
+    },
+    "sw_vers": {
+      "returncode": 0,
+      "stdout": "ProductName:\t\tmacOS\nProductVersion:\t\t26.6.2\nBuildVersion:\t\t25G83\n",
+      "stderr": ""
+    },
+    "clang --version": {
+      "returncode": 0,
+      "stdout": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin\n",
+      "stderr": ""
+    },
+    "cmake --version": {
+      "returncode": 0,
+      "stdout": "cmake version 4.4.4\n\nCMake suite maintained and supported by Kitware (kitware.com/cmake).\n",
+      "stderr": ""
+    }
+  },
+  "cpu_capture_utc": "2026-10-20T07:51:54.958266+00:00"
+}

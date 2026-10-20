@@ -1,0 +1,69 @@
+{
+  "source_commit": "8f66b3d921c9512e1e5968f494c77715ff71c696",
+  "started_utc": "2026-10-20T06:47:06Z",
+  "command": [
+    "python3",
+    "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/OpenMS-libxml2/tools/xml-parser-benchmark/run_benchmarks.py",
+    "--binary",
+    "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-optimized-build/xml_parser_benchmark",
+    "--backend",
+    "xerces=/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/xerces/lib",
+    "--backend",
+    "full-homebrew=/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-homebrew/lib",
+    "--backend",
+    "full-o2=/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-o2/lib",
+    "--backend",
+    "full-o3=/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-o3/lib",
+    "--backend",
+    "full-ascii-o3=/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/full-ascii-o3/lib",
+    "--backend",
+    "discard-homebrew=/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/discard-homebrew/lib",
+    "--backend",
+    "discard-ascii-o3=/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/snapshots/discard-ascii-o3/lib",
+    "--input",
+    "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large.mzML",
+    "--input",
+    "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/benchmark-data/large-utf8.mzML",
+    "--workers",
+    "1",
+    "--modes",
+    "stream,indexed-metadata",
+    "--repetitions",
+    "5",
+    "--queries",
+    "2048",
+    "--output",
+    "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/results/full-scaling/macos/options.json"
+  ],
+  "variants": {
+    "xerces": {
+      "OpenMS_source": "published optimized Xerces",
+      "parser": "Homebrew Xerces3.3.0"
+    },
+    "full-homebrew": {
+      "OpenMS_source": "full replacement",
+      "parser": "/opt/homebrew/Cellar/libxml2/2.15.4/lib/libxml2.16.dylib"
+    },
+    "full-o2": {
+      "OpenMS_source": "full replacement",
+      "parser": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/dependencies/libxml2-speed/install-o2/lib/libxml2.16.1.4.dylib"
+    },
+    "full-o3": {
+      "OpenMS_source": "full replacement",
+      "parser": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/dependencies/libxml2-speed/install-o3/lib/libxml2.16.1.4.dylib"
+    },
+    "full-ascii-o3": {
+      "OpenMS_source": "full replacement",
+      "parser": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/dependencies/libxml2-speed/install-ascii/lib/libxml2.16.1.4.dylib"
+    },
+    "discard-homebrew": {
+      "OpenMS_source": "experimental one-unit discard-first patch",
+      "parser": "/opt/homebrew/Cellar/libxml2/2.15.4/lib/libxml2.16.dylib"
+    },
+    "discard-ascii-o3": {
+      "OpenMS_source": "experimental one-unit discard-first patch",
+      "parser": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/dependencies/libxml2-speed/install-ascii/lib/libxml2.16.1.4.dylib"
+    }
+  },
+  "note": "Private experiments only; production sources and dependency choices unchanged. O2/O3 have identical source/features; Homebrew is a separately packaged reference."
+}

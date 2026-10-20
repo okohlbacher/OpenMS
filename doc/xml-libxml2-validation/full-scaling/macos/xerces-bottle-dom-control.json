@@ -1,0 +1,6 @@
+{
+  "returncode": 4,
+  "binary": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/dependencies/libxml2-speed/xerces-native-build/tests/DOMTest",
+  "cwd": "/Users/kohlbach/Claude/OpenMS - XERCES Replacement/dependencies/libxml2-speed/xerces-c-3.3.0/samples/data",
+  "method": "Same unchanged native-compiled DOMTest binary, but force the installed Xerces3.3.0 bottle viaDYLD_LIBRARY_PATH to distinguish a nativebuild regression from a shared test failure."
+}
