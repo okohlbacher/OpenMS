@@ -26,6 +26,10 @@
 #include <thread>
 
 #include <algorithm>
+#include <limits>
+#if defined(__GLIBC__)
+  #include <malloc.h>
+#endif
 #ifdef _OPENMP
   #include <omp.h>
 #endif
@@ -635,6 +639,15 @@ protected:
 // the actual main function needed to create an executable
 int main(int argc, const char** argv)
 {
+#if defined(__GLIBC__)
+  // Experiment (FD_OPT=mallopt): keep freed heap memory in the per-thread arenas instead of trimming it back
+  // to the kernel after every spectrum (trim + refault + mprotect churn serialises on the process mm lock).
+  if (FLASHTrace::opt("mallopt"))
+  {
+    mallopt(M_TRIM_THRESHOLD, std::numeric_limits<int>::max());
+    mallopt(M_TOP_PAD, 256 << 20);
+  }
+#endif
   int rc;
   {
     TOPPFLASHDeconv tool;
