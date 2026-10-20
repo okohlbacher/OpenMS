@@ -769,11 +769,10 @@ inline const double tol_div_factor
       double log_m = getBinValue_(mass_bin_index, mass_bin_min_value_, bin_mul_factor);
       double mass = exp(log_m);
 
-      PeakGroup pg(1, per_mass_abs_charge_ranges.getValue(1, mass_bin_index) + 1, // make an empty peakGroup (mass)
-                   is_positive_);
-
-      pg.reserve(charge_range * 12);
-      pg.setIsotopeDaDistance(iso_da_distance_);
+      // Peaks for this mass bin are staged in a per-worker scratch buffer; a PeakGroup with an
+      // exact-size peak vector is only created when the bin yields a candidate.
+      thread_local std::vector<LogMzPeak> bin_peaks;
+      bin_peaks.clear();
       // the range of isotope span. For a given peak the peaks within the span are searched.
       Size right_index = activeAveragine_().getRightCountFromApex(mass);
       Size left_index = activeAveragine_().getLeftCountFromApex(mass);
@@ -844,7 +843,7 @@ inline const double tol_div_factor
               LogMzPeak p(log_mz_peaks_[peak_index]);
               p.setAbsCharge((int)abs_charge);
               p.setIsotopeIndex(tmp_i);
-              pg.push_back(p);
+              bin_peaks.push_back(p);
             }
           }
         }
@@ -864,19 +863,19 @@ inline const double tol_div_factor
               LogMzPeak p(log_mz_peaks_[peak_index]);
               p.setAbsCharge((int)abs_charge);
               p.setIsotopeIndex(tmp_i);
-              pg.push_back(p);
+              bin_peaks.push_back(p);
             }
           }
         }
       }
 
-      if (! pg.empty()) // total_signal_intensity > 0)// *std::max_element(total_harmonic_intensity.begin(), total_harmonic_intensity.end())) //
+      if (! bin_peaks.empty()) // total_signal_intensity > 0)// *std::max_element(total_harmonic_intensity.begin(), total_harmonic_intensity.end())) //
       {
         double max_intensity = -1.0;
         double t_mass = .0;
-        auto new_peaks = std::vector<LogMzPeak>();
-        new_peaks.reserve(pg.size());
-        for (const auto& p : pg)
+        thread_local std::vector<LogMzPeak> new_peaks;
+        new_peaks.clear();
+        for (const auto& p : bin_peaks)
         {
           if (max_intensity < p.getIntensity())
           {
@@ -890,7 +889,7 @@ inline const double tol_div_factor
         int max_charge = -1;
 
         int apex_index = (int)activeAveragine_().getApexIndex(t_mass);
-        for (auto& p : pg)
+        for (auto& p : bin_peaks)
         {
           p.setIsotopeIndex((int)round((p.getUnchargedMass() - t_mass) / iso_da_distance_));
 
@@ -904,7 +903,11 @@ inline const double tol_div_factor
 
         if (min_off != max_off)
         {
-          pg.swap(new_peaks);
+          PeakGroup pg(1, per_mass_abs_charge_ranges.getValue(1, mass_bin_index) + 1, // make an empty peakGroup (mass)
+                       is_positive_);
+          pg.setIsotopeDaDistance(iso_da_distance_);
+          std::vector<LogMzPeak> exact_peaks(new_peaks.begin(), new_peaks.end());
+          pg.swap(exact_peaks);
           pg.updateMonoMassAndIsotopeIntensities(tol);
 
           if (pg.getMonoMass() < current_min_mass_ || pg.getMonoMass() > current_max_mass_) { continue; }
