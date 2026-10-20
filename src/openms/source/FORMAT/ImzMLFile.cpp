@@ -176,8 +176,6 @@ namespace
     }
   }
 
-  /// Ensure Xerces is initialized before parsing.
-  ///
 } // namespace
 
 ImzMLFile::ImzMLFile() :
@@ -545,7 +543,8 @@ void ImzMLFile::loadImpl_(const std::string& filename,
 
   try
   {
-    parse_(filename, &handler);
+    // imzML historically used namespace-aware parsing, unlike generic XML readers.
+    parse_(filename, &handler, true);
   }
   catch (const Exception::BaseException&)
   {

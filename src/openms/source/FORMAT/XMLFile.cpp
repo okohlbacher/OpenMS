@@ -125,6 +125,22 @@ private:
           xmlStopParser(static_cast<xmlParserCtxt*>(ctx));
         }
       }
+      static void startLegacy(void* ctx, const xmlChar* name, const xmlChar** attrs)
+      {
+        callback(ctx, [&](LibxmlState& s)
+        {
+          XMLAttributes::Values values;
+          if (attrs)
+          {
+            for (Size i = 0; attrs[i]; i += 2) values.emplace_back(utf16(attrs[i]), utf16(attrs[i + 1]));
+          }
+          s.handler->onStartElement(utf16(name).c_str(), XMLAttributes(values));
+        });
+      }
+      static void endLegacy(void* ctx, const xmlChar* name)
+      {
+        callback(ctx, [&](LibxmlState& s) { s.handler->onEndElement(utf16(name).c_str()); });
+      }
       static std::u16string qualifiedName(const xmlChar* local, const xmlChar* prefix)
       {
         if (!prefix) return utf16(local);
@@ -187,18 +203,27 @@ private:
       }
     };
     template <typename Read>
-    void parse(Read&& read, XMLHandler* handler, const std::string& encoding, const std::string& filename)
+    void parse(Read&& read, XMLHandler* handler, const std::string& encoding, const std::string& filename, bool namespace_aware)
     {
       libxmlInitialize();
       LibxmlState state{handler, {}};
       xmlSAXHandler sax{};
-      if (xmlSAXVersion(&sax, 2) != 0)
+      if (xmlSAXVersion(&sax, namespace_aware ? 2 : 1) != 0)
       {
         throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename,
-                                    "libxml2 could not initialize SAX2 callbacks");
+                                    "libxml2 could not initialize the requested SAX callbacks");
       }
-      sax.startElementNs = LibxmlState::start;
-      sax.endElementNs = LibxmlState::end;
+      if (namespace_aware)
+      {
+        sax.startElementNs = LibxmlState::start;
+        sax.endElementNs = LibxmlState::end;
+      }
+      else
+      {
+        // Preserve generic OpenMS XML readers' historical namespace-disabled mode.
+        sax.startElement = LibxmlState::startLegacy;
+        sax.endElement = LibxmlState::endLegacy;
+      }
       sax.characters = LibxmlState::characters;
       sax.cdataBlock = LibxmlState::characters;
       auto free_parser = [](xmlParserCtxt* ctx)
@@ -239,7 +264,7 @@ private:
       }
     }
 
-    void XMLFile::parse_(const std::string& filename, XMLHandler* handler)
+    void XMLFile::parse_(const std::string& filename, XMLHandler* handler, bool namespace_aware)
     {
       XMLCleaner_ clean(handler);
       if (!File::exists(filename))
@@ -264,7 +289,7 @@ private:
         {
           throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename, "Cannot open compressed XML stream");
         }
-        parse([&](unsigned char* target, Size capacity) { return stream->readBytes(target, capacity); }, handler, enforced_encoding_, filename);
+        parse([&](unsigned char* target, Size capacity) { return stream->readBytes(target, capacity); }, handler, enforced_encoding_, filename, namespace_aware);
       }
       else
       {
@@ -276,11 +301,11 @@ private:
             throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename, "Error reading XML file");
           }
           return static_cast<Size>(file.gcount());
-        }, handler, enforced_encoding_, filename);
+        }, handler, enforced_encoding_, filename, namespace_aware);
       }
     }
 
-    void XMLFile::parseBuffer_(const std::string& buffer, XMLHandler* handler)
+    void XMLFile::parseBuffer_(const std::string& buffer, XMLHandler* handler, bool namespace_aware)
     {
       XMLCleaner_ clean(handler);
       Size offset = 0;
@@ -290,7 +315,7 @@ private:
         std::memcpy(target, buffer.data() + offset, count);
         offset += count;
         return count;
-      }, handler, enforced_encoding_, "inMemory");
+      }, handler, enforced_encoding_, "inMemory", namespace_aware);
     }
 
     void XMLFile::save_(const std::string & filename, XMLHandler * handler) const

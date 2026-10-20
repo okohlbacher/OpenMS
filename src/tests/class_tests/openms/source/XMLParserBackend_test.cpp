@@ -22,6 +22,13 @@ namespace
     using XMLFile::parse_;
     using XMLFile::enforceEncoding_;
   };
+  struct NamespaceReader : Reader
+  {
+    void parseBuffer_(const std::string& xml, Internal::XMLHandler* handler)
+    {
+      Internal::XMLFile::parseBuffer_(xml, handler, true);
+    }
+  };
   struct Handler : Internal::XMLHandler
   {
     Handler() : XMLHandler("memory", "1.0") {}
@@ -97,6 +104,26 @@ START_SECTION(Parser errors retain the actual diagnostic and location)
   }
   TEST_TRUE(caught)
 END_SECTION
+START_SECTION(Generic readers preserve legacy namespace-disabled qualified names)
+  struct Legacy : Internal::XMLHandler
+  {
+    Legacy() : XMLHandler("legacy", "1.0") {}
+    std::u16string name, attribute;
+    void onStartElement(const char16_t* qname, const Internal::XMLAttributes& attrs) override
+    {
+      name = qname;
+      if (const auto* value = attrs.value("OpenXQuest:log_occupancy")) attribute = value;
+    }
+    void onEndElement(const char16_t*) override {}
+    void onCharacters(const char16_t*, Size) override {}
+  } qualified, namespace_uri;
+  Reader reader;
+  reader.parseBuffer_("<OpenXQuest:root OpenXQuest:log_occupancy='legacy'/>", &qualified);
+  TEST_TRUE(qualified.name == u"OpenXQuest:root")
+  TEST_TRUE(qualified.attribute == u"legacy")
+  reader.parseBuffer_("<root xmlns:xsi='http://www.w3.org/2001/XMLSche ma-instance'/>", &namespace_uri);
+  TEST_TRUE(namespace_uri.name == u"root")
+END_SECTION
 START_SECTION(SAX2 rejects namespace-invalid XML)
   for (const std::string xml : {
       "<root ghost:flag='1'/>",
@@ -106,7 +133,7 @@ START_SECTION(SAX2 rejects namespace-invalid XML)
       "<root xmlns:xmlns='urn:forbidden'/>",
       "<root xmlns:p='http://www.w3.org/XML/1998/namespace'/>"})
   {
-    Reader reader;
+    NamespaceReader reader;
     Handler handler;
     TEST_EXCEPTION(Exception::ParseError, reader.parseBuffer_(xml, &handler))
   }
@@ -129,7 +156,7 @@ START_SECTION(SAX2 preserves qualified names namespace declarations and bounded 
     void onEndElement(const char16_t* name) override { ends.emplace_back(name); }
     void onCharacters(const char16_t*, Size) override {}
   } handler;
-  Reader reader;
+  NamespaceReader reader;
   reader.parseBuffer_("<!DOCTYPE root [<!ENTITY named 'entity'>]>"
       "<root xmlns='urn:default' xmlns:p='urn:prefix' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' "
       "xmlns:mzML='urn:mzml' value='&named; &amp; &#x1F9EC;' xsi:schemaLocation='urn:default schema.xsd' mzML:version='1.1'>"

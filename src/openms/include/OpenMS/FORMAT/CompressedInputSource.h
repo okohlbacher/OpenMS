@@ -1,5 +1,11 @@
 // Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
 // SPDX-License-Identifier: BSD-3-Clause
+//
+// --------------------------------------------------------------------------
+// $Maintainer: Timo Sachsenberg $
+// $Authors: David Wojnar $
+// --------------------------------------------------------------------------
+
 #pragma once
 
 #include <OpenMS/FORMAT/InputStream.h>
@@ -7,7 +13,7 @@
 
 namespace OpenMS
 {
-  /** Internal source selecting bzip2, ZIP or gzip decompression by file magic. */
+  /** @brief Internal source selecting bzip2, ZIP or gzip decompression by file magic. */
   class OPENMS_DLLAPI CompressedInputSource
   {
   public:

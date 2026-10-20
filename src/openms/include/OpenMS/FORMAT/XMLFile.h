@@ -89,11 +89,12 @@ protected:
 
         @param[in]     filename Path to the XML file.
         @param[in,out] handler  SAX handler driven by the parser.
+        @param[in] namespace_aware Validate namespace bindings; false preserves legacy qualified-name parsing.
 
         @throws OpenMS::Exception::FileNotFound if @p filename does not exist.
         @throws OpenMS::Exception::ParseError   if a parse error occurs.
       */
-      void parse_(const std::string& filename, XMLHandler* handler);
+      void parse_(const std::string& filename, XMLHandler* handler, bool namespace_aware = false);
 
       /**
         @brief Parse an in-memory XML buffer through @p handler.
@@ -106,10 +107,11 @@ protected:
 
         @param[in]     buffer   In-memory XML text.
         @param[in,out] handler  SAX handler driven by the parser.
+        @param[in] namespace_aware Validate namespace bindings; false preserves legacy qualified-name parsing.
 
         @throws OpenMS::Exception::ParseError if a parse error occurs.
       */
-      void parseBuffer_(const std::string & buffer, XMLHandler * handler);
+      void parseBuffer_(const std::string& buffer, XMLHandler* handler, bool namespace_aware = false);
 
       /**
         @brief Stores the contents of the XML handler given by @p handler in the file given by @p filename.
@@ -134,9 +136,9 @@ protected:
         @brief Set or clear the XML-encoding override applied to subsequent @ref parse_ / @ref parseBuffer_ calls.
 
         Stores @p encoding in @ref enforced_encoding_. Pass an empty string to disable the
-        override and let Xerces use the encoding declared inside the XML.
+        override and let libxml2 use the encoding declared inside the XML.
 
-        @param[in] encoding Encoding name (e.g. @c "ISO-8859-1") to apply to the @c InputSource before parsing; empty string disables the override so Xerces consults the XML declaration instead.
+        @param[in] encoding Encoding name (e.g. @c "ISO-8859-1") to apply to the @c InputSource before parsing; empty string disables the override so libxml2 consults the XML declaration instead.
       */
       void enforceEncoding_(const std::string& encoding);
     };
