@@ -56,6 +56,29 @@ class RemovalGuardTest(unittest.TestCase):
     def test_missing_build_output_fails(self):
         self.assertEqual(self.run_guard('--build-dir', str(self.root / 'missing')), 1)
 
+    def test_checkout_parent_does_not_exclude_product_sources(self):
+        original = self.root
+        for parent in ['data', 'extern', 'thirdparty']:
+            with self.subTest(parent=parent):
+                self.root = original / parent / 'OpenMS'
+                (self.root / 'src/openms').mkdir(parents=True)
+                (self.root / 'cmake').mkdir()
+                (self.root / 'src/openms/CMakeLists.txt').write_text('')
+                (self.root / 'cmake/cmake_findExternalLibs.cmake').write_text('')
+                (self.root / 'vcpkg.json').write_text('{"dependencies":["libxml2"]}')
+                (self.root / 'src/consumer.h').write_text('#include <xercesc/dom/DOM.hpp>\n')
+                self.assertEqual(self.run_guard(), 1)
+        self.root = original
+
+    def test_dependency_inspector_failure_is_reported(self):
+        build = self.root / 'build'
+        build.mkdir()
+        (build / 'libOpenMS.dylib').touch()
+        for error in [FileNotFoundError('missing dependency inspector'),
+                      check.subprocess.CalledProcessError(1, ['inspector'])]:
+            with self.subTest(error=error), patch.object(check.subprocess, 'check_output', side_effect=error):
+                self.assertEqual(self.run_guard('--build-dir', str(build)), 1)
+
 
 if __name__ == '__main__':
     unittest.main()

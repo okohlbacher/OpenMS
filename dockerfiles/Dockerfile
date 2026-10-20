@@ -100,7 +100,9 @@ RUN <<-EOF
     cmake -S libxml2-src -B libxml2-build -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_INSTALL_PREFIX=/opt/libxml2 -DBUILD_SHARED_LIBS=ON \
       -DLIBXML2_WITH_PYTHON=OFF -DLIBXML2_WITH_PROGRAMS=OFF -DLIBXML2_WITH_TESTS=OFF \
-      -DLIBXML2_WITH_LEGACY=OFF -DLIBXML2_WITH_ZLIB=ON
+      -DLIBXML2_WITH_LEGACY=OFF -DLIBXML2_WITH_ZLIB=ON \
+      -DLIBXML2_WITH_SAX1=ON -DLIBXML2_WITH_PUSH=ON -DLIBXML2_WITH_SCHEMAS=ON \
+      -DLIBXML2_WITH_THREADS=ON -DLIBXML2_WITH_ICONV=ON
     cmake --build libxml2-build --parallel 8
     cmake --install libxml2-build
     mkdir -p /opt/libxml2/share/licenses/libxml2

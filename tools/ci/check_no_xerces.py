@@ -17,7 +17,7 @@ def main():
     forbidden = re.compile(r'#\s*include\s*[<"]xercesc/|\bxercesc\s*::|\bXERCES_CPP_NAMESPACE')
     failures = []
     for path in (source / 'src').rglob('*'):
-        if path.suffix not in ('.h', '.hpp', '.cpp') or {'extern', 'thirdparty', 'data'} & set(path.parts):
+        if path.suffix not in ('.h', '.hpp', '.cpp') or {'extern', 'thirdparty', 'data'} & set(path.relative_to(source).parts):
             continue
         if forbidden.search(path.read_text(encoding='utf-8')):
             failures.append(str(path.relative_to(source)))
@@ -41,7 +41,11 @@ def main():
                 command = ['dumpbin', '/DEPENDENTS', str(library)]
             else:
                 command = ['ldd', str(library)]
-            links = subprocess.check_output(command, text=True, stderr=subprocess.STDOUT)
+            try:
+                links = subprocess.check_output(command, text=True, stderr=subprocess.STDOUT)
+            except (OSError, subprocess.CalledProcessError) as error:
+                failures.append(f'{library}: could not inspect dependencies with {command[0]}: {error}')
+                continue
             if re.search(r'\b(?:lib)?xerces[-_A-Za-z0-9.]*\.(?:dylib|so(?:\.\d+)*|dll)\b', links, re.IGNORECASE):
                 failures.append(str(library) + ': linked Xerces dependency')
     if failures:
