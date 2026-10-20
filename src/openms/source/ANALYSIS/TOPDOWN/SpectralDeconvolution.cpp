@@ -12,6 +12,8 @@
 #include <OpenMS/CONCEPT/Exception.h>
 #include <OpenMS/CONCEPT/LogStream.h>
 #include <OpenMS/SYSTEM/BuildInfo.h>
+#include <cstdint>
+#include <limits>
 #include <type_traits>
 #include <utility>
 #ifdef _OPENMP
@@ -375,6 +377,11 @@ inline const double tol_div_factor
       unsigned short support;
       unsigned short previous_charge;
     };
+    struct ByteMassBinState
+    {
+      std::uint8_t support;
+      std::uint8_t previous_charge;
+    };
 
     // A fixed charge maps each mz bin to one mass bin by an integer offset.
     // The stored charge therefore identifies the previous mz bin exactly.
@@ -593,7 +600,17 @@ inline const double tol_div_factor
     // Wider/nonstandard charge domains use the original cached-intensity path.
     const bool compact_state = current_max_charge_ >= 0 && current_max_charge_ <= std::numeric_limits<unsigned short>::max() - 2
                                && sizeof(CompactMassBinState) < sizeof(MassBinState);
-    if (compact_state)
+    // A fixed charge maps occupied mz bins injectively into mass bins, so a
+    // support count cannot exceed the number of charges. The extra two values
+    // are needed for the initial sentinel, not for a stored charge index.
+    const bool byte_state = current_max_charge_ >= 0 && current_max_charge_ <= std::numeric_limits<std::uint8_t>::max() - 2
+                            && sizeof(ByteMassBinState) < sizeof(CompactMassBinState);
+    if (byte_state)
+    {
+      std::vector<ByteMassBinState> states(binned_log_masses_.size(), {0, static_cast<std::uint8_t>(current_max_charge_ + 2)});
+      update_mass_bins(states);
+    }
+    else if (compact_state)
     {
       std::vector<CompactMassBinState> states(binned_log_masses_.size(), {0, (unsigned short)(current_max_charge_ + 2)});
       update_mass_bins(states);
@@ -1288,7 +1305,7 @@ inline const double tol_div_factor
   {
     offset = 0;
     if ((int)per_isotope_intensities.size() < min_iso_size + iso_int_shift) { return .0; }
-    auto iso = avg.get(mono_mass);
+    const auto& iso = avg.getReference_(mono_mass);
 
     int right = (int)avg.getApexIndex(mono_mass) / 4 + 1;
     int left = right;

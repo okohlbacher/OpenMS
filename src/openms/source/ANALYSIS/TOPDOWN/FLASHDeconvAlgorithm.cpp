@@ -398,7 +398,7 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
   }
 #endif
   // Construct in stable storage rather than copying mutable SD state/pointers.
-  std::vector<SpectralDeconvolution> spectrum_workers(worker_count > 1 ? worker_count : 0);
+  std::vector<SpectralDeconvolution> spectrum_workers(worker_count > 0 ? worker_count : 0);
   // One immutable per-run copy replaces all worker model copies. No pool lock
   // or shared_ptr reference-count operation is used during spectrum scoring.
   const auto shared_averagine = spectrum_workers.empty() ? std::shared_ptr<const SpectralDeconvolution::PrecalculatedAveragine>()

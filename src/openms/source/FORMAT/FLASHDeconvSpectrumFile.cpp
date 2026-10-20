@@ -302,9 +302,9 @@ namespace OpenMS
     worker_count = (int)std::min((Size)worker_count, jobs.size());
 
     auto& indices = writerIndices_();
-    // Bound the retained strings to four spectra per requested worker (at most
-    // 256 spectra), not to a fixed byte budget. Never buffer the whole file.
-    const Size wave_capacity = 4 * (Size)worker_count;
+    // Amortize workshare joins with up to sixteen spectra per worker, retaining
+    // at most 256 spectra. This is a string-count cap, not a fixed byte budget.
+    const Size wave_capacity = std::min<Size>(256, 16 * (Size)worker_count);
     for (Size begin = 0; begin < jobs.size(); begin += wave_capacity)
     {
       const SignedSize count = std::min(wave_capacity, jobs.size() - begin);

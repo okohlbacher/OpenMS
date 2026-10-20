@@ -2,7 +2,7 @@
 
 At 64 physical cores the port is **13.23× faster** (388.99 → 29.40 seconds), with peak RSS 5.375 → 23.266 GiB. All complete output files match. This is a fresh comparison of unchanged fork develop `0bee1589e6baa5fad030115804ba94c5ac2f52da` and the integrated port, using one measurement per cell. Historical FVdeploy timings are separate evidence.
 
-The measurements below were captured at PR commit `c0967b50464817419fe69520d6aeccb8a97cdbc7`. The subsequent Windows compatibility fix uses an OpenMP 2.0 region-query fallback on older runtimes while preserving the measured OpenMP 3.0+ nesting check; these timings have not been rerun for that follow-up.
+The measurements below were captured at PR commit `c0967b50464817419fe69520d6aeccb8a97cdbc7` on 8 October. The subsequent Windows compatibility fix uses an OpenMP 2.0 region-query fallback on older runtimes while preserving the measured OpenMP 3.0+ nesting check. A separate [20 October study](FLASHDeconv-scaling-20261020.md) measures that exact follow-up (`873810d`) and further optimizations from 1 through 192 physical cores; the historical table below remains unchanged.
 
 ## Results
 
@@ -45,7 +45,7 @@ Ordinary target spectra use whole-spectrum `schedule(dynamic, 1)` jobs with an M
 
 Eligible precursor matching runs in parallel with modern bounds and duplicate-ID handling. Pointer Q-score lookup avoids survey-spectrum collection copies. Filtering uses owned mower copies, compacts retained peaks, and preserves array-bearing inputs through the serial path. Loading retains the modern mzML/RAW path, with a 512-spectrum reader pool and scoped 64-thread initiating-task cap; the full experiment is still loaded before deconvolution.
 
-Averagine bins are constructed independently before ordered prefix maxima; generator copies precede OpenMP and derived generators remain serial. Workers share one lifetime-owned const model. Scratch uses a checked 20-row `Size` noise slab, compact candidate state with a legacy-domain fallback, selected-column charge initialization, and shorter buffer lifetimes. Detailed target TSV formatting retains four spectra per worker, capped at 64 workers; its limit is string count, not bytes. The caller commits streams and indices in order. Independent concurrent writer calls remain unsupported.
+Averagine bins are constructed independently before ordered prefix maxima; generator copies precede OpenMP and derived generators remain serial. Workers share one lifetime-owned const model. Scratch uses a checked 20-row `Size` noise slab, compact candidate state with a legacy-domain fallback, selected-column charge updates after full matrix zero initialization, and shorter buffer lifetimes. Detailed target TSV formatting retains four spectra per worker, capped at 64 workers; its limit is string count, not bytes. The caller commits streams and indices in order. Independent concurrent writer calls remain unsupported.
 
 ## Validation and provenance
 

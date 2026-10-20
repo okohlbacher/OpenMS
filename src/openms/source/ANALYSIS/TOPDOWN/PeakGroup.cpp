@@ -102,7 +102,7 @@ namespace OpenMS
 
   void PeakGroup::updatePerChargeCos_(const FLASHHelperClasses::PrecalculatedAveragine& avg, double tol)
   {
-    auto iso_dist = avg.get(monoisotopic_mass_);
+    const auto& iso_dist = avg.getReference_(monoisotopic_mass_);
     auto current_per_isotope_intensities = std::vector<float>(getIsotopeIntensities().size(), .0f);
 
     if (min_abs_charge_ == max_abs_charge_) setChargeIsotopeCosine(min_abs_charge_, getIsotopeCosine());

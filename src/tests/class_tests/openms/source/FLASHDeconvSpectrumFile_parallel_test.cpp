@@ -134,12 +134,12 @@ std::string state(const std::vector<Spectrum>& spectra)
 void child(const std::string& method, const std::string& scenario, const Avg& avg, const Avg& decoy_avg)
 {
   std::vector<Spectrum> spectra;
-  // Four workers format a full 16-spectrum wave followed by a three-job tail.
-  for (unsigned i = 1; i <= 19; ++i)
+  // Four workers format a full 64-spectrum wave followed by a three-job tail.
+  for (unsigned i = 1; i <= 67; ++i)
   {
     spectra.push_back(spectrum(i, 1 + i % 2, i % 2 == 0, avg));
   }
-  auto empty = spectrum(20, 1, true, avg);
+  auto empty = spectrum(68, 1, true, avg);
   empty.clear();
   spectra.insert(spectra.begin() + 5, empty);
   const auto before = state(spectra);
@@ -224,7 +224,7 @@ void child(const std::string& method, const std::string& scenario, const Avg& av
       if (std::stoul(index) != rows + 1 || std::stoul(scan) != expected_scan) { throw std::runtime_error("TSV order/index changed"); }
       ++rows;
     }
-    const unsigned expected_rows = scenario == "bad-stream" && level == 1 ? 0 : (level == 0 ? 9 : 10) * (fdr ? 2 : 1);
+    const unsigned expected_rows = scenario == "bad-stream" && level == 1 ? 0 : (level == 0 ? 33 : 34) * (fdr ? 2 : 1);
     if (rows != expected_rows) { throw std::runtime_error("Incomplete writer output"); }
   }
   std::ofstream snapshot(environmentValue("OPENMS_WRITER_STATE"), std::ios::binary);

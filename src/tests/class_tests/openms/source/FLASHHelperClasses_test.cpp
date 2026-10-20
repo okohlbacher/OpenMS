@@ -480,6 +480,32 @@ START_SECTION(IsotopeDistribution get(double mass) const)
 }
 END_SECTION
 
+START_SECTION([PrecalculatedAveragine] public get preserves copy and mass-bin boundaries)
+{
+  CoarseIsotopePatternGenerator generator(100);
+  const PrecalculatedAveragine pa(500.0, 1000.0, 100.0, generator, false);
+  const auto original = pa.get(600.0);
+  auto returned = pa.get(600.0);
+  TEST_EQUAL(returned.size() > 0, true)
+  if (returned.size() > 0)
+  {
+    // A public caller can modify its value without changing the scoring cache.
+    returned[0].setIntensity(original[0].getIntensity() + 42.0f);
+    returned[0].setMZ(original[0].getMZ() + 1.0);
+    TEST_EQUAL(returned == original, false)
+    TEST_EQUAL(pa.get(600.0) == original, true)
+  }
+
+  // Keep the existing lower/upper clamping and half-bin round-up convention.
+  TEST_EQUAL(pa.get(-100.0) == pa.get(500.0), true)
+  TEST_EQUAL(pa.get(549.9) == pa.get(500.0), true)
+  TEST_EQUAL(pa.get(550.0) == pa.get(600.0), true)
+  TEST_EQUAL(pa.get(649.9) == pa.get(600.0), true)
+  TEST_EQUAL(pa.get(650.0) == pa.get(700.0), true)
+  TEST_EQUAL(pa.get(2000.0) == pa.get(1000.0), true)
+}
+END_SECTION
+
 START_SECTION(size_t getMaxIsotopeIndex() const)
 {
   CoarseIsotopePatternGenerator generator(100);

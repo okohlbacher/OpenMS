@@ -21,6 +21,9 @@ using uint = unsigned int; // POSIX uint not available on MSVC; was provided tra
 
 namespace OpenMS
 {
+  class PeakGroup;
+  class SpectralDeconvolution;
+
   /**
    * @brief Wrapper struct for all the structs needed by the FLASHDeconv
    * The following structures/classes are defined: PrecalculatedAveragine, MassFeature, IsobaricQuantities, LogMzPeak,
@@ -78,6 +81,20 @@ namespace OpenMS
       double min_mass_;
       /// Convert @p mass to a bin index. Clamps to @c [0, isotopes_.size()-1] for out-of-range inputs (no throw).
       Size massToIndex_(double mass) const;
+
+      friend class OpenMS::PeakGroup;
+      friend class OpenMS::SpectralDeconvolution;
+
+      /**
+        @brief Borrow a cached isotope distribution for read-only scoring.
+
+        @param[in] mass Input mass, with the same bin selection as @ref get.
+        @return Cached distribution, valid until this model is moved, assigned or destroyed.
+      */
+      const IsotopeDistribution& getReference_(double mass) const
+      {
+        return isotopes_[massToIndex_(mass)];
+      }
 
     public:
       /// Default-construct an empty cache (no bins populated; the accessors are not safe until the parameterised ctor is used).
