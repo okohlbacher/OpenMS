@@ -8,6 +8,10 @@
 
 #include <OpenMS/FORMAT/FLASHDeconvSpectrumFile.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/FLASHTrace.h>
+#if defined(__linux__)
+  #include <fcntl.h>
+  #include <unistd.h>
+#endif
 #include <mutex>
 #include <memory>
 #include <atomic>
@@ -331,6 +335,101 @@ namespace OpenMS
       }
       std::vector<std::string> buffers(n);
       std::vector<std::exception_ptr> errors(n);
+#if defined(__linux__)
+      // Experiment (FD_OPT=pwrite): format everything in parallel, assign byte offsets in input order,
+      // then write every buffer at its offset in parallel. File content is identical to ordered commits.
+      if (FLASHTrace::opt("pwrite"))
+      {
+        std::vector<int> fds(streams.size(), -1);
+        std::vector<off_t> base(streams.size(), 0);
+        bool usable = true;
+        for (Size l = 0; l < streams.size() && l < output_files.size(); ++l)
+        {
+          if (output_files[l].empty() || ! streams[l].is_open()) { continue; }
+          streams[l].flush();
+          base[l] = (off_t)streams[l].tellp();
+          fds[l] = ::open(output_files[l].c_str(), O_WRONLY);
+          usable &= fds[l] >= 0 && base[l] >= 0 && streams[l].good();
+        }
+        if (usable)
+        {
+          {
+            FLASHTrace::Scope trace_fmt("write.format_all", (int64_t)n);
+#pragma omp parallel for num_threads(worker_count) schedule(dynamic, 1) default(none) shared(spectra, jobs, first_indices, end_indices, buffers, errors, file_name, avg, decoy_avg, tols, write_detail, noise_decoy_weight, n)
+            for (SignedSize row = 0; row < (SignedSize)n; ++row)
+            {
+              uint index = first_indices[row];
+              try
+              {
+                const auto& spectrum = spectra[jobs[row]];
+                const auto level = spectrum.getOriginalSpectrum().getMSLevel();
+                FLASHTrace::Scope trace_job("write.job", (int64_t)level, (int64_t)spectrum.size());
+                std::ostringstream buffer;
+                writeDeconvolvedMasses_(spectrum, buffer, file_name, avg, decoy_avg, tols[level - 1], write_detail, false, noise_decoy_weight, index);
+                buffers[row] = buffer.str();
+              }
+              catch (...)
+              {
+                errors[row] = std::current_exception();
+              }
+              end_indices[row] = index;
+            }
+          }
+          // offsets in input order, up to the first failed row (legacy: earlier rows are written, then it throws)
+          Size committed = 0;
+          std::vector<off_t> offsets(n, 0);
+          std::vector<off_t> end_of(streams.size());
+          for (Size l = 0; l < streams.size(); ++l) { end_of[l] = base[l]; }
+          for (; committed < n; ++committed)
+          {
+            const auto level = spectra[jobs[committed]].getOriginalSpectrum().getMSLevel();
+            while (indices.size() <= level) { indices.push_back(1); }
+            indices[level - 1] = end_indices[committed];
+            if (errors[committed]) { break; }
+            offsets[committed] = end_of[level - 1];
+            end_of[level - 1] += (off_t)buffers[committed].size();
+          }
+          std::atomic<bool> write_failed {false};
+          {
+            FLASHTrace::Scope trace_write("write.pwrite_all", (int64_t)committed);
+#pragma omp parallel for num_threads(worker_count) schedule(dynamic, 16) default(none) shared(spectra, jobs, buffers, offsets, fds, committed, write_failed)
+            for (SignedSize row = 0; row < (SignedSize)committed; ++row)
+            {
+              const auto level = spectra[jobs[row]].getOriginalSpectrum().getMSLevel();
+              const char* data = buffers[row].data();
+              Size left = buffers[row].size();
+              off_t at = offsets[row];
+              while (left > 0)
+              {
+                const ssize_t w = ::pwrite(fds[level - 1], data, left, at);
+                if (w <= 0)
+                {
+                  write_failed = true;
+                  break;
+                }
+                data += w;
+                left -= (Size)w;
+                at += w;
+              }
+              std::string().swap(buffers[row]);
+            }
+          }
+          for (Size l = 0; l < fds.size(); ++l)
+          {
+            if (fds[l] < 0) { continue; }
+            ::close(fds[l]);
+            streams[l].seekp(end_of[l]);
+            if (write_failed) { streams[l].setstate(std::ios::badbit); }
+          }
+          if (committed < n) { std::rethrow_exception(errors[committed]); }
+          return;
+        }
+        for (int fd : fds)
+        {
+          if (fd >= 0) { ::close(fd); }
+        }
+      }
+#endif
       std::unique_ptr<std::atomic<bool>[]> ready(new std::atomic<bool>[n]);
       for (Size row = 0; row < n; ++row) { ready[row].store(false, std::memory_order_relaxed); }
       Size next_commit = 0;
