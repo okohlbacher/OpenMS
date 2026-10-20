@@ -26,7 +26,10 @@ namespace OpenMS::Internal
   public:
     using Values = std::vector<std::pair<std::u16string, std::u16string>>;
 
-    explicit XMLAttributes(const Values& attributes) noexcept : attributes_(attributes) {}
+    explicit XMLAttributes(const Values& attributes) noexcept : attributes_(&attributes) {}
+
+    XMLAttributes(Values&&) = delete;
+    XMLAttributes(const Values&&) = delete;
 
     /// UTF-16 value by name, or nullptr if absent.
     const char16_t* value(const char16_t* qname) const;
@@ -41,6 +44,6 @@ namespace OpenMS::Internal
     const char16_t* valueByIndex(Size i) const;
 
   private:
-    const Values& attributes_;
+    const Values* attributes_;
   };
 }

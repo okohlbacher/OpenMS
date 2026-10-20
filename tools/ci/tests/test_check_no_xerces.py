@@ -41,6 +41,74 @@ class RemovalGuardTest(unittest.TestCase):
         (self.root / 'vcpkg.json').write_text('{"dependencies":[{"name":"xerces-c"}]}')
         self.assertEqual(self.run_guard(), 1)
 
+    def test_nested_cmake_dependencies(self):
+        for name, content in [
+            ('src/topp/CMakeLists.txt', 'find_package ( \n XercesC REQUIRED)'),
+            ('cmake/nested/dependencies.cmake', 'target_link_libraries(tool XercesC::XercesC)'),
+            ('CMakeLists.txt', 'FIND_PACKAGE(\nXercesC)'),
+            ('cmake/dependencies.cmake', 'find_dependency ( "XercesC" REQUIRED)'),
+        ]:
+            with self.subTest(name=name):
+                path = self.root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(content)
+                self.assertEqual(self.run_guard(), 1)
+                path.unlink()
+
+    def test_removal_notes_and_vendored_cmake_are_allowed(self):
+        (self.root / 'CMakeLists.txt').write_text(
+            '# Removed find_package(XercesC)\nset(CMAKE_DISABLE_FIND_PACKAGE_XercesC ON)\n')
+        for name in ['src/openms/extern/CMakeLists.txt',
+                     'vcpkg/ports/xerces-c/portfile.cmake',
+                     'tools/xml-parser-benchmark/CMakeLists.txt']:
+            path = self.root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text('find_package(XercesC REQUIRED)')
+        self.assertEqual(self.run_guard(), 0)
+
+    def test_package_reintroduction_in_build_recipes(self):
+        for name, content in [
+            ('dockerfiles/Dockerfile', 'RUN apt-get install libxerces-c-dev'),
+            ('.github/workflows/build.yml', 'run: brew install xerces-c'),
+            ('tools/ci/deps.sh', 'apt-get install libxerces-c3.2'),
+            ('src/pyOpenMS/pyproject.toml', 'before-all = "brew install xerces-c"'),
+        ]:
+            with self.subTest(name=name):
+                path = self.root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(content)
+                self.assertEqual(self.run_guard(), 1)
+                path.write_text('# Removed xerces-c and libxerces-c-dev\n'
+                                'cmake -DCMAKE_DISABLE_FIND_PACKAGE_XercesC=ON\n')
+                self.assertEqual(self.run_guard(), 0)
+                path.unlink()
+
+    def test_generated_and_vendor_trees_are_pruned(self):
+        for name in ['build', 'custom-build', 'vcpkg', 'src/openms/extern']:
+            path = self.root / name
+            path.mkdir(parents=True, exist_ok=True)
+            (path / 'CMakeCache.txt').touch()
+            (path / 'CMakeLists.txt').write_text('find_package(XercesC REQUIRED)')
+        visited = []
+        walk = check.os.walk
+
+        def record_walk(*args, **kwargs):
+            for item in walk(*args, **kwargs):
+                visited.append(Path(item[0]).relative_to(self.root).as_posix())
+                yield item
+
+        with patch.object(check.os, 'walk', side_effect=record_walk):
+            self.assertEqual(self.run_guard(), 0)
+        for excluded in ['build', 'custom-build', 'vcpkg', 'src/openms/extern']:
+            self.assertNotIn(excluded, visited)
+
+    def test_non_utf8_source_has_no_decode_traceback(self):
+        path = self.root / 'src/consumer.cpp'
+        path.write_bytes(b'// Latin-1 caf\xe9\n')
+        self.assertEqual(self.run_guard(), 0)
+        path.write_bytes(b'// Latin-1 caf\xe9\n#include <xercesc/dom/DOM.hpp>\n')
+        self.assertEqual(self.run_guard(), 1)
+
     def test_dependency_names_not_workspace_directory(self):
         build = self.root / 'build'
         build.mkdir()

@@ -7,9 +7,15 @@
 #include <OpenMS/FORMAT/HANDLERS/XMLAttributes.h>
 #include <future>
 #include <limits>
+#include <type_traits>
 
 using namespace OpenMS;
 using namespace OpenMS::Internal;
+
+static_assert(!std::is_constructible_v<XMLAttributes, XMLAttributes::Values&&>);
+static_assert(!std::is_constructible_v<XMLAttributes, const XMLAttributes::Values&&>);
+static_assert(std::is_copy_constructible_v<XMLAttributes>);
+static_assert(std::is_copy_assignable_v<XMLAttributes>);
 
 START_TEST(StringManager, "$Id$")
 START_SECTION(UTF8 and UTF16 conversions own their storage and preserve Unicode)
@@ -75,6 +81,22 @@ START_SECTION(Native attributes retain ASCII fast lookup and UTF8 fallback)
   TEST_TRUE(attributes.valueByIndex(1) == attributes.value("idRef"))
   TEST_TRUE(attributes.valueByIndex(3) == nullptr)
   TEST_EXCEPTION(Exception::ConversionError, attributes.value("\xc0\xaf"))
+}
+END_SECTION
+
+START_SECTION(Attribute views copy and assign without copying their backing storage)
+{
+  XMLAttributes::Values first{{u"id", u"first"}}, second{{u"id", u"second"}};
+  XMLAttributes original(first);
+  XMLAttributes copied(original);
+  XMLAttributes assigned(second);
+  assigned = original;
+  TEST_TRUE(copied.value(u"id") == first[0].second.c_str())
+  TEST_TRUE(assigned.value(u"id") == first[0].second.c_str())
+  first[0].second = u"changed";
+  TEST_TRUE(std::u16string(copied.value(u"id")) == u"changed")
+  TEST_TRUE(std::u16string(assigned.value(u"id")) == u"changed")
+  TEST_TRUE(std::u16string(XMLAttributes(second).value(u"id")) == u"second")
 }
 END_SECTION
 

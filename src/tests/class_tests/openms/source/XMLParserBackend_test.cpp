@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // $Maintainer: Timo Sachsenberg $
 #include <OpenMS/CONCEPT/ClassTest.h>
+#include <OpenMS/CONCEPT/LogStream.h>
 #include <OpenMS/FORMAT/XMLFile.h>
 #include <OpenMS/FORMAT/HANDLERS/XMLHandler.h>
 #include <OpenMS/FORMAT/HANDLERS/XMLAttributes.h>
@@ -12,6 +13,7 @@
 #include <future>
 #include <map>
 #include <stdexcept>
+#include <sstream>
 
 using namespace OpenMS;
 namespace
@@ -124,6 +126,50 @@ START_SECTION(Generic readers preserve legacy namespace-disabled qualified names
   reader.parseBuffer_("<root xmlns:xsi='http://www.w3.org/2001/XMLSche ma-instance'/>", &namespace_uri);
   TEST_TRUE(namespace_uri.name == u"root")
 END_SECTION
+START_SECTION(Comments and processing instructions are ignored across streaming chunks)
+  std::string filename;
+  NEW_TMP_FILE(filename)
+  {
+    std::ofstream output(filename, std::ios::binary);
+    output << "<!-- before --><?before ignored?><root value='kept'>begin";
+    for (Size i = 0; i < 10000; ++i)
+    {
+      output << "<!-- ignored comment --><?ignored processing instruction?>";
+    }
+    output << "end</root><?after ignored?><!-- after -->";
+  }
+  for (const bool namespace_aware : {false, true})
+  {
+    Reader reader;
+    Handler handler;
+    reader.parse_(filename, &handler, namespace_aware);
+    TEST_EQUAL(handler.starts, 1)
+    TEST_TRUE(handler.attribute == u"kept")
+    TEST_TRUE(handler.text == u"beginend")
+  }
+END_SECTION
+START_SECTION(SAX2 warning-only namespace diagnostics do not abort parsing)
+  NamespaceReader reader;
+  Handler handler;
+  std::ostringstream warnings;
+  getThreadLocalLogWarn().insert(warnings);
+  getThreadLocalLogDebug().insert(warnings);
+  try
+  {
+    reader.parseBuffer_("<root xmlns='relative'>valid text</root>", &handler);
+  }
+  catch (...)
+  {
+    getThreadLocalLogWarn().remove(warnings);
+    getThreadLocalLogDebug().remove(warnings);
+    throw;
+  }
+  getThreadLocalLogWarn().remove(warnings);
+  getThreadLocalLogDebug().remove(warnings);
+  TEST_EQUAL(handler.starts, 1)
+  TEST_TRUE(handler.text == u"valid text")
+  TEST_TRUE(warnings.str().find("URI relative is not absolute") != std::string::npos)
+END_SECTION
 START_SECTION(SAX2 rejects namespace-invalid XML)
   for (const std::string xml : {
       "<root ghost:flag='1'/>",
@@ -210,6 +256,24 @@ START_SECTION(Encoding overrides are per reader)
   utf8.parseBuffer_("<root>Grüße</root>", &utf8_handler);
   TEST_EQUAL(latin_handler.text == u"Grüße", true)
   TEST_EQUAL(utf8_handler.text == u"Grüße", true)
+END_SECTION
+START_SECTION(Unsupported encoding diagnostics retain the input filename)
+  std::string filename;
+  NEW_TMP_FILE(filename)
+  { std::ofstream output(filename); output << "<root/>"; }
+  Reader reader;
+  reader.enforceEncoding_("not-an-encoding");
+  Handler handler;
+  bool caught = false;
+  try { reader.parse_(filename, &handler); }
+  catch (const Exception::ParseError& error)
+  {
+    caught = true;
+    const std::string message = error.getMessage();
+    TEST_TRUE(message.find(filename) != std::string::npos)
+    TEST_TRUE(message.find("not-an-encoding") != std::string::npos)
+  }
+  TEST_TRUE(caught)
 END_SECTION
 START_SECTION(Indexed decoder supports a binary text node larger than 10 MB)
   const std::string large_payload = std::string(13 * 1024 * 1024, ' ') + "AAAAAAAAAAA=";

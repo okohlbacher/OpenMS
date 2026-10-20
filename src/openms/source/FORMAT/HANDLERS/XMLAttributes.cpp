@@ -28,7 +28,7 @@ namespace OpenMS::Internal
   const char16_t* XMLAttributes::value(const char16_t* qname) const
   {
     const SignedSize i = index(qname);
-    return i < 0 ? nullptr : attributes_[i].second.c_str();
+    return i < 0 ? nullptr : (*attributes_)[i].second.c_str();
   }
 
   const char16_t* XMLAttributes::value(const char* qname) const
@@ -42,7 +42,7 @@ namespace OpenMS::Internal
     if (ascii)
     {
       // XML vocabulary names are usually ASCII; avoid allocating a transcoder.
-      for (const auto& item : attributes_)
+      for (const auto& item : *attributes_)
       {
         if (equalsASCII(item.first.c_str(), qname)) return item.second.c_str();
       }
@@ -55,15 +55,15 @@ namespace OpenMS::Internal
   SignedSize XMLAttributes::index(const char16_t* qname) const
   {
     if (!qname) return -1;
-    for (Size i = 0; i < attributes_.size(); ++i)
+    for (Size i = 0; i < attributes_->size(); ++i)
     {
-      if (attributes_[i].first == qname) return static_cast<SignedSize>(i);
+      if ((*attributes_)[i].first == qname) return static_cast<SignedSize>(i);
     }
     return -1;
   }
 
   const char16_t* XMLAttributes::valueByIndex(Size i) const
   {
-    return i < attributes_.size() ? attributes_[i].second.c_str() : nullptr;
+    return i < attributes_->size() ? (*attributes_)[i].second.c_str() : nullptr;
   }
 }

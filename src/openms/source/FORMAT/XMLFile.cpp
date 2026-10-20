@@ -224,6 +224,10 @@ private:
         sax.startElement = LibxmlState::startLegacy;
         sax.endElement = LibxmlState::endLegacy;
       }
+      // OpenMS has no comment/PI callbacks. The libxml2 defaults build DOM nodes
+      // even in SAX mode, retaining every comment and PI until the parse ends.
+      sax.comment = nullptr;
+      sax.processingInstruction = nullptr;
       sax.characters = LibxmlState::characters;
       sax.cdataBlock = LibxmlState::characters;
       auto free_parser = [](xmlParserCtxt* ctx)
@@ -242,7 +246,7 @@ private:
       {
         if (xmlSwitchEncodingName(parser.get(), encoding.c_str()) != 0)
         {
-          throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "", "Unsupported XML encoding: " + encoding);
+          throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename, "Unsupported XML encoding: " + encoding);
         }
       }
       char buffer[65536];
@@ -260,7 +264,13 @@ private:
       }
       if (status)
       {
-        throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "", "libxml2 rejected XML input");
+        std::string message = "libxml2 rejected XML input";
+        if (const auto* error = xmlCtxtGetLastError(parser.get()))
+        {
+          if (error->message) { message += ": " + std::string(error->message); }
+          message += " (line " + std::to_string(error->line) + ", column " + std::to_string(error->int2) + ")";
+        }
+        throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename, message);
       }
     }
 

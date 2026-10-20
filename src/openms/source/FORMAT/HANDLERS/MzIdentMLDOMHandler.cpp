@@ -299,14 +299,22 @@ namespace OpenMS::Internal
 
       std::unique_ptr<xmlParserCtxt, decltype(&xmlFreeParserCtxt)> parser(xmlNewParserCtxt(), xmlFreeParserCtxt);
       if (!parser) { throw std::bad_alloc(); }
+      // libxml2 retains the diagnostic on this context. Suppress its default stderr
+      // reporter without installing process-global handlers or throwing through C.
+      xmlCtxtSetErrorHandler(parser.get(), [](void*, const xmlError*) noexcept {}, nullptr);
       xmlCtxtSetMaxAmplification(parser.get(), 5);
       std::unique_ptr<xmlDoc, decltype(&xmlFreeDoc)> document(
-        xmlCtxtReadFile(parser.get(), mzid_file.c_str(), nullptr, XML_PARSE_NONET | XML_PARSE_NO_XXE | XML_PARSE_NOENT), xmlFreeDoc);
+        xmlCtxtReadFile(parser.get(), mzid_file.c_str(), nullptr,
+          XML_PARSE_NONET | XML_PARSE_NO_XXE | XML_PARSE_NOENT | XML_PARSE_HUGE), xmlFreeDoc);
       if (!document)
       {
         const xmlError* error = xmlCtxtGetLastError(parser.get());
-        throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, mzid_file,
-          error && error->message ? error->message : "Failed to parse mzIdentML file.");
+        std::string message = error && error->message ? error->message : "Failed to parse mzIdentML file.";
+        if (error)
+        {
+          message += " (line " + std::to_string(error->line) + ", column " + std::to_string(error->int2) + ")";
+        }
+        throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, mzid_file, message);
       }
       auto* xmlDoc = document.get();
       if (!xmlDocGetRootElement(xmlDoc) || name_(xmlDocGetRootElement(xmlDoc)) != "MzIdentML")

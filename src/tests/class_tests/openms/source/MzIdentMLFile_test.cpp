@@ -1006,6 +1006,60 @@ START_SECTION(([EXTRA] native DOM namespace Unicode entity and malformed-input r
     }
   }
 
+  // Large ordinary text and attributes remain readable, as with Xerces. HUGE
+  // relaxes the 10 MB node limit but must retain the explicit entity budget.
+  {
+    const std::string large_sequence(10000001, 'A');
+    std::string large = original;
+    StringUtils::substitute(large, "<Seq>PRGTEIN</Seq>", "<Seq>" + large_sequence + "</Seq>");
+    const auto root = large.find("<MzIdentML ");
+    ABORT_IF(root == std::string::npos)
+    large.insert(root + std::string("<MzIdentML").size(), " ignored=\"" + large_sequence + "\"");
+    save_xml(filename, large);
+    MzIdentMLFile().load(filename, proteins, peptides);
+    ABORT_IF(proteins.size() != 1)
+    bool found = false;
+    for (const auto& hit : proteins[0].getHits())
+    {
+      if (hit.getAccession() == "PROT1")
+      {
+        found = true;
+        TEST_EQUAL(hit.getSequence().size(), large_sequence.size())
+        TEST_TRUE(hit.getSequence() == large_sequence)
+      }
+    }
+    TEST_TRUE(found)
+    TEST_EQUAL(peptides.size(), 3)
+  }
+  std::string amplified = original;
+  std::string declarations = "\n<!DOCTYPE MzIdentML [<!ENTITY a '" + std::string(1000, 'A') + "'>";
+  for (char name = 'b'; name <= 'e'; ++name)
+  {
+    declarations += "<!ENTITY " + std::string(1, name) + " '";
+    for (int repeat = 0; repeat < 10; ++repeat) { declarations += "&" + std::string(1, name - 1) + ";"; }
+    declarations += "'>";
+  }
+  declarations += "]>";
+  amplified.insert(amplified.find("?>") + 2, declarations);
+  StringUtils::substitute(amplified, "<Seq>PRGTEIN</Seq>", "<Seq>&e;</Seq>");
+  save_xml(filename, amplified);
+  TEST_EXCEPTION(Exception::ParseError, MzIdentMLFile().load(filename, proteins, peptides))
+
+  // Diagnostics keep the actual input location in the exception, not stderr.
+  save_xml(filename, "<MzIdentML>\n<broken></MzIdentML>");
+  bool reported_location = false;
+  try
+  {
+    MzIdentMLFile().load(filename, proteins, peptides);
+  }
+  catch (const Exception::ParseError& error)
+  {
+    const std::string message = error.getMessage();
+    reported_location = message.find(filename) != std::string::npos &&
+      message.find("line 2") != std::string::npos && message.find("column ") != std::string::npos;
+  }
+  TEST_TRUE(reported_location)
+
   // Do not traverse a partial DOM after a malformed tail, invalid reference or UTF8.
   save_xml(filename, original.substr(0, original.rfind("</MzIdentML>")));
   TEST_EXCEPTION(Exception::ParseError, MzIdentMLFile().load(filename, proteins, peptides))

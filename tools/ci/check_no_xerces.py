@@ -2,6 +2,7 @@
 """Reject a reintroduced Xerces dependency in product sources and linked OpenMS."""
 import argparse
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -16,18 +17,39 @@ def main():
     source = args.source_dir
     forbidden = re.compile(r'#\s*include\s*[<"]xercesc/|\bxercesc\s*::|\bXERCES_CPP_NAMESPACE')
     failures = []
-    for path in (source / 'src').rglob('*'):
-        if path.suffix not in ('.h', '.hpp', '.cpp') or {'extern', 'thirdparty', 'data'} & set(path.relative_to(source).parts):
-            continue
-        if forbidden.search(path.read_text(encoding='utf-8')):
-            failures.append(str(path.relative_to(source)))
     manifest = json.loads((source / 'vcpkg.json').read_text())
     names = [item if isinstance(item, str) else item['name'] for item in manifest['dependencies']]
     if 'xerces-c' in names:
         failures.append('vcpkg.json: xerces-c dependency')
-    for path in [source / 'src/openms/CMakeLists.txt', source / 'cmake/cmake_findExternalLibs.cmake']:
-        if re.search(r'XercesC::|find_package\(XercesC', path.read_text()):
-            failures.append(str(path.relative_to(source)))
+    cmake_dependency = re.compile(r'\bXercesC\s*::|\bfind_(?:package|dependency)\s*\(\s*"?XercesC\b', re.IGNORECASE)
+    package_dependency = re.compile(r'\b(?:lib)?xerces-c(?:[0-9][A-Za-z0-9_.-]*)?(?:[-_.][A-Za-z0-9]+)*\b', re.IGNORECASE)
+    excluded = {'extern', 'thirdparty', 'vcpkg', 'vcpkg_installed', '.git',
+                'xml-parser-benchmark', 'build', 'CMakeFiles', '_deps', 'node_modules', '.venv'}
+    for directory, directories, filenames in os.walk(source):
+        parent = Path(directory)
+        # Prune before descent: CI can contain very large dependency/build trees.
+        directories[:] = [name for name in directories if name not in excluded
+                          and not name.startswith('cmake-build-')
+                          and not (parent / name / 'CMakeCache.txt').is_file()]
+        for name in filenames:
+            path = parent / name
+            relative = path.relative_to(source)
+            is_product_source = relative.parts[0] == 'src' and path.suffix in ('.h', '.hpp', '.cpp') and 'data' not in relative.parts
+            is_cmake = name == 'CMakeLists.txt' or path.suffix == '.cmake'
+            is_package_recipe = (name == 'Dockerfile' or name.startswith('Dockerfile.')
+                                 or (relative.parts[0] == '.github' and path.suffix in ('.yml', '.yaml'))
+                                 or (relative.parts[:2] == ('tools', 'ci') and path.suffix == '.sh')
+                                 or relative.as_posix() == 'src/pyOpenMS/pyproject.toml')
+            if not (is_product_source or is_cmake or is_package_recipe):
+                continue
+            content = path.read_text(encoding='utf-8', errors='replace')
+            if is_product_source and forbidden.search(content):
+                failures.append(str(relative))
+            # Match dependency commands/packages, not removal notes or disable flags.
+            content = re.sub(r'#[^\n]*', '', content)
+            if ((is_cmake and cmake_dependency.search(content))
+                    or (is_package_recipe and package_dependency.search(content))):
+                failures.append(str(relative))
     if args.build_dir:
         libraries = set()
         for pattern in ('**/libOpenMS*.dylib', '**/libOpenMS.so*', '**/OpenMS.dll'):
