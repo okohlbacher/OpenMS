@@ -8,6 +8,9 @@
 
 #include <OpenMS/FORMAT/FLASHDeconvSpectrumFile.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/FLASHTrace.h>
+#include <mutex>
+#include <memory>
+#include <atomic>
 #include <OpenMS/FORMAT/MzMLFile.h>
 #include <random>
 
@@ -303,6 +306,79 @@ namespace OpenMS
     worker_count = (int)std::min((Size)worker_count, jobs.size());
 
     auto& indices = writerIndices_();
+    if (FLASHTrace::opt("wstream"))
+    {
+      // Experiment: one dynamic workshare over all jobs. Finished buffers are committed in input order by
+      // whichever thread holds the commit lock, so formatting never waits at a wave barrier and each
+      // buffer is released as soon as it is written.
+      const Size n = jobs.size();
+      std::vector<uint> first_indices(n), end_indices(n);
+      auto next_indices = indices;
+      for (Size row = 0; row < n; ++row)
+      {
+        const auto& spectrum = spectra[jobs[row]];
+        const auto level = spectrum.getOriginalSpectrum().getMSLevel();
+        while (next_indices.size() <= level) { next_indices.push_back(1); }
+        first_indices[row] = next_indices[level - 1];
+        for (const auto& pg : spectrum)
+        {
+          if (pg.getTargetDecoyType() == PeakGroup::TargetDecoyType::target) { ++next_indices[level - 1]; }
+        }
+      }
+      std::vector<std::string> buffers(n);
+      std::vector<std::exception_ptr> errors(n);
+      std::unique_ptr<std::atomic<bool>[]> ready(new std::atomic<bool>[n]);
+      for (Size row = 0; row < n; ++row) { ready[row].store(false, std::memory_order_relaxed); }
+      Size next_commit = 0;
+      bool commit_failed = false;
+      std::mutex commit_mutex;
+      const auto drain = [&]() { // caller holds commit_mutex
+        while (! commit_failed && next_commit < n && ready[next_commit].load(std::memory_order_acquire))
+        {
+          const Size row = next_commit;
+          const auto level = spectra[jobs[row]].getOriginalSpectrum().getMSLevel();
+          while (indices.size() <= level) { indices.push_back(1); }
+          indices[level - 1] = end_indices[row];
+          if (errors[row])
+          {
+            commit_failed = true;
+            break;
+          }
+          FLASHTrace::Scope trace_commit("write.commit", 1);
+          streams[level - 1] << buffers[row];
+          std::string().swap(buffers[row]);
+          ++next_commit;
+        }
+      };
+#pragma omp parallel for num_threads(worker_count) schedule(dynamic, 1) default(none) shared(spectra, jobs, first_indices, end_indices, buffers, errors, ready, commit_mutex, drain, file_name, avg, decoy_avg, tols, write_detail, noise_decoy_weight, n)
+      for (SignedSize row = 0; row < (SignedSize)n; ++row)
+      {
+        uint index = first_indices[row];
+        try
+        {
+          auto& spectrum = spectra[jobs[row]];
+          const auto level = spectrum.getOriginalSpectrum().getMSLevel();
+          FLASHTrace::Scope trace_job("write.job", (int64_t)level, (int64_t)spectrum.size());
+          std::ostringstream buffer;
+          writeDeconvolvedMasses_(spectrum, buffer, file_name, avg, decoy_avg, tols[level - 1], write_detail, false, noise_decoy_weight, index);
+          buffers[row] = buffer.str();
+        }
+        catch (...)
+        {
+          errors[row] = std::current_exception();
+        }
+        end_indices[row] = index;
+        ready[row].store(true, std::memory_order_release);
+        if (commit_mutex.try_lock())
+        {
+          drain();
+          commit_mutex.unlock();
+        }
+      }
+      drain(); // everything not yet committed, after the join
+      if (commit_failed) { std::rethrow_exception(errors[next_commit]); }
+      return;
+    }
     // Amortize workshare joins with up to sixteen spectra per worker, retaining
     // at most 256 spectra. This is a string-count cap, not a fixed byte budget.
     const Size wave_capacity = std::min<Size>(256, 16 * (Size)worker_count);
