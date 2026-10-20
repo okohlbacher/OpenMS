@@ -308,6 +308,10 @@ namespace OpenMS
     auto& indices = writerIndices_();
     if (FLASHTrace::opt("wstream"))
     {
+#ifdef _OPENMP
+      // buffers are released as they are committed, so the 64-worker string cap of the wave version is not needed
+      if (worker_count > 1) { worker_count = (int)std::min<Size>((Size)omp_get_max_threads(), jobs.size()); }
+#endif
       // Experiment: one dynamic workshare over all jobs. Finished buffers are committed in input order by
       // whichever thread holds the commit lock, so formatting never waits at a wave barrier and each
       // buffer is released as soon as it is written.

@@ -390,7 +390,8 @@ protected:
       opt.setMSLevels(ms_levels);
     }
 
-    opt.setMaxDataPoolSize(512);
+    // Experiment: FD_POOL overrides the decode batch (smaller batches hand spectra to streaming workers sooner)
+    opt.setMaxDataPoolSize(std::getenv("FD_POOL") ? (Size)std::max(1, std::atoi(std::getenv("FD_POOL"))) : 512);
     fh.setOptions(opt);
     if (FLASHTrace::opt("stream") && FileHandler::getType(in_file) == FileTypes::MZML)
     {
