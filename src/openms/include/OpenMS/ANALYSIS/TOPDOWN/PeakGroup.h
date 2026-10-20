@@ -351,6 +351,8 @@ namespace OpenMS
     void updateAvgMassError_();
     /// average absolute per-isotope mass error (same arithmetic as averaging getMassErrors(ppm))
     float averageAbsMassError_(bool ppm) const;
+    /// sort peaks, skipping std::sort when already strictly increasing
+    void sortPeaks_();
     /// update avg Da error
     float getPPMError_(const LogMzPeak& p) const;
     /// get Da error of a logMzPeak from the closest isotope

@@ -867,7 +867,7 @@ namespace OpenMS
   {
     if (logMzpeaks_.empty()) { return; }
     int min_isotope_index, max_isotope_index;
-    std::sort(logMzpeaks_.begin(), logMzpeaks_.end());
+    sortPeaks_();
 
     intensity_ = .0;
     double nominator = .0;
@@ -1233,7 +1233,16 @@ namespace OpenMS
 
   void PeakGroup::sort()
   {
-    std::sort(logMzpeaks_.begin(), logMzpeaks_.end());
+    sortPeaks_();
+  }
+
+  void PeakGroup::sortPeaks_()
+  {
+    // A strictly increasing range has exactly one sorted order, so skipping std::sort gives the
+    // identical sequence. Ranges with ties (equal log m/z and intensity) are still sorted as before.
+    const auto first_not_strict = std::adjacent_find(logMzpeaks_.begin(), logMzpeaks_.end(),
+                                                     [](const LogMzPeak& a, const LogMzPeak& b) { return ! (a < b); });
+    if (first_not_strict != logMzpeaks_.end()) { std::sort(logMzpeaks_.begin(), logMzpeaks_.end()); }
   }
 
   void PeakGroup::setQvalue(double q)
