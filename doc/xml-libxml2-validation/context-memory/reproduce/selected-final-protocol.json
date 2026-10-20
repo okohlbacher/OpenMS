@@ -1,0 +1,15 @@
+{
+  "strategy": "Existing DOM for wrapped footer <=2097152 bytes; reviewed forward reader above that bound",
+  "scope": "Retained contexts and cached indexed random reads only, no streaming/load/decompression reruns",
+  "workers": [1,32,64,96],
+  "repetitions": 3,
+  "primary_new_candidate_processes": 132,
+  "primary_reused_baseline_processes": 132,
+  "paired_sustained_processes": 60,
+  "sustained_cases": "Previous nine flagged pairs plus real IM at one reader",
+  "queries_per_reader": "Primary 256, IM64; sustained8192, IM2048",
+  "gate": "Inspect three-repetition medians of worker loop separately from global read phase (includes destruction/join) and complete open/read/close workload. Flag >5% slower; investigate, disclose, never select fastest repetitions.",
+  "cpu_placement": "Primary workers0..95 at every N, matching reused baseline; sustained workers0..N-1; driver96..127;96logical=64physical+32SMT",
+  "allocator": "Default environment, no mallopt/malloc_trim/allocator environment tuning",
+  "rejected_experiments": "All-reader, direct fragment copy removal, packed IDs and preallocated packed IDs are separately retained and excluded from final candidate comparisons"
+}

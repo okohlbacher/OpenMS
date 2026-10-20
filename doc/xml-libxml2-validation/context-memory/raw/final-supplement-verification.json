@@ -1,0 +1,8 @@
+{
+  "supplement_processes": 30,
+  "all_unique_schedule_matches": true,
+  "all_exits_cache_and_placement_pass": true,
+  "total_selected_records": 354,
+  "fresh_final_records": 222,
+  "reused_baseline_records": 132
+}

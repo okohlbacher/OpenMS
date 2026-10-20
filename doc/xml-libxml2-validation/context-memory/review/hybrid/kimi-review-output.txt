@@ -1,0 +1,54 @@
+• # Final Review: Indexed-Footer Reader Optimization (`IndexedMzMLDecoder.cpp`)
+
+  **Scope/Method:** Static inspection only (tools disabled). `parseOffsets` and `findIndexListOffset` are byte-identical between OLD and CURRENT; the only functional change is inside `domParseIndexedEnd_` (plus `<libxml/xmlreader.h>` / `<exception>` includes). I traced the new xmlTextReader branch against the OLD DOM semantics for: element selection (depth 1/2/3 vs. child iteration), empty-element handling, permissive index/offset names, last-index-wins, aliased outputs, transactional outputs, and error precedence.
+
+  ## Verdict
+
+  No confirmed high- or medium-severity introduced correctness defect found by inspection. The claimed error-precedence fix holds up under re-inspection (details below). One concrete introduced gap (test coverage, not code logic) and residual unverifiable-by-inspection items are reported.
+
+  ---
+
+  ## Findings
+
+  ### F1 — Low (introduced test gap): the new reader path is never exercised for namespaces, entity/CDATA/nested offset content, permissive `<foo>` indexes, or missing `idRef`
+
+  - **Source:** TEST file, sections `[EXTRA] Forward-only footer parsing preserves nested text attributes and namespaces` and `[EXTRA] Footer cursor preserves DOM error precedence and permissive child semantics`; CURRENT `domParseIndexedEnd_` reader branch (after `small_footer_limit`).
+  - **Trigger/Mechanism:** All tests asserting namespace handling (`<n:indexList>`, `<n:offset>`), CDATA/nested content (`<value>1</value><![CDATA[23]]>` → `123`), permissive non-`index` elements (`<foo name='spectrum'><bar …>`), and missing `idRef` use footers of a few hundred bytes. These all take the `in.size() <= 2 MiB` DOM path. The reader path is only exercised by: the 70000-offset test (plain `<offset idRef='sN'>N</offset>` only) and the 2 MiB-padding loop (unknown index, conversion error, malformed XML, alias — all with plain offsets).
+  - **Impact:** The reader path substitutes `xmlTextReaderConstLocalName` (namespace-processing-dependent) for DOM `node->name`, `xmlTextReaderCurrentNode`+`xmlGetProp` (attribute availability on an unexpanded current node) for DOM attribute access, and `xmlTextReaderExpand`+`xmlNodeGetContent` for DOM content extraction. By inspection these are equivalent under libxml2's default reader configuration (ns processing on; start-tag attributes present on the current node; Expand materializes the full subtree so entity/CDATA/nested text concatenation matches), but no test would catch a divergence in any supported build/configuration. This is precisely the class of code this change introduces as new.
+  - **Minimal fix/test:** Reuse the existing padding idiom from the alias test: run the namespace/nested-CDATA case and the `<foo>/<bar>` permissive case twice, with `Size(0)` and `Size(2*1024*1024)` of leading whitespace inside the wrapper, asserting identical results. Cost: a few lines; directly closes the gap.
+
+  ### F2 — Informational (re-inspection of the claimed precedence fix): consistent, one edge noted
+
+  Checked orderings, reader vs. OLD DOM:
+
+  | Scenario | OLD DOM | New reader | New small DOM | Verdict |
+  |---|---|---|---|---|
+  | Bad offset, then malformed XML | −1 (whole-doc parse first) | −1 (`status<0` checked before rethrow) | −1 | consistent |
+  | Bad offset, well-formed doc | `ConversionError` | deferred `rethrow_exception` | `ConversionError` | consistent |
+  | Bad offset inside unknown-named index | `ConversionError` (conversion precedes name check) | `ConversionError` (END_ELEMENT branch disabled while `conversion_error` set, so `finish_index`/`return -1` never fires) | `ConversionError` | consistent |
+  | Unknown-named index before bad offset | −1 | −1 (`finish_index` fails first) | −1 | consistent |
+  | Duplicate `<indexList>` + pending `ConversionError` | −1 (duplicate scan precedes conversion) | −1 (depth-1 branch precedes the `conversion_error → continue` guard) | −1 | consistent |
+
+  No precedence regression found. Note for the record: the `else if (conversion_error) { continue; }` guard also suppresses the depth-2 `index_name` assignment for subsequent indexes, which is harmless because all outcomes after a set `conversion_error` (−1 or rethrow) discard that state.
+
+  ### F3 — Informational (intentional changes, verified consistent with stated intent)
+
+  - **Transactional outputs:** NEW defers all assignments until success; OLD could leave `spectra_offsets` assigned when a later index failed (e.g., good `spectrum` index then unknown-named index → OLD: `spectra_offsets` modified, NEW: untouched). This is an introduced behavior change but matches the stated "transactional on failure" intent; any caller relying on partial results after a non-zero return/exception would observe a difference (none is visible in the supplied packet).
+  - **Aliasing (`&spectra_offsets == &chromatograms_offsets`):** the `last_was_spectra` special case reproduces OLD's last-assignment-wins ordering in both paths; the test covers both paddings. Consistent.
+  - **Empty/missing indexes:** `<indexList/>` and `<index name='chromatogram'/>` preserve OLD semantics (outputs untouched vs. cleared, respectively) in both paths; covered by tests.
+  - **Boundary:** `in.size() <= small_footer_limit` compares the *wrapped* buffer (13-byte `<indexedmzML>` prefix + tail + 1 byte newline), so the DOM/reader split at the tail level is at 2 MiB − 14 bytes. Cosmetic; not a defect.
+
+  ### F4 — Pre-existing limitations (unchanged, listed only to prevent misattribution)
+
+  - `findIndexListOffset` regex fragility (matches `indexListOffset` text anywhere in the tail window, `\d*` with empty-match rejection), whitespace-intolerant `boost::lexical_cast` in `stringToStreampos`, and the assumption that the file tail contains the matching `</indexedmzML>` close tag are all byte-identical to OLD.
+  - Both paths use identical parser flags (`XML_PARSE_NONET | XML_PARSE_NO_XXE | XML_PARSE_NOENT | XML_PARSE_NOERROR | XML_PARSE_NOWARNING`); entity-expansion exposure is unchanged, not introduced.
+
+  ## Items explicitly not found (by inspection)
+
+  - No lifetime bug: `xmlTextReaderExpand` results and `xmlTextReaderCurrentNode` are consumed (content/attributes copied) before the next `xmlTextReaderRead`.
+  - No empty-element double-finish: `xmlTextReader` emits no END_ELEMENT for `<index …/>`, and the code finishes exactly once per index (immediate for empty, on END_ELEMENT otherwise).
+  - No leak: `xmlFreeTextReader` reclaims the reader document; expanded-but-unpreserved subtrees are released as the reader advances (the stated memory motivation).
+  - No divergence in depth-based element selection vs. OLD child-iteration, including nested `<indexList>`/`<offset>` lookalikes at depths 2–4 (both paths treat them permissively identically).
+
+  **Bottom line:** ship-blocking defects: none identified by inspection. Actionable before merge: F1 (extend two existing EXTRA tests with the 2 MiB-padding variant so the new reader path is actually covered for namespaces, CDATA/entity content, and permissive element names). Performance/memory claims remain unverifiable in this packet as stated.
+

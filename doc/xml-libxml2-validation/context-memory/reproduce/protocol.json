@@ -1,0 +1,9 @@
+{
+  "workloads":264,"cells":88,"repetitions":3,
+  "modes":["contexts","indexed-sync","idle"],"versions":["baseline","candidate"],"workers":[1,32,64,96],
+  "queries_per_reader":256,"im_queries_per_reader":64,
+  "timing":"fresh processes; randomized serial order; full cached input; OMP/BLAS1; CPUs0-95; driver96-127",
+  "read_speed_gate":"Inspect median synchronized read-phase and end-to-end times, plus per-worker query-loop times; >5% regression triggers investigation and separately preserved paired confirmation, never best-run selection",
+  "read_clock":"after all readers open; includes context teardown and join; per-worker query loop clock excludes open and barrier",
+  "memory":"native C++ VmHWM and post-join resident RSS while contexts retained; same-N idle-adjusted per-reader estimate; allocator probes separate; no malloc_trim in OpenMS/timed path"
+}

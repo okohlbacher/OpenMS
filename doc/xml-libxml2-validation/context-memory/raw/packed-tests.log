@@ -1,0 +1,79 @@
+Test project /scratch/kohlbach/openms-context-memory-20261020-01a153cb/build
+    Start 102: OnDiscMSExperiment_test
+    Start 201: IndexedMzMLFileLoader_test
+    Start 200: IndexedMzMLFile_test
+    Start 199: IndexedMzMLDecoder_test
+1/4 Test #199: IndexedMzMLDecoder_test ..........   Passed    0.02 sec
+2/4 Test #200: IndexedMzMLFile_test .............***Failed    0.30 sec
+checking (IndexedMzMLHandler(std::string filename) ) ... 
+: passed
+
+checking (~IndexedMzMLHandler()) ... : passed
+Warning: no subtests performed in '(~IndexedMzMLHandler())' (line 43)!
+
+checking (IndexedMzMLHandler() ) ... 
+: passed
+
+checking (IndexedMzMLHandler(const IndexedMzMLHandler &source)) ... 
+: passed
+
+checking ( bool getParsingSuccess() const) ... 
+IndexedMzMLDecoder::findIndexListOffset Error: Could not find element indexListOffset in the last 1023 bytes. Maybe this is not an indexedMzML.
+: passed
+
+checking ( void openFile(std::string filename) ) ... 
+IndexedMzMLDecoder::findIndexListOffset Error: Could not find element indexListOffset in the last 1023 bytes. Maybe this is not an indexedMzML.
+: passed
+
+checking ( size_t getNrSpectra() const ) ... 
+: passed
+
+checking ( size_t getNrChromatograms() const ) ... 
+: passed
+
+checking ( OpenMS::Interfaces::SpectrumPtr getSpectrumById(int id) ) ... 
+: passed
+
+checking ( OpenMS::MSSpectrum getMSSpectrumById(int id) ) ... 
+: passed
+
+checking ( void getMSSpectrumByNativeId(std::string id, OpenMS::MSSpectrum& s) ) ... 
+: passed
+
+checking ( OpenMS::Interfaces::ChromatogramPtr getChromatogramById(int id) ) ... 
+: passed
+
+checking ( OpenMS::MSChromatogram getMSChromatogramById(int id) ) ... 
+: passed
+
+checking ( void getMSChromatogramByNativeId(std::string id, OpenMS::MSChromatogram& c) ) ... 
+: passed
+
+checking ([EXTRA] load broken file) ... Trying to convert corrupted / unreadable value to std::streampos : 18446744073709551616
+This can also happen if the value exceeds 63 bits, please check your input.
+
+: passed
+
+checking ([EXTRA] load broken file) ... IndexedMzMLDecoder::parseOffsets Error: Offset was 9223372036854775807 (not between 0 and 3202).
+
+: passed
+
+checking ([EXTRA] Invalid and truncated indexed fragments fail before decoding) ... 
+    creating new temporary filename 'IndexedMzMLFile_test_313.tmp' (line 304)
+ -  line 328:  TEST_EXCEPTION(Exception::ParseError,file.getSpectrumById(0)): wrong exception thrown!  "OpenMS exception of type 'OutOfMemory' thrown in line 40 of file '/scratch/kohlbach/openms-context-memory-20261020-01a153cb/source/src/openms/source/CONCEPT/GlobalExceptionHandler.cpp' in function 'static void OpenMS::Exception::GlobalExceptionHandler::newHandler()' - Message: unable to allocate enough memory (size = 0 bytes) "
+ -  line 329:  TEST_EXCEPTION(Exception::ParseError,file.getChromatogramById(0)): wrong exception thrown!  "OpenMS exception of type 'OutOfMemory' thrown in line 40 of file '/scratch/kohlbach/openms-context-memory-20261020-01a153cb/source/src/openms/source/CONCEPT/GlobalExceptionHandler.cpp' in function 'static void OpenMS::Exception::GlobalExceptionHandler::newHandler()' - Message: unable to allocate enough memory (size = 0 bytes) "
+: failed
+
+Output of successful tests were suppressed. Set the environment variable 'OPENMS_TEST_VERBOSE=True' to enable them.
+FAILED
+Failed lines: 328 329 
+
+3/4 Test #201: IndexedMzMLFileLoader_test .......   Passed    0.31 sec
+4/4 Test #102: OnDiscMSExperiment_test ..........   Passed    0.34 sec
+
+75% tests passed, 1 tests failed out of 4
+
+Total Test time (real) =   0.35 sec
+
+The following tests FAILED:
+	200 - IndexedMzMLFile_test (Failed)

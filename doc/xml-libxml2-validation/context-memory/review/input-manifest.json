@@ -1,0 +1,8 @@
+{
+  "candidate": "retained index-footer memory optimization on441ac13ddc",
+  "files": {
+    "src/openms/source/FORMAT/HANDLERS/IndexedMzMLDecoder.cpp": "a0adc2c1e7ac26a808bca28601189873aa8d91667013cecba01a49b048f8e822",
+    "src/tests/class_tests/openms/source/IndexedMzMLDecoder_test.cpp": "47407a0981d71a1c6acda61855ad7b8a02366824537b324061cb385015f8b085",
+    "cmake/cmake_findExternalLibs.cmake": "8031746afe23a2a6da2aae3ac320dcb8840caad51a8169661e8b39b9ceeafe00"
+  }
+}

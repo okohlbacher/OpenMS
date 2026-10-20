@@ -1,0 +1,33 @@
+• ## Review: IndexedMzMLDecoder DOM-packing change
+
+  I diffed ORIGINAL vs CANDIDATE line by line. `parseOffsets`, `findIndexListOffset`, and `stringToStreampos` are byte-identical; the only functional change is in `domParseIndexedEnd_`. I checked the packing arithmetic, lifetime, exception paths, and every test expectation against both versions.
+
+  ### Verified non-issues (checked explicitly, no finding)
+
+  - **No use-after-free after `document.reset()`**: `packed.ids`, `packed.name`, and all positions are owned `std::string`/`std::streampos` copies made via `property()`/`xmlNodeGetContent` before the DOM is freed. The `substr(offset.begin, offset.length)` reconstruction reads only from `packed.ids`.
+  - **Packing arithmetic is correct**: `begin = packed.ids.size()` is captured before `packed.ids += id`, `length = id.size()`; `substr(begin, length)` round-trips exactly, including empty `idRef` (test expects `""`).
+  - **No leak on throw**: `document` is a `unique_ptr`; `ConversionError` from `stringToStreampos` during packing frees the DOM via RAII.
+  - **Transactional claim holds**: outputs are assigned only after both loops complete; all throwing operations (`stringToStreampos`, `substr`, `emplace_back`) occur before any output assignment. Final move-assignments are noexcept. Sentinel tests confirm.
+  - **Preserved semantics confirmed against tests**: permissive child element names (`<foo name='spectrum'>` accepted), last-index-wins for repeated names, empty `<index name='chromatogram'/>` clears the output (found flag set, empty vector assigned), absent index type leaves output untouched (`<indexList/>` preserves `chromatograms`), unknown name → `-1`, duplicate `<indexList>` → `-1`, namespaced elements matched by local name, CDATA/nested-content concatenation via `xmlNodeGetContent`, and DOM-parse-error precedence over `ConversionError` (both versions fully parse before converting, so the 32000-space-padding tests behave identically).
+  - **Transactional-on-failure is the stated intentional change**, and I confirmed it only narrows behavior (original could leave `spectra_offsets` half-written when a later unknown index triggered `-1`; candidate leaves both outputs untouched). Tests were updated to match.
+
+  ### Findings
+
+  **1. LOW (introduced regression, pathological trigger) — output-assignment order no longer follows document order**
+  - **Location**: candidate `domParseIndexedEnd_`, final block (`if (found_spectra) { spectra_offsets = ...; } if (found_chromatograms) { chromatograms_offsets = ...; }`).
+  - **Trigger**: caller passes the *same* container as both `spectra_offsets` and `chromatograms_offsets`, and the footer contains both index types.
+  - **Impact**: original assigned outputs per-index in document order, so the aliased vector ended with whichever index type appeared last in the document; candidate always assigns chromatograms last, so chromatogram content always wins regardless of document order. Only observable under self-aliased output arguments.
+  - **Fix/test**: either document a non-aliasing precondition on the two output parameters (reasonable), or record assignments in packed order and replay them in order. Test: parse a footer with spectrum-then-chromatogram indices passing one shared vector for both outputs; old yields chromatogram content only because of document order — reorder the indices in the fixture and the old result flips while the new one does not.
+
+  **2. INFORMATIONAL (introduced, memory only, not correctness) — duplicate same-name indices are all retained simultaneously**
+  - **Location**: candidate `domParseIndexedEnd_`, `std::vector<PackedIndex> indices` accumulation.
+  - **Trigger**: footer with repeated `name='spectrum'` indices (accepted intentionally, last-wins).
+  - **Impact**: original freed the superseded vector on each move-assignment; candidate keeps every duplicate's packed IDs/offsets alive until materialization. Peak temporary memory grows with duplicate count. No correctness effect, and duplicates are malformed-but-tolerated input, so real-world impact is negligible. No fix required; noting only because the change's motivation is memory behavior and this is the one place it regresses transient footprint.
+
+  **3. NIT (introduced) — dead includes**
+  - **Location**: candidate header block: `#include <libxml/xmlreader.h>` and `#include <exception>` are added but nothing in the file uses xmlReader or `<exception>` facilities (the leftover xmlTextReader approach). Remove to avoid implying the reader backend is in use.
+
+  ### Conclusion
+
+  No security, lifetime, or correctness bugs introduced in the DOM-packing rewrite for any non-aliased caller. The only behavioral divergence from the original is finding 1 (aliased outputs), plus the intentional, test-covered transactional-on-failure change. Findings 2–3 are cleanup-level.
+

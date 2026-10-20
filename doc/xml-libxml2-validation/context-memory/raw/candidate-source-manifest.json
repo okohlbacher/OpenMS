@@ -1,0 +1,12 @@
+{
+  "candidate_product_commit": "c41fd17602ed3196c5bb235e7dcd8e6c625a91a0",
+  "baseline_archive_product_commit": "8f66b3d921c9512e1e5968f494c77715ff71c696",
+  "baseline_published_handoff": "441ac13ddcf9720b3ef54766be115280adc8ed0a",
+  "baseline_archive_sha256": "facea08f452382d13226ab81bf8a97698f3f701489f01ce79a0b0835e04bfa7c",
+  "changed_files_sha256": {
+    "cmake/cmake_findExternalLibs.cmake": "8031746afe23a2a6da2aae3ac320dcb8840caad51a8169661e8b39b9ceeafe00",
+    "src/openms/source/FORMAT/HANDLERS/IndexedMzMLDecoder.cpp": "5deef405c821e01604461d418e2b41ebe0229703cd91a784d55f6896260423e3",
+    "src/tests/class_tests/openms/source/IndexedMzMLDecoder_test.cpp": "172988266f4a5e8992f14bbe2b380e4f0ed7796d143b97701e68e3829083fb60"
+  },
+  "source_description": "Verified8f66archive plus these3 committed product/test/CMake files; archive metadata still identifies8f66"
+}

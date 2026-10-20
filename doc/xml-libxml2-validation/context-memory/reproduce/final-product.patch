@@ -1,0 +1,362 @@
+diff --git a/cmake/cmake_findExternalLibs.cmake b/cmake/cmake_findExternalLibs.cmake
+index 1f640840ef..d588d2a0b0 100644
+--- a/cmake/cmake_findExternalLibs.cmake
++++ b/cmake/cmake_findExternalLibs.cmake
+@@ -21,19 +21,19 @@
+ # compiler-wise: build the dependencies with the same compiler as OpenMS!
+ find_package(LibXml2 2.13 REQUIRED)
+ 
+-# OpenMS uses push parsing, legacy qualified names, XSD validation and concurrent
++# OpenMS uses push parsing, the forward-only reader, legacy qualified names, XSD validation and concurrent
+ # parser contexts. A version-compatible minimal libxml2 build can omit these.
+ include(CheckSymbolExists)
+ include(CMakePushCheckState)
+ cmake_push_check_state(RESET)
+ set(CMAKE_REQUIRED_INCLUDES ${LIBXML2_INCLUDE_DIRS})
+-foreach(feature SAX1 PUSH SCHEMAS THREAD ICONV ICU)
++foreach(feature SAX1 PUSH READER SCHEMAS THREAD ICONV ICU)
+   # Recheck when an existing build tree changes its libxml2 installation.
+   unset(OPENMS_LIBXML2_${feature} CACHE)
+   check_symbol_exists(LIBXML_${feature}_ENABLED "libxml/xmlversion.h" OPENMS_LIBXML2_${feature})
+ endforeach()
+ cmake_pop_check_state()
+-foreach(feature SAX1 PUSH SCHEMAS THREAD)
++foreach(feature SAX1 PUSH READER SCHEMAS THREAD)
+   if(NOT OPENMS_LIBXML2_${feature})
+     message(FATAL_ERROR "OpenMS requires libxml2 built with ${feature} support")
+   endif()
+diff --git a/src/openms/source/FORMAT/HANDLERS/IndexedMzMLDecoder.cpp b/src/openms/source/FORMAT/HANDLERS/IndexedMzMLDecoder.cpp
+index 96a43b57eb..9b616cf973 100644
+--- a/src/openms/source/FORMAT/HANDLERS/IndexedMzMLDecoder.cpp
++++ b/src/openms/source/FORMAT/HANDLERS/IndexedMzMLDecoder.cpp
+@@ -18,10 +18,12 @@
+ #include <iostream>
+ 
+ #include <libxml/parser.h>
++#include <libxml/xmlreader.h>
+ #include <memory>
+ #include <limits>
+ #include <cstdint>
+ #include <algorithm>
++#include <exception>
+ 
+ namespace OpenMS
+ {
+@@ -158,21 +160,70 @@ namespace OpenMS
+   {
+ 
+     if (in.size() > static_cast<Size>(std::numeric_limits<int>::max())) { return -1; }
+-    std::unique_ptr<xmlDoc, decltype(&xmlFreeDoc)> document(
+-      xmlReadMemory(in.data(), static_cast<int>(in.size()), "index.xml", nullptr,
+-                    XML_PARSE_NONET | XML_PARSE_NO_XXE | XML_PARSE_NOENT | XML_PARSE_NOERROR | XML_PARSE_NOWARNING), xmlFreeDoc);
+-    xmlNode* root = document ? xmlDocGetRootElement(document.get()) : nullptr;
+-    if (!root) { return -1; }
+-    xmlNode* list = nullptr;
+-    for (xmlNode* node = root->children; node; node = node->next)
++    // Keep the existing DOM path for small footers. On Linux, replacing even
++    // small DOMs changes allocator reuse and can slow large-spectrum reads.
++    // Bound that fast path to 2 MiB; larger indices use bounded-node traversal.
++    constexpr Size small_footer_limit = 2 * 1024 * 1024;
++    if (in.size() <= small_footer_limit)
+     {
+-      if (node->type == XML_ELEMENT_NODE && xmlStrEqual(node->name, BAD_CAST "indexList"))
++      std::unique_ptr<xmlDoc, decltype(&xmlFreeDoc)> document(
++        xmlReadMemory(in.data(), static_cast<int>(in.size()), "index.xml", nullptr,
++                      XML_PARSE_NONET | XML_PARSE_NO_XXE | XML_PARSE_NOENT | XML_PARSE_NOERROR | XML_PARSE_NOWARNING), xmlFreeDoc);
++      xmlNode* root = document ? xmlDocGetRootElement(document.get()) : nullptr;
++      if (!root) { return -1; }
++      xmlNode* list = nullptr;
++      for (xmlNode* node = root->children; node; node = node->next)
+       {
+-        if (list) { return -1; }
+-        list = node;
++        if (node->type == XML_ELEMENT_NODE && xmlStrEqual(node->name, BAD_CAST "indexList"))
++        {
++          if (list) { return -1; }
++          list = node;
++        }
+       }
++      if (!list) { return -1; }
++      auto property = [](xmlNode* node, const char* key)
++      {
++        xmlChar* value = xmlGetProp(node, BAD_CAST key);
++        std::string result = value ? reinterpret_cast<const char*>(value) : "";
++        xmlFree(value);
++        return result;
++      };
++      OffsetVector spectra, chromatograms;
++      bool found_spectra = false, found_chromatograms = false, last_was_spectra = false;
++      for (xmlNode* index = list->children; index; index = index->next)
++      {
++        if (index->type != XML_ELEMENT_NODE) { continue; }
++        OffsetVector result;
++        for (xmlNode* offset = index->children; offset; offset = offset->next)
++        {
++          if (offset->type != XML_ELEMENT_NODE) { continue; }
++          xmlChar* content = xmlNodeGetContent(offset);
++          std::string text = content ? reinterpret_cast<const char*>(content) : "";
++          xmlFree(content);
++          result.emplace_back(property(offset, "idRef"), IndexedMzMLUtils::stringToStreampos(text));
++        }
++        const auto name = property(index, "name");
++        if (name == "spectrum") { spectra = std::move(result); found_spectra = true; last_was_spectra = true; }
++        else if (name == "chromatogram") { chromatograms = std::move(result); found_chromatograms = true; last_was_spectra = false; }
++        else { return -1; }
++      }
++      if (&spectra_offsets == &chromatograms_offsets && found_spectra && last_was_spectra)
++      {
++        spectra_offsets = std::move(spectra);
++      }
++      else
++      {
++        if (found_spectra) { spectra_offsets = std::move(spectra); }
++        if (found_chromatograms) { chromatograms_offsets = std::move(chromatograms); }
++      }
++      return 0;
+     }
+-    if (!list) { return -1; }
++    // A DOM for a large index leaves freed nodes in each worker's allocator
++    // arena. Read forward and expand only one offset at a time instead.
++    std::unique_ptr<xmlTextReader, decltype(&xmlFreeTextReader)> reader(
++      xmlReaderForMemory(in.data(), static_cast<int>(in.size()), "index.xml", nullptr,
++                         XML_PARSE_NONET | XML_PARSE_NO_XXE | XML_PARSE_NOENT | XML_PARSE_NOERROR | XML_PARSE_NOWARNING), xmlFreeTextReader);
++    if (!reader) { return -1; }
+     auto property = [](xmlNode* node, const char* key)
+     {
+       xmlChar* value = xmlGetProp(node, BAD_CAST key);
+@@ -180,22 +231,81 @@ namespace OpenMS
+       xmlFree(value);
+       return result;
+     };
+-    for (xmlNode* index = list->children; index; index = index->next)
++    OffsetVector spectra, chromatograms, offsets;
++    std::string index_name;
++    bool found_list = false, in_list = false, found_spectra = false, found_chromatograms = false, last_was_spectra = false;
++    auto finish_index = [&]()
++    {
++      if (index_name == "spectrum")
++      {
++        spectra = std::move(offsets);
++        found_spectra = true;
++        last_was_spectra = true;
++      }
++      else if (index_name == "chromatogram")
++      {
++        chromatograms = std::move(offsets);
++        found_chromatograms = true;
++        last_was_spectra = false;
++      }
++      else { return false; }
++      offsets.clear();
++      return true;
++    };
++    std::exception_ptr conversion_error;
++    int status;
++    while ((status = xmlTextReaderRead(reader.get())) == 1)
+     {
+-      if (index->type != XML_ELEMENT_NODE) { continue; }
+-      OffsetVector result;
+-      for (xmlNode* offset = index->children; offset; offset = offset->next)
+-      {
+-        if (offset->type != XML_ELEMENT_NODE) { continue; }
+-        xmlChar* content = xmlNodeGetContent(offset);
+-        std::string text = content ? reinterpret_cast<const char*>(content) : "";
+-        xmlFree(content);
+-        result.emplace_back(property(offset, "idRef"), IndexedMzMLUtils::stringToStreampos(text));
++      const int depth = xmlTextReaderDepth(reader.get());
++      const int type = xmlTextReaderNodeType(reader.get());
++      if (type == XML_READER_TYPE_ELEMENT)
++      {
++        if (depth == 1 && xmlStrEqual(xmlTextReaderConstLocalName(reader.get()), BAD_CAST "indexList"))
++        {
++          if (found_list) { return -1; }
++          found_list = true;
++          in_list = !xmlTextReaderIsEmptyElement(reader.get());
++        }
++        else if (conversion_error) { continue; }
++        else if (in_list && depth == 2)
++        {
++          index_name = property(xmlTextReaderCurrentNode(reader.get()), "name");
++          if (xmlTextReaderIsEmptyElement(reader.get()) && !finish_index()) { return -1; }
++        }
++        else if (in_list && depth == 3)
++        {
++          // Expand this offset's descendants to preserve xmlNodeGetContent
++          // semantics (entities, CDATA and nested text), never the whole index.
++          xmlNode* offset = xmlTextReaderExpand(reader.get());
++          if (!offset) { return -1; }
++          xmlChar* content = xmlNodeGetContent(offset);
++          std::string text = content ? reinterpret_cast<const char*>(content) : "";
++          xmlFree(content);
++          try { offsets.emplace_back(property(offset, "idRef"), IndexedMzMLUtils::stringToStreampos(text)); }
++          catch (const Exception::ConversionError&)
++          {
++            // As with the old whole-document parse, malformed XML takes
++            // precedence over an invalid offset earlier in the document.
++            conversion_error = std::current_exception();
++          }
++        }
++      }
++      else if (type == XML_READER_TYPE_END_ELEMENT && in_list && !conversion_error)
++      {
++        if (depth == 2 && !finish_index()) { return -1; }
++        else if (depth == 1) { in_list = false; }
+       }
+-      const auto name = property(index, "name");
+-      if (name == "spectrum") { spectra_offsets = std::move(result); }
+-      else if (name == "chromatogram") { chromatograms_offsets = std::move(result); }
+-      else { return -1; }
++    }
++    if (status < 0 || !found_list) { return -1; }
++    if (conversion_error) { std::rethrow_exception(conversion_error); }
++    if (&spectra_offsets == &chromatograms_offsets && found_spectra && last_was_spectra)
++    {
++      spectra_offsets = std::move(spectra);
++    }
++    else
++    {
++      if (found_spectra) { spectra_offsets = std::move(spectra); }
++      if (found_chromatograms) { chromatograms_offsets = std::move(chromatograms); }
+     }
+     return 0;
+   }
+diff --git a/src/tests/class_tests/openms/source/IndexedMzMLDecoder_test.cpp b/src/tests/class_tests/openms/source/IndexedMzMLDecoder_test.cpp
+index a9a470340f..bbfe919e50 100644
+--- a/src/tests/class_tests/openms/source/IndexedMzMLDecoder_test.cpp
++++ b/src/tests/class_tests/openms/source/IndexedMzMLDecoder_test.cpp
+@@ -146,6 +146,135 @@ START_SECTION(([EXTRA] Namespaced footer pattern and overflowing offsets preserv
+ END_SECTION
+ 
+ /////////////////////////////////////////////////////////////
++START_SECTION(([EXTRA] Forward-only footer parsing preserves nested text attributes and namespaces))
++  std::string filename;
++  NEW_TMP_FILE(filename)
++  {
++    std::ofstream output(filename);
++    output << "<n:indexList xmlns:n='urn:test' count='2'>"
++      "<n:index name='chromatogram'><n:offset idRef='T&amp;IC'><![CDATA[300]]></n:offset></n:index>"
++      "<!-- index order is not fixed -->"
++      "<n:index name='spectrum'><n:offset idRef='s&amp;1'><value>1</value><![CDATA[23]]></n:offset>"
++      "<n:offset idRef='s2'>456</n:offset></n:index></n:indexList></indexedmzML>";
++  }
++  IndexedMzMLDecoder::OffsetVector spectra, chromatograms;
++  TEST_EQUAL(IndexedMzMLDecoder().parseOffsets(filename, 0, spectra, chromatograms), 0)
++  TEST_EQUAL(spectra.size(), 2)
++  TEST_EQUAL(chromatograms.size(), 1)
++  if (spectra.size() == 2 && chromatograms.size() == 1)
++  {
++    TEST_STRING_EQUAL(spectra[0].first, "s&1")
++    TEST_EQUAL(spectra[0].second, 123)
++    TEST_EQUAL(spectra[1].second, 456)
++    TEST_STRING_EQUAL(chromatograms[0].first, "T&IC")
++    TEST_EQUAL(chromatograms[0].second, 300)
++  }
++END_SECTION
++
++START_SECTION(([EXTRA] Footer cursor handles large indices empty indices and malformed XML))
++  std::string filename;
++  NEW_TMP_FILE(filename)
++  {
++    std::ofstream output(filename);
++    output << "<indexList><index name='spectrum'>";
++    for (int i = 0; i < 70000; ++i)
++    {
++      output << "<offset idRef='s" << i << "'>" << 100 + i << "</offset>\n";
++    }
++    output << "</index><index name='chromatogram'/></indexList></indexedmzML>";
++  }
++  IndexedMzMLDecoder decoder;
++  IndexedMzMLDecoder::OffsetVector spectra, chromatograms{{"old", 1}};
++  TEST_EQUAL(decoder.parseOffsets(filename, 0, spectra, chromatograms), 0)
++  TEST_EQUAL(spectra.size(), 70000)
++  TEST_TRUE(chromatograms.empty())
++  if (spectra.size() == 70000)
++  {
++    TEST_STRING_EQUAL(spectra.back().first, "s69999")
++    TEST_EQUAL(spectra.back().second, 70099)
++  }
++  for (const std::string& footer : {
++    std::string("<indexList/><indexList/></indexedmzML>"),
++    std::string("<indexList><index name='unknown'/></indexList></indexedmzML>"),
++    std::string("<indexList><index name='spectrum'><offset idRef='bad'>123</offset></index></indexList>"),
++    std::string("<indexList><index name='spectrum'><offset>123</index></indexList></indexedmzML>")})
++  {
++    { std::ofstream output(filename); output << footer; }
++    spectra = {{"sentinel", 7}};
++    chromatograms = {{"sentinel", 8}};
++    TEST_EQUAL(decoder.parseOffsets(filename, 0, spectra, chromatograms), -1)
++    TEST_EQUAL(spectra.size(), 1)
++    TEST_EQUAL(chromatograms.size(), 1)
++    if (!spectra.empty()) { TEST_STRING_EQUAL(spectra.front().first, "sentinel") }
++  }
++  { std::ofstream output(filename); output << "<indexList><index name='spectrum'><offset>"
++    << std::string(100, '9') << "</offset></index></indexList></indexedmzML>"; }
++  TEST_EXCEPTION(Exception::ConversionError, decoder.parseOffsets(filename, 0, spectra, chromatograms))
++END_SECTION
++
++START_SECTION(([EXTRA] Footer cursor preserves DOM error precedence and permissive child semantics))
++  std::string filename;
++  NEW_TMP_FILE(filename)
++  IndexedMzMLDecoder decoder;
++  IndexedMzMLDecoder::OffsetVector spectra, chromatograms;
++  // Put the later XML error beyond the reader's initial input buffer.
++  { std::ofstream output(filename); output << "<indexList><index name='spectrum'><offset>abc</offset>"
++    "</index></indexList>" << std::string(32000, ' ') << "<fileChecksum></indexedmzML>"; }
++  TEST_EQUAL(decoder.parseOffsets(filename, 0, spectra, chromatograms), -1)
++  { std::ofstream output(filename); output << "<indexList><index name='spectrum'><offset>abc</offset>"
++    "</index></indexList>" << std::string(32000, ' ') << "</indexedmzML>"; }
++  TEST_EXCEPTION(Exception::ConversionError, decoder.parseOffsets(filename, 0, spectra, chromatograms))
++  // The existing decoder accepts any direct element as index/offset and the
++  // last index of a given type wins. This is not schema validation.
++  { std::ofstream output(filename); output << "<indexList><foo name='spectrum'><bar idRef='old'>1</bar></foo>"
++    "<index name='spectrum'><offset>2</offset></index></indexList></indexedmzML>"; }
++  TEST_EQUAL(decoder.parseOffsets(filename, 0, spectra, chromatograms), 0)
++  TEST_EQUAL(spectra.size(), 1)
++  if (!spectra.empty())
++  {
++    TEST_STRING_EQUAL(spectra[0].first, "")
++    TEST_EQUAL(spectra[0].second, 2)
++  }
++  chromatograms = {{"preserved", 3}};
++  { std::ofstream output(filename); output << "<indexList/></indexedmzML>"; }
++  TEST_EQUAL(decoder.parseOffsets(filename, 0, spectra, chromatograms), 0)
++  TEST_EQUAL(chromatograms.size(), 1)
++END_SECTION
++
++START_SECTION(([EXTRA] Small DOM and large reader paths agree on failure and alias semantics))
++  std::string filename;
++  NEW_TMP_FILE(filename)
++  for (const Size padding : {Size(0), Size(2 * 1024 * 1024)})
++  {
++    IndexedMzMLDecoder decoder;
++    IndexedMzMLDecoder::OffsetVector spectra{{"sentinel", 7}}, chromatograms{{"sentinel", 8}};
++    auto write = [&](const std::string& footer)
++    {
++      std::ofstream output(filename);
++      output << std::string(padding, ' ') << footer;
++    };
++    write("<indexList><index name='spectrum'><offset>1</offset></index>"
++          "<index name='unknown'/></indexList></indexedmzML>");
++    TEST_EQUAL(decoder.parseOffsets(filename, 0, spectra, chromatograms), -1)
++    TEST_STRING_EQUAL(spectra[0].first, "sentinel")
++    TEST_STRING_EQUAL(chromatograms[0].first, "sentinel")
++    write("<indexList><index name='spectrum'><offset>1</offset></index>"
++          "<index name='chromatogram'><offset>abc</offset></index></indexList></indexedmzML>");
++    TEST_EXCEPTION(Exception::ConversionError, decoder.parseOffsets(filename, 0, spectra, chromatograms))
++    TEST_STRING_EQUAL(spectra[0].first, "sentinel")
++    TEST_STRING_EQUAL(chromatograms[0].first, "sentinel")
++    write("<indexList><index name='spectrum'><offset>abc</offset></index></indexList>"
++          "<fileChecksum></indexedmzML>");
++    TEST_EQUAL(decoder.parseOffsets(filename, 0, spectra, chromatograms), -1)
++    write("<indexList><index name='chromatogram'><offset>2</offset></index>"
++          "<foo name='spectrum'><bar idRef='last'>3</bar></foo></indexList></indexedmzML>");
++    TEST_EQUAL(decoder.parseOffsets(filename, 0, spectra, spectra), 0)
++    TEST_EQUAL(spectra.size(), 1)
++    TEST_STRING_EQUAL(spectra[0].first, "last")
++    TEST_EQUAL(spectra[0].second, 3)
++  }
++END_SECTION
++
+ /////////////////////////////////////////////////////////////
+ END_TEST
+ 

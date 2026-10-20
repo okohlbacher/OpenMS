@@ -1,0 +1,78 @@
+• # Adversarial review: xmlTextReader footer extraction
+
+  Scope note: only the supplied packet was analyzed. The old `domParseIndexedEnd_` body is not in the packet; where a finding depends on prior behavior I say so. Linux/RSS measurements are pending and are not inferred anywhere below. Line numbers are approximate (the packet has no numbering).
+
+  ---
+
+  ## Introduced defects
+
+  ### 1. MEDIUM — Local names are no longer verified: any depth‑2 element with `name="spectrum|chromatogram"` is an index, any depth‑3 element is an offset
+
+  **Location:** `IndexedMzMLDecoder.cpp`, `domParseIndexedEnd_`, the `else if (in_list && depth == 2)` branch (`index_name = property(xmlTextReaderCurrentNode(...), "name")`, ≈ the first ELEMENT branch) and the `else if (in_list && depth == 3)` branch.
+
+  The preserved contract explicitly includes "local names" — i.e., the DOM code matched children by local name (`index`, `offset`). The new code matches purely by depth:
+
+  - `xmlTextReaderConstLocalName` is compared only for `indexList` (depth 1). It is never compared to `"index"` (depth 2) or `"offset"` (depth 3).
+
+  **Trigger A (silent acceptance):**
+  ```xml
+  <indexList><foo name='spectrum'><bar idRef='x'>5</bar></foo></indexList>
+  ```
+  parses successfully as one spectrum offset `x → 5`. Previously rejected content is now accepted, producing bogus offsets that steer later random-access seeks to wrong byte positions (garbage spectrum reads downstream).
+
+  **Trigger B (exception instead of `-1`):**
+  ```xml
+  <indexList><index name='spectrum'><note/></index></indexList>
+  ```
+  `<note/>` is treated as an offset: `xmlNodeGetContent` returns `""`, `stringToStreampos("")` throws `Exception::ConversionError`. All four malformed-XML tests assert the `-1` contract and untouched outputs, but those cases only exercise *well-formedness* errors; this *well-formed but schema-wrong* input escapes as an exception. `parseFooter_` (shown) has no try/catch, so a corrupt-but-well-formed file propagates the exception out of the handler instead of setting `parsing_success_ = false`.
+
+  **Impact:** misparse of corrupt footers into wrong offsets, or an uncaught exception on files the old code rejected gracefully.
+
+  **Minimal fix:** in the depth‑2 branch require `xmlStrEqual(xmlTextReaderConstLocalName(reader.get()), BAD_CAST "index")` and in the depth‑3 branch require `"offset"`; choose skip‑vs‑`-1` for mismatches to mirror the old DOM child iteration.
+
+  **Tests:** add the two triggers above plus `<indexList><notindex name='spectrum'/></indexList>`, asserting the old outcome (presumably `-1`, outputs untouched, no exception).
+
+  ### 2. LOW–MEDIUM — Repeated same‑name `<index>` semantics are unpinned (possible regression)
+
+  **Location:** `finish_index` lambda (`spectra = std::move(offsets); ...`).
+
+  **Trigger:** `<indexList><index name='spectrum'><offset idRef='a'>1</offset></index><index name='spectrum'><offset idRef='b'>2</offset></index></indexList>` → the second index **overwrites** the first (last‑wins); spectra = `{b}` only.
+
+  The brief lists "repeated indices" as content that must keep working, but no test pins whether old behavior was last‑wins, first‑wins, or append‑merge. If the DOM code appended, this is an introduced silent offset loss.
+
+  **Fix/test:** confirm against old behavior; add a two‑`<index name='spectrum'>` test asserting whichever semantics are correct. (The existing empty‑index test already proves overwrite‑and‑clear for the empty case.)
+
+  ---
+
+  ## Non‑defects verified (the things you asked to hunt for)
+
+  - **No accidental whole‑index DOM preservation.** `xmlTextReaderExpand` is called only at depth 3 (one `<offset>` at a time); per the libxml2 contract the expanded subtree stays available only until the next `xmlTextReaderRead`. `xmlTextReaderPreserve` is never called. The reader retains only the ancestor chain (`indexedmzML`/`indexList`/`index`) plus the current small subtree — bounded and tiny. Whether per‑offset expand/free churn actually fixes the RSS problem is exactly the pending measurement; nothing in the code defeats it.
+  - **Node lifetime:** every use of `xmlTextReaderConstLocalName`, `xmlTextReaderCurrentNode`, the expanded `offset` node, and the `xmlGetProp`/`xmlNodeGetContent` results happens before the next `Read` — no dangling pointers.
+  - **Exception/resource safety:** reader is a `unique_ptr` with `xmlFreeTextReader`; `xmlGetProp`/`xmlNodeGetContent` results are `xmlFree`d before any throwing call (`stringToStreampos` throws only after both frees). The `ConversionError` path is leak‑free and leaves caller outputs untouched (assignment happens only after the loop).
+  - **Malformed XML:** well‑formedness errors (`<offset>123</index>`, truncation, double `<indexList>`, unknown `name`) all funnel to `status < 0` or explicit `-1` with outputs untouched — matches the tests.
+  - **Security:** `NONET | NO_XXE | NOENT | NOERROR | NOWARNING`, no `HUGE`; the synthetic `<indexedmzML>` root makes a DOCTYPE a well‑formedness error, so the `NOENT` surface is reduced to predefined entities; the `> INT_MAX` guard precedes `xmlReaderForMemory`. No new surface vs. the stated flags.
+  - **CMake:** the `LIBXML_READER_ENABLED` check (with per‑configure `unset(... CACHE)`) correctly turns a minimal libxml2 build into a clear `FATAL_ERROR` before `xmlreader.h` would fail to compile. The new hard READER requirement is intentional and implemented portably.
+  - **Buffer handling in `parseOffsets`:** `resize(prefix + tail + 1)` then `xml.back() = '\n'` *appends* a newline (does not overwrite the last tail byte); `gcount()`/`tellg()`/`seekg` checks and the `tail_length == 0` rejection are correct and covered by the tiny‑file tests.
+
+  ---
+
+  ## Pre‑existing limitations (not introduced; do not attribute to this change)
+
+  1. `stringToStreampos` (shared, unchanged) rejects whitespace and negatives via `lexical_cast<unsigned long long>`: `<offset> 123 </offset>` or `<offset>-1</offset>` throw `ConversionError`. Same for an empty `<offset/>`. The new tests don't pin any of these; add tests only to document, not as regressions.
+  2. `<offset>123</offset>` (well‑formed, no `idRef`) is accepted with an empty id; presumably identical to the old `xmlGetProp` behavior. Unpinned by tests.
+  3. `parseFooter_` does not catch `ConversionError` from `parseOffsets` — same exposure existed with the DOM parser since the throwing helper is unchanged.
+  4. `parseFooter_` duplicate‑id divergence: `*_native_ids_.emplace` is first‑wins while `*_offsets_.push_back` appends all, so duplicate `idRef`s desynchronize the map from the vector. Unchanged by this patch.
+  5. `findIndexListOffset`'s boost::regex quirks (`\d*` empty match, `[^>/]*`) are untouched.
+
+  ---
+
+  ## Test additions (minimal, ranked)
+
+  1. Findings 1A/1B triggers → assert old outcome, no exception. **(highest value; current malformed cases only cover well‑formedness errors)**
+  2. Repeated `<index name='spectrum'>` → pin last‑wins/first‑wins/append (Finding 2).
+  3. `<offset>123</offset>` without `idRef` → pin acceptance with empty id.
+  4. `<offset> 123 </offset>` → pin the `ConversionError` contract (pre‑existing).
+  5. Non‑indexList junk preceding `<indexList>` in the tail (silently skipped today) → pin.
+
+  No defect found in the reader conversion beyond Findings 1–2; the CMake READER gate is correct; nothing in the code sabotages the pending RSS measurement.
+

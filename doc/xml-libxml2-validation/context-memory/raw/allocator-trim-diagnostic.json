@@ -1,0 +1,1001 @@
+[
+  {
+    "ok": true,
+    "exit_code": 0,
+    "process_seconds": 4.094553640112281,
+    "user_seconds": 93.521732,
+    "system_seconds": 43.839103,
+    "wait4_max_rss_bytes": 1278251008,
+    "sampled_native_hwm_bytes": 1284059136,
+    "sampled_native_threads": 65,
+    "procfs_samples": 292,
+    "cpu_affinity": "0-63",
+    "loaded_library_maps": [
+      "/etc/ld.so.cache",
+      "/scratch/kohlbach/contrib/build/lib/libz.so.1.3.1",
+      "/scratch/kohlbach/contrib/build/lib/libzip.so.5.5",
+      "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/dependencies/install/lib/libxml2.so.16.1.4",
+      "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/dependencies/install/lib/libzstd.so.1.5.7",
+      "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/snapshots/baseline/lib/libOpenMS.so",
+      "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/snapshots/baseline/lib/libOpenSwathAlgo.so",
+      "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+      "/usr/lib/x86_64-linux-gnu/libc.so.6",
+      "/usr/lib/x86_64-linux-gnu/libcrypto.so.3",
+      "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1",
+      "/usr/lib/x86_64-linux-gnu/libgomp.so.1.0.0",
+      "/usr/lib/x86_64-linux-gnu/libm.so.6",
+      "/usr/lib/x86_64-linux-gnu/libssl.so.3",
+      "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33"
+    ],
+    "command": [
+      "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/benchmark-build/xml_benchmark_launcher",
+      "/usr/bin/taskset",
+      "-c",
+      "0-63",
+      "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/benchmark-build/xml_parser_benchmark",
+      "indexed-sync",
+      "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/data/pasef-im-600-1200s.mzML",
+      "64",
+      "2048"
+    ],
+    "stderr": "XML_BENCHMARK_MAIN_STARTED\n",
+    "timed_out": false,
+    "mode": "indexed-sync",
+    "workers": 64,
+    "openms_library": "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/snapshots/baseline/lib/libOpenMS.so",
+    "resident_rss_bytes": 48635904,
+    "native_peak_rss_bytes": 1278251008,
+    "requested_openmp_threads": 1,
+    "auxiliary_audit": false,
+    "aux_hash_per_worker": "14695981039346656037",
+    "im_array_values_per_worker": 0,
+    "im_scalar_spectra_per_worker": 0,
+    "ms1_per_worker": 0,
+    "ms2_per_worker": 0,
+    "ms3plus_per_worker": 0,
+    "synchronized_read_seconds": 3.131862405,
+    "seconds": 3.988180676,
+    "file_bytes": 961668867,
+    "spectra_per_worker": 2048,
+    "chromatograms_per_worker": 0,
+    "points_per_worker": 15097177,
+    "index_spectra": 22544,
+    "index_chromatograms": 0,
+    "hash_per_worker": "10584712421915220795",
+    "jobs": [
+      {
+        "open_seconds": 0.82360232,
+        "read_seconds": 2.948435282
+      },
+      {
+        "open_seconds": 0.754142176,
+        "read_seconds": 3.085586102
+      },
+      {
+        "open_seconds": 0.806310715,
+        "read_seconds": 2.877720684
+      },
+      {
+        "open_seconds": 0.690720657,
+        "read_seconds": 2.983245638
+      },
+      {
+        "open_seconds": 0.842678782,
+        "read_seconds": 3.085087108
+      },
+      {
+        "open_seconds": 0.58864489,
+        "read_seconds": 3.052628823
+      },
+      {
+        "open_seconds": 0.819350243,
+        "read_seconds": 3.000405604
+      },
+      {
+        "open_seconds": 0.800054143,
+        "read_seconds": 3.105647441
+      },
+      {
+        "open_seconds": 0.851418572,
+        "read_seconds": 3.020428165
+      },
+      {
+        "open_seconds": 0.823045936,
+        "read_seconds": 2.991576384
+      },
+      {
+        "open_seconds": 0.809658213,
+        "read_seconds": 3.016202167
+      },
+      {
+        "open_seconds": 0.814358834,
+        "read_seconds": 3.087248941
+      },
+      {
+        "open_seconds": 0.796955371,
+        "read_seconds": 3.039912111
+      },
+      {
+        "open_seconds": 0.737094408,
+        "read_seconds": 3.059715065
+      },
+      {
+        "open_seconds": 0.814544562,
+        "read_seconds": 2.96622692
+      },
+      {
+        "open_seconds": 0.798461223,
+        "read_seconds": 3.034334781
+      },
+      {
+        "open_seconds": 0.665062666,
+        "read_seconds": 3.083951862
+      },
+      {
+        "open_seconds": 0.704506124,
+        "read_seconds": 3.059148602
+      },
+      {
+        "open_seconds": 0.810273805,
+        "read_seconds": 2.962367919
+      },
+      {
+        "open_seconds": 0.674160893,
+        "read_seconds": 3.002554857
+      },
+      {
+        "open_seconds": 0.81071201,
+        "read_seconds": 3.120346549
+      },
+      {
+        "open_seconds": 0.828019454,
+        "read_seconds": 3.041266114
+      },
+      {
+        "open_seconds": 0.828723445,
+        "read_seconds": 3.107625996
+      },
+      {
+        "open_seconds": 0.846471384,
+        "read_seconds": 3.03843882
+      },
+      {
+        "open_seconds": 0.813840051,
+        "read_seconds": 3.089134608
+      },
+      {
+        "open_seconds": 0.826953828,
+        "read_seconds": 3.087721965
+      },
+      {
+        "open_seconds": 0.832799294,
+        "read_seconds": 3.094163265
+      },
+      {
+        "open_seconds": 0.835943505,
+        "read_seconds": 3.031585015
+      },
+      {
+        "open_seconds": 0.791978254,
+        "read_seconds": 3.084304918
+      },
+      {
+        "open_seconds": 0.784983161,
+        "read_seconds": 3.094784607
+      },
+      {
+        "open_seconds": 0.784342799,
+        "read_seconds": 3.089872308
+      },
+      {
+        "open_seconds": 0.79315256,
+        "read_seconds": 3.052402925
+      },
+      {
+        "open_seconds": 0.769064789,
+        "read_seconds": 2.99672277
+      },
+      {
+        "open_seconds": 0.774779738,
+        "read_seconds": 3.065973346
+      },
+      {
+        "open_seconds": 0.833355888,
+        "read_seconds": 3.106429172
+      },
+      {
+        "open_seconds": 0.781522063,
+        "read_seconds": 3.126923176
+      },
+      {
+        "open_seconds": 0.794138337,
+        "read_seconds": 3.072390056
+      },
+      {
+        "open_seconds": 0.84275603,
+        "read_seconds": 3.059998431
+      },
+      {
+        "open_seconds": 0.83390756,
+        "read_seconds": 2.994992751
+      },
+      {
+        "open_seconds": 0.784684695,
+        "read_seconds": 3.10738942
+      },
+      {
+        "open_seconds": 0.790078848,
+        "read_seconds": 3.073551971
+      },
+      {
+        "open_seconds": 0.793702332,
+        "read_seconds": 3.008440163
+      },
+      {
+        "open_seconds": 0.820898923,
+        "read_seconds": 3.061052858
+      },
+      {
+        "open_seconds": 0.707862723,
+        "read_seconds": 3.033306054
+      },
+      {
+        "open_seconds": 0.737368714,
+        "read_seconds": 3.067170192
+      },
+      {
+        "open_seconds": 0.834150497,
+        "read_seconds": 3.06729298
+      },
+      {
+        "open_seconds": 0.79947112,
+        "read_seconds": 3.040600002
+      },
+      {
+        "open_seconds": 0.752624614,
+        "read_seconds": 3.082956955
+      },
+      {
+        "open_seconds": 0.783640548,
+        "read_seconds": 3.075938262
+      },
+      {
+        "open_seconds": 0.835209115,
+        "read_seconds": 3.086661689
+      },
+      {
+        "open_seconds": 0.813322087,
+        "read_seconds": 3.001774707
+      },
+      {
+        "open_seconds": 0.691113582,
+        "read_seconds": 3.106225935
+      },
+      {
+        "open_seconds": 0.829656604,
+        "read_seconds": 3.065127767
+      },
+      {
+        "open_seconds": 0.81316951,
+        "read_seconds": 3.08498958
+      },
+      {
+        "open_seconds": 0.724641183,
+        "read_seconds": 3.032590363
+      },
+      {
+        "open_seconds": 0.785477815,
+        "read_seconds": 3.061464892
+      },
+      {
+        "open_seconds": 0.76668332,
+        "read_seconds": 2.892660517
+      },
+      {
+        "open_seconds": 0.845887681,
+        "read_seconds": 3.058974324
+      },
+      {
+        "open_seconds": 0.842898109,
+        "read_seconds": 3.110650539
+      },
+      {
+        "open_seconds": 0.750365203,
+        "read_seconds": 3.086226004
+      },
+      {
+        "open_seconds": 0.856110834,
+        "read_seconds": 3.076302198
+      },
+      {
+        "open_seconds": 0.755741706,
+        "read_seconds": 2.957072764
+      },
+      {
+        "open_seconds": 0.83643611,
+        "read_seconds": 2.98065831
+      },
+      {
+        "open_seconds": 0.751825914,
+        "read_seconds": 2.952367893
+      }
+    ],
+    "native_wait4_peak_rss_bytes": 1278251008,
+    "native_user_seconds": 93.5206,
+    "native_system_seconds": 43.8358,
+    "native_process_seconds": 4.09006,
+    "native_inblock": 0,
+    "native_majflt": 0,
+    "native_minflt": 4684105,
+    "native_nvcsw": 44614,
+    "native_nivcsw": 348,
+    "native_exit_code": 0,
+    "diagnostic_version": "baseline"
+  },
+  {
+    "ok": true,
+    "exit_code": 0,
+    "process_seconds": 23.881952023133636,
+    "user_seconds": 161.728959,
+    "system_seconds": 139.803352,
+    "wait4_max_rss_bytes": 597295104,
+    "sampled_native_hwm_bytes": 617791488,
+    "sampled_native_threads": 65,
+    "procfs_samples": 2156,
+    "cpu_affinity": "0-63",
+    "loaded_library_maps": [
+      "/etc/ld.so.cache",
+      "/scratch/kohlbach/contrib/build/lib/libz.so.1.3.1",
+      "/scratch/kohlbach/contrib/build/lib/libzip.so.5.5",
+      "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/dependencies/install/lib/libxml2.so.16.1.4",
+      "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/dependencies/install/lib/libzstd.so.1.5.7",
+      "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/snapshots/candidate/lib/libOpenMS.so",
+      "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/snapshots/candidate/lib/libOpenSwathAlgo.so",
+      "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+      "/usr/lib/x86_64-linux-gnu/libc.so.6",
+      "/usr/lib/x86_64-linux-gnu/libcrypto.so.3",
+      "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1",
+      "/usr/lib/x86_64-linux-gnu/libgomp.so.1.0.0",
+      "/usr/lib/x86_64-linux-gnu/libm.so.6",
+      "/usr/lib/x86_64-linux-gnu/libssl.so.3",
+      "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33"
+    ],
+    "command": [
+      "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/benchmark-build/xml_benchmark_launcher",
+      "/usr/bin/taskset",
+      "-c",
+      "0-63",
+      "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/benchmark-build/xml_parser_benchmark",
+      "indexed-sync",
+      "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/data/pasef-im-600-1200s.mzML",
+      "64",
+      "2048"
+    ],
+    "stderr": "XML_BENCHMARK_MAIN_STARTED\n",
+    "timed_out": false,
+    "mode": "indexed-sync",
+    "workers": 64,
+    "openms_library": "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/snapshots/candidate/lib/libOpenMS.so",
+    "resident_rss_bytes": 278720512,
+    "native_peak_rss_bytes": 597295104,
+    "requested_openmp_threads": 1,
+    "auxiliary_audit": false,
+    "aux_hash_per_worker": "14695981039346656037",
+    "im_array_values_per_worker": 0,
+    "im_scalar_spectra_per_worker": 0,
+    "ms1_per_worker": 0,
+    "ms2_per_worker": 0,
+    "ms3plus_per_worker": 0,
+    "synchronized_read_seconds": 23.38834686,
+    "seconds": 23.734300266,
+    "file_bytes": 961668867,
+    "spectra_per_worker": 2048,
+    "chromatograms_per_worker": 0,
+    "points_per_worker": 15097177,
+    "index_spectra": 22544,
+    "index_chromatograms": 0,
+    "hash_per_worker": "10584712421915220795",
+    "jobs": [
+      {
+        "open_seconds": 0.140563808,
+        "read_seconds": 23.098575953
+      },
+      {
+        "open_seconds": 0.318101724,
+        "read_seconds": 23.211612004
+      },
+      {
+        "open_seconds": 0.1163458,
+        "read_seconds": 23.255335228
+      },
+      {
+        "open_seconds": 0.125616454,
+        "read_seconds": 23.358239505
+      },
+      {
+        "open_seconds": 0.145567445,
+        "read_seconds": 23.183391506
+      },
+      {
+        "open_seconds": 0.172173223,
+        "read_seconds": 23.282365121
+      },
+      {
+        "open_seconds": 0.29194659,
+        "read_seconds": 22.217450692
+      },
+      {
+        "open_seconds": 0.248704509,
+        "read_seconds": 23.124517459
+      },
+      {
+        "open_seconds": 0.210741772,
+        "read_seconds": 23.211809341
+      },
+      {
+        "open_seconds": 0.213616626,
+        "read_seconds": 23.28245326
+      },
+      {
+        "open_seconds": 0.342462889,
+        "read_seconds": 23.254093034
+      },
+      {
+        "open_seconds": 0.139283563,
+        "read_seconds": 23.303330269
+      },
+      {
+        "open_seconds": 0.176770275,
+        "read_seconds": 23.155929899
+      },
+      {
+        "open_seconds": 0.191703159,
+        "read_seconds": 23.35947345
+      },
+      {
+        "open_seconds": 0.182332136,
+        "read_seconds": 21.687148034
+      },
+      {
+        "open_seconds": 0.332147158,
+        "read_seconds": 21.969077849
+      },
+      {
+        "open_seconds": 0.339121722,
+        "read_seconds": 22.962198294
+      },
+      {
+        "open_seconds": 0.210982029,
+        "read_seconds": 22.755789478
+      },
+      {
+        "open_seconds": 0.308857358,
+        "read_seconds": 23.140077386
+      },
+      {
+        "open_seconds": 0.334765565,
+        "read_seconds": 23.29298158
+      },
+      {
+        "open_seconds": 0.257058325,
+        "read_seconds": 23.092136754
+      },
+      {
+        "open_seconds": 0.147156225,
+        "read_seconds": 20.807736011
+      },
+      {
+        "open_seconds": 0.309786086,
+        "read_seconds": 23.348092982
+      },
+      {
+        "open_seconds": 0.158542143,
+        "read_seconds": 21.962183215
+      },
+      {
+        "open_seconds": 0.215277956,
+        "read_seconds": 23.162925211
+      },
+      {
+        "open_seconds": 0.196704187,
+        "read_seconds": 23.031589529
+      },
+      {
+        "open_seconds": 0.308474103,
+        "read_seconds": 23.339259722
+      },
+      {
+        "open_seconds": 0.183163446,
+        "read_seconds": 21.332605166
+      },
+      {
+        "open_seconds": 0.287364977,
+        "read_seconds": 23.2512139
+      },
+      {
+        "open_seconds": 0.276286775,
+        "read_seconds": 23.084260322
+      },
+      {
+        "open_seconds": 0.180489109,
+        "read_seconds": 23.069324219
+      },
+      {
+        "open_seconds": 0.171009548,
+        "read_seconds": 23.356860933
+      },
+      {
+        "open_seconds": 0.180969143,
+        "read_seconds": 22.568129038
+      },
+      {
+        "open_seconds": 0.334165833,
+        "read_seconds": 23.090220857
+      },
+      {
+        "open_seconds": 0.203181086,
+        "read_seconds": 23.359016676
+      },
+      {
+        "open_seconds": 0.342140273,
+        "read_seconds": 23.257894377
+      },
+      {
+        "open_seconds": 0.329839896,
+        "read_seconds": 23.131444444
+      },
+      {
+        "open_seconds": 0.15154669,
+        "read_seconds": 23.274944835
+      },
+      {
+        "open_seconds": 0.211195436,
+        "read_seconds": 23.305078808
+      },
+      {
+        "open_seconds": 0.239384155,
+        "read_seconds": 23.327687586
+      },
+      {
+        "open_seconds": 0.333167695,
+        "read_seconds": 21.388279051
+      },
+      {
+        "open_seconds": 0.169939371,
+        "read_seconds": 23.09802591
+      },
+      {
+        "open_seconds": 0.298402638,
+        "read_seconds": 23.354769669
+      },
+      {
+        "open_seconds": 0.301258753,
+        "read_seconds": 23.312320538
+      },
+      {
+        "open_seconds": 0.321007628,
+        "read_seconds": 23.326817957
+      },
+      {
+        "open_seconds": 0.331112551,
+        "read_seconds": 23.280013171
+      },
+      {
+        "open_seconds": 0.332717931,
+        "read_seconds": 23.262639558
+      },
+      {
+        "open_seconds": 0.32398689,
+        "read_seconds": 23.090622803
+      },
+      {
+        "open_seconds": 0.292086857,
+        "read_seconds": 23.337322807
+      },
+      {
+        "open_seconds": 0.319847112,
+        "read_seconds": 23.120226203
+      },
+      {
+        "open_seconds": 0.345694589,
+        "read_seconds": 22.92250776
+      },
+      {
+        "open_seconds": 0.340586423,
+        "read_seconds": 23.357320947
+      },
+      {
+        "open_seconds": 0.325021057,
+        "read_seconds": 23.265759708
+      },
+      {
+        "open_seconds": 0.34082781,
+        "read_seconds": 22.03873385
+      },
+      {
+        "open_seconds": 0.331300439,
+        "read_seconds": 23.134447376
+      },
+      {
+        "open_seconds": 0.311656034,
+        "read_seconds": 23.307467018
+      },
+      {
+        "open_seconds": 0.286077013,
+        "read_seconds": 22.729434487
+      },
+      {
+        "open_seconds": 0.327395627,
+        "read_seconds": 23.187404706
+      },
+      {
+        "open_seconds": 0.339930821,
+        "read_seconds": 23.385241458
+      },
+      {
+        "open_seconds": 0.344893089,
+        "read_seconds": 22.934763687
+      },
+      {
+        "open_seconds": 0.328638642,
+        "read_seconds": 21.487740731
+      },
+      {
+        "open_seconds": 0.340181907,
+        "read_seconds": 22.387619799
+      },
+      {
+        "open_seconds": 0.320177297,
+        "read_seconds": 22.915575156
+      },
+      {
+        "open_seconds": 0.341092657,
+        "read_seconds": 22.528321135
+      }
+    ],
+    "native_wait4_peak_rss_bytes": 597295104,
+    "native_user_seconds": 161.728,
+    "native_system_seconds": 139.8,
+    "native_process_seconds": 23.8778,
+    "native_inblock": 0,
+    "native_majflt": 0,
+    "native_minflt": 24817332,
+    "native_nvcsw": 924808,
+    "native_nivcsw": 725,
+    "native_exit_code": 0,
+    "diagnostic_version": "candidate"
+  },
+  {
+    "ok": true,
+    "exit_code": 0,
+    "process_seconds": 23.324631487950683,
+    "user_seconds": 167.957517,
+    "system_seconds": 133.479196,
+    "wait4_max_rss_bytes": 1059229696,
+    "sampled_native_hwm_bytes": 1074040832,
+    "sampled_native_threads": 65,
+    "procfs_samples": 1356,
+    "cpu_affinity": "0-63",
+    "loaded_library_maps": [
+      "/etc/ld.so.cache",
+      "/scratch/kohlbach/contrib/build/lib/libz.so.1.3.1",
+      "/scratch/kohlbach/contrib/build/lib/libzip.so.5.5",
+      "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/dependencies/install/lib/libxml2.so.16.1.4",
+      "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/dependencies/install/lib/libzstd.so.1.5.7",
+      "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/snapshots/candidate-buffer/lib/libOpenMS.so",
+      "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/snapshots/candidate-buffer/lib/libOpenSwathAlgo.so",
+      "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+      "/usr/lib/x86_64-linux-gnu/libc.so.6",
+      "/usr/lib/x86_64-linux-gnu/libcrypto.so.3",
+      "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1",
+      "/usr/lib/x86_64-linux-gnu/libgomp.so.1.0.0",
+      "/usr/lib/x86_64-linux-gnu/libm.so.6",
+      "/usr/lib/x86_64-linux-gnu/libssl.so.3",
+      "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33"
+    ],
+    "command": [
+      "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/benchmark-build/xml_benchmark_launcher",
+      "/usr/bin/taskset",
+      "-c",
+      "0-63",
+      "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/benchmark-build/xml_parser_benchmark",
+      "indexed-sync",
+      "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/data/pasef-im-600-1200s.mzML",
+      "64",
+      "2048"
+    ],
+    "stderr": "XML_BENCHMARK_MAIN_STARTED\n",
+    "timed_out": false,
+    "mode": "indexed-sync",
+    "workers": 64,
+    "openms_library": "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/snapshots/candidate-buffer/lib/libOpenMS.so",
+    "resident_rss_bytes": 278523904,
+    "native_peak_rss_bytes": 1059229696,
+    "requested_openmp_threads": 1,
+    "auxiliary_audit": false,
+    "aux_hash_per_worker": "14695981039346656037",
+    "im_array_values_per_worker": 0,
+    "im_scalar_spectra_per_worker": 0,
+    "ms1_per_worker": 0,
+    "ms2_per_worker": 0,
+    "ms3plus_per_worker": 0,
+    "synchronized_read_seconds": 22.875891918,
+    "seconds": 23.176681047,
+    "file_bytes": 961668867,
+    "spectra_per_worker": 2048,
+    "chromatograms_per_worker": 0,
+    "points_per_worker": 15097177,
+    "index_spectra": 22544,
+    "index_chromatograms": 0,
+    "hash_per_worker": "10584712421915220795",
+    "jobs": [
+      {
+        "open_seconds": 0.160162243,
+        "read_seconds": 22.813960403
+      },
+      {
+        "open_seconds": 0.120352929,
+        "read_seconds": 22.548549956
+      },
+      {
+        "open_seconds": 0.15073897,
+        "read_seconds": 22.784759827
+      },
+      {
+        "open_seconds": 0.123220603,
+        "read_seconds": 22.489376346
+      },
+      {
+        "open_seconds": 0.27185107,
+        "read_seconds": 22.835235654
+      },
+      {
+        "open_seconds": 0.125565315,
+        "read_seconds": 22.727329257
+      },
+      {
+        "open_seconds": 0.265586258,
+        "read_seconds": 22.737504213
+      },
+      {
+        "open_seconds": 0.295555074,
+        "read_seconds": 22.772868124
+      },
+      {
+        "open_seconds": 0.180012905,
+        "read_seconds": 22.692167156
+      },
+      {
+        "open_seconds": 0.288400124,
+        "read_seconds": 22.700698772
+      },
+      {
+        "open_seconds": 0.21569989,
+        "read_seconds": 22.84863506
+      },
+      {
+        "open_seconds": 0.154495973,
+        "read_seconds": 22.551271211
+      },
+      {
+        "open_seconds": 0.283143009,
+        "read_seconds": 22.832791953
+      },
+      {
+        "open_seconds": 0.191501942,
+        "read_seconds": 22.767250331
+      },
+      {
+        "open_seconds": 0.121165669,
+        "read_seconds": 22.786777454
+      },
+      {
+        "open_seconds": 0.257898734,
+        "read_seconds": 22.803642208
+      },
+      {
+        "open_seconds": 0.162375405,
+        "read_seconds": 22.781641336
+      },
+      {
+        "open_seconds": 0.156070643,
+        "read_seconds": 22.610782427
+      },
+      {
+        "open_seconds": 0.182467435,
+        "read_seconds": 22.731150411
+      },
+      {
+        "open_seconds": 0.159076006,
+        "read_seconds": 22.855345368
+      },
+      {
+        "open_seconds": 0.180994783,
+        "read_seconds": 22.751667071
+      },
+      {
+        "open_seconds": 0.159416992,
+        "read_seconds": 22.803885115
+      },
+      {
+        "open_seconds": 0.257545438,
+        "read_seconds": 22.848389083
+      },
+      {
+        "open_seconds": 0.160530218,
+        "read_seconds": 22.572157658
+      },
+      {
+        "open_seconds": 0.195472612,
+        "read_seconds": 22.797280536
+      },
+      {
+        "open_seconds": 0.174124018,
+        "read_seconds": 22.696468763
+      },
+      {
+        "open_seconds": 0.150496033,
+        "read_seconds": 22.744739785
+      },
+      {
+        "open_seconds": 0.29349682,
+        "read_seconds": 22.699071002
+      },
+      {
+        "open_seconds": 0.299438675,
+        "read_seconds": 22.573191956
+      },
+      {
+        "open_seconds": 0.253622007,
+        "read_seconds": 22.5785113
+      },
+      {
+        "open_seconds": 0.295737752,
+        "read_seconds": 22.728342936
+      },
+      {
+        "open_seconds": 0.166652242,
+        "read_seconds": 22.8273307
+      },
+      {
+        "open_seconds": 0.255555443,
+        "read_seconds": 22.588269851
+      },
+      {
+        "open_seconds": 0.300466313,
+        "read_seconds": 22.794205473
+      },
+      {
+        "open_seconds": 0.266181181,
+        "read_seconds": 22.645232937
+      },
+      {
+        "open_seconds": 0.244870507,
+        "read_seconds": 22.638970884
+      },
+      {
+        "open_seconds": 0.291755102,
+        "read_seconds": 22.603558966
+      },
+      {
+        "open_seconds": 0.296040258,
+        "read_seconds": 22.5876986
+      },
+      {
+        "open_seconds": 0.275599783,
+        "read_seconds": 22.760341396
+      },
+      {
+        "open_seconds": 0.297424981,
+        "read_seconds": 22.822656337
+      },
+      {
+        "open_seconds": 0.283222349,
+        "read_seconds": 22.75915624
+      },
+      {
+        "open_seconds": 0.233268892,
+        "read_seconds": 22.718265258
+      },
+      {
+        "open_seconds": 0.294039963,
+        "read_seconds": 22.550964726
+      },
+      {
+        "open_seconds": 0.290785794,
+        "read_seconds": 22.741032931
+      },
+      {
+        "open_seconds": 0.300173067,
+        "read_seconds": 22.767688007
+      },
+      {
+        "open_seconds": 0.293891095,
+        "read_seconds": 22.802357065
+      },
+      {
+        "open_seconds": 0.158354295,
+        "read_seconds": 22.827523797
+      },
+      {
+        "open_seconds": 0.247835879,
+        "read_seconds": 22.749031063
+      },
+      {
+        "open_seconds": 0.263333766,
+        "read_seconds": 22.769061829
+      },
+      {
+        "open_seconds": 0.141405407,
+        "read_seconds": 22.51862887
+      },
+      {
+        "open_seconds": 0.285993404,
+        "read_seconds": 22.7345373
+      },
+      {
+        "open_seconds": 0.215891778,
+        "read_seconds": 22.835618308
+      },
+      {
+        "open_seconds": 0.294393088,
+        "read_seconds": 22.770620751
+      },
+      {
+        "open_seconds": 0.277275793,
+        "read_seconds": 22.786123681
+      },
+      {
+        "open_seconds": 0.288601702,
+        "read_seconds": 22.56949084
+      },
+      {
+        "open_seconds": 0.242496586,
+        "read_seconds": 22.752318173
+      },
+      {
+        "open_seconds": 0.25509613,
+        "read_seconds": 22.603202099
+      },
+      {
+        "open_seconds": 0.279577374,
+        "read_seconds": 22.872999994
+      },
+      {
+        "open_seconds": 0.276783018,
+        "read_seconds": 22.814421526
+      },
+      {
+        "open_seconds": 0.231270507,
+        "read_seconds": 22.817776656
+      },
+      {
+        "open_seconds": 0.223413885,
+        "read_seconds": 22.77722189
+      },
+      {
+        "open_seconds": 0.29027455,
+        "read_seconds": 22.761427503
+      },
+      {
+        "open_seconds": 0.237806615,
+        "read_seconds": 22.809542516
+      },
+      {
+        "open_seconds": 0.280582081,
+        "read_seconds": 22.742123097
+      }
+    ],
+    "native_wait4_peak_rss_bytes": 1059229696,
+    "native_user_seconds": 167.955,
+    "native_system_seconds": 133.477,
+    "native_process_seconds": 23.3204,
+    "native_inblock": 0,
+    "native_majflt": 0,
+    "native_minflt": 23565982,
+    "native_nvcsw": 209146,
+    "native_nivcsw": 788,
+    "native_exit_code": 0,
+    "diagnostic_version": "candidate-buffer"
+  }
+]

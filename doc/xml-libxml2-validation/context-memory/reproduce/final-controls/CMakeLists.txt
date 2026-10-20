@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.20)
+project(footer_controls LANGUAGES CXX)
+find_package(OpenMS REQUIRED)
+add_executable(footer_controls footer-controls.cpp)
+target_link_libraries(footer_controls PRIVATE OpenMS)
+target_compile_features(footer_controls PRIVATE cxx_std_23)

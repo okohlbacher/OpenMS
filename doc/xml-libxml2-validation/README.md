@@ -1,7 +1,8 @@
 # Complete replacement evidence
 
-Final source/guard/test candidate: `8f66b3d921c9512e1e5968f494c77715ff71c696`; runtime implementation: `1858656a86869ba462545a9232b89a0e1e1c319c`. Later commits add only documentation/evidence. See the [migration report](../xml_libxml2_migration.md).
+Final source/guard/test candidate: `8f66b3d921c9512e1e5968f494c77715ff71c696`; runtime implementation: `1858656a86869ba462545a9232b89a0e1e1c319c`. That source identifies the original complete-migration validation phase. A later [retained-context optimization](context-memory/REPORT.md) changes footer traversal and has its own source, focused tests and performance evidence. See the [migration report](../xml_libxml2_migration.md).
 
+- [Retained-context memory follow-up](context-memory/REPORT.md): bounded footer traversal, before/after RSS and indexed-read checks through96 Linux readers; [combined table](context-memory/all-comparisons.csv) keeps accepted/rejected iterations and previous platform phases distinct.
 - [macOS](macos/): final 746/747 suite, unchanged-source Network_test control, current installed SDK consumer and parser/schema probes; `ctest-final-guard.log` is final.
 - [Linux](linux/): final 747/747 suite, clean source and exact library hashes, 233 verified copied result/log files, fresh schema/conformance/API probes and successful scratch cleanup preserving shared contrib.
 - [Independent reviews](reviews/README.md): complete Codex/Kimi/Claude Opus 5.5 coverage and all correction phases, with exact input/source identities, findings, dispositions and terminal-completion checks; private stderr is excluded.

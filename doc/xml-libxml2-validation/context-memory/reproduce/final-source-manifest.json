@@ -1,0 +1,20 @@
+{
+  "candidate_product_commit": "ac0e80acbe46102e0305a672c07bc38a81f3f164",
+  "baseline_product_commit": "8f66b3d921c9512e1e5968f494c77715ff71c696",
+  "baseline_publication_commit": "441ac13ddcf9720b3ef54766be115280adc8ed0a",
+  "baseline_archive_sha256": "facea08f452382d13226ab81bf8a97698f3f701489f01ce79a0b0835e04bfa7c",
+  "committed_files": {
+    "src/openms/source/FORMAT/HANDLERS/IndexedMzMLDecoder.cpp": {
+      "sha256": "f9c62a0b6fc2f72fc09b06a1cd4d7c673339571613515fc85795c742eadc921e",
+      "git_blob": "9b616cf973deb9eee3c6c3c93111529b0bcc0dcb"
+    },
+    "src/tests/class_tests/openms/source/IndexedMzMLDecoder_test.cpp": {
+      "sha256": "5569025b906c1736a81b08d21291f7413076e29909dafad87e7ae674aa049afe",
+      "git_blob": "bbfe919e50a8acafed5e86f249a1134f7e86288f"
+    },
+    "cmake/cmake_findExternalLibs.cmake": {
+      "sha256": "8031746afe23a2a6da2aae3ac320dcb8840caad51a8169661e8b39b9ceeafe00",
+      "git_blob": "d588d2a0b08aa774dfc46244da18be3a4685ca5c"
+    }
+  }
+}

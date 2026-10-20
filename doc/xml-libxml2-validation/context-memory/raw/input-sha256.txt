@@ -1,0 +1,6 @@
+6416ec25f73efa3fefc0758b06eb6ae8e94bbb08de7b3fc02474d256de757656  data/dda-lumos.mzML
+a7afeee51a600050eb7e8f03e63d82cf8231781362a5c52e17e0a21c0487a81f  data/huge-array.mzML
+bbd284fbe3c34aa49c82caa2efd754d1d7bee6676ffa2c2818c58087bf41eeb3  data/large-matched-plain.mzML
+4982dbc3a1fe3a833b248afd85b9d9dc9b7584c5b0765f1f41ae3f5ed7dfbeca  data/large-matched-zlib.mzML
+294351b644aca2be19367d04cefacf492cc2f4d6a2eb0f364e23f2c6cc042105  data/pasef-im-600-1200s.mzML
+852c735ed508fdf178f3dc0a834b0907562a2af53cbc106d724bca596d1140a4  data/pasef-published.mzML

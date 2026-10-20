@@ -1,0 +1,1657 @@
+Focused final adversarial resolution review. Old DOM implementation is supplied below: it DID NOT check local names of index/offset children, and repeated index types were last-wins. Kimi's proposed stricter name validation would be an unrequested behavioral change; new tests pin actual permissive behavior. Actual Opus5.5 found conversion errors could beat a later XML error; corrected by saving ConversionError and continuing parser validation, including duplicate root indexList detection. A32KB padding test makes the later malformation lie beyond read-ahead and checks return-1; a wellformed counterpart still throws. Unknown index-name validation now occurs at index finish after its offsets, as before. Outputs are transactional on failure. Four relevant macOS tests pass. Linux targeted tests/performance pending; no speed/memory conclusions assumed. Check concrete introduced defects only, including delayed exception state and reader lifetimes. Also inspect private synchronized-read harness: all readers open before common read barrier; pre-barrier errors arrive_and_drop; main read clock includes reader teardown/join, per-worker read_seconds excludes open/barrier; actual indexed fingerprints will gate all5inputs/1..96. Do not run tools. Report final findings, no plan/XML tool calls.
+OLD DOM:
+  int IndexedMzMLDecoder::domParseIndexedEnd_(const std::string& in, OffsetVector& spectra_offsets, OffsetVector& chromatograms_offsets)
+  {
+
+    if (in.size() > static_cast<Size>(std::numeric_limits<int>::max())) { return -1; }
+    std::unique_ptr<xmlDoc, decltype(&xmlFreeDoc)> document(
+      xmlReadMemory(in.data(), static_cast<int>(in.size()), "index.xml", nullptr,
+                    XML_PARSE_NONET | XML_PARSE_NO_XXE | XML_PARSE_NOENT | XML_PARSE_NOERROR | XML_PARSE_NOWARNING), xmlFreeDoc);
+    xmlNode* root = document ? xmlDocGetRootElement(document.get()) : nullptr;
+    if (!root) { return -1; }
+    xmlNode* list = nullptr;
+    for (xmlNode* node = root->children; node; node = node->next)
+    {
+      if (node->type == XML_ELEMENT_NODE && xmlStrEqual(node->name, BAD_CAST "indexList"))
+      {
+        if (list) { return -1; }
+        list = node;
+      }
+    }
+    if (!list) { return -1; }
+    auto property = [](xmlNode* node, const char* key)
+    {
+      xmlChar* value = xmlGetProp(node, BAD_CAST key);
+      std::string result = value ? reinterpret_cast<const char*>(value) : "";
+      xmlFree(value);
+      return result;
+    };
+    for (xmlNode* index = list->children; index; index = index->next)
+    {
+      if (index->type != XML_ELEMENT_NODE) { continue; }
+      OffsetVector result;
+      for (xmlNode* offset = index->children; offset; offset = offset->next)
+      {
+        if (offset->type != XML_ELEMENT_NODE) { continue; }
+        xmlChar* content = xmlNodeGetContent(offset);
+        std::string text = content ? reinterpret_cast<const char*>(content) : "";
+        xmlFree(content);
+        result.emplace_back(property(offset, "idRef"), IndexedMzMLUtils::stringToStreampos(text));
+      }
+      const auto name = property(index, "name");
+      if (name == "spectrum") { spectra_offsets = std::move(result); }
+      else if (name == "chromatogram") { chromatograms_offsets = std::move(result); }
+      else { return -1; }
+    }
+    return 0;
+  }
+
+}
+
+CURRENT src/openms/source/FORMAT/HANDLERS/IndexedMzMLDecoder.cpp
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// SPDX-License-Identifier: BSD-3-Clause
+//
+// --------------------------------------------------------------------------
+// $Maintainer: Hannes Roest $
+// $Authors: Hannes Roest $
+// --------------------------------------------------------------------------
+
+#include <OpenMS/FORMAT/HANDLERS/IndexedMzMLDecoder.h>
+#include <OpenMS/CONCEPT/Init.h>
+
+#include <OpenMS/SYSTEM/File.h>
+
+#include <boost/regex.hpp>
+#include <boost/lexical_cast.hpp>
+
+#include <fstream>
+#include <iostream>
+
+#include <libxml/parser.h>
+#include <libxml/xmlreader.h>
+#include <memory>
+#include <limits>
+#include <cstdint>
+#include <algorithm>
+#include <exception>
+
+namespace OpenMS
+{
+
+  namespace IndexedMzMLUtils
+  {
+    std::streampos stringToStreampos(const std::string& s)
+    {
+      // Try to cast the string to a type that can hold the integer value
+      // stored in the std::streampos type (which can vary from 32 to 128 bits
+      // depending on the system).
+      //
+      // long long has a minimal size of 64 bits and can address a range up to
+      // 16 Exbibit (or 2 Exbibyte), we can hopefully expect our files to be
+      // smaller than an Exabyte and should be safe.
+      std::streampos res;
+      try
+      {
+
+        res = boost::lexical_cast< unsigned long long >(s);
+        // TESTING CAST: res = (int) res; // use this only when emulating 32 bit systems
+
+      }
+      catch (boost::bad_lexical_cast&)
+      {
+        std::cerr << "Trying to convert corrupted / unreadable value to std::streampos : " << s << std::endl;
+        std::cerr << "This can also happen if the value exceeds 63 bits, please check your input." << std::endl;
+        throw Exception::ConversionError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION,
+            std::string("Could not convert string '") + s + "' to a 64 bit integer.");
+      }
+
+      // Check if the value can fit into std::streampos
+      if ( std::abs( boost::lexical_cast< long double >(s) - res) > 0.1)
+      {
+        std::cerr << "Your system may not support addressing a file of this size,"
+          << " only addresses that fit into a " << sizeof(std::streamsize)*8 <<
+          " bit integer are supported on your system." << std::endl;
+        throw Exception::ConversionError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION,
+            std::string("Could not convert string '") + s + "' to an integer on your system.");
+      }
+
+      return res;
+    }
+  }
+
+  int IndexedMzMLDecoder::parseOffsets(const std::string& filename, std::streampos indexoffset, OffsetVector& spectra_offsets, OffsetVector& chromatograms_offsets)
+  {
+    std::ifstream f(filename, std::ios::binary);
+    if (!f.is_open())
+    {
+      if (!File::exists(filename))
+      {
+        throw Exception::FileNotFound(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename);
+      }
+      if (!File::readable(filename))
+      {
+        throw Exception::FileNotReadable(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename);
+      }
+      throw Exception::IOException(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename);
+    }
+
+    f.seekg(0, std::ios::end);
+    const std::streampos length = f.tellg();
+    if (!f || length < 0 || indexoffset < 0 || indexoffset > length)
+    {
+      std::cerr << "IndexedMzMLDecoder::parseOffsets Error: Offset was " << indexoffset
+                << " (not between 0 and " << length << ").\n";
+      return -1;
+    }
+
+    // Read straight into the final XML buffer: no raw allocation or full-tail copy.
+    std::string xml = "<indexedmzML>";
+    const Size prefix_size = xml.size();
+    const std::streamoff tail_length = length - indexoffset;
+    if (tail_length == 0 || tail_length > std::numeric_limits<std::streamsize>::max() ||
+        static_cast<std::uintmax_t>(tail_length) > xml.max_size() - prefix_size - 1)
+    {
+      return -1;
+    }
+    const Size tail_size = static_cast<Size>(tail_length);
+    xml.resize(prefix_size + tail_size + 1);
+    f.seekg(indexoffset);
+    if (!f) { return -1; }
+    f.read(xml.data() + prefix_size, static_cast<std::streamsize>(tail_length));
+    if (!f || f.gcount() != tail_length) { return -1; }
+    xml.back() = '\n';
+    return domParseIndexedEnd_(xml, spectra_offsets, chromatograms_offsets);
+  }
+
+  std::streampos IndexedMzMLDecoder::findIndexListOffset(const std::string& filename, int buffersize)
+  {
+    if (buffersize <= 0) { return -1; }
+    std::ifstream f(filename, std::ios::binary);
+    if (!f.is_open())
+    {
+      if (!File::exists(filename))
+      {
+        throw Exception::FileNotFound(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename);
+      }
+      if (!File::readable(filename))
+      {
+        throw Exception::FileNotReadable(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename);
+      }
+      throw Exception::IOException(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename);
+    }
+
+    f.seekg(0, std::ios::end);
+    const std::streampos length = f.tellg();
+    if (!f || length < 0) { return -1; }
+    const std::streamoff read_length = std::min(static_cast<std::streamoff>(length), static_cast<std::streamoff>(buffersize));
+    std::string buffer;
+    if (read_length > std::numeric_limits<std::streamsize>::max() ||
+        static_cast<std::uintmax_t>(read_length) > buffer.max_size()) { return -1; }
+    buffer.resize(static_cast<Size>(read_length));
+    f.seekg(-read_length, std::ios::end);
+    if (!f) { return -1; }
+    f.read(buffer.data(), static_cast<std::streamsize>(read_length));
+    if (!f || f.gcount() != read_length) { return -1; }
+
+    // The same namespace/whitespace-tolerant pattern is shared by independent
+    // readers; C++ initializes it once and regex_search never mutates it.
+    static const boost::regex listoffset_rx(R"(<[^>/]*indexListOffset\s*>\s*(\d*))");
+    boost::smatch matches;
+    if (!boost::regex_search(buffer, matches, listoffset_rx) || matches[1].length() == 0)
+    {
+      std::cerr << "IndexedMzMLDecoder::findIndexListOffset Error: Could not find element indexListOffset in the last "
+                << read_length << " bytes. Maybe this is not an indexedMzML.\n";
+      return -1;
+    }
+    return OpenMS::IndexedMzMLUtils::stringToStreampos(matches[1].str());
+  }
+
+  int IndexedMzMLDecoder::domParseIndexedEnd_(const std::string& in, OffsetVector& spectra_offsets, OffsetVector& chromatograms_offsets)
+  {
+
+    if (in.size() > static_cast<Size>(std::numeric_limits<int>::max())) { return -1; }
+    // A DOM for a large index leaves freed nodes in each worker's allocator
+    // arena. Read forward and expand only one offset at a time instead.
+    std::unique_ptr<xmlTextReader, decltype(&xmlFreeTextReader)> reader(
+      xmlReaderForMemory(in.data(), static_cast<int>(in.size()), "index.xml", nullptr,
+                         XML_PARSE_NONET | XML_PARSE_NO_XXE | XML_PARSE_NOENT | XML_PARSE_NOERROR | XML_PARSE_NOWARNING), xmlFreeTextReader);
+    if (!reader) { return -1; }
+    auto property = [](xmlNode* node, const char* key)
+    {
+      xmlChar* value = xmlGetProp(node, BAD_CAST key);
+      std::string result = value ? reinterpret_cast<const char*>(value) : "";
+      xmlFree(value);
+      return result;
+    };
+    OffsetVector spectra, chromatograms, offsets;
+    std::string index_name;
+    bool found_list = false, in_list = false, found_spectra = false, found_chromatograms = false;
+    auto finish_index = [&]()
+    {
+      if (index_name == "spectrum")
+      {
+        spectra = std::move(offsets);
+        found_spectra = true;
+      }
+      else if (index_name == "chromatogram")
+      {
+        chromatograms = std::move(offsets);
+        found_chromatograms = true;
+      }
+      else { return false; }
+      offsets.clear();
+      return true;
+    };
+    std::exception_ptr conversion_error;
+    int status;
+    while ((status = xmlTextReaderRead(reader.get())) == 1)
+    {
+      const int depth = xmlTextReaderDepth(reader.get());
+      const int type = xmlTextReaderNodeType(reader.get());
+      if (type == XML_READER_TYPE_ELEMENT)
+      {
+        if (depth == 1 && xmlStrEqual(xmlTextReaderConstLocalName(reader.get()), BAD_CAST "indexList"))
+        {
+          if (found_list) { return -1; }
+          found_list = true;
+          in_list = !xmlTextReaderIsEmptyElement(reader.get());
+        }
+        else if (conversion_error) { continue; }
+        else if (in_list && depth == 2)
+        {
+          index_name = property(xmlTextReaderCurrentNode(reader.get()), "name");
+          if (xmlTextReaderIsEmptyElement(reader.get()) && !finish_index()) { return -1; }
+        }
+        else if (in_list && depth == 3)
+        {
+          // Expand this offset's descendants to preserve xmlNodeGetContent
+          // semantics (entities, CDATA and nested text), never the whole index.
+          xmlNode* offset = xmlTextReaderExpand(reader.get());
+          if (!offset) { return -1; }
+          xmlChar* content = xmlNodeGetContent(offset);
+          std::string text = content ? reinterpret_cast<const char*>(content) : "";
+          xmlFree(content);
+          try { offsets.emplace_back(property(offset, "idRef"), IndexedMzMLUtils::stringToStreampos(text)); }
+          catch (const Exception::ConversionError&)
+          {
+            // As with the old whole-document parse, malformed XML takes
+            // precedence over an invalid offset earlier in the document.
+            conversion_error = std::current_exception();
+          }
+        }
+      }
+      else if (type == XML_READER_TYPE_END_ELEMENT && in_list && !conversion_error)
+      {
+        if (depth == 2 && !finish_index()) { return -1; }
+        else if (depth == 1) { in_list = false; }
+      }
+    }
+    if (status < 0 || !found_list) { return -1; }
+    if (conversion_error) { std::rethrow_exception(conversion_error); }
+    if (found_spectra) { spectra_offsets = std::move(spectra); }
+    if (found_chromatograms) { chromatograms_offsets = std::move(chromatograms); }
+    return 0;
+  }
+
+}
+
+CURRENT src/tests/class_tests/openms/source/IndexedMzMLDecoder_test.cpp
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// SPDX-License-Identifier: BSD-3-Clause
+//
+// --------------------------------------------------------------------------
+// $Maintainer: Hannes Roest $
+// $Authors: Hannes Roest $
+// --------------------------------------------------------------------------
+
+#include <OpenMS/CONCEPT/ClassTest.h>
+#include <OpenMS/test_config.h>
+
+///////////////////////////
+#include <OpenMS/FORMAT/HANDLERS/IndexedMzMLDecoder.h>
+#include <fstream>
+///////////////////////////
+
+#define MULTI_LINE_STRING(...) #__VA_ARGS__ 
+
+using namespace OpenMS;
+using namespace std;
+
+///////////////////////////
+
+START_TEST(IndexedMzMLDecoder, "$Id$")
+
+/////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////
+
+IndexedMzMLDecoder* ptr = nullptr;
+IndexedMzMLDecoder* nullPointer = nullptr;
+START_SECTION((IndexedMzMLDecoder()))
+  ptr = new IndexedMzMLDecoder;
+  TEST_NOT_EQUAL(ptr, nullPointer)
+END_SECTION
+
+START_SECTION((~IndexedMzMLDecoder()))
+  delete ptr;
+END_SECTION
+
+START_SECTION((int parseOffsets(std::string filename, std::streampos indexoffset, OffsetVector & spectra_offsets, OffsetVector& chromatograms_offsets)))
+  // see also IndexedMzMLFile_test.cpp
+  std::streampos res = IndexedMzMLDecoder().findIndexListOffset(OPENMS_GET_TEST_DATA_PATH("IndexedmzMLFile_1.mzML"));
+  TEST_NOT_EQUAL(res, -1)
+
+  IndexedMzMLDecoder::OffsetVector spectra_offsets;
+  IndexedMzMLDecoder::OffsetVector chromatograms_offsets;
+
+  int off = IndexedMzMLDecoder().parseOffsets(OPENMS_GET_TEST_DATA_PATH("IndexedmzMLFile_1.mzML"), res, spectra_offsets, chromatograms_offsets);
+
+  TEST_EQUAL(off, 0)
+  TEST_EQUAL(spectra_offsets.size(), 2)
+  TEST_EQUAL(chromatograms_offsets.size(), 1)
+END_SECTION
+
+START_SECTION([EXTRA] parseOffsets with no whitespace inside <index>)
+  // the first <offset> is the first child of <index> (no text node before it)
+  std::string tmp_filename;
+  NEW_TMP_FILE(tmp_filename);
+  {
+    std::ofstream os(tmp_filename.c_str());
+    os << "<indexList count=\"2\">"
+          "<index name=\"spectrum\"><offset idRef=\"s1\">100</offset><offset idRef=\"s2\">200</offset></index>"
+          "<index name=\"chromatogram\"><offset idRef=\"TIC\">300</offset></index>"
+          "</indexList>\n<indexListOffset>0</indexListOffset>\n<fileChecksum>0</fileChecksum>\n</indexedmzML>\n";
+  }
+  IndexedMzMLDecoder::OffsetVector spectra_offsets;
+  IndexedMzMLDecoder::OffsetVector chromatograms_offsets;
+  int off = IndexedMzMLDecoder().parseOffsets(tmp_filename, 0, spectra_offsets, chromatograms_offsets);
+  TEST_EQUAL(off, 0)
+  TEST_EQUAL(spectra_offsets.size(), 2)
+  ABORT_IF(spectra_offsets.size() != 2)
+  TEST_EQUAL(spectra_offsets[0].first, "s1")
+  TEST_EQUAL(spectra_offsets[0].second, 100)
+  TEST_EQUAL(spectra_offsets[1].first, "s2")
+  TEST_EQUAL(spectra_offsets[1].second, 200)
+  TEST_EQUAL(chromatograms_offsets.size(), 1)
+  ABORT_IF(chromatograms_offsets.size() != 1)
+  TEST_EQUAL(chromatograms_offsets[0].first, "TIC")
+  TEST_EQUAL(chromatograms_offsets[0].second, 300)
+END_SECTION
+
+    
+START_SECTION((std::streampos findIndexListOffset(std::string filename, int buffersize = 1023)))
+  // see also IndexedMzMLFile_test.cpp
+  //
+  std::streampos res = IndexedMzMLDecoder().findIndexListOffset(OPENMS_GET_TEST_DATA_PATH("IndexedmzMLFile_1.mzML"));
+  TEST_NOT_EQUAL(res, -1)
+
+  // A std::streamoff value of -1 is also used to represent error conditions by some of the I/O library functions. 
+  std::streampos nonindex = IndexedMzMLDecoder().findIndexListOffset(OPENMS_GET_TEST_DATA_PATH("MzMLFile_1.mzML"));
+  TEST_EQUAL(nonindex, -1)
+
+END_SECTION
+
+    
+
+START_SECTION(([EXTRA] Tiny files clamp footer reads and parse directly from one buffer))
+  std::string filename;
+  NEW_TMP_FILE(filename)
+  const std::string footer = "<indexList count='1'><index name='spectrum'><offset idRef='tiny'>37</offset>"
+    "</index></indexList><indexListOffset>0</indexListOffset></indexedmzML>";
+  { std::ofstream output(filename, std::ios::binary); output << footer; }
+  IndexedMzMLDecoder decoder;
+  TEST_EQUAL(decoder.findIndexListOffset(filename), 0)
+  TEST_EQUAL(decoder.findIndexListOffset(filename, 1), -1)
+  TEST_EQUAL(decoder.findIndexListOffset(filename, 0), -1)
+  TEST_EQUAL(decoder.findIndexListOffset(filename, -17), -1)
+  IndexedMzMLDecoder::OffsetVector spectra, chromatograms;
+  TEST_EQUAL(decoder.parseOffsets(filename, 0, spectra, chromatograms), 0)
+  TEST_EQUAL(spectra.size(), 1)
+  if (!spectra.empty())
+  {
+    TEST_STRING_EQUAL(spectra[0].first, "tiny")
+    TEST_EQUAL(spectra[0].second, 37)
+  }
+  TEST_TRUE(chromatograms.empty())
+  TEST_EQUAL(decoder.parseOffsets(filename, -1, spectra, chromatograms), -1)
+  TEST_EQUAL(decoder.parseOffsets(filename, std::streampos(footer.size()), spectra, chromatograms), -1)
+  TEST_EQUAL(decoder.parseOffsets(filename, std::streampos(footer.size() + 1), spectra, chromatograms), -1)
+END_SECTION
+
+START_SECTION(([EXTRA] Empty missing and truncated footer tokens return no offset))
+  std::string filename;
+  NEW_TMP_FILE(filename)
+  IndexedMzMLDecoder decoder;
+  for (const std::string& text : {std::string(), std::string("<root/>"), std::string("<indexListOff"),
+       std::string("<indexListOffset></indexListOffset>"), std::string("<indexListOffset>-1</indexListOffset>")})
+  {
+    { std::ofstream output(filename, std::ios::binary); output << text; }
+    TEST_EQUAL(decoder.findIndexListOffset(filename), -1)
+  }
+  // A file truncated to empty must be rejected before entering a backend DOM parser.
+  { std::ofstream output(filename, std::ios::binary); }
+  IndexedMzMLDecoder::OffsetVector spectra, chromatograms;
+  TEST_EQUAL(decoder.parseOffsets(filename, 0, spectra, chromatograms), -1)
+END_SECTION
+
+START_SECTION(([EXTRA] Namespaced footer pattern and overflowing offsets preserve conversion semantics))
+  std::string filename;
+  NEW_TMP_FILE(filename)
+  IndexedMzMLDecoder decoder;
+  { std::ofstream output(filename, std::ios::binary); output << "<ns:indexListOffset > 123</ns:indexListOffset>"; }
+  TEST_EQUAL(decoder.findIndexListOffset(filename), 123)
+  { std::ofstream output(filename, std::ios::binary); output << "<indexListOffset>" << std::string(100, '9') << "</indexListOffset>"; }
+  TEST_EXCEPTION(Exception::ConversionError, decoder.findIndexListOffset(filename))
+END_SECTION
+
+/////////////////////////////////////////////////////////////
+START_SECTION(([EXTRA] Forward-only footer parsing preserves nested text attributes and namespaces))
+  std::string filename;
+  NEW_TMP_FILE(filename)
+  {
+    std::ofstream output(filename);
+    output << "<n:indexList xmlns:n='urn:test' count='2'>"
+      "<n:index name='chromatogram'><n:offset idRef='T&amp;IC'><![CDATA[300]]></n:offset></n:index>"
+      "<!-- index order is not fixed -->"
+      "<n:index name='spectrum'><n:offset idRef='s&amp;1'><value>1</value><![CDATA[23]]></n:offset>"
+      "<n:offset idRef='s2'>456</n:offset></n:index></n:indexList></indexedmzML>";
+  }
+  IndexedMzMLDecoder::OffsetVector spectra, chromatograms;
+  TEST_EQUAL(IndexedMzMLDecoder().parseOffsets(filename, 0, spectra, chromatograms), 0)
+  TEST_EQUAL(spectra.size(), 2)
+  TEST_EQUAL(chromatograms.size(), 1)
+  if (spectra.size() == 2 && chromatograms.size() == 1)
+  {
+    TEST_STRING_EQUAL(spectra[0].first, "s&1")
+    TEST_EQUAL(spectra[0].second, 123)
+    TEST_EQUAL(spectra[1].second, 456)
+    TEST_STRING_EQUAL(chromatograms[0].first, "T&IC")
+    TEST_EQUAL(chromatograms[0].second, 300)
+  }
+END_SECTION
+
+START_SECTION(([EXTRA] Footer cursor handles large indices empty indices and malformed XML))
+  std::string filename;
+  NEW_TMP_FILE(filename)
+  {
+    std::ofstream output(filename);
+    output << "<indexList><index name='spectrum'>";
+    for (int i = 0; i < 5000; ++i)
+    {
+      output << "<offset idRef='s" << i << "'>" << 100 + i << "</offset>\n";
+    }
+    output << "</index><index name='chromatogram'/></indexList></indexedmzML>";
+  }
+  IndexedMzMLDecoder decoder;
+  IndexedMzMLDecoder::OffsetVector spectra, chromatograms{{"old", 1}};
+  TEST_EQUAL(decoder.parseOffsets(filename, 0, spectra, chromatograms), 0)
+  TEST_EQUAL(spectra.size(), 5000)
+  TEST_TRUE(chromatograms.empty())
+  if (spectra.size() == 5000)
+  {
+    TEST_STRING_EQUAL(spectra.back().first, "s4999")
+    TEST_EQUAL(spectra.back().second, 5099)
+  }
+  for (const std::string& footer : {
+    std::string("<indexList/><indexList/></indexedmzML>"),
+    std::string("<indexList><index name='unknown'/></indexList></indexedmzML>"),
+    std::string("<indexList><index name='spectrum'><offset idRef='bad'>123</offset></index></indexList>"),
+    std::string("<indexList><index name='spectrum'><offset>123</index></indexList></indexedmzML>")})
+  {
+    { std::ofstream output(filename); output << footer; }
+    spectra = {{"sentinel", 7}};
+    chromatograms = {{"sentinel", 8}};
+    TEST_EQUAL(decoder.parseOffsets(filename, 0, spectra, chromatograms), -1)
+    TEST_EQUAL(spectra.size(), 1)
+    TEST_EQUAL(chromatograms.size(), 1)
+    if (!spectra.empty()) { TEST_STRING_EQUAL(spectra.front().first, "sentinel") }
+  }
+  { std::ofstream output(filename); output << "<indexList><index name='spectrum'><offset>"
+    << std::string(100, '9') << "</offset></index></indexList></indexedmzML>"; }
+  TEST_EXCEPTION(Exception::ConversionError, decoder.parseOffsets(filename, 0, spectra, chromatograms))
+END_SECTION
+
+START_SECTION(([EXTRA] Footer cursor preserves DOM error precedence and permissive child semantics))
+  std::string filename;
+  NEW_TMP_FILE(filename)
+  IndexedMzMLDecoder decoder;
+  IndexedMzMLDecoder::OffsetVector spectra, chromatograms;
+  // Put the later XML error beyond the reader's initial input buffer.
+  { std::ofstream output(filename); output << "<indexList><index name='spectrum'><offset>abc</offset>"
+    "</index></indexList>" << std::string(32000, ' ') << "<fileChecksum></indexedmzML>"; }
+  TEST_EQUAL(decoder.parseOffsets(filename, 0, spectra, chromatograms), -1)
+  { std::ofstream output(filename); output << "<indexList><index name='spectrum'><offset>abc</offset>"
+    "</index></indexList>" << std::string(32000, ' ') << "</indexedmzML>"; }
+  TEST_EXCEPTION(Exception::ConversionError, decoder.parseOffsets(filename, 0, spectra, chromatograms))
+  // The existing decoder accepts any direct element as index/offset and the
+  // last index of a given type wins. This is not schema validation.
+  { std::ofstream output(filename); output << "<indexList><foo name='spectrum'><bar idRef='old'>1</bar></foo>"
+    "<index name='spectrum'><offset>2</offset></index></indexList></indexedmzML>"; }
+  TEST_EQUAL(decoder.parseOffsets(filename, 0, spectra, chromatograms), 0)
+  TEST_EQUAL(spectra.size(), 1)
+  if (!spectra.empty())
+  {
+    TEST_STRING_EQUAL(spectra[0].first, "")
+    TEST_EQUAL(spectra[0].second, 2)
+  }
+  chromatograms = {{"preserved", 3}};
+  { std::ofstream output(filename); output << "<indexList/></indexedmzML>"; }
+  TEST_EQUAL(decoder.parseOffsets(filename, 0, spectra, chromatograms), 0)
+  TEST_EQUAL(chromatograms.size(), 1)
+END_SECTION
+
+/////////////////////////////////////////////////////////////
+END_TEST
+
+
+CURRENT cmake/cmake_findExternalLibs.cmake
+# Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# --------------------------------------------------------------------------
+# $Maintainer: Stephan Aiche, Chris Bielow $
+# $Authors: Chris Bielow, Stephan Aiche $
+# --------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# This cmake file handles finding external libs for OpenMS
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# find libs (for linking)
+# On Windows:
+#   * on windows we need the *.lib versions (dlls alone won't do for linking)
+#   * never mix Release/Debug versions of libraries. Leads to strange segfaults,
+#     stack corruption etc, due to different runtime libs ...
+# compiler-wise: build the dependencies with the same compiler as OpenMS!
+find_package(LibXml2 2.13 REQUIRED)
+
+# OpenMS uses push parsing, the forward-only reader, legacy qualified names, XSD validation and concurrent
+# parser contexts. A version-compatible minimal libxml2 build can omit these.
+include(CheckSymbolExists)
+include(CMakePushCheckState)
+cmake_push_check_state(RESET)
+set(CMAKE_REQUIRED_INCLUDES ${LIBXML2_INCLUDE_DIRS})
+foreach(feature SAX1 PUSH READER SCHEMAS THREAD ICONV ICU)
+  # Recheck when an existing build tree changes its libxml2 installation.
+  unset(OPENMS_LIBXML2_${feature} CACHE)
+  check_symbol_exists(LIBXML_${feature}_ENABLED "libxml/xmlversion.h" OPENMS_LIBXML2_${feature})
+endforeach()
+cmake_pop_check_state()
+foreach(feature SAX1 PUSH READER SCHEMAS THREAD)
+  if(NOT OPENMS_LIBXML2_${feature})
+    message(FATAL_ERROR "OpenMS requires libxml2 built with ${feature} support")
+  endif()
+endforeach()
+if(NOT OPENMS_LIBXML2_ICONV AND NOT OPENMS_LIBXML2_ICU)
+  message(WARNING "libxml2 has neither iconv nor ICU: XML encodings such as Windows-1252 are unavailable")
+endif()
+
+#------------------------------------------------------------------------------
+# BOOST
+# OpenMS uses only header-only Boost libraries (Boost.Regex is header-only since
+# 1.76; FileInfo only needs Boost.Iostreams' filtering_ostream and null_sink,
+# which are templates), so no compiled Boost library is linked and static and
+# shared Boost installations work alike. A static Boost linked into libOpenMS.so
+# failed where it was not built with -fPIC and brought its own dependencies
+# (zstd, lzma, ICU) in as plain link flags (#3319); a compiled component would
+# bring that choice back.
+find_boost()
+
+if(Boost_FOUND)
+  message(STATUS "Found Boost version ${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION}" )
+  set(CF_OPENMS_BOOST_VERSION_MAJOR ${Boost_MAJOR_VERSION})
+  set(CF_OPENMS_BOOST_VERSION_MINOR ${Boost_MINOR_VERSION})
+  set(CF_OPENMS_BOOST_VERSION_SUBMINOR ${Boost_SUBMINOR_VERSION})
+  set(CF_OPENMS_BOOST_VERSION ${Boost_VERSION})
+else()
+  message(FATAL_ERROR "Boost not found!")
+endif()
+
+#------------------------------------------------------------------------------
+# libsvm
+# creates LibSVM target
+find_package(LIBSVM 2.91 REQUIRED) ## will not overwrite LIBSVM_LIBRARY if defined already
+if (LIBSVM_FOUND)
+	set(CF_OPENMS_LIBSVM_VERSION_MAJOR ${LIBSVM_MAJOR_VERSION})
+	set(CF_OPENMS_LIBSVM_VERSION_MINOR ${LIBSVM_MINOR_VERSION})
+	set(CF_OPENMS_LIBSVM_VERSION ${LIBSVM_VERSION})
+endif()
+
+#------------------------------------------------------------------------------
+# LP Solver selection
+# LP_SOLVER option: COIN, GLPK, HIGHS, or AUTO (default)
+# AUTO tries COIN-OR first, then GLPK, then HiGHS via FetchContent
+set(LP_SOLVER "AUTO" CACHE STRING "LP solver to use: AUTO, COIN, GLPK, or HIGHS")
+set_property(CACHE LP_SOLVER PROPERTY STRINGS AUTO COIN GLPK HIGHS)
+
+if (LP_SOLVER STREQUAL "COIN" OR LP_SOLVER STREQUAL "AUTO")
+  find_package(COIN QUIET)
+  if (COIN_FOUND)
+    set(OPENMS_HAS_COINOR 1)
+    set(LPTARGET "CoinOR::CoinOR")
+    message(STATUS "LP solver: COIN-OR")
+  elseif(LP_SOLVER STREQUAL "COIN")
+    message(FATAL_ERROR "LP_SOLVER set to COIN but COIN-OR was not found.")
+  endif()
+endif()
+
+if (NOT LPTARGET AND (LP_SOLVER STREQUAL "GLPK" OR LP_SOLVER STREQUAL "AUTO"))
+  find_package(GLPK QUIET)
+  if (GLPK_FOUND)
+    set(CF_OPENMS_GLPK_VERSION_MAJOR ${GLPK_VERSION_MAJOR})
+    set(CF_OPENMS_GLPK_VERSION_MINOR ${GLPK_VERSION_MINOR})
+    set(CF_OPENMS_GLPK_VERSION ${GLPK_VERSION_STRING})
+    set(LPTARGET "GLPK::GLPK")
+    message(STATUS "LP solver: GLPK ${GLPK_VERSION_STRING}")
+  elseif(LP_SOLVER STREQUAL "GLPK")
+    message(FATAL_ERROR "LP_SOLVER set to GLPK but GLPK was not found.")
+  endif()
+endif()
+
+if (NOT LPTARGET AND (LP_SOLVER STREQUAL "HIGHS" OR LP_SOLVER STREQUAL "AUTO"))
+  # Try to find a system-installed HiGHS first
+  find_package(highs QUIET CONFIG)
+  if (highs_FOUND)
+    set(OPENMS_HAS_HIGHS 1)
+    set(LPTARGET "highs::highs")
+    message(STATUS "LP solver: HiGHS (system)")
+  else()
+    # Fetch HiGHS via FetchContent
+    include(FetchContent)
+    FetchContent_Declare(
+      highs
+      GIT_REPOSITORY https://github.com/ERGO-Code/HiGHS.git
+      GIT_TAG        v1.14.0
+      GIT_SHALLOW    TRUE
+    )
+    set(HIGHS_BUILD_TESTING OFF CACHE BOOL "" FORCE)
+    set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(highs)
+    # OpenMS defaults to hidden C++ symbol visibility globally. HiGHS does not
+    # annotate its C++ API for export, so a shared HiGHS build must opt out of
+    # hidden visibility or libOpenMS cannot link against those symbols.
+    if (TARGET highs)
+      set_target_properties(highs PROPERTIES
+        CXX_VISIBILITY_PRESET default
+        VISIBILITY_INLINES_HIDDEN OFF)
+    endif()
+    if (TARGET libhighs)
+      set_target_properties(libhighs PROPERTIES
+        CXX_VISIBILITY_PRESET default
+        VISIBILITY_INLINES_HIDDEN OFF)
+    endif()
+    set(OPENMS_HAS_HIGHS 1)
+    set(LPTARGET "highs")
+    message(STATUS "LP solver: HiGHS (FetchContent)")
+  endif()
+endif()
+
+if (NOT LPTARGET)
+  message(FATAL_ERROR "No LP solver found. Set LP_SOLVER to COIN, GLPK, or HIGHS, or ensure one is available.")
+endif()
+
+# Set default GLPK version variables if GLPK was not found (needed for config.h.in substitution)
+if (NOT DEFINED CF_OPENMS_GLPK_VERSION_MAJOR)
+  set(CF_OPENMS_GLPK_VERSION_MAJOR 0)
+  set(CF_OPENMS_GLPK_VERSION_MINOR 0)
+  set(CF_OPENMS_GLPK_VERSION "0.0")
+endif()
+
+#------------------------------------------------------------------------------
+# zlib
+# creates ZLIB::ZLIB target
+find_package(ZLIB REQUIRED)
+# Detect zlib-ng (drop-in compat mode). zlib-ng produces byte-different but
+# functionally equivalent compressed output, which causes FuzzyDiff-based
+# tests to fail when comparing mzML binary arrays.
+include(CheckSymbolExists)
+set(CMAKE_REQUIRED_INCLUDES ${ZLIB_INCLUDE_DIRS})
+check_symbol_exists(ZLIBNG_VERSION "zlib.h" _HAVE_ZLIB_NG)
+if(_HAVE_ZLIB_NG)
+  set(HAVE_ZLIB_NG TRUE CACHE BOOL "zlib-ng detected as system zlib" FORCE)
+  message(STATUS "Detected zlib-ng -- will relax compressed-data test comparisons")
+else()
+  set(HAVE_ZLIB_NG FALSE CACHE BOOL "zlib-ng detected as system zlib" FORCE)
+endif()
+
+#------------------------------------------------------------------------------
+# bzip2
+find_package(BZip2 REQUIRED)
+
+#------------------------------------------------------------------------------
+# zstd (Zstandard, used for mzML binary data array compression, MS:1003780 ff.)
+# zstd is also a dependency of Apache Arrow/Parquet, so vcpkg and distribution
+# packages of Arrow already provide it (an Arrow built with bundled dependencies
+# carries a private copy, so install the system package there). Its config
+# package exports a shared or a static target depending on how it was built
+# (zstd >= 1.5.6 additionally provides zstd::libzstd), so take whichever exists.
+# Fall back to a plain header/library search for installations without the
+# config package.
+find_package(zstd CONFIG QUIET)
+if(TARGET zstd::libzstd)
+  set(OPENMS_ZSTD_TARGET zstd::libzstd)
+elseif(TARGET zstd::libzstd_shared)
+  set(OPENMS_ZSTD_TARGET zstd::libzstd_shared)
+elseif(TARGET zstd::libzstd_static)
+  set(OPENMS_ZSTD_TARGET zstd::libzstd_static)
+else()
+  find_path(OPENMS_ZSTD_INCLUDE_DIR NAMES zstd.h)
+  find_library(OPENMS_ZSTD_LIBRARY NAMES zstd libzstd zstd_static libzstd_static)
+  if(NOT OPENMS_ZSTD_INCLUDE_DIR OR NOT OPENMS_ZSTD_LIBRARY)
+    message(FATAL_ERROR "zstd (Zstandard) not found. Install the zstd development package "
+                        "(e.g. libzstd-dev, libzstd-devel or 'brew install zstd') or point CMake to it "
+                        "via CMAKE_PREFIX_PATH.")
+  endif()
+  add_library(OpenMS_zstd UNKNOWN IMPORTED)
+  set_target_properties(OpenMS_zstd PROPERTIES
+    IMPORTED_LOCATION "${OPENMS_ZSTD_LIBRARY}"
+    INTERFACE_INCLUDE_DIRECTORIES "${OPENMS_ZSTD_INCLUDE_DIR}")
+  set(OPENMS_ZSTD_TARGET OpenMS_zstd)
+endif()
+message(STATUS "Using zstd target: ${OPENMS_ZSTD_TARGET}")
+
+#------------------------------------------------------------------------------
+# libzip (ZIP64 archive support)
+# Uses our FindLibzip.cmake module which does a manual header+library search.
+# We intentionally avoid CONFIG mode because libzip <= 1.10 ships a CMake
+# targets file that references CLI tool binaries (zipcmp, zipmerge, ziptool)
+# and raises FATAL_ERROR if those aren't installed (e.g. Ubuntu without
+# libzip-tools).
+find_package(Libzip REQUIRED)
+
+#------------------------------------------------------------------------------
+# Find Eigen
+# creates Eigen3::Eigen3 package
+# CMake is garbage https://gitlab.kitware.com/cmake/cmake/-/issues/24581
+# We also have to check for 3.4.0 because the configversion file in 3.4.0 tells CMake that 5 is incompatible
+# Try to find any Eigen3 in the range [3.4.0, 6), quietly
+# The package is still called Eigen3.. don't ask!
+find_package(Eigen3 3.4.0...<6 QUIET)
+
+if(TARGET Eigen3::Eigen)
+    message(STATUS "Found Eigen3 version in range 3.4.0...<6: ${Eigen3_VERSION}")
+else()
+    # Fall back to the usual version compatibility check (for old/broken configversion files)
+    find_package(Eigen3 3.4.0 REQUIRED) # fail if not found now
+    if(TARGET Eigen3::Eigen)
+        message(STATUS "Found Eigen3 version compatible to 3.4.0: ${Eigen3_VERSION}")
+    endif()
+endif()
+
+#------------------------------------------------------------------------------
+# Find Crawdad libraries if requested
+# cmake args: -DCrawdad_DIR=/path/to/Crawdad/ -DWITH_CRAWDAD=TRUE
+## TODO check if necessary
+if (WITH_CRAWDAD)
+  message(STATUS "Will compile with Crawdad support: ${Crawdad_DIR}" )
+  find_package(Crawdad REQUIRED)
+  # find archive (static) version and add it to the OpenMS library
+  find_library(Crawdad_LIBRARY
+   NAMES Crawdad.a Crawdad
+    HINTS ${Crawdad_DIR})
+endif()
+
+#------------------------------------------------------------------------------
+# HDF5
+if (WITH_HDF5)
+  # For MSVC use static linking to the HDF5 libraries
+  if(MSVC)
+    set(HDF5_USE_STATIC_LIBRARIES ON)
+  endif()
+  find_package(HDF5 MODULE REQUIRED COMPONENTS C CXX)
+endif()
+
+
+#------------------------------------------------------------------------------
+# libcurl (used for HTTP in OpenMS core; also needed by Apache Arrow 23+)
+find_package(CURL REQUIRED)
+
+#------------------------------------------------------------------------------
+# Apache Arrow and Parquet (required dependency).
+# Arrow 23+ required for parquet file format compatibility. We don't pin the
+# version in find_package because Arrow's ConfigVersion uses SameMajorVersion
+# compatibility, so `find_package(Arrow 23 ...)` rejects 24.x even though
+# 24.x remains API-compatible for our usage. Enforce the minimum with an
+# explicit VERSION_LESS check after the package is located.
+find_package(Arrow CONFIG REQUIRED)
+if(Arrow_VERSION VERSION_LESS 23)
+  message(FATAL_ERROR "Apache Arrow >= 23 required (found ${Arrow_VERSION}).")
+endif()
+find_package(Parquet CONFIG REQUIRED)
+if(Parquet_VERSION VERSION_LESS 23)
+  message(FATAL_ERROR "Apache Parquet >= 23 required (found ${Parquet_VERSION}).")
+endif()
+
+# Arrow's CMake config may import nlohmann_json as a transitive dependency.
+# If so, force the vendored extern to use the already-imported target instead
+# of trying to add_library() a second target with the same name.
+if(TARGET nlohmann_json::nlohmann_json)
+  set(USE_EXTERNAL_JSON ON CACHE BOOL "Use an external nlohmann::json library" FORCE)
+endif()
+
+# Determine Arrow target based on ARROW_USE_STATIC preference
+if(ARROW_USE_STATIC AND TARGET Arrow::arrow_static)
+  set(OPENMS_ARROW_TARGET Arrow::arrow_static)
+elseif(NOT ARROW_USE_STATIC AND TARGET Arrow::arrow_shared)
+  set(OPENMS_ARROW_TARGET Arrow::arrow_shared)
+elseif(TARGET Arrow::arrow_static)
+  set(OPENMS_ARROW_TARGET Arrow::arrow_static)
+elseif(TARGET Arrow::arrow_shared)
+  set(OPENMS_ARROW_TARGET Arrow::arrow_shared)
+else()
+  message(FATAL_ERROR "No suitable Arrow target found")
+endif()
+
+# Determine Arrow Compute target (may be bundled into Arrow::arrow_* on some distros).
+# We need compute kernels (e.g., "equal") for filter expression binding.
+if(ARROW_USE_STATIC AND TARGET Arrow::arrow_compute_static)
+  set(OPENMS_ARROW_COMPUTE_TARGET Arrow::arrow_compute_static)
+elseif(NOT ARROW_USE_STATIC AND TARGET Arrow::arrow_compute_shared)
+  set(OPENMS_ARROW_COMPUTE_TARGET Arrow::arrow_compute_shared)
+elseif(TARGET Arrow::arrow_compute_static)
+  set(OPENMS_ARROW_COMPUTE_TARGET Arrow::arrow_compute_static)
+elseif(TARGET Arrow::arrow_compute_shared)
+  set(OPENMS_ARROW_COMPUTE_TARGET Arrow::arrow_compute_shared)
+else()
+  # Fallback: compute might be a plain library without a CMake target.
+  # Use platform-neutral search with optional hints.
+  find_library(OPENMS_ARROW_COMPUTE_LIB
+    NAMES arrow_compute
+    HINTS ${CMAKE_PREFIX_PATH} ${ARROW_HOME}
+    PATH_SUFFIXES lib lib64
+  )
+  if(OPENMS_ARROW_COMPUTE_LIB)
+    set(OPENMS_ARROW_COMPUTE_TARGET ${OPENMS_ARROW_COMPUTE_LIB})
+    message(STATUS "Using Arrow Compute library from find_library: ${OPENMS_ARROW_COMPUTE_LIB}")
+  else()
+    # Last resort: compute is part of the main Arrow target.
+    set(OPENMS_ARROW_COMPUTE_TARGET ${OPENMS_ARROW_TARGET})
+    message(STATUS "Using Arrow Compute from Arrow target: ${OPENMS_ARROW_TARGET} (no separate compute target/library found)")
+  endif()
+endif()
+
+# Determine Parquet target based on ARROW_USE_STATIC preference
+if(ARROW_USE_STATIC AND TARGET Parquet::parquet_static)
+  set(OPENMS_PARQUET_TARGET Parquet::parquet_static)
+elseif(NOT ARROW_USE_STATIC AND TARGET Parquet::parquet_shared)
+  set(OPENMS_PARQUET_TARGET Parquet::parquet_shared)
+elseif(TARGET Parquet::parquet_static)
+  set(OPENMS_PARQUET_TARGET Parquet::parquet_static)
+elseif(TARGET Parquet::parquet_shared)
+  set(OPENMS_PARQUET_TARGET Parquet::parquet_shared)
+else()
+  message(FATAL_ERROR "No suitable Parquet target found")
+endif()
+
+message(STATUS "Using Arrow target: ${OPENMS_ARROW_TARGET}")
+message(STATUS "Using Arrow Compute target: ${OPENMS_ARROW_COMPUTE_TARGET}")
+message(STATUS "Using Parquet target: ${OPENMS_PARQUET_TARGET}")
+
+# Optional Arrow Dataset (for predicate pushdown)
+find_package(ArrowDataset CONFIG QUIET)
+if(ArrowDataset_FOUND)
+  if(ARROW_USE_STATIC AND TARGET ArrowDataset::arrow_dataset_static)
+    set(OPENMS_ARROW_DATASET_TARGET ArrowDataset::arrow_dataset_static)
+  elseif(NOT ARROW_USE_STATIC AND TARGET ArrowDataset::arrow_dataset_shared)
+    set(OPENMS_ARROW_DATASET_TARGET ArrowDataset::arrow_dataset_shared)
+  elseif(TARGET ArrowDataset::arrow_dataset_static)
+    set(OPENMS_ARROW_DATASET_TARGET ArrowDataset::arrow_dataset_static)
+  elseif(TARGET ArrowDataset::arrow_dataset_shared)
+    set(OPENMS_ARROW_DATASET_TARGET ArrowDataset::arrow_dataset_shared)
+  endif()
+
+  if(OPENMS_ARROW_DATASET_TARGET)
+    message(STATUS "Using Arrow Dataset target: ${OPENMS_ARROW_DATASET_TARGET}")
+  endif()
+endif()
+
+# A statically linked Arrow needs libxml2: arrow_bundled_dependencies vendors
+# azure-storage-common, whose xml_wrapper.cpp (Azure::Storage::_internal::
+# XmlReader/XmlWriter) references xmlBufferCreate/xmlBufferFree and friends. It is
+# the only object in that archive that does -- the AWS SDK is bundled too but
+# brings its own parser (aws_xml_node_*) and needs no libxml2.
+#
+# This is deliberately outside the ArrowDataset block above: the archive comes in
+# through Arrow::arrow_static's own interface, so a static build without Arrow
+# Dataset needs libxml2 just the same.
+#
+# Record the edge on the Arrow target rather than adding LibXml2 as another direct
+# OpenMS dependency. CMake emits every direct link library before the transitive
+# archives it pulls in, so a direct entry lands on the link line ahead of
+# libarrow_bundled_dependencies.a -- and a --as-needed linker (the default on most
+# Linux distributions) then drops libxml2.so again because nothing has referenced
+# it yet. The result is a libOpenMS.so with undefined xml* symbols that only fails
+# when something dlopen()s it, e.g. "import pyopenms" => ImportError: undefined
+# symbol: xmlBufferFree. Appending to the imported target's interface instead puts
+# libxml2 after the archive that needs it, which is what the linker requires.
+if(OPENMS_ARROW_TARGET STREQUAL "Arrow::arrow_static"
+   OR (OPENMS_ARROW_DATASET_TARGET AND
+       OPENMS_ARROW_DATASET_TARGET STREQUAL "ArrowDataset::arrow_dataset_static"))
+  # Deliberately not REQUIRED: only the platforms that actually resolve those
+  # symbols against a system libxml2 need it. MSVC has no --as-needed, and the
+  # Windows vcpkg triplets link a static Arrow that vcpkg builds against its own
+  # ports, without the azure feature (see vcpkg.json), so the Windows builds need
+  # no libxml2 through Arrow; attaching it where it is found anyway is harmless.
+  # A mandatory lookup would turn a link-order workaround into a hard build
+  # dependency everywhere and fail configuration where it is not needed.
+  find_package(LibXml2 QUIET)
+  if(LibXml2_FOUND)
+    if(TARGET Arrow::arrow_bundled_dependencies)
+      set_property(TARGET Arrow::arrow_bundled_dependencies APPEND
+                   PROPERTY INTERFACE_LINK_LIBRARIES LibXml2::LibXml2)
+    else()
+      # Older/repackaged Arrow configs without the bundled-dependencies target:
+      # attach to whichever static targets are in use. Appending puts libxml2 at
+      # the end of their interface, i.e. still behind Arrow's own archives.
+      if(OPENMS_ARROW_TARGET STREQUAL "Arrow::arrow_static")
+        set_property(TARGET ${OPENMS_ARROW_TARGET} APPEND
+                     PROPERTY INTERFACE_LINK_LIBRARIES LibXml2::LibXml2)
+      endif()
+      if(OPENMS_ARROW_DATASET_TARGET AND
+         OPENMS_ARROW_DATASET_TARGET STREQUAL "ArrowDataset::arrow_dataset_static")
+        set_property(TARGET ${OPENMS_ARROW_DATASET_TARGET} APPEND
+                     PROPERTY INTERFACE_LINK_LIBRARIES LibXml2::LibXml2)
+      endif()
+    endif()
+    message(STATUS "Arrow is linked statically: added LibXml2 to its link interface")
+  else()
+    message(STATUS "Arrow is linked statically, but no LibXml2 was found: skipping "
+                   "the libxml2 link-interface workaround. Install the libxml2 "
+                   "development files if linking fails with undefined xml* symbols.")
+  endif()
+endif()
+
+#------------------------------------------------------------------------------
+# wnetalign (Wasserstein network spectral alignment)
+option(WITH_WNETALIGN "Enable WNet alignment (fetches pylmcf, wnet, wnetalign)" OFF)
+
+set(WNETALIGN_INCLUDE_DIRS "")
+
+if(WITH_WNETALIGN)
+  set(_wnetalign_from_vcpkg FALSE)
+
+  if(OPENMS_USE_VCPKG)
+    # These ports are only installed when the optional 'wnetalign' manifest feature
+    # was requested (-DVCPKG_MANIFEST_FEATURES="...;wnetalign"), which is off by
+    # default -- so a miss here is the normal case, not an error. Check the results
+    # before using them: feeding an unvalidated -NOTFOUND into
+    # target_include_directories() fails at generate time with a message that does
+    # not mention wnetalign at all. On a miss we fall through to the FetchContent
+    # path below, the same find-then-fetch pattern used for opentims and
+    # openms-thermo-bridge.
+    # find_path() caches its result, and CMake only repeats the search when the
+    # cached value is <VAR>-NOTFOUND. A path found by an earlier configure therefore
+    # survives even once it has gone away -- switching VCPKG_TARGET_TRIPLET moves
+    # vcpkg_installed/<triplet>/include, and disabling the manifest feature removes
+    # the headers altogether. Without this, a stale entry would still satisfy the
+    # check below and be handed to target_include_directories() as a non-existent
+    # include directory. Drop entries that no longer resolve so the search reflects
+    # what is on disk now.
+    foreach(_wnetalign_cache_var WNETALIGN_INC WNET_INC PYLMCF_INC)
+      if(DEFINED ${_wnetalign_cache_var} AND NOT EXISTS "${${_wnetalign_cache_var}}")
+        unset(${_wnetalign_cache_var} CACHE)
+      endif()
+    endforeach()
+    unset(_wnetalign_cache_var)
+
+    find_path(WNETALIGN_INC NAMES aligner.hpp PATH_SUFFIXES wnetalign)
+    find_path(WNET_INC NAMES graph_elements.hpp PATH_SUFFIXES wnet)
+    find_path(PYLMCF_INC NAMES lmcf.hpp PATH_SUFFIXES pylmcf)
+
+    if(WNETALIGN_INC AND WNET_INC AND PYLMCF_INC)
+      set(WNETALIGN_INCLUDE_DIRS ${PYLMCF_INC} ${WNET_INC} ${WNETALIGN_INC})
+      set(_wnetalign_from_vcpkg TRUE)
+      message(STATUS "wnetalign: using vcpkg ports")
+    else()
+      message(STATUS "wnetalign: vcpkg ports not installed (enable the 'wnetalign' "
+                     "manifest feature to use them), fetching from git instead")
+    endif()
+  endif()
+
+  if(NOT _wnetalign_from_vcpkg)
+    include(FetchContent)
+
+    # Header-only: use GIT_REPOSITORY for reproducible versioned fetch.
+    # To override with local checkouts, set FETCHCONTENT_SOURCE_DIR_PYLMCF,
+    # FETCHCONTENT_SOURCE_DIR_WNET, FETCHCONTENT_SOURCE_DIR_WNETALIGN.
+    FetchContent_Declare(
+      pylmcf
+      GIT_REPOSITORY https://github.com/michalsta/pylmcf.git
+      GIT_TAG        v0.9.8  # d2c9c52bd67d7198ae17b389d77884357260f114
+      GIT_SHALLOW    TRUE
+      SOURCE_SUBDIR  _no_cmake
+    )
+    FetchContent_Declare(
+      wnet
+      GIT_REPOSITORY https://github.com/michalsta/wnet.git
+      GIT_TAG        v0.9.11  # 18a15250adb7ed478ef40d26d736bcd873265c74
+      GIT_SHALLOW    TRUE
+      SOURCE_SUBDIR  _no_cmake
+    )
+    FetchContent_Declare(
+      wnetalign
+      GIT_REPOSITORY https://github.com/michalsta/wnetalign.git
+      GIT_TAG        v0.9.8  # cff6a19a6b540247d57044e06b1852afe24346a0
+      GIT_SHALLOW    TRUE
+      SOURCE_SUBDIR  _no_cmake
+    )
+
+    # MakeAvailable populates source dirs without running the top-level
+    # CMakeLists (SOURCE_SUBDIR points to a nonexistent subdirectory), so
+    # nanobind Python modules are never configured.
+    FetchContent_MakeAvailable(pylmcf wnet wnetalign)
+
+    set(WNETALIGN_INCLUDE_DIRS
+      "${pylmcf_SOURCE_DIR}/src/pylmcf/cpp"
+      "${wnet_SOURCE_DIR}/src/wnet/cpp"
+      "${wnetalign_SOURCE_DIR}/src/wnetalign/cpp"
+    )
+
+    message(STATUS "wnetalign include dirs: ${WNETALIGN_INCLUDE_DIRS}")
+  endif()
+endif()
+
+#------------------------------------------------------------------------------
+# Done finding external libraries
+#------------------------------------------------------------------------------
+
+# for the libraries found below, prefer shared libraries
+if(NOT MSVC AND NOT APPLE)
+	set(CMAKE_FIND_LIBRARY_SUFFIXES ".so;.a")
+endif()
+
+#------------------------------------------------------------------------------
+# PTHREAD
+#------------------------------------------------------------------------------
+# Prefer the -pthread compiler flag to be consistent with SQLiteCpp and avoid
+# rebuilds
+# TODO Do we even need this, when OpenMP is not active?
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package (Threads REQUIRED)
+
+
+#------------------------------------------------------------------------------
+# QT (only needed for GUI)
+#------------------------------------------------------------------------------
+include(${OPENMS_HOST_DIRECTORY}/cmake/cmake_findQt.cmake)
+
+#------------------------------------------------------------------------------
+# opentims (Bruker TimsTOF .d file reading)
+if (WITH_OPENTIMS)
+  find_package(Opentims QUIET)
+
+  if(Opentims_FOUND)
+    message(STATUS "opentims: using system installation (${Opentims_LIBRARIES})")
+
+    # If the installed library was built with OPENTIMS_LINK_SQLITE_STATICALLY,
+    # that compile definition is propagated via the imported target's
+    # INTERFACE_COMPILE_DEFINITIONS. OpenMS must then supply sqlite3 headers
+    # and the library, just as it does in the FetchContent path.
+    # When the library was found via the manual search path (no CMake config
+    # package), INTERFACE_COMPILE_DEFINITIONS may not be set; in that case we
+    # conservatively inject sqlite3 because we cannot know how it was built.
+    get_target_property(_opentims_defs opentims::opentims_cpp INTERFACE_COMPILE_DEFINITIONS)
+    set(_opentims_needs_sqlite FALSE)
+    if(_opentims_defs MATCHES "OPENTIMS_LINK_SQLITE_STATICALLY"
+       OR ((_opentims_defs MATCHES "NOTFOUND" OR _opentims_defs STREQUAL "") AND NOT opentims_FOUND))
+      set(_opentims_needs_sqlite TRUE)
+    endif()
+
+    if(_opentims_needs_sqlite)
+      #Deferred because unofficial::sqlite3::sqlite3 or SQLite::SQLite3 or SQLiteCpp doesn't exist yet,
+      #they are created inside add_subdirectory(src).
+      function(_openms_inject_opentims_sqlite)
+        if(OPENMS_USE_VCPKG AND TARGET unofficial::sqlite3::sqlite3)
+          target_link_libraries(opentims::opentims_cpp INTERFACE unofficial::sqlite3::sqlite3)
+          message(STATUS "opentims: injected sqlite3 (unofficial::sqlite3::sqlite3 via vcpkg)")
+        elseif(TARGET SQLite::SQLite3)
+          target_link_libraries(opentims::opentims_cpp INTERFACE SQLite::SQLite3)
+          message(STATUS "opentims: injected sqlite3 (SQLite::SQLite3)")
+        elseif(TARGET SQLiteCpp)
+          target_link_libraries(opentims::opentims_cpp INTERFACE SQLiteCpp ${OPENMS_SQLITECPP_EXTRA_LIBS})
+          message(STATUS "opentims: injected sqlite3 (SQLiteCpp)")
+        else()
+          message(FATAL_ERROR "opentims requires sqlite3 symbols but no suitable target is available.")
+        endif()
+      endfunction()
+      cmake_language(DEFER CALL _openms_inject_opentims_sqlite)
+    endif()
+  else()
+    # No system install found — fetch and build from source.
+    message(STATUS "opentims: system installation not found, fetching from git")
+    include(FetchContent)
+
+    FetchContent_Declare(
+      opentims
+      GIT_REPOSITORY https://github.com/michalsta/opentims.git
+      GIT_TAG        v1.2.0b4
+    )
+
+    # Build opentims as a C++ static library, not a Python module.
+    # Use OpenMS's own sqlite3 instead of opentims's runtime dlopen.
+    set(OPENTIMS_BUILD_LIB              ON  CACHE BOOL "" FORCE)
+    set(OPENTIMS_BUILD_PYTHON           OFF CACHE BOOL "" FORCE)
+    set(OPENTIMS_LINK_SQLITE_STATICALLY ON  CACHE BOOL "" FORCE)
+
+    # OpenMS sets BUILD_SHARED_LIBS=true (to build libOpenMS.so). Without this
+    # override, opentims's CMakeLists.txt would build libopentims_cpp.so instead
+    # of libopentims_cpp.a. A shared opentims would land in _deps/opentims-build/
+    # rather than the system lib path, so the build-time linker would fail with
+    # "undefined reference to TimsDataHandle" when linking test binaries against
+    # libOpenMS.so (because libopentims_cpp.so's directory is not in the test's
+    # -L search path). Force static so all opentims symbols get absorbed into
+    # libOpenMS.so at link time.
+    set(_openms_saved_build_shared_libs ${BUILD_SHARED_LIBS})
+    set(BUILD_SHARED_LIBS OFF)
+    FetchContent_MakeAvailable(opentims)
+    set(BUILD_SHARED_LIBS ${_openms_saved_build_shared_libs})
+
+    # Provide OpenMS's sqlite3 headers to opentims so it compiles with
+    # OPENTIMS_LINK_SQLITE_STATICALLY (direct sqlite3 calls vs. dlopen).
+    # We intentionally do NOT call target_link_libraries(opentims_cpp PRIVATE sqlite3)
+    # here: adding the CMake sqlite3 target as a PRIVATE dep of a STATIC library
+    # would require sqlite3 to appear in the CMake export sets, which creates
+    # conflicts with SQLiteCpp's own sqlite3 export. The sqlite3 symbols are
+    # resolved at final link time through OpenMS's own SQLiteCpp dependency
+    # (SQLiteCpp PUBLIC-links sqlite3, so libsqlite3.a already appears in
+    # libOpenMS.so's link command after libopentims_cpp.a).
+    target_include_directories(opentims_cpp PRIVATE
+      "${CMAKE_SOURCE_DIR}/src/openms/extern/SQLiteCpp/sqlite3")
+
+    # ZSTD: use the same zstd that OpenMS itself links (required, see above).
+    target_link_libraries(opentims_cpp PRIVATE ${OPENMS_ZSTD_TARGET})
+
+    # Suppress warnings from third-party code
+    target_compile_options(opentims_cpp PRIVATE $<IF:$<CXX_COMPILER_ID:MSVC>,/w,-w>)
+
+    # opentims's own CMakeLists.txt applies /O2 to MSVC builds unconditionally
+    # Any Debug build then combines it with the /RTC1 that CMake puts in
+    # CMAKE_CXX_FLAGS_DEBUG, and MSVC rejects the pair:
+    #   cl : Command line error D8016 : '/RTC1' and '/O2' command-line options are incompatible
+    # reported in https://github.com/michalsta/opentims/issues/44 (remove this once opentims fixes it upstream)
+    if(MSVC)
+      get_target_property(_opentims_opts opentims_cpp COMPILE_OPTIONS)
+      if(_opentims_opts)
+        list(REMOVE_ITEM _opentims_opts "/O2")
+        set_property(TARGET opentims_cpp PROPERTY COMPILE_OPTIONS ${_opentims_opts})
+      endif()
+    endif()
+
+    # Expose a namespaced alias so downstream CMakeLists always use
+    # opentims::opentims_cpp regardless of how the library was obtained.
+    add_library(opentims::opentims_cpp ALIAS opentims_cpp)
+
+    # Add opentims_cpp to both the install-tree and build-tree export sets
+    # (same pattern as Evergreen, IsoSpec, and other bundled deps).
+    # install_library() → OpenMSTargets install export
+    # openms_register_export_target() → _OPENMS_EXPORT_TARGETS build-tree export()
+    install_library(opentims_cpp)
+    openms_register_export_target(opentims_cpp)
+
+    message(STATUS "opentims: built from source (${opentims_SOURCE_DIR})")
+  endif()
+endif()
+#------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------
+# openms-thermo-bridge (Thermo RAW file reading)
+if (WITH_THERMO_RAW)
+  # ThermoRawFile uses the typed single-pass scan API of the 1.x series.
+  find_package(OpenMSThermoBridge 1.0.0 QUIET)
+
+  if(OpenMSThermoBridge_FOUND)
+    message(STATUS "openms-thermo-bridge: using system installation")
+
+    # Ship the Thermo Fisher RawFileReader license with the Thermo assemblies, as the
+    # from-source branch below does. The vcpkg port installs it next to its CMake
+    # package (vcpkg-overlays/ports/openms-thermo-bridge/portfile.cmake).
+    set(_openms_thermo_license_file "${OpenMSThermoBridge_DIR}/ThermoRawFileReader-License.doc")
+    if(EXISTS "${_openms_thermo_license_file}")
+      install(FILES "${_openms_thermo_license_file}"
+              DESTINATION "${INSTALL_SHARE_DIR}/LICENSES"
+              COMPONENT share)
+      openms_add_third_party_notice("LICENSES/ThermoRawFileReader-License.doc"
+                                    "${_openms_thermo_license_file}")
+    else()
+      message(WARNING "openms-thermo-bridge: ${_openms_thermo_license_file} not found; "
+                      "the install will not include the Thermo RawFileReader license.")
+    endif()
+  else()
+    # No system install found — fetch and build from source.
+    message(STATUS "openms-thermo-bridge: system installation not found, fetching from git")
+    include(FetchContent)
+
+    FetchContent_Declare(
+      OpenMSThermoBridge
+      GIT_REPOSITORY https://github.com/OpenMS/openms-thermo-bridge.git
+      # Pin to a specific reviewed upstream revision to keep builds reproducible.
+      # This is the commit of the v1.0.0 release tag. tools/ci/fetch_thermo_assets.sh checks
+      # that its own pin matches and downloads the matching release assets.
+      GIT_TAG        75849ecf6f600a3e52479823043842e571a774ae  # v1.0.0
+    )
+
+    # Configure the thermo bridge build options
+    set(OPENMS_THERMO_BRIDGE_BUILD_CLI         OFF CACHE BOOL "" FORCE)
+    set(OPENMS_THERMO_BRIDGE_ENABLE_VENDOR_DOWNLOAD ON CACHE BOOL "" FORCE)
+    set(OPENMS_THERMO_BRIDGE_DOWNLOAD_TEST_DATA OFF CACHE BOOL "" FORCE)
+
+    # Build the bridge as a shared library. This avoids a typeinfo duplication
+    # issue on macOS: when the bridge was static, its object files introduced a
+    # second copy of typeinfo for std::exception inside libOpenMS.dylib that
+    # didn't coalesce with libc++abi's copy, breaking catch(std::exception&) for
+    # exceptions thrown across translation-unit boundaries. As a shared library,
+    # the bridge resolves standard typeinfo from libc++abi at load time — no
+    # duplication.
+    #
+    # The bridge .so/.dylib is installed alongside libOpenMS and registered in
+    # the CMake export set so downstream consumers resolve it via RPATH.
+    set(_openms_saved_build_testing ${BUILD_TESTING})
+    set(BUILD_TESTING OFF)
+    # The sub-project's install() calls have no COMPONENT, so CMake defaults them
+    # to "Unspecified". On macOS, that creates an unsigned dylib in Unspecified.pkg
+    # that fails Apple notarization. Route them to "library" instead — the same
+    # component used by install_library() below — so the existing signing step
+    # in cmake/package_mac_productbuild.cmake covers the library.
+    set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME library)
+    FetchContent_MakeAvailable(OpenMSThermoBridge)
+    unset(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME)
+    set(BUILD_TESTING ${_openms_saved_build_testing})
+
+    # Place the bridge shared library next to libOpenMS in the build tree so
+    # test executables find it via RPATH without extra configuration.
+    if(TARGET openms_thermo_bridge)
+      set_target_properties(openms_thermo_bridge PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}"
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
+        ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}"
+      )
+    endif()
+
+    # Install the bridge alongside libOpenMS and register it in the CMake export
+    # set so OpenMSTargets.cmake includes it as an imported shared library.
+    # Downstream consumers (e.g. pyOpenMS) don't link it directly — it is a
+    # PRIVATE dependency of libOpenMS and is resolved at runtime via RPATH.
+    # DotNetHost::nethost is PRIVATE in the bridge's own CMakeLists, so it does
+    # NOT appear in the bridge's exported INTERFACE and won't be required from
+    # consumers that don't have the .NET SDK.
+    install_library(openms_thermo_bridge)
+    openms_register_export_target(openms_thermo_bridge)
+
+    if(WIN32)
+      # On Windows the bridge links the nethost *import* library, so
+      # openms_thermo_bridge.dll needs nethost.dll at run time. The .NET host pack
+      # that provides it is not on PATH, so install a copy next to the OpenMS
+      # libraries; installers and wheel repair tools (delvewheel) pick it up from
+      # there. FindDotNetHost.cmake ran inside the bridge's directory scope, so its
+      # result variables are not visible here: run it again in this scope.
+      list(APPEND CMAKE_MODULE_PATH "${OpenMSThermoBridge_SOURCE_DIR}/cmake")
+      find_package(DotNetHost QUIET)
+      list(POP_BACK CMAKE_MODULE_PATH)
+      if(DotNetHost_RUNTIME_LIBRARY)
+        install(FILES "${DotNetHost_RUNTIME_LIBRARY}"
+                DESTINATION ${INSTALL_LIB_DIR}
+                COMPONENT library)
+        message(STATUS "openms-thermo-bridge: installing ${DotNetHost_RUNTIME_LIBRARY} alongside libOpenMS")
+      else()
+        message(WARNING
+          "openms-thermo-bridge: nethost.dll was not located; openms_thermo_bridge.dll "
+          "will only load if nethost.dll is found on PATH at run time.")
+      endif()
+    endif()
+
+    message(STATUS "openms-thermo-bridge: built from source (${OpenMSThermoBridge_SOURCE_DIR})")
+
+    # Download and install the Thermo Fisher RawFileReader license.
+    # OPENMS_THERMO_BRIDGE_THERMO_COMMIT is a CMake cache variable set inside
+    # the bridge's CMakeLists.txt and is visible here after FetchContent_MakeAvailable.
+    # We pin the download to that exact commit so we always get the license that
+    # corresponds to the vendored DLL packages being used.
+    if(OPENMS_THERMO_BRIDGE_THERMO_COMMIT)
+      set(_openms_thermo_license_url
+          "https://raw.githubusercontent.com/thermofisherlsms/RawFileReader/${OPENMS_THERMO_BRIDGE_THERMO_COMMIT}/License.doc")
+      set(_openms_thermo_license_file
+          "${CMAKE_CURRENT_BINARY_DIR}/ThermoRawFileReader-License.doc")
+      if(NOT EXISTS "${_openms_thermo_license_file}")
+        message(STATUS "openms-thermo-bridge: downloading Thermo RawFileReader license")
+        file(DOWNLOAD
+            "${_openms_thermo_license_url}"
+            "${_openms_thermo_license_file}"
+            STATUS _openms_thermo_license_status
+            TLS_VERIFY ON)
+        list(GET _openms_thermo_license_status 0 _openms_thermo_license_code)
+        list(GET _openms_thermo_license_status 1 _openms_thermo_license_message)
+        if(NOT _openms_thermo_license_code EQUAL 0)
+          file(REMOVE "${_openms_thermo_license_file}")
+          message(WARNING
+              "openms-thermo-bridge: failed to download Thermo RawFileReader license "
+              "(${_openms_thermo_license_message}). "
+              "The install will not include the license file.")
+        endif()
+      endif()
+      if(EXISTS "${_openms_thermo_license_file}")
+        install(FILES "${_openms_thermo_license_file}"
+                DESTINATION "${INSTALL_SHARE_DIR}/LICENSES"
+                RENAME "ThermoRawFileReader-License.doc"
+                COMPONENT share)
+        openms_add_third_party_notice("LICENSES/ThermoRawFileReader-License.doc"
+                                      "${_openms_thermo_license_file}")
+      endif()
+    endif()
+  endif()
+
+  # Ship the managed half of the bridge (ThermoWrapperManaged.dll, its
+  # runtimeconfig.json and the Thermo CommonCore assemblies) inside the
+  # shared-data directory as well. The bridge installs them to
+  # <libdir>/openms_thermo_bridge/managed and locates them relative to its own
+  # shared library; that link breaks in relocated layouts such as Python wheels,
+  # where wheel repair tools rename and move the library. ThermoRawFile looks in
+  # <share>/openms_thermo_bridge/managed first, so every consumer that carries
+  # share/OpenMS (pyOpenMS wheels included) gets a working reader. The files are
+  # platform-independent IL assemblies (~1.6 MB), so they belong to 'share'.
+  # OpenMSThermoBridge_MANAGED_DIR is set by the bridge for both the
+  # FetchContent build (internal cache variable) and a system installation
+  # (OpenMSThermoBridgeHelpers.cmake). The directory is populated at build time
+  # when the bridge publishes the assemblies itself, which is fine for install().
+  if(OpenMSThermoBridge_MANAGED_DIR)
+    install(DIRECTORY "${OpenMSThermoBridge_MANAGED_DIR}/"
+            DESTINATION "${INSTALL_SHARE_DIR}/openms_thermo_bridge/managed"
+            COMPONENT share
+            PATTERN "*.pdb" EXCLUDE
+            PATTERN "*.zip" EXCLUDE)
+    # The bridge publishes THIRD-PARTY-NOTICES.txt with these assemblies, so the copy above
+    # installs it: the licenses of the bridge's own ThermoWrapperManaged, of CommandLineParser
+    # and OpenMcdf (MPL-2.0, with the address of its source code), and of nethost, which the
+    # native bridge library links. Thermo's own license is installed under LICENSES. A managed
+    # directory without the file (e.g. a pre-built one from a bridge older than 0.3.1) stops
+    # the installation instead of shipping the assemblies without their licenses.
+    install(CODE "
+      if(NOT EXISTS \"${OpenMSThermoBridge_MANAGED_DIR}/THIRD-PARTY-NOTICES.txt\")
+        message(FATAL_ERROR \"openms-thermo-bridge: ${OpenMSThermoBridge_MANAGED_DIR} has no \"
+                            \"THIRD-PARTY-NOTICES.txt; use openms-thermo-bridge 0.3.1 or newer.\")
+      endif()"
+      COMPONENT share)
+    ## The file may not exist yet: the build publishes the assemblies when it builds the bridge.
+    openms_add_third_party_notice("openms_thermo_bridge/managed/THIRD-PARTY-NOTICES.txt"
+                                  "${OpenMSThermoBridge_MANAGED_DIR}/THIRD-PARTY-NOTICES.txt")
+  else()
+    message(WARNING
+      "openms-thermo-bridge: OpenMSThermoBridge_MANAGED_DIR is not set; the managed "
+      "bridge assemblies will not be installed into ${INSTALL_SHARE_DIR}.")
+  endif()
+endif()
+#------------------------------------------------------------------------------
+
+PRIVATE TIMING HARNESS:
+  struct Result
+  {
+    Digest digest;
+    // Keep opened contexts alive until every worker has completed.
+    std::shared_ptr<OpenMS::OnDiscMSExperiment> retained_context;
+    std::shared_ptr<OpenMS::MSExperiment> retained_experiment;
+    double open_seconds = 0;
+    double read_seconds = 0;
+    std::size_t index_spectra = 0, index_chromatograms = 0;
+  };
+
+  Result run(const std::string& mode, const std::string& path, std::size_t queries,
+    std::barrier<>* read_barrier = nullptr, bool* reached_read_barrier = nullptr)
+  {
+    Result result;
+    const auto begin = Clock::now();
+    if (mode == "stream")
+    {
+      OpenMS::MzMLFile().transform(path, &result.digest, true, true);
+    }
+    else if (mode == "load")
+    {
+      result.retained_experiment = std::make_shared<OpenMS::MSExperiment>();
+      auto& experiment = *result.retained_experiment;
+      OpenMS::MzMLFile().load(path, experiment);
+      for (auto& spectrum : experiment) { result.digest.consumeSpectrum(spectrum); }
+      for (auto& chromatogram : experiment.getChromatograms()) { result.digest.consumeChromatogram(chromatogram); }
+    }
+    else if (mode == "idle")
+    {
+      // Warmup and worker creation are common; no input/context allocations.
+    }
+    else if (mode == "contexts" || mode == "contexts-metadata")
+    {
+      result.retained_context = std::make_shared<OpenMS::OnDiscMSExperiment>();
+      if (!result.retained_context->openFile(path, mode != "contexts-metadata"))
+      {
+        throw std::runtime_error("Input has no usable mzML index");
+      }
+      result.open_seconds = std::chrono::duration<double>(Clock::now() - begin).count();
+      result.index_spectra = result.retained_context->getNrSpectra();
+      result.index_chromatograms = result.retained_context->getNrChromatograms();
+    }
+    else if (mode == "indexed" || mode == "index-open" || mode == "indexed-metadata" || mode == "indexed-sync")
+    {
+      OpenMS::OnDiscMSExperiment experiment;
+      if (!experiment.openFile(path, mode != "indexed-metadata"))
+      {
+        throw std::runtime_error("Input has no usable mzML index");
+      }
+      auto opened = Clock::now();
+      result.open_seconds = std::chrono::duration<double>(opened - begin).count();
+      result.index_spectra = experiment.getNrSpectra();
+      result.index_chromatograms = experiment.getNrChromatograms();
+      if (mode == "indexed" || mode == "indexed-metadata" || mode == "indexed-sync")
+      {
+        if (experiment.getNrSpectra() == 0)
+        {
+          throw std::runtime_error("Indexed input has no spectra");
+        }
+        if (read_barrier)
+        {
+          *reached_read_barrier = true;
+          read_barrier->arrive_and_wait();
+          opened = Clock::now();
+        }
+        std::mt19937_64 random(20261019);
+        for (std::size_t i = 0; i < queries; ++i)
+        {
+          auto spectrum = experiment.getSpectrum(random() % experiment.getNrSpectra());
+          result.digest.consumeSpectrum(spectrum);
+        }
+      }
+      result.read_seconds = std::chrono::duration<double>(Clock::now() - opened).count();
+    }
+    else
+    {
+      throw std::runtime_error("Expected stream, load, indexed[-metadata], index-open, contexts[-metadata], or idle");
+    }
+    if (mode == "stream" || mode == "load" || mode == "idle")
+    {
+      result.read_seconds = std::chrono::duration<double>(Clock::now() - begin).count();
+    }
+    return result;
+  }
+
+  void generate(const std::string& path, std::size_t count, std::size_t points, bool compressed)
+  {
+    OpenMS::PlainMSDataWritingConsumer writer(path);
+    OpenMS::PeakFileOptions options;
+    options.setCompression(compressed);
+    options.setWriteIndex(true);
+    writer.setOptions(options);
+    writer.setExpectedSize(count, 1);
+    writer.setExperimentalSettings(OpenMS::ExperimentalSettings());
+    std::mt19937 random(20261019);
+    for (std::size_t i = 0; i < count; ++i)
+    {
+      OpenMS::MSSpectrum spectrum;
+      spectrum.setNativeID("scan=" + std::to_string(i + 1));
+      spectrum.setRT(static_cast<double>(i) * 0.5);
+      spectrum.setMSLevel(1);
+      spectrum.setType(OpenMS::SpectrumSettings::SpectrumType::CENTROID);
+      spectrum.setMetaValue("xml_poc_note", std::string("Unicode \xCE\xB2 & <escaped> \"value\""));
+      spectrum.reserve(points);
+      for (std::size_t p = 0; p < points; ++p)
+      {
+        OpenMS::Peak1D peak;
+        peak.setMZ(100.0 + static_cast<double>(p) * 0.01 + static_cast<double>(i % 17) * 0.00001);
+        peak.setIntensity(static_cast<float>(random() % 1000000) / 8.0F);
+        spectrum.push_back(peak);
+      }
+      writer.consumeSpectrum(spectrum);
+    }
+    OpenMS::MSChromatogram chromatogram;
+    chromatogram.setNativeID("TIC");
+    for (std::size_t i = 0; i < count; ++i)
+    {
+      OpenMS::ChromatogramPeak peak;
+      peak.setRT(static_cast<double>(i) * 0.5);
+      peak.setIntensity(static_cast<float>(i % 101));
+      chromatogram.push_back(peak);
+    }
+    writer.consumeChromatogram(chromatogram);
+  }
+
+  void verify(const std::string& path)
+  {
+    OpenMS::MSExperiment loaded;
+    OpenMS::MzMLFile().load(path, loaded);
+    Digest expected;
+    for (auto& spectrum : loaded) { expected.consumeSpectrum(spectrum); }
+    for (auto& chromatogram : loaded.getChromatograms()) { expected.consumeChromatogram(chromatogram); }
+    const auto streamed = run("stream", path, 0).digest;
+    OpenMS::OnDiscMSExperiment indexed;
+    if (!indexed.openFile(path)) { throw std::runtime_error("Index verification failed"); }
+    Digest actual;
+    for (std::size_t i = 0; i < indexed.getNrSpectra(); ++i)
+    {
+      auto spectrum = indexed.getSpectrum(i);
+      const auto& original = loaded.getSpectra().at(i);
+      if (spectrum.getRT() != original.getRT() || spectrum.getMSLevel() != original.getMSLevel() ||
+          spectrum.getFloatDataArrays() != original.getFloatDataArrays() ||
+          spectrum.getIntegerDataArrays() != original.getIntegerDataArrays() ||
+          spectrum.getStringDataArrays() != original.getStringDataArrays() ||
+          spectrum.getMetaValue("xml_poc_note") != original.getMetaValue("xml_poc_note"))
+      {
+        throw std::runtime_error("Indexed spectrum metadata differ from full load");
+      }
+      actual.consumeSpectrum(spectrum);
+    }
+    for (std::size_t i = 0; i < indexed.getNrChromatograms(); ++i)
+    {
+      auto chromatogram = indexed.getChromatogram(i);
+      actual.consumeChromatogram(chromatogram);
+    }
+    if (!(expected == streamed) || !(expected == actual))
+    {
+      throw std::runtime_error("Decoded data differ between load, streaming and indexed access");
+    }
+    std::cout << "{\"verified\":true,\"spectra\":" << expected.spectra
+              << ",\"points\":" << expected.points << ",\"hash\":\"" << expected.hash << "\"}\n";
+  }
+}
+
+int main(int argc, char** argv)
+{
+  std::cerr << "XML_BENCHMARK_MAIN_STARTED\n";
+  try
+  {
+    if (argc < 3) { throw std::runtime_error("Usage: xml_parser_benchmark MODE FILE [WORKERS|SPECTRA] [QUERIES|POINTS] [ZLIB]"); }
+    const std::string requested_mode(argv[1]), path(argv[2]);
+    audit_auxiliary = requested_mode == "stream-audit";
+    const std::string mode = audit_auxiliary ? "stream" : requested_mode;
+    const std::size_t workers = argc > 3 ? std::stoull(argv[3]) : 1;
+    const std::size_t queries = argc > 4 ? std::stoull(argv[4]) : 1000;
+    if (workers == 0) { throw std::runtime_error("Worker/spectrum count must be positive"); }
+    if (mode == "generate")
+    {
+      generate(path, workers, queries, argc > 5 && std::string(argv[5]) == "zlib");
+      return 0;
+    }
+    if (mode == "verify") { verify(path); return 0; }
+
+    // Warm shared initialization with one thread, then set each worker team explicitly.
+    // This avoids retaining an unused N-thread main-thread team during fixed-work runs.
+    const int requested_team = omp_get_max_threads();
+    omp_set_num_threads(1);
+    // Warm shared CV/parser initialization before independent worker jobs.
+    OpenMS::MzMLFile warmup;
+    OpenMS::MSExperiment empty;
+    std::string warmup_xml;
+    warmup.storeBuffer(warmup_xml, empty);
+    warmup.loadBuffer(warmup_xml, empty);
+    std::vector<Result> results(workers);
+    std::vector<std::exception_ptr> errors(workers);
+    std::barrier start(static_cast<std::ptrdiff_t>(workers + 1));
+    const bool synchronized_reads = mode == "indexed-sync";
+    std::barrier read_barrier(static_cast<std::ptrdiff_t>(workers + 1));
+    std::vector<std::jthread> threads;
+    for (std::size_t i = 0; i < workers; ++i)
+    {
+      threads.emplace_back([&, i]
+      {
+        omp_set_num_threads(requested_team);
+        start.arrive_and_wait();
+        bool reached_read_barrier = false;
+        try { results[i] = run(mode, path, queries, synchronized_reads ? &read_barrier : nullptr, &reached_read_barrier); }
+        catch (...)
+        {
+          if (synchronized_reads && !reached_read_barrier) { read_barrier.arrive_and_drop(); }
+          errors[i] = std::current_exception();
+        }
+      });
+    }
+    const auto begin = Clock::now();
+    start.arrive_and_wait();
+    if (synchronized_reads) { read_barrier.arrive_and_wait(); }
+    const auto read_begin = Clock::now();
+    threads.clear();
+    const double synchronized_read_seconds = synchronized_reads ? std::chrono::duration<double>(Clock::now() - read_begin).count() : 0.0;
+    const double seconds = std::chrono::duration<double>(Clock::now() - begin).count();
+    for (const auto& error : errors) { if (error) { std::rethrow_exception(error); } }
+    for (const auto& result : results)
+    {
+      if (!(result.digest == results.front().digest)) { throw std::runtime_error("Worker digest mismatch"); }
+      if (result.index_spectra != results.front().index_spectra ||
+          result.index_chromatograms != results.front().index_chromatograms)
+      {
+        throw std::runtime_error("Worker index count mismatch");
+      }
+    }
+    // Query after joining, while retained contexts/experiments remain alive.
+    const auto resident_rss = currentRssBytes();
+    std::cout << std::setprecision(12) << "{\"mode\":\"" << mode << "\",\"workers\":" << workers
+              << ",\"openms_library\":" << std::quoted(loadedLibrary())
+              << ",\"resident_rss_bytes\":" << resident_rss
+              << ",\"native_peak_rss_bytes\":" << nativePeakRssBytes()
+              << ",\"requested_openmp_threads\":" << requested_team
+              << ",\"auxiliary_audit\":" << (audit_auxiliary ? "true" : "false")
+              << ",\"aux_hash_per_worker\":\"" << results.front().digest.aux_hash << "\""
+              << ",\"im_array_values_per_worker\":" << results.front().digest.im_values
+              << ",\"im_scalar_spectra_per_worker\":" << results.front().digest.im_scalars
+              << ",\"ms1_per_worker\":" << results.front().digest.ms_levels[1]
+              << ",\"ms2_per_worker\":" << results.front().digest.ms_levels[2]
+              << ",\"ms3plus_per_worker\":" << results.front().digest.ms_levels[3]
+              << ",\"synchronized_read_seconds\":" << synchronized_read_seconds
+              << ",\"seconds\":" << seconds << ",\"file_bytes\":" << std::filesystem::file_size(path)
+              << ",\"spectra_per_worker\":" << results.front().digest.spectra
+              << ",\"chromatograms_per_worker\":" << results.front().digest.chromatograms
+              << ",\"points_per_worker\":" << results.front().digest.points
+              << ",\"index_spectra\":" << results.front().index_spectra
+              << ",\"index_chromatograms\":" << results.front().index_chromatograms
+              << ",\"hash_per_worker\":\"" << results.front().digest.hash << "\",\"jobs\":[";
+    for (std::size_t i = 0; i < workers; ++i)
+    {
+      if (i) { std::cout << ','; }
+      std::cout << "{\"open_seconds\":" << results[i].open_seconds
+                << ",\"read_seconds\":" << results[i].read_seconds << '}';
+    }
+    std::cout << "]}\n";
+  }
+  catch (const std::exception& error)
+  {
+    std::cerr << error.what() << '\n';
+    return 1;
+  }
+  return 0;
+}

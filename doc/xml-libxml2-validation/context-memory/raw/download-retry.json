@@ -1,0 +1,4 @@
+{
+  "reason": "Concurrent public requests received HTTP429; retry sequentially, reuse verified input",
+  "unix": 1792526029.2869437
+}

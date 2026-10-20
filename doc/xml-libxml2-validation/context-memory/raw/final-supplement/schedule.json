@@ -1,0 +1,272 @@
+[
+  {
+    "input": "dda-lumos.mzML",
+    "workers": 64,
+    "version": "baseline",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 2
+  },
+  {
+    "input": "large-matched-plain.mzML",
+    "workers": 64,
+    "version": "baseline",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 1
+  },
+  {
+    "input": "large-matched-zlib.mzML",
+    "workers": 64,
+    "version": "candidate",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 1
+  },
+  {
+    "input": "dda-lumos.mzML",
+    "workers": 64,
+    "version": "baseline",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 0
+  },
+  {
+    "input": "large-matched-plain.mzML",
+    "workers": 64,
+    "version": "baseline",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 2
+  },
+  {
+    "input": "pasef-published.mzML",
+    "workers": 64,
+    "version": "baseline",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 2
+  },
+  {
+    "input": "dda-lumos.mzML",
+    "workers": 32,
+    "version": "baseline",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 1
+  },
+  {
+    "input": "large-matched-zlib.mzML",
+    "workers": 64,
+    "version": "baseline",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 2
+  },
+  {
+    "input": "large-matched-zlib.mzML",
+    "workers": 64,
+    "version": "baseline",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 1
+  },
+  {
+    "input": "dda-lumos.mzML",
+    "workers": 32,
+    "version": "candidate",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 2
+  },
+  {
+    "input": "pasef-published.mzML",
+    "workers": 64,
+    "version": "candidate",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 0
+  },
+  {
+    "input": "pasef-published.mzML",
+    "workers": 64,
+    "version": "candidate",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 1
+  },
+  {
+    "input": "dda-lumos.mzML",
+    "workers": 64,
+    "version": "candidate",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 0
+  },
+  {
+    "input": "pasef-published.mzML",
+    "workers": 64,
+    "version": "baseline",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 0
+  },
+  {
+    "input": "pasef-published.mzML",
+    "workers": 64,
+    "version": "candidate",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 2
+  },
+  {
+    "input": "large-matched-plain.mzML",
+    "workers": 64,
+    "version": "candidate",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 1
+  },
+  {
+    "input": "dda-lumos.mzML",
+    "workers": 64,
+    "version": "candidate",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 1
+  },
+  {
+    "input": "dda-lumos.mzML",
+    "workers": 64,
+    "version": "candidate",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 2
+  },
+  {
+    "input": "large-matched-zlib.mzML",
+    "workers": 64,
+    "version": "baseline",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 0
+  },
+  {
+    "input": "large-matched-zlib.mzML",
+    "workers": 64,
+    "version": "candidate",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 2
+  },
+  {
+    "input": "dda-lumos.mzML",
+    "workers": 32,
+    "version": "baseline",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 0
+  },
+  {
+    "input": "dda-lumos.mzML",
+    "workers": 32,
+    "version": "baseline",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 2
+  },
+  {
+    "input": "large-matched-plain.mzML",
+    "workers": 64,
+    "version": "candidate",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 2
+  },
+  {
+    "input": "large-matched-plain.mzML",
+    "workers": 64,
+    "version": "baseline",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 0
+  },
+  {
+    "input": "large-matched-plain.mzML",
+    "workers": 64,
+    "version": "candidate",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 0
+  },
+  {
+    "input": "dda-lumos.mzML",
+    "workers": 32,
+    "version": "candidate",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 1
+  },
+  {
+    "input": "large-matched-zlib.mzML",
+    "workers": 64,
+    "version": "candidate",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 0
+  },
+  {
+    "input": "dda-lumos.mzML",
+    "workers": 64,
+    "version": "baseline",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 1
+  },
+  {
+    "input": "pasef-published.mzML",
+    "workers": 64,
+    "version": "baseline",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 1
+  },
+  {
+    "input": "dda-lumos.mzML",
+    "workers": 32,
+    "version": "candidate",
+    "mode": "indexed-sync",
+    "queries": 8192,
+    "phase": "primary-affinity-sustained",
+    "rep": 0
+  }
+]

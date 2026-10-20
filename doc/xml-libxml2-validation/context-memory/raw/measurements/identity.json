@@ -1,0 +1,91 @@
+{
+  "files": {
+    "/etc/ld.so.cache": "442cb324ed9aa7ab8477ea8e0260ca979e3d6439fc6d50d61b9fc3b88c3f1033",
+    "/scratch/kohlbach/contrib/build/lib/libz.so.1.3.1": "cc9ca6258f4a6eaa4a130a9f79074d413a0d91cb1adafe0c439abbe35c9b8010",
+    "/scratch/kohlbach/contrib/build/lib/libzip.so.5.5": "badeb02a90eba2403efcde2bd4a3dbd4e8ac446afbefa09aaabf4ddc26fa6c18",
+    "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/benchmark-build/xml_benchmark_launcher": "7b890e9af36acd06978b60267556bf48449058e53b77ad5fe24dc4c624479fdb",
+    "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/benchmark-build/xml_parser_benchmark": "ac104a4c4d1d0f3534f3b5fb6c98a6aa44a5ef3e743af90f73fbbe9509e4af97",
+    "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/dependencies/install/lib/libxml2.so.16.1.4": "aae3d3d180f447e45ab3fb006b177b5b209acd69bcfd3436f4c2b2921a95e819",
+    "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/dependencies/install/lib/libzstd.so.1.5.7": "7a339857ef9327fd614534d5f22ad6301d8b528e91581620a74a9a2ef7bfd246",
+    "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/meter.py": "6f827b7184d6cef93a67b1d5ac3fff552b3dd3146d84d74e11d2730d272040d9",
+    "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/native-meter": "63c2239cfd3396fba5c01fe57cd8fc9fc05ce5d1cf7640a11c523de2697ef1d7",
+    "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/run-targeted.py": "9f23c38585cbfa845baf842d65b2ac122eff7550d94fbcb510c961637b31c6eb",
+    "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/snapshots/baseline/lib/libOpenMS.so": "b45166ef26af2fe088b6e8d01d45fb1b8ff3b1fcc11bb6e65748d11c0e8c20a3",
+    "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/snapshots/baseline/lib/libOpenSwathAlgo.so": "6a096aef64506e49d4273882fd2a4a4d61dff38d7207bb5b7525186b09675edb",
+    "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/snapshots/candidate/lib/libOpenMS.so": "1652582f1a420ddecc0ca22a4b68a13e3e1e8d19a6c11c97aaed84accc044d56",
+    "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/snapshots/candidate/lib/libOpenSwathAlgo.so": "6a096aef64506e49d4273882fd2a4a4d61dff38d7207bb5b7525186b09675edb",
+    "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/staging/benchmark-source/CMakeLists.txt": "17fad5e302966ecd6687af749ea54b058b3371591e6a5f24ec0e9e870f644283",
+    "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/staging/benchmark-source/benchmark.cpp": "c3c683e29a3e721423c6c006365f028b0b1a62af63cdce6e1a9198fb73645fd9",
+    "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/staging/benchmark-source/conformance_probe.cpp": "c3f59d7dce1560e3eacfc95860a17bd8b108d8f9532a250d09eabd31a2c02449",
+    "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/staging/benchmark-source/launcher.cpp": "66122201244d9cfa2b1d31b1f50f1debd6104661a1ffcbc0c630317eb8f9f57d",
+    "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/staging/benchmark-source/profile-context.cpp": "b6efa3379297db169afa6d8bd54a89ba364c1a34ae2c7e0c3b560b3467a43c83",
+    "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/staging/benchmark-source/schema_validation_probe.cpp": "36dff739490a9e75e08280d89e831df543e1275e63077235fd664b09f311f665",
+    "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/staging/candidate/cmake/cmake_findExternalLibs.cmake": "8031746afe23a2a6da2aae3ac320dcb8840caad51a8169661e8b39b9ceeafe00",
+    "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/staging/candidate/src/openms/source/FORMAT/HANDLERS/IndexedMzMLDecoder.cpp": "5deef405c821e01604461d418e2b41ebe0229703cd91a784d55f6896260423e3",
+    "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/staging/candidate/src/tests/class_tests/openms/source/IndexedMzMLDecoder_test.cpp": "172988266f4a5e8992f14bbe2b380e4f0ed7796d143b97701e68e3829083fb60",
+    "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/staging/candidate-source-manifest.json": "fc376a7da962cb6ec101a0629eb8efa7b1cdf0a1417c9d422c5fe22dd375c45e",
+    "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/staging/protocol.json": "de70cc11ef444ec19d800c1231363689e0c42f69750892e2289b3a54017a85cb",
+    "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2": "c20a2dc8917c755f02b94049356320fe1f62ac7d9f8994731f807d9df39302da",
+    "/usr/lib/x86_64-linux-gnu/libc.so.6": "3a15d66867d83762c7f2f1e37359cb8f6c5743edb369c65285cb0b1c4f7498bf",
+    "/usr/lib/x86_64-linux-gnu/libcrypto.so.3": "6866ed711dab8927e1bf82bf1cd30e828bdfc34f3cc1e83b1c9eb01ce6c37d9a",
+    "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1": "d93224d2b0dab4247598be683adca02f5cf00586f99c187579cd7e92058fb7cb",
+    "/usr/lib/x86_64-linux-gnu/libgomp.so.1.0.0": "135f3c8f006d2fe5e68e51281c7974cb991a03de3bfb3593d68d174dfcf854d1",
+    "/usr/lib/x86_64-linux-gnu/libm.so.6": "fce00b6f25f459cf4ae0b7fae4257909a1a8a86f9149e7c029a5d617baf1ccd0",
+    "/usr/lib/x86_64-linux-gnu/libssl.so.3": "a40e7b67489bbd257e432c700ff8f6a1ad796425b5eccecdc2930127fdd86624",
+    "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33": "1fd75fe70354a416d75aef22bcae68c47bd25d20e2d0568c30b1a9838cf62f11"
+  },
+  "inputs": {
+    "large-matched-plain.mzML": {
+      "bytes": 4505085414,
+      "sha256": "bbd284fbe3c34aa49c82caa2efd754d1d7bee6676ffa2c2818c58087bf41eeb3"
+    },
+    "large-matched-zlib.mzML": {
+      "bytes": 2206059192,
+      "sha256": "4982dbc3a1fe3a833b248afd85b9d9dc9b7584c5b0765f1f41ae3f5ed7dfbeca"
+    },
+    "dda-lumos.mzML": {
+      "bytes": 617171864,
+      "sha256": "6416ec25f73efa3fefc0758b06eb6ae8e94bbb08de7b3fc02474d256de757656"
+    },
+    "pasef-published.mzML": {
+      "bytes": 1453824675,
+      "sha256": "852c735ed508fdf178f3dc0a834b0907562a2af53cbc106d724bca596d1140a4"
+    },
+    "pasef-im-600-1200s.mzML": {
+      "bytes": 961668867,
+      "sha256": "294351b644aca2be19367d04cefacf492cc2f4d6a2eb0f364e23f2c6cc042105"
+    }
+  },
+  "environments": {
+    "baseline": {
+      "PATH": "/usr/bin:/bin",
+      "HOME": "/home/kohlbach",
+      "TMPDIR": "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/tmp",
+      "OMP_DYNAMIC": "FALSE",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "BLIS_NUM_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1",
+      "OPENMS_TMPDIR": "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/tmp",
+      "LC_ALL": "C.UTF-8",
+      "OMP_NUM_THREADS": "1",
+      "LD_LIBRARY_PATH": "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/snapshots/baseline/lib:/scratch/kohlbach/openms-context-memory-20261020-01a153cb/dependencies/install/lib:/scratch/kohlbach/contrib/build/lib"
+    },
+    "candidate": {
+      "PATH": "/usr/bin:/bin",
+      "HOME": "/home/kohlbach",
+      "TMPDIR": "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/tmp",
+      "OMP_DYNAMIC": "FALSE",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "BLIS_NUM_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1",
+      "OPENMS_TMPDIR": "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/tmp",
+      "LC_ALL": "C.UTF-8",
+      "OMP_NUM_THREADS": "1",
+      "LD_LIBRARY_PATH": "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/snapshots/candidate/lib:/scratch/kohlbach/openms-context-memory-20261020-01a153cb/dependencies/install/lib:/scratch/kohlbach/contrib/build/lib"
+    }
+  },
+  "affinity": "0-95",
+  "driver_affinity": "96-127"
+}

@@ -1,0 +1,86 @@
+[
+  {
+    "spectra": 131072,
+    "chromatograms": 1,
+    "complete_offset_digest": "15330110295266630831",
+    "input": "large-matched-plain.mzML",
+    "version": "baseline"
+  },
+  {
+    "spectra": 131072,
+    "chromatograms": 1,
+    "complete_offset_digest": "15330110295266630831",
+    "input": "large-matched-plain.mzML",
+    "version": "candidate"
+  },
+  {
+    "spectra": 131072,
+    "chromatograms": 1,
+    "complete_offset_digest": "6684317702907149989",
+    "input": "large-matched-zlib.mzML",
+    "version": "baseline"
+  },
+  {
+    "spectra": 131072,
+    "chromatograms": 1,
+    "complete_offset_digest": "6684317702907149989",
+    "input": "large-matched-zlib.mzML",
+    "version": "candidate"
+  },
+  {
+    "spectra": 53521,
+    "chromatograms": 1,
+    "complete_offset_digest": "11382149137888964625",
+    "input": "dda-lumos.mzML",
+    "version": "baseline"
+  },
+  {
+    "spectra": 53521,
+    "chromatograms": 1,
+    "complete_offset_digest": "11382149137888964625",
+    "input": "dda-lumos.mzML",
+    "version": "candidate"
+  },
+  {
+    "spectra": 44296,
+    "chromatograms": 0,
+    "complete_offset_digest": "12672425408015175530",
+    "input": "pasef-published.mzML",
+    "version": "baseline"
+  },
+  {
+    "spectra": 44296,
+    "chromatograms": 0,
+    "complete_offset_digest": "12672425408015175530",
+    "input": "pasef-published.mzML",
+    "version": "candidate"
+  },
+  {
+    "spectra": 22544,
+    "chromatograms": 0,
+    "complete_offset_digest": "9222643322220007797",
+    "input": "pasef-im-600-1200s.mzML",
+    "version": "baseline"
+  },
+  {
+    "spectra": 22544,
+    "chromatograms": 0,
+    "complete_offset_digest": "9222643322220007797",
+    "input": "pasef-im-600-1200s.mzML",
+    "version": "candidate"
+  },
+  {
+    "spectra": 1,
+    "chromatograms": 0,
+    "complete_offset_digest": "17254249474824924878",
+    "input": "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/post-checks/namespaced-footer.xml",
+    "version": "baseline"
+  },
+  {
+    "spectra": 1,
+    "chromatograms": 0,
+    "complete_offset_digest": "17254249474824924878",
+    "input": "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/post-checks/namespaced-footer.xml",
+    "version": "candidate"
+  }
+]

@@ -1,6 +1,6 @@
 # Complete libxml2 replacement
 
-This branch extends the tested libxml2 prototype into a complete replacement of Xerces in OpenMS core, including mzIdentML DOM handling, imzML, XML strings and attributes, compressed streams, dependency discovery, Docker, wheels and the shared CI build action. It requires libxml2 2.13 or newer with SAX1, PUSH, SCHEMAS and THREAD support; configuration rejects builds missing these features and warns if both iconv and ICU are absent. The pinned vcpkg baseline supplies 2.15.3; the Docker recipe builds checksum-pinned 2.15.4 because Ubuntu 24.04 supplies an older version.
+This branch extends the tested libxml2 prototype into a complete replacement of Xerces in OpenMS core, including mzIdentML DOM handling, imzML, XML strings and attributes, compressed streams, dependency discovery, Docker, wheels and the shared CI build action. It requires libxml2 2.13 or newer with SAX1, PUSH, READER, SCHEMAS and THREAD support; configuration rejects builds missing these features and warns if both iconv and ICU are absent. The pinned vcpkg baseline supplies 2.15.3; the Docker recipe builds checksum-pinned 2.15.4 because Ubuntu 24.04 supplies an older version.
 
 The earlier [benchmark handoff](../tools/xml-parser-benchmark/HANDOFF.md) and its cross-platform graphs remain the evidence for the three prototype implementations. Those results were measured before this complete migration; they are not new measurements of this branch. The historical standalone benchmark comparator can optionally use Xerces to reproduce that comparison, but building and using OpenMS does not require it.
 
@@ -26,7 +26,7 @@ Schema validation keeps the prototype’s documented compatibility decision: lib
 
 ## Validation
 
-The final tested source and guard/test candidate is `8f66b3d921c9512e1e5968f494c77715ff71c696`; runtime implementation is unchanged from `1858656a86869ba462545a9232b89a0e1e1c319c`. Subsequent publication commits add documentation and evidence. On both hosts, OpenMS used Release `-O3 -DNDEBUG`, C++23 and libxml2 2.15.4, with Xerces discovery disabled. Linux used a private libxml2 build with LEGACY off and SAX1, PUSH, SCHEMAS, THREADS, ICONV and ZLIB on. The final suites completed in 65.78 seconds on macOS and 103.25 seconds on Linux.
+The final tested source and guard/test candidate is `8f66b3d921c9512e1e5968f494c77715ff71c696`; runtime implementation is unchanged from `1858656a86869ba462545a9232b89a0e1e1c319c`. That source identifies the original migration test phase; later publication commits added evidence, and the [retained-context follow-up](xml-libxml2-validation/context-memory/REPORT.md) subsequently changes footer traversal with separate focused tests and indexed/RSS measurements. On both hosts, OpenMS used Release `-O3 -DNDEBUG`, C++23 and libxml2 2.15.4, with Xerces discovery disabled. Linux used a private libxml2 build with LEGACY off and SAX1, PUSH, SCHEMAS, THREADS, ICONV and ZLIB on. The final suites completed in 65.78 seconds on macOS and 103.25 seconds on Linux.
 
 | Check | macOS ARM64 | Linux x86-64, ibminode05 |
 |---|---|---|

@@ -1,0 +1,12 @@
+{
+  "historical_cells_unchanged": 3488,
+  "original_primary_cells": 88,
+  "final_new_primary_cells": 44,
+  "final_sustained_cells": 30,
+  "rejected_confirmation_cells": 18,
+  "rejected_buffer_packed_cells": 6,
+  "combined_cells": 3674,
+  "final_selected_workload_records": 354,
+  "final_new_workload_records": 222,
+  "baseline_reused_workload_records": 132
+}

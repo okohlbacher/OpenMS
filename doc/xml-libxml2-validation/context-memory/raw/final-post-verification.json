@@ -1,0 +1,17 @@
+{
+  "regular_source_files_checked": 9307,
+  "source_changed_only_three_expected_files": true,
+  "actual_source_sha256": {
+    "src/openms/source/FORMAT/HANDLERS/IndexedMzMLDecoder.cpp": "f9c62a0b6fc2f72fc09b06a1cd4d7c673339571613515fc85795c742eadc921e",
+    "src/tests/class_tests/openms/source/IndexedMzMLDecoder_test.cpp": "5569025b906c1736a81b08d21291f7413076e29909dafad87e7ae674aa049afe",
+    "cmake/cmake_findExternalLibs.cmake": "8031746afe23a2a6da2aae3ac320dcb8840caad51a8169661e8b39b9ceeafe00"
+  },
+  "runtime_inputs_harness_unchanged": true,
+  "unique_new_records": 192,
+  "final_selected_including_reused_baseline_records": 324,
+  "all_native_exits_success": true,
+  "all_input_pages_resident": true,
+  "cpu_placement_matches_phase": true,
+  "all_complete_index_vectors_agree": true,
+  "both_size_paths_namespace_control_pass": true
+}

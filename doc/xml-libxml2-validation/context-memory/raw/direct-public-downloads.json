@@ -1,0 +1,17 @@
+[
+  {
+    "destination": "pasef-published.mzML",
+    "sha256": "852c735ed508fdf178f3dc0a834b0907562a2af53cbc106d724bca596d1140a4",
+    "elapsed_seconds": 113.49690175056458
+  },
+  {
+    "destination": "SBA415.d/analysis.tdf",
+    "sha256": "825cd6aec11dce7c98c489435aec888d65a8a6aaa4b36d297cc63292b181202f",
+    "reused_verified": true
+  },
+  {
+    "destination": "SBA415.d/analysis.tdf_bin",
+    "sha256": "430963e7c4954de57d98336d35e7fc85e315ec6b06181b829b867646bbe0015b",
+    "reused_verified": true
+  }
+]

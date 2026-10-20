@@ -1,0 +1,240 @@
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// SPDX-License-Identifier: BSD-3-Clause
+//
+// --------------------------------------------------------------------------
+// $Maintainer: Hannes Roest $
+// $Authors: Hannes Roest $
+// --------------------------------------------------------------------------
+
+#include <OpenMS/FORMAT/HANDLERS/IndexedMzMLDecoder.h>
+#include <OpenMS/CONCEPT/Init.h>
+
+#include <OpenMS/SYSTEM/File.h>
+
+#include <boost/regex.hpp>
+#include <boost/lexical_cast.hpp>
+
+#include <fstream>
+#include <iostream>
+
+#include <libxml/parser.h>
+#include <libxml/xmlreader.h>
+#include <memory>
+#include <limits>
+#include <cstdint>
+#include <algorithm>
+#include <exception>
+
+namespace OpenMS
+{
+
+  namespace IndexedMzMLUtils
+  {
+    std::streampos stringToStreampos(const std::string& s)
+    {
+      // Try to cast the string to a type that can hold the integer value
+      // stored in the std::streampos type (which can vary from 32 to 128 bits
+      // depending on the system).
+      //
+      // long long has a minimal size of 64 bits and can address a range up to
+      // 16 Exbibit (or 2 Exbibyte), we can hopefully expect our files to be
+      // smaller than an Exabyte and should be safe.
+      std::streampos res;
+      try
+      {
+
+        res = boost::lexical_cast< unsigned long long >(s);
+        // TESTING CAST: res = (int) res; // use this only when emulating 32 bit systems
+
+      }
+      catch (boost::bad_lexical_cast&)
+      {
+        std::cerr << "Trying to convert corrupted / unreadable value to std::streampos : " << s << std::endl;
+        std::cerr << "This can also happen if the value exceeds 63 bits, please check your input." << std::endl;
+        throw Exception::ConversionError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION,
+            std::string("Could not convert string '") + s + "' to a 64 bit integer.");
+      }
+
+      // Check if the value can fit into std::streampos
+      if ( std::abs( boost::lexical_cast< long double >(s) - res) > 0.1)
+      {
+        std::cerr << "Your system may not support addressing a file of this size,"
+          << " only addresses that fit into a " << sizeof(std::streamsize)*8 <<
+          " bit integer are supported on your system." << std::endl;
+        throw Exception::ConversionError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION,
+            std::string("Could not convert string '") + s + "' to an integer on your system.");
+      }
+
+      return res;
+    }
+  }
+
+  int IndexedMzMLDecoder::parseOffsets(const std::string& filename, std::streampos indexoffset, OffsetVector& spectra_offsets, OffsetVector& chromatograms_offsets)
+  {
+    std::ifstream f(filename, std::ios::binary);
+    if (!f.is_open())
+    {
+      if (!File::exists(filename))
+      {
+        throw Exception::FileNotFound(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename);
+      }
+      if (!File::readable(filename))
+      {
+        throw Exception::FileNotReadable(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename);
+      }
+      throw Exception::IOException(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename);
+    }
+
+    f.seekg(0, std::ios::end);
+    const std::streampos length = f.tellg();
+    if (!f || length < 0 || indexoffset < 0 || indexoffset > length)
+    {
+      std::cerr << "IndexedMzMLDecoder::parseOffsets Error: Offset was " << indexoffset
+                << " (not between 0 and " << length << ").\n";
+      return -1;
+    }
+
+    // Read straight into the final XML buffer: no raw allocation or full-tail copy.
+    std::string xml = "<indexedmzML>";
+    const Size prefix_size = xml.size();
+    const std::streamoff tail_length = length - indexoffset;
+    if (tail_length == 0 || tail_length > std::numeric_limits<std::streamsize>::max() ||
+        static_cast<std::uintmax_t>(tail_length) > xml.max_size() - prefix_size - 1)
+    {
+      return -1;
+    }
+    const Size tail_size = static_cast<Size>(tail_length);
+    xml.resize(prefix_size + tail_size + 1);
+    f.seekg(indexoffset);
+    if (!f) { return -1; }
+    f.read(xml.data() + prefix_size, static_cast<std::streamsize>(tail_length));
+    if (!f || f.gcount() != tail_length) { return -1; }
+    xml.back() = '\n';
+    return domParseIndexedEnd_(xml, spectra_offsets, chromatograms_offsets);
+  }
+
+  std::streampos IndexedMzMLDecoder::findIndexListOffset(const std::string& filename, int buffersize)
+  {
+    if (buffersize <= 0) { return -1; }
+    std::ifstream f(filename, std::ios::binary);
+    if (!f.is_open())
+    {
+      if (!File::exists(filename))
+      {
+        throw Exception::FileNotFound(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename);
+      }
+      if (!File::readable(filename))
+      {
+        throw Exception::FileNotReadable(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename);
+      }
+      throw Exception::IOException(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename);
+    }
+
+    f.seekg(0, std::ios::end);
+    const std::streampos length = f.tellg();
+    if (!f || length < 0) { return -1; }
+    const std::streamoff read_length = std::min(static_cast<std::streamoff>(length), static_cast<std::streamoff>(buffersize));
+    std::string buffer;
+    if (read_length > std::numeric_limits<std::streamsize>::max() ||
+        static_cast<std::uintmax_t>(read_length) > buffer.max_size()) { return -1; }
+    buffer.resize(static_cast<Size>(read_length));
+    f.seekg(-read_length, std::ios::end);
+    if (!f) { return -1; }
+    f.read(buffer.data(), static_cast<std::streamsize>(read_length));
+    if (!f || f.gcount() != read_length) { return -1; }
+
+    // The same namespace/whitespace-tolerant pattern is shared by independent
+    // readers; C++ initializes it once and regex_search never mutates it.
+    static const boost::regex listoffset_rx(R"(<[^>/]*indexListOffset\s*>\s*(\d*))");
+    boost::smatch matches;
+    if (!boost::regex_search(buffer, matches, listoffset_rx) || matches[1].length() == 0)
+    {
+      std::cerr << "IndexedMzMLDecoder::findIndexListOffset Error: Could not find element indexListOffset in the last "
+                << read_length << " bytes. Maybe this is not an indexedMzML.\n";
+      return -1;
+    }
+    return OpenMS::IndexedMzMLUtils::stringToStreampos(matches[1].str());
+  }
+
+  int IndexedMzMLDecoder::domParseIndexedEnd_(const std::string& in, OffsetVector& spectra_offsets, OffsetVector& chromatograms_offsets)
+  {
+
+    if (in.size() > static_cast<Size>(std::numeric_limits<int>::max())) { return -1; }
+    // Allocate temporary packed storage before DOM nodes. Returned ID strings
+    // must not occupy holes among those nodes and pin their freed pages.
+    struct PackedOffset { Size begin, length; std::streampos position; };
+    struct PackedIndex { std::string name; Size begin, end; };
+    std::string ids;
+    std::vector<PackedOffset> offsets;
+    std::vector<PackedIndex> indices;
+    ids.reserve(in.size());
+    // A lexical estimate only: entities may add elements, and normal vector
+    // growth remains correct if this estimate is exceeded.
+    const auto tags = std::count(in.begin(), in.end(), '<');
+    offsets.reserve(static_cast<Size>(tags / 2 + 1));
+    indices.reserve(2);
+    std::unique_ptr<xmlDoc, decltype(&xmlFreeDoc)> document(
+      xmlReadMemory(in.data(), static_cast<int>(in.size()), "index.xml", nullptr,
+                    XML_PARSE_NONET | XML_PARSE_NO_XXE | XML_PARSE_NOENT | XML_PARSE_NOERROR | XML_PARSE_NOWARNING), xmlFreeDoc);
+    xmlNode* root = document ? xmlDocGetRootElement(document.get()) : nullptr;
+    if (!root) { return -1; }
+    xmlNode* list = nullptr;
+    for (xmlNode* node = root->children; node; node = node->next)
+    {
+      if (node->type == XML_ELEMENT_NODE && xmlStrEqual(node->name, BAD_CAST "indexList"))
+      {
+        if (list) { return -1; }
+        list = node;
+      }
+    }
+    if (!list) { return -1; }
+    auto property = [](xmlNode* node, const char* key)
+    {
+      xmlChar* value = xmlGetProp(node, BAD_CAST key);
+      std::string result = value ? reinterpret_cast<const char*>(value) : "";
+      xmlFree(value);
+      return result;
+    };
+
+    for (xmlNode* index = list->children; index; index = index->next)
+    {
+      if (index->type != XML_ELEMENT_NODE) { continue; }
+      indices.emplace_back();
+      auto& packed = indices.back();
+      packed.begin = offsets.size();
+      for (xmlNode* offset = index->children; offset; offset = offset->next)
+      {
+        if (offset->type != XML_ELEMENT_NODE) { continue; }
+        xmlChar* content = xmlNodeGetContent(offset);
+        std::string text = content ? reinterpret_cast<const char*>(content) : "";
+        xmlFree(content);
+        const auto position = IndexedMzMLUtils::stringToStreampos(text);
+        const auto id = property(offset, "idRef");
+        offsets.push_back({ids.size(), id.size(), position});
+        ids += id;
+      }
+      packed.end = offsets.size();
+      packed.name = property(index, "name");
+      if (packed.name != "spectrum" && packed.name != "chromatogram") { return -1; }
+    }
+    document.reset();
+    OffsetVector spectra, chromatograms;
+    bool found_spectra = false, found_chromatograms = false;
+    for (const auto& packed : indices)
+    {
+      OffsetVector result;
+      result.reserve(packed.end - packed.begin);
+      for (Size i = packed.begin; i < packed.end; ++i)
+      {
+        const auto& offset = offsets[i];
+        result.emplace_back(ids.substr(offset.begin, offset.length), offset.position);
+      }
+      if (packed.name == "spectrum") { spectra = std::move(result); found_spectra = true; }
+      else { chromatograms = std::move(result); found_chromatograms = true; }
+    }
+    if (found_spectra) { spectra_offsets = std::move(spectra); }
+    if (found_chromatograms) { chromatograms_offsets = std::move(chromatograms); }
+    return 0;
+  }
+
+}

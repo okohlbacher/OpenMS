@@ -1,0 +1,10 @@
+{
+  "source_archive_regular_files_checked": 9307,
+  "source_changed_only_committed_three_files": true,
+  "measurement_identity_unchanged": true,
+  "unique_workloads": 264,
+  "all_native_exits_success": true,
+  "all_input_pages_resident_before_each_cell": true,
+  "all_five_complete_offset_vectors_agree": true,
+  "namespaced_footer_accepted_by_both_versions": true
+}

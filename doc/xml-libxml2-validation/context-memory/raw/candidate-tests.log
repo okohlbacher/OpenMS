@@ -1,0 +1,20 @@
+Internal ctest changing into directory: /scratch/kohlbach/openms-context-memory-20261020-01a153cb/build
+Test project /scratch/kohlbach/openms-context-memory-20261020-01a153cb/build
+    Start 102: OnDiscMSExperiment_test
+    Start 201: IndexedMzMLFileLoader_test
+    Start 200: IndexedMzMLFile_test
+    Start 331: XMLParserBackend_test
+1/7 Test #331: XMLParserBackend_test ............   Passed    0.09 sec
+    Start 199: IndexedMzMLDecoder_test
+2/7 Test #199: IndexedMzMLDecoder_test ..........   Passed    0.02 sec
+    Start 281: XMLFile_test
+3/7 Test #281: XMLFile_test .....................   Passed    0.01 sec
+    Start 223: MzMLSpectrumDecoder_test
+4/7 Test #223: MzMLSpectrumDecoder_test .........   Passed    0.01 sec
+5/7 Test #200: IndexedMzMLFile_test .............   Passed    0.15 sec
+6/7 Test #201: IndexedMzMLFileLoader_test .......   Passed    0.19 sec
+7/7 Test #102: OnDiscMSExperiment_test ..........   Passed    0.25 sec
+
+100% tests passed, 0 tests failed out of 7
+
+Total Test time (real) =   0.27 sec

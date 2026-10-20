@@ -1,0 +1,28 @@
+{
+  "parent_identity_sha256": "1c52555e183129b443f2e0281887b709b335b2339a8c8a2b62a16ac1ab83778e",
+  "wrapper_sha256": "cf79ae38e4f2e5deb9e960965258b8c03eaf4596ff2a2b9be0740def83c08860",
+  "cases": [
+    [
+      "dda-lumos.mzML",
+      32
+    ],
+    [
+      "dda-lumos.mzML",
+      64
+    ],
+    [
+      "large-matched-plain.mzML",
+      64
+    ],
+    [
+      "large-matched-zlib.mzML",
+      64
+    ],
+    [
+      "pasef-published.mzML",
+      64
+    ]
+  ],
+  "affinity": "0-95",
+  "basis": "all final primary worker-loop >5% flags; all repetitions, matched sustained primary CPU mask"
+}

@@ -1,0 +1,326 @@
+[
+  {
+    "input": "pasef-im-600-1200s.mzML",
+    "workers": 32,
+    "version": "candidate",
+    "rep": 0
+  },
+  {
+    "input": "pasef-im-600-1200s.mzML",
+    "workers": 32,
+    "version": "candidate",
+    "rep": 2
+  },
+  {
+    "input": "large-matched-plain.mzML",
+    "workers": 96,
+    "version": "baseline",
+    "rep": 2
+  },
+  {
+    "input": "dda-lumos.mzML",
+    "workers": 1,
+    "version": "candidate",
+    "rep": 2
+  },
+  {
+    "input": "dda-lumos.mzML",
+    "workers": 64,
+    "version": "baseline",
+    "rep": 0
+  },
+  {
+    "input": "large-matched-zlib.mzML",
+    "workers": 64,
+    "version": "candidate",
+    "rep": 2
+  },
+  {
+    "input": "large-matched-plain.mzML",
+    "workers": 64,
+    "version": "candidate",
+    "rep": 2
+  },
+  {
+    "input": "dda-lumos.mzML",
+    "workers": 1,
+    "version": "candidate",
+    "rep": 0
+  },
+  {
+    "input": "pasef-published.mzML",
+    "workers": 64,
+    "version": "candidate",
+    "rep": 0
+  },
+  {
+    "input": "pasef-im-600-1200s.mzML",
+    "workers": 96,
+    "version": "candidate",
+    "rep": 2
+  },
+  {
+    "input": "large-matched-zlib.mzML",
+    "workers": 64,
+    "version": "baseline",
+    "rep": 0
+  },
+  {
+    "input": "pasef-im-600-1200s.mzML",
+    "workers": 96,
+    "version": "candidate",
+    "rep": 1
+  },
+  {
+    "input": "pasef-im-600-1200s.mzML",
+    "workers": 32,
+    "version": "baseline",
+    "rep": 0
+  },
+  {
+    "input": "large-matched-plain.mzML",
+    "workers": 96,
+    "version": "candidate",
+    "rep": 0
+  },
+  {
+    "input": "dda-lumos.mzML",
+    "workers": 1,
+    "version": "baseline",
+    "rep": 0
+  },
+  {
+    "input": "dda-lumos.mzML",
+    "workers": 64,
+    "version": "candidate",
+    "rep": 1
+  },
+  {
+    "input": "dda-lumos.mzML",
+    "workers": 64,
+    "version": "candidate",
+    "rep": 2
+  },
+  {
+    "input": "dda-lumos.mzML",
+    "workers": 64,
+    "version": "baseline",
+    "rep": 2
+  },
+  {
+    "input": "pasef-im-600-1200s.mzML",
+    "workers": 64,
+    "version": "candidate",
+    "rep": 1
+  },
+  {
+    "input": "pasef-im-600-1200s.mzML",
+    "workers": 64,
+    "version": "baseline",
+    "rep": 1
+  },
+  {
+    "input": "dda-lumos.mzML",
+    "workers": 64,
+    "version": "baseline",
+    "rep": 1
+  },
+  {
+    "input": "pasef-im-600-1200s.mzML",
+    "workers": 96,
+    "version": "candidate",
+    "rep": 0
+  },
+  {
+    "input": "pasef-im-600-1200s.mzML",
+    "workers": 32,
+    "version": "baseline",
+    "rep": 2
+  },
+  {
+    "input": "pasef-im-600-1200s.mzML",
+    "workers": 32,
+    "version": "baseline",
+    "rep": 1
+  },
+  {
+    "input": "pasef-im-600-1200s.mzML",
+    "workers": 96,
+    "version": "baseline",
+    "rep": 0
+  },
+  {
+    "input": "pasef-published.mzML",
+    "workers": 64,
+    "version": "baseline",
+    "rep": 2
+  },
+  {
+    "input": "pasef-im-600-1200s.mzML",
+    "workers": 96,
+    "version": "baseline",
+    "rep": 1
+  },
+  {
+    "input": "pasef-im-600-1200s.mzML",
+    "workers": 64,
+    "version": "candidate",
+    "rep": 0
+  },
+  {
+    "input": "large-matched-zlib.mzML",
+    "workers": 64,
+    "version": "candidate",
+    "rep": 1
+  },
+  {
+    "input": "large-matched-zlib.mzML",
+    "workers": 64,
+    "version": "candidate",
+    "rep": 0
+  },
+  {
+    "input": "large-matched-plain.mzML",
+    "workers": 64,
+    "version": "baseline",
+    "rep": 2
+  },
+  {
+    "input": "dda-lumos.mzML",
+    "workers": 64,
+    "version": "candidate",
+    "rep": 0
+  },
+  {
+    "input": "pasef-im-600-1200s.mzML",
+    "workers": 96,
+    "version": "baseline",
+    "rep": 2
+  },
+  {
+    "input": "pasef-im-600-1200s.mzML",
+    "workers": 64,
+    "version": "candidate",
+    "rep": 2
+  },
+  {
+    "input": "dda-lumos.mzML",
+    "workers": 1,
+    "version": "baseline",
+    "rep": 2
+  },
+  {
+    "input": "pasef-im-600-1200s.mzML",
+    "workers": 64,
+    "version": "baseline",
+    "rep": 2
+  },
+  {
+    "input": "pasef-published.mzML",
+    "workers": 64,
+    "version": "candidate",
+    "rep": 1
+  },
+  {
+    "input": "large-matched-plain.mzML",
+    "workers": 96,
+    "version": "baseline",
+    "rep": 0
+  },
+  {
+    "input": "pasef-published.mzML",
+    "workers": 64,
+    "version": "baseline",
+    "rep": 0
+  },
+  {
+    "input": "large-matched-plain.mzML",
+    "workers": 96,
+    "version": "baseline",
+    "rep": 1
+  },
+  {
+    "input": "large-matched-plain.mzML",
+    "workers": 64,
+    "version": "baseline",
+    "rep": 1
+  },
+  {
+    "input": "large-matched-zlib.mzML",
+    "workers": 64,
+    "version": "baseline",
+    "rep": 1
+  },
+  {
+    "input": "dda-lumos.mzML",
+    "workers": 1,
+    "version": "candidate",
+    "rep": 1
+  },
+  {
+    "input": "large-matched-zlib.mzML",
+    "workers": 64,
+    "version": "baseline",
+    "rep": 2
+  },
+  {
+    "input": "dda-lumos.mzML",
+    "workers": 1,
+    "version": "baseline",
+    "rep": 1
+  },
+  {
+    "input": "large-matched-plain.mzML",
+    "workers": 96,
+    "version": "candidate",
+    "rep": 2
+  },
+  {
+    "input": "pasef-im-600-1200s.mzML",
+    "workers": 64,
+    "version": "baseline",
+    "rep": 0
+  },
+  {
+    "input": "large-matched-plain.mzML",
+    "workers": 64,
+    "version": "candidate",
+    "rep": 0
+  },
+  {
+    "input": "large-matched-plain.mzML",
+    "workers": 96,
+    "version": "candidate",
+    "rep": 1
+  },
+  {
+    "input": "pasef-im-600-1200s.mzML",
+    "workers": 32,
+    "version": "candidate",
+    "rep": 1
+  },
+  {
+    "input": "large-matched-plain.mzML",
+    "workers": 64,
+    "version": "baseline",
+    "rep": 0
+  },
+  {
+    "input": "pasef-published.mzML",
+    "workers": 64,
+    "version": "baseline",
+    "rep": 1
+  },
+  {
+    "input": "pasef-published.mzML",
+    "workers": 64,
+    "version": "candidate",
+    "rep": 2
+  },
+  {
+    "input": "large-matched-plain.mzML",
+    "workers": 64,
+    "version": "candidate",
+    "rep": 1
+  }
+]

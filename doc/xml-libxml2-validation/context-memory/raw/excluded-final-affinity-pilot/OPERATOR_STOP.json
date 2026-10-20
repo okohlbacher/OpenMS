@@ -1,0 +1,10 @@
+{
+  "reason": "Primary baseline uses affinity0-95 at every N; initial final wrapper incorrectly narrowed primary to0..N-1. Preserve this entire excluded pilot and rerun with matched placement. Sustained paired mask unchanged.",
+  "terminated_task_pids": [
+    3559665,
+    3562408,
+    3562409
+  ],
+  "completed_records": 41,
+  "unix": 1792528649.7904277
+}

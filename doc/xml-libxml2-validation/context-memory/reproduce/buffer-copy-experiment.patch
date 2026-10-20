@@ -1,0 +1,120 @@
+diff --git a/src/openms/source/FORMAT/HANDLERS/IndexedMzMLHandler.cpp b/src/openms/source/FORMAT/HANDLERS/IndexedMzMLHandler.cpp
+index 48c351731b..5332a431f3 100644
+--- a/src/openms/source/FORMAT/HANDLERS/IndexedMzMLHandler.cpp
++++ b/src/openms/source/FORMAT/HANDLERS/IndexedMzMLHandler.cpp
+@@ -11,12 +11,45 @@
+ #include <OpenMS/FORMAT/HANDLERS/IndexedMzMLDecoder.h>
+ #include <OpenMS/FORMAT/HANDLERS/MzMLSpectrumDecoder.h>
+ 
++#include <limits>
++#include <cstdint>
++
+ 
+ // #define DEBUG_READER
+ 
+ namespace OpenMS::Internal
+ {
+ 
++  namespace
++  {
++    std::string readIndexedFragment(std::ifstream& stream, std::streampos start, std::streampos end, const std::string& filename)
++    {
++      std::string text;
++      if (start < 0 || end < start)
++      {
++        throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename, "Invalid indexed XML fragment bounds");
++      }
++      const std::streamoff length = end - start;
++      if (length > std::numeric_limits<std::streamsize>::max() ||
++          static_cast<std::uintmax_t>(length) > text.max_size())
++      {
++        throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename, "Invalid indexed XML fragment bounds");
++      }
++      // Read into the final string, avoiding a second spectrum-sized allocation
++      // and copy on every random read (particularly costly for IM spectra).
++      text.resize(static_cast<Size>(length));
++      stream.clear();
++      stream.seekg(start, std::ios::beg);
++      if (!stream) { throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename, "Cannot seek to indexed XML fragment"); }
++      stream.read(text.data(), static_cast<std::streamsize>(length));
++      if (!stream || stream.gcount() != length)
++      {
++        throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename, "Truncated indexed XML fragment");
++      }
++      return text;
++    }
++  }
++
+   void IndexedMzMLHandler::parseFooter_()
+   {
+     //-------------------------------------------------------------
+@@ -159,13 +192,7 @@ namespace OpenMS::Internal
+       endidx = chromatograms_offsets_[chromToGet + 1];
+     }
+ 
+-    std::streampos readl = endidx - startidx;
+-    char* buffer = new char[readl + std::streampos(1)];
+-    filestream_.seekg(startidx, filestream_.beg);
+-    filestream_.read(buffer, readl);
+-    buffer[readl] = '\0';
+-    std::string text(buffer);
+-    delete[] buffer;
++    std::string text = readIndexedFragment(filestream_, startidx, endidx, filename_);
+ 
+ #ifdef DEBUG_READER
+     // print the full text we just read
+@@ -219,13 +246,7 @@ namespace OpenMS::Internal
+       endidx = spectra_offsets_[spectrumToGet + 1];
+     }
+ 
+-    std::streampos readl = endidx - startidx;
+-    char* buffer = new char[readl + std::streampos(1)];
+-    filestream_.seekg(startidx, filestream_.beg);
+-    filestream_.read(buffer, readl);
+-    buffer[readl] = '\0';
+-    std::string text(buffer);
+-    delete[] buffer;
++    std::string text = readIndexedFragment(filestream_, startidx, endidx, filename_);
+ 
+ #ifdef DEBUG_READER
+     // print the full text we just read
+diff --git a/src/tests/class_tests/openms/source/IndexedMzMLFile_test.cpp b/src/tests/class_tests/openms/source/IndexedMzMLFile_test.cpp
+index 8c33955c74..cbcd8c46ce 100644
+--- a/src/tests/class_tests/openms/source/IndexedMzMLFile_test.cpp
++++ b/src/tests/class_tests/openms/source/IndexedMzMLFile_test.cpp
+@@ -14,6 +14,7 @@
+ ///////////////////////////
+ 
+ #include <OpenMS/FORMAT/FileTypes.h>
++#include <fstream>
+ 
+ // for comparison
+ #include <OpenMS/KERNEL/MSExperiment.h>
+@@ -307,5 +308,27 @@ END_SECTION
+     
+ /////////////////////////////////////////////////////////////
+ /////////////////////////////////////////////////////////////
++START_SECTION(([EXTRA] Invalid and truncated indexed fragments fail before decoding))
++  std::string filename;
++  NEW_TMP_FILE(filename)
++  for (bool reversed : {false, true})
++  {
++    {
++      std::ofstream output(filename);
++      output << "<indexList><index name='spectrum'><offset idRef='s0'>"
++        << (reversed ? 100 : 0) << "</offset><offset idRef='s1'>"
++        << (reversed ? 50 : 4096) << "</offset></index>"
++        "<index name='chromatogram'><offset idRef='c0'>"
++        << (reversed ? 100 : 0) << "</offset><offset idRef='c1'>"
++        << (reversed ? 50 : 4096) << "</offset></index></indexList>"
++        "<indexListOffset>0</indexListOffset></indexedmzML>";
++    }
++    IndexedMzMLHandler file(filename);
++    TEST_TRUE(file.getParsingSuccess())
++    TEST_EXCEPTION(Exception::ParseError, file.getSpectrumById(0))
++    TEST_EXCEPTION(Exception::ParseError, file.getChromatogramById(0))
++  }
++END_SECTION
++
+ END_TEST
+ 

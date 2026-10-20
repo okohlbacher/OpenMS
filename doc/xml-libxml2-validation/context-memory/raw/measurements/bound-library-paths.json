@@ -1,0 +1,19 @@
+[
+  "/etc/ld.so.cache",
+  "/scratch/kohlbach/contrib/build/lib/libz.so.1.3.1",
+  "/scratch/kohlbach/contrib/build/lib/libzip.so.5.5",
+  "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/dependencies/install/lib/libxml2.so.16.1.4",
+  "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/dependencies/install/lib/libzstd.so.1.5.7",
+  "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/snapshots/baseline/lib/libOpenMS.so",
+  "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/snapshots/baseline/lib/libOpenSwathAlgo.so",
+  "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/snapshots/candidate/lib/libOpenMS.so",
+  "/scratch/kohlbach/openms-context-memory-20261020-01a153cb/snapshots/candidate/lib/libOpenSwathAlgo.so",
+  "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+  "/usr/lib/x86_64-linux-gnu/libc.so.6",
+  "/usr/lib/x86_64-linux-gnu/libcrypto.so.3",
+  "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1",
+  "/usr/lib/x86_64-linux-gnu/libgomp.so.1.0.0",
+  "/usr/lib/x86_64-linux-gnu/libm.so.6",
+  "/usr/lib/x86_64-linux-gnu/libssl.so.3",
+  "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33"
+]

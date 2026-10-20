@@ -1,0 +1,13 @@
+Test project /scratch/kohlbach/openms-context-memory-20261020-01a153cb/build
+    Start 200: IndexedMzMLFile_test
+    Start 102: OnDiscMSExperiment_test
+    Start 201: IndexedMzMLFileLoader_test
+    Start 199: IndexedMzMLDecoder_test
+1/4 Test #199: IndexedMzMLDecoder_test ..........   Passed    0.02 sec
+2/4 Test #102: OnDiscMSExperiment_test ..........   Passed    0.30 sec
+3/4 Test #201: IndexedMzMLFileLoader_test .......   Passed    0.33 sec
+4/4 Test #200: IndexedMzMLFile_test .............   Passed    0.34 sec
+
+100% tests passed, 0 tests failed out of 4
+
+Total Test time (real) =   0.36 sec

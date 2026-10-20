@@ -1,5 +1,7 @@
 # XML replacement benchmark handoff
 
+Later update: the [retained-context follow-up](../context-memory/REPORT.md) changes libxml2 footer traversal and separately measures memory/indexed-read behavior through96 readers. The results below remain the unchanged pre-optimization Xerces/libxml2 phase; see the [new combined table](../context-memory/all-comparisons.csv) for all phases.
+
 The user-requested reduced Linux phase contains **600 workload runs / 660 native processes**, covering 200 cells with three repetitions each. It compares the complete libxml2 replacement (`8f66b3d9`) with the optimized Xerces control (`58aa3734`), through 96 requested threads. Correctness and final source/input/runtime checks passed. The original schedule was reduced after 412 completed workloads; 279 completed non-selected records remain supplemental evidence. The excluded 28-record pilot is preserved separately.
 
 Four matched files, each larger than 1 GB, represent plain XML, internal zlib, outer gzip and both compression layers. Real inputs cover a public Lumos DDA run, published PASEF without retained mobility, and a real TIMS 600–1200s window with finite per-peak/scalar mobility. The latter uses OpenMS RATIONAL table calibration; it is not a proprietary-SDK equivalence claim.

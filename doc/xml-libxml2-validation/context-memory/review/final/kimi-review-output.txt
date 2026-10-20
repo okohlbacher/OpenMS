@@ -1,0 +1,37 @@
+• Final adversarial resolution review — supplied packet only (old DOM, current decoder, class test, libxml2 CMake block, private timing harness). No tools run; no code executed.
+
+  ## Verdict
+
+  No concrete introduced defects found in the reviewed delta. All previously contested items (error precedence, delayed exception state, transactional outputs, duplicate `indexList` detection, reader lifetimes, harness barrier protocol) verify as correctly resolved against the old DOM semantics. Two non-blocking informational notes below; neither is a defect.
+
+  ## Verified-correct resolutions (checked, no findings)
+
+  1. **Error precedence (`domParseIndexedEnd_`, IndexedMzMLDecoder.cpp, reader loop).** The branch order is: depth-1 `indexList` duplicate check → `else if (conversion_error) continue` → depth-2/depth-3 processing; END_ELEMENT handling is gated on `!conversion_error`; final order is `if (status < 0 || !found_list) return -1;` then `rethrow`. This reproduces old DOM precedence in every reachable case:
+     - Malformed XML anywhere → `-1` (old: `xmlReadMemory` failed first). The 32KB-padding test correctly forces the malformation beyond read-ahead; well-formed counterpart rethrows `ConversionError`. Both pinned.
+     - Duplicate root `indexList` + earlier bad offset → `-1` (old: duplicate check ran before offset conversion). The dup check sits *before* the `conversion_error` gate, so this holds.
+     - Unknown index name after a bad offset → `ConversionError` in both (old threw during the offset loop before the name check; new skips the END via the gate and rethrows).
+     - First `ConversionError` is retained, matching old throw-first semantics.
+
+  2. **Transactional outputs.** Outputs are assigned only on the `return 0` path via `found_spectra`/`found_chromatograms`; moves are noexcept so no partial-assignment window exists. Divergence from old DOM (which could assign `spectra_offsets` then return `-1`/throw on a later failure) is the intended, test-pinned tightening, not a regression.
+
+  3. **Reader/node lifetimes.** `xmlTextReaderExpand` nodes are consumed (`xmlNodeGetContent`, `idRef`) before the next `xmlTextReaderRead`; `xmlTextReaderConstLocalName`/`xmlTextReaderCurrentNode` pointers are used in-iteration only; the saved `exception_ptr` is self-contained and outlives the reader safely. No dangling, no preserved-node accumulation (no `xmlTextReaderPreserve`).
+
+  4. **Offset-accumulation invariant.** `offsets` is provably empty at every depth-2 ELEMENT: it is cleared by every successful `finish_index`, a failed `finish_index` returns `-1`, and the `conversion_error` gate suppresses the only path that could skip an END. Empty `<index name='chromatogram'/>` correctly yields an *assigned-empty* output (matches old `= move(result)`), distinct from absent-index preservation; both pinned by tests.
+
+  5. **Permissive child semantics preserved.** Any element at depth 2 is an index, any element at depth 3 is an offset (content via expand+`xmlNodeGetContent`, preserving entity/CDATA/nested-text semantics), last-wins on repeated types, unknown-name rejection deferred to index finish — all matching old DOM and pinned by the new tests.
+
+  6. **Synchronized-read harness.** Barrier arithmetic is sound: pre-barrier failures call `arrive_and_drop` exactly once (guarded by `reached_read_barrier`), so with `k` pre-barrier failures, `workers−k` `arrive_and_wait` + `k` drops + main's arrival always completes the single phase; post-barrier failures need no drop. Main always reaches `read_barrier` (it precedes any error rethrow, which happens after join). `threads.clear()` joins before error rethrow and RSS sampling; retained contexts stay alive through the RSS query. Per-worker `open_seconds`/`read_seconds` boundaries for indexed modes exclude open/barrier as documented; identical seeded PRNG per worker makes digest equality meaningful.
+
+  7. **CMake libxml2 gating.** The `READER` and `THREAD` feature requirements correctly match the new decoder's `xmlTextReader*` use and the harness's concurrent parser contexts; the `unset(... CACHE)` + `check_symbol_exists` pattern forces recheck on toolchain swaps; `cmake_push_check_state(RESET)`/`pop` are balanced.
+
+  ## Informational notes (non-blocking, no action required)
+
+  - **N1 (intentional behavioral change, test-pinned): namespaced list element.** `IndexedMzMLDecoder.cpp`, the depth-1 check uses `xmlTextReaderConstLocalName`, so a prefixed `<n:indexList xmlns:n=...>` now matches, where the old DOM's `xmlStrEqual(node->name, "indexList")` compared the qualified name and returned `-1`. Trigger: footer with a namespace-prefixed `indexList`. Impact: previously rejected input now parses — direction-consistent with the pinned permissive semantics and explicitly covered by the "namespaces" test, so presumably deliberate; worth one changelog line since it is an observable acceptance widening, not a regression. (Default-namespace, unprefixed `<indexList xmlns=...>` matched in old code too; only the prefixed case changed.)
+  - **N2 (harness, by design): cross-mode timing comparability.** In `run()`, `read_seconds` for `stream`/`load`/`idle` spans from function `begin` (includes open/allocation), while indexed modes reset `opened` after open (and after the barrier for `indexed-sync`). Comparing per-worker `read_seconds` across these mode groups would be invalid; within-mode comparisons are sound. As stated, main-clock `seconds`/`synchronized_read_seconds` intentionally include teardown/join. Matches the described methodology; noted only so pending Linux numbers aren't read cross-mode.
+
+  ## Scope caveats
+
+  - `findIndexListOffset`'s regex (attribute-bearing `<indexListOffset ...>` tags, `\d*` empty-capture handling) cannot be diffed against its predecessor because the old implementation is not in the packet; behavior on supplied tests is correct and the empty/negative/truncated-token cases are pinned. Classified as unverifiable, not introduced.
+  - Old `parseOffsets` buffer construction is likewise not supplied; the current overflow guards (`tail_length`/max_size/gcount checks) and the `-1` boundaries at `0`, `length`, `length+1`, negative offsets are internally consistent and test-pinned.
+  - macOS-only test evidence accepted as stated; no performance or memory conclusions drawn; Linux targeted/perf results remain pending with nothing in this packet contradicting them.
+

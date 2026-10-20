@@ -1,0 +1,14 @@
+{
+  "requested_model": "claude-opus-5-5",
+  "version": "2.1.288 (Claude Code)",
+  "candidate": "bounded 2MiB DOM fast path plus reviewed reader for larger footers",
+  "started_utc": "2026-10-20T20:34:28.234851+00:00",
+  "input_sha256": "8333d11bb36f872c8e178d1147b6fabc387fb22a7c4780c71970bd2534bb6615",
+  "mode": "tool-free self-contained complete-diff review; no model fallback configured",
+  "returncode": 0,
+  "elapsed_seconds": 248.51362085342407,
+  "reported_models": [
+    "claude-opus-5-5"
+  ],
+  "is_error": false
+}
