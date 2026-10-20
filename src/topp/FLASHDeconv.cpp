@@ -24,6 +24,7 @@
 #include <condition_variable>
 #include <deque>
 #include <mutex>
+#include <optional>
 #include <thread>
 
 #include <algorithm>
@@ -144,6 +145,8 @@ namespace
   */
   bool parallelLoadIndexedMzML(const std::string& file, const PeakFileOptions& options, MSExperiment& map, int threads)
   {
+    std::optional<FLASHTrace::Scope> trace_step;
+    trace_step.emplace("pload.index");
     IndexedMzMLDecoder decoder;
     const std::streampos index_offset = decoder.findIndexListOffset(file);
     if (index_offset == std::streampos(-1)) { return false; }
@@ -190,7 +193,11 @@ namespace
       mzml.setLogType(ProgressLogger::NONE);
       mzml.loadBuffer(buffer, parts[c]);
     };
+    trace_step.reset();
+    trace_step.emplace("pload.parse0", (int64_t)parts_n, (int64_t)first);
     parse(0); // serially first: warms lazily initialised parser and CV singletons
+    trace_step.reset();
+    trace_step.emplace("pload.parse");
 #pragma omp parallel for schedule(dynamic, 1) num_threads(threads)
     for (SignedSize c = 1; c < (SignedSize)parts_n; ++c)
     {
@@ -207,6 +214,8 @@ namespace
     {
       if (e) { std::rethrow_exception(e); }
     }
+    trace_step.reset();
+    trace_step.emplace("pload.assemble");
     map = std::move(parts[0]);
     for (Size c = 1; c < parts_n; ++c)
     {
@@ -216,6 +225,8 @@ namespace
     }
     map.setLoadedFileType(file);
     map.setLoadedFilePath(file);
+    trace_step.reset();
+    trace_step.emplace("pload.ranges");
     map.updateRanges();
     return true;
   }
@@ -487,7 +498,11 @@ protected:
       threads = omp_get_max_threads();
 #endif
       loaded_in_parallel = parallelLoadIndexedMzML(in_file, fh.getOptions(), map, threads);
-      if (loaded_in_parallel) { ChromatogramTools().convertSpectraToChromatograms<PeakMap>(map, true); }
+      if (loaded_in_parallel)
+      {
+        FLASHTrace::Scope trace_conv("pload.chromconv");
+        ChromatogramTools().convertSpectraToChromatograms<PeakMap>(map, true);
+      }
     }
     if (loaded_in_parallel) {}
     else if (FLASHTrace::opt("stream") && FileHandler::getType(in_file) == FileTypes::MZML)
