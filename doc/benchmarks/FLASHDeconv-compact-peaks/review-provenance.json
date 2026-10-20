@@ -1,0 +1,31 @@
+{
+  "schema": "compact-adversarial-review-provenance-r1",
+  "packet_sha256": "e2238eec598d0abff859960071e3c7ec4aaa28c0c8437039bdd929540bb68e27",
+  "packet_bytes": 72002,
+  "packet_provenance_sha256": "708078c02e63e6ca84e2f125441ebbae8408df20029e24372330cf32dd47f56f",
+  "reviews": {
+    "kimi": {
+      "outcome_sha256": "d3e40197ad506c6445bcef534b1cf746110b62e1c1c73754014863f5294a052f",
+      "substantive_review_sha256": "f04b6fe813cd18bb9283a890edd4bce9ac1b521a63a14cbd0639d5b849737500",
+      "packet_sha256": "e2238eec598d0abff859960071e3c7ec4aaa28c0c8437039bdd929540bb68e27",
+      "returncode": 0,
+      "source_protection_passed": true,
+      "cli_version": "2.2.0",
+      "model": null,
+      "model_identity_scope": "Kimi CLI2.2.0; exact underlying model was not emitted/verified.",
+      "tool_events": 0
+    },
+    "claude": {
+      "outcome_sha256": "ddb09dcde757ecf8340eb029d07c7b4ca2795b6ba75e784c8935860541d85ee3",
+      "substantive_review_sha256": "38e352b26184cdfbcae1b874e09bede23af5c8d4e754b8f2cb0ba380b6edeab5",
+      "packet_sha256": "e2238eec598d0abff859960071e3c7ec4aaa28c0c8437039bdd929540bb68e27",
+      "returncode": 0,
+      "source_protection_passed": true,
+      "cli_version": "2.1.288 (Claude Code)",
+      "model": "claude-opus-5-5",
+      "model_identity_scope": "Actual modelUsage canonicalModel=claude-opus-5-5.",
+      "tool_events": 0
+    }
+  },
+  "interpretation": "The actual reviews examined an earlier unbuilt draft, including definite accessor errors. Their missing-evidence statements describe that draft, not the later accepted R2 build. Findings require reconciliation against final source and acceptance receipts."
+}

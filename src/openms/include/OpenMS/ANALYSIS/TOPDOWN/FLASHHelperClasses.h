@@ -14,10 +14,13 @@ using uint = unsigned int; // POSIX uint not available on MSVC; was provided tra
 #endif
 #include <OpenMS/CHEMISTRY/ISOTOPEDISTRIBUTION/IsotopeDistribution.h>
 #include <OpenMS/CONCEPT/Constants.h>
+#include <OpenMS/CONCEPT/Exception.h>
 #include <OpenMS/CONCEPT/HashUtils.h>
 #include <OpenMS/FEATUREFINDER/MassTraceDetection.h>
 #include <boost/dynamic_bitset.hpp>
+#include <cstdint>
 #include <functional>
+#include <string>
 
 namespace OpenMS
 {
@@ -293,24 +296,98 @@ namespace OpenMS
       bool empty() const;
     };
 
-    /// log transformed peak. After deconvolution, all necessary information from deconvolution such as charge and isotope index is stored.
+    /**
+      @brief Value facade over compact, independently owned peak storage.
+
+      The experimental representation packs charge and polarity into one 16-bit
+      word. A spare flag preserves negative isotope indices; the unsigned
+      isotope magnitude supports indices from -65535 through 65535. No pointer,
+      shared arena or global pool is needed when peaks are copied or sorted.
+      Charges are restricted to 0 through 200 in this experimental branch.
+    */
     class OPENMS_DLLAPI LogMzPeak
     {
+    private:
+      static constexpr std::int16_t CHARGE_MASK = 0xff;
+      static constexpr std::int16_t NEGATIVE_POLARITY = 0x100;
+      static constexpr std::int16_t NEGATIVE_ISOTOPE = 0x200;
+
+      struct Storage
+      {
+        double mz = 0;
+        double log_mz = -1000;
+        double mass = 0;
+        float intensity = 0;
+        std::int16_t charge_flags = NEGATIVE_ISOTOPE;
+        std::uint16_t isotope_magnitude = 1;
+      } data_;
+
     public:
       /// original peak mz
-      double mz = 0;
+      double getMZ() const noexcept
+      { return data_.mz; }
+      /// Set mz independently of the cached logarithm, matching the original field semantics.
+      void setMZ(double value) noexcept
+      { data_.mz = value; }
       /// original peak intensity
-      float intensity = 0;
+      float getIntensity() const noexcept
+      { return data_.intensity; }
+      /// Set original intensity.
+      void setIntensity(float value) noexcept
+      { data_.intensity = value; }
       /// log transformed mz
-      double logMz = -1000;
+      double getLogMz() const noexcept
+      { return data_.log_mz; }
+      /// Set the cached logarithm independently of mz.
+      void setLogMz(double value) noexcept
+      { data_.log_mz = value; }
       /// determined mass after deconvolution. NOT monoisotopic but only decharged
-      double mass = .0;
+      double getMass() const noexcept
+      { return data_.mass; }
+      /// Set the independent uncharged mass override (nonpositive means derive from mz).
+      void setMass(double value) noexcept
+      { data_.mass = value; }
       /// absolute charge (in case negative, is_positive is set to false)
-      int abs_charge = 0;
+      int getAbsCharge() const noexcept
+      { return data_.charge_flags & CHARGE_MASK; }
+      /**
+        @brief Set charge magnitude without changing polarity or isotope sign.
+        @param[in] value Charge in [0, 200].
+        @throws Exception::InvalidValue for an unsupported charge.
+      */
+      void setAbsCharge(int value)
+      {
+        if (value < 0 || value > 200)
+        {
+          throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "Compact LogMzPeak charge must be in [0, 200]",
+                                        std::to_string(value));
+        }
+        data_.charge_flags = static_cast<std::int16_t>((data_.charge_flags & ~CHARGE_MASK) | value);
+      }
       /// is positive mode
-      bool is_positive = true;
+      bool isPositive() const noexcept
+      { return (data_.charge_flags & NEGATIVE_POLARITY) == 0; }
+      /// Set polarity, including negative mode for an uncharged peak.
+      void setPositive(bool value) noexcept
+      { data_.charge_flags = static_cast<std::int16_t>(value ? data_.charge_flags & ~NEGATIVE_POLARITY : data_.charge_flags | NEGATIVE_POLARITY); }
       /// isotope index
-      int isotopeIndex = -1;
+      int getIsotopeIndex() const noexcept
+      { return (data_.charge_flags & NEGATIVE_ISOTOPE) ? -static_cast<int>(data_.isotope_magnitude) : static_cast<int>(data_.isotope_magnitude); }
+      /**
+        @brief Set the signed isotope index without narrowing or wrapping.
+        @param[in] value Isotope index in [-65535, 65535].
+        @throws Exception::InvalidValue for an unsupported index.
+      */
+      void setIsotopeIndex(int value)
+      {
+        if (value < -65535 || value > 65535)
+        {
+          throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "Compact LogMzPeak isotope index must be in [-65535, 65535]",
+                                        std::to_string(value));
+        }
+        data_.isotope_magnitude = static_cast<std::uint16_t>(value < 0 ? -value : value);
+        data_.charge_flags = static_cast<std::int16_t>(value < 0 ? data_.charge_flags | NEGATIVE_ISOTOPE : data_.charge_flags & ~NEGATIVE_ISOTOPE);
+      }
 
       /// default constructor
       LogMzPeak() = default;
@@ -375,8 +452,8 @@ namespace std
     std::size_t operator()(const OpenMS::FLASHHelperClasses::LogMzPeak& peak) const noexcept
     {
       // Hash based on logMz and intensity (the fields used in operator==)
-      std::size_t seed = OpenMS::hash_float(peak.logMz);
-      OpenMS::hash_combine(seed, OpenMS::hash_float(peak.intensity));
+      std::size_t seed = OpenMS::hash_float(peak.getLogMz());
+      OpenMS::hash_combine(seed, OpenMS::hash_float(peak.getIntensity()));
       return seed;
     }
   };

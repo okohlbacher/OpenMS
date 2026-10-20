@@ -13,6 +13,7 @@
 #include <OpenMS/CONCEPT/LogStream.h>
 #include <OpenMS/SYSTEM/BuildInfo.h>
 #include <cstdint>
+#include <exception>
 #include <limits>
 #include <type_traits>
 #include <utility>
@@ -141,7 +142,7 @@ inline const double tol_div_factor
     {
       for (const auto& p : pg)
       {
-        signal_mzs.insert(p.mz);
+        signal_mzs.insert(p.getMZ());
       }
     }
 
@@ -227,6 +228,12 @@ inline const double tol_div_factor
   {
     min_abs_charge_ = param_.getValue("min_charge");
     max_abs_charge_ = param_.getValue("max_charge");
+    // Reject unsupported experimental charges before abs() or any parallel work.
+    if (min_abs_charge_ < -200 || min_abs_charge_ > 200 || max_abs_charge_ < -200 || max_abs_charge_ > 200)
+    {
+      throw Exception::InvalidParameter(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION,
+                                        "Compact LogMzPeak requires min_charge and max_charge in [-200, 200]");
+    }
     is_positive_ = min_abs_charge_ > 0;
 
     min_abs_charge_ = abs(min_abs_charge_);
@@ -341,11 +348,11 @@ inline const double tol_div_factor
 
     for (const auto& p : log_mz_peaks_)
     {
-      Size bi = getBinNumber_(p.logMz, mz_bin_min_value_, bin_mul_factor);
+      Size bi = getBinNumber_(p.getLogMz(), mz_bin_min_value_, bin_mul_factor);
       if (bi >= bin_number) { break; }
       binned_log_mz_peaks_.set(bi);
 
-      binned_log_mz_peak_intensities[bi] += p.intensity;
+      binned_log_mz_peak_intensities[bi] += p.getIntensity();
     }
   }
 
@@ -751,7 +758,7 @@ inline const double tol_div_factor
     // per peak, store the m/z bin number for fast processing
     for (int i = 0; i < log_mz_peak_size; i++)
     {
-      peak_bin_numbers[i] = getBinNumber_(log_mz_peaks_[i].logMz, mz_bin_min_value_, bin_mul_factor);
+      peak_bin_numbers[i] = getBinNumber_(log_mz_peaks_[i].getLogMz(), mz_bin_min_value_, bin_mul_factor);
     }
 
     // main iteration. per_mass_abs_charge_ranges gives the range of charges for each mass bin
@@ -787,7 +794,7 @@ inline const double tol_div_factor
         {
           if (peak_bin_numbers[cpi] == b_index) // if the peak of consideration matches to this mass with charge abs_charge
           {
-            double intensity = log_mz_peaks_[cpi].intensity;
+            double intensity = log_mz_peaks_[cpi].getIntensity();
             if (intensity > max_intensity) // compare with other matching peaks and select the most intense peak (in max_peak_index)
             {
               max_intensity = intensity;
@@ -802,18 +809,18 @@ inline const double tol_div_factor
 
         // Search for local max.
         if (max_peak_index > 0 && max_peak_index <= log_mz_peak_size && peak_bin_numbers[max_peak_index - 1] == b_index - 1
-            && log_mz_peaks_[max_peak_index - 1].intensity > max_intensity)
+            && log_mz_peaks_[max_peak_index - 1].getIntensity() > max_intensity)
         {
           continue;
         }
         if (max_peak_index < log_mz_peak_size - 1 && peak_bin_numbers[max_peak_index + 1] == b_index + 1
-            && log_mz_peaks_[max_peak_index + 1].intensity > max_intensity)
+            && log_mz_peaks_[max_peak_index + 1].getIntensity() > max_intensity)
         {
           continue;
         }
 
         // now we have a matching peak for this mass of charge  abs_charge. From here, isotope peaks are collected
-        const double mz = log_mz_peaks_[max_peak_index].mz; // charged mz
+        const double mz = log_mz_peaks_[max_peak_index].getMZ(); // charged mz
         const double iso_delta = iso_da_distance_ / (double)abs_charge;
         double mz_delta = std::min(max_mass_dalton_tolerance_ / (double)abs_charge, tol * mz); //
 
@@ -821,7 +828,7 @@ inline const double tol_div_factor
 
         for (int peak_index = max_peak_index; peak_index < log_mz_peak_size; peak_index++)
         {
-          const double observed_mz = log_mz_peaks_[peak_index].mz;
+          const double observed_mz = log_mz_peaks_[peak_index].getMZ();
           double mz_diff = observed_mz - mz;
           int tmp_i = (int)round(mz_diff / iso_delta);
 
@@ -833,8 +840,8 @@ inline const double tol_div_factor
             if (bin < mass_bin_size && ! (bin < excluded_mass_bins_for_decoy_runs_.size() && excluded_mass_bins_for_decoy_runs_[bin]))
             {
               LogMzPeak p(log_mz_peaks_[peak_index]);
-              p.abs_charge = (int)abs_charge;
-              p.isotopeIndex = tmp_i;
+              p.setAbsCharge((int)abs_charge);
+              p.setIsotopeIndex(tmp_i);
               pg.push_back(p);
             }
           }
@@ -842,7 +849,7 @@ inline const double tol_div_factor
 
         for (int peak_index = max_peak_index - 1; peak_index >= 0; peak_index--)
         {
-          const double observed_mz = log_mz_peaks_[peak_index].mz;
+          const double observed_mz = log_mz_peaks_[peak_index].getMZ();
           double mz_diff = observed_mz - mz;
           int tmp_i = (int)round(mz_diff / iso_delta);
 
@@ -853,8 +860,8 @@ inline const double tol_div_factor
             if (bin < mass_bin_size && ! (bin < excluded_mass_bins_for_decoy_runs_.size() && excluded_mass_bins_for_decoy_runs_[bin]))
             {
               LogMzPeak p(log_mz_peaks_[peak_index]);
-              p.abs_charge = (int)abs_charge;
-              p.isotopeIndex = tmp_i;
+              p.setAbsCharge((int)abs_charge);
+              p.setIsotopeIndex(tmp_i);
               pg.push_back(p);
             }
           }
@@ -869,9 +876,9 @@ inline const double tol_div_factor
         new_peaks.reserve(pg.size());
         for (const auto& p : pg)
         {
-          if (max_intensity < p.intensity)
+          if (max_intensity < p.getIntensity())
           {
-            max_intensity = p.intensity;
+            max_intensity = p.getIntensity();
             t_mass = p.getUnchargedMass();
           }
         }
@@ -883,14 +890,14 @@ inline const double tol_div_factor
         int apex_index = (int)activeAveragine_().getApexIndex(t_mass);
         for (auto& p : pg)
         {
-          p.isotopeIndex = (int)round((p.getUnchargedMass() - t_mass) / iso_da_distance_);
+          p.setIsotopeIndex((int)round((p.getUnchargedMass() - t_mass) / iso_da_distance_));
 
-          if (abs(t_mass - p.getUnchargedMass() + iso_da_distance_ * p.isotopeIndex) > iso_tolerance) { continue; }
-          p.isotopeIndex += apex_index;
+          if (abs(t_mass - p.getUnchargedMass() + iso_da_distance_ * p.getIsotopeIndex()) > iso_tolerance) { continue; }
+          p.setIsotopeIndex(p.getIsotopeIndex() + (apex_index));
           new_peaks.push_back(p);
-          min_off = min_off > p.isotopeIndex ? p.isotopeIndex : min_off;
-          max_off = max_off < p.isotopeIndex ? p.isotopeIndex : max_off;
-          max_charge = max_charge < p.abs_charge ? p.abs_charge : max_charge;
+          min_off = min_off > p.getIsotopeIndex() ? p.getIsotopeIndex() : min_off;
+          max_off = max_off < p.getIsotopeIndex() ? p.getIsotopeIndex() : max_off;
+          max_charge = max_charge < p.getAbsCharge() ? p.getAbsCharge() : max_charge;
         }
 
         if (min_off != max_off)
@@ -931,15 +938,15 @@ inline const double tol_div_factor
     int tmp_peak_cntr = current_charge_range - min_support_peak_count_;
 
     tmp_peak_cntr = tmp_peak_cntr < 0 ? 0 : tmp_peak_cntr;
-    double mass_bin_max_value = std::min(log_mz_peaks_.back().logMz - universal_pattern_[tmp_peak_cntr],
+    double mass_bin_max_value = std::min(log_mz_peaks_.back().getLogMz() - universal_pattern_[tmp_peak_cntr],
                                          log(current_max_mass_ + (double)activeAveragine_().getRightCountFromApex(current_max_mass_) + 1.0));
 
     double bin_mul_factor = bin_mul_factors_[ms_level_ - 1];
 
     mass_bin_min_value_ = log(std::max(1.0, 50 - activeAveragine_().getAverageMassDelta(50)));
-    mz_bin_min_value_ = log_mz_peaks_[0].logMz;
+    mz_bin_min_value_ = log_mz_peaks_[0].getLogMz();
 
-    double mz_bin_max_value = log_mz_peaks_.back().logMz;
+    double mz_bin_max_value = log_mz_peaks_.back().getLogMz();
     Size mass_bin_number = getBinNumber_(mass_bin_max_value, mass_bin_min_value_, bin_mul_factor) + 1;
     binned_universal_pattern_.clear();
 
@@ -1124,14 +1131,28 @@ inline const double tol_div_factor
     };
     if (parallel_candidates)
     {
-#pragma omp parallel for default(none) shared(score_candidate, selected)
+      // Checked compact setters may reject an isotope outside their domain.
+      // Collect exceptions by candidate so none escapes an OpenMP region.
+      std::vector<std::exception_ptr> errors(deconvolved_spectrum_.size());
+#pragma omp parallel for default(none) shared(score_candidate, selected, errors)
       for (int i = 0; i < (int)deconvolved_spectrum_.size(); i++)
       {
-        if (score_candidate(i))
+        try
         {
+          if (score_candidate(i))
+          {
 #pragma omp critical
-          selected[i] = true;
+            selected[i] = true;
+          }
         }
+        catch (...)
+        {
+          errors[i] = std::current_exception();
+        }
+      }
+      for (const auto& error : errors)
+      {
+        if (error) { std::rethrow_exception(error); }
       }
     }
     else
@@ -1203,14 +1224,26 @@ inline const double tol_div_factor
     };
     if (parallel_candidates)
     {
-#pragma omp parallel for default(none) shared(score_harmonics, selected)
+      std::vector<std::exception_ptr> errors(deconvolved_spectrum_.size());
+#pragma omp parallel for default(none) shared(score_harmonics, selected, errors)
       for (int i = 0; i < (int)deconvolved_spectrum_.size(); i++)
       {
-        if (score_harmonics(i))
+        try
         {
+          if (score_harmonics(i))
+          {
 #pragma omp critical
-          selected[i] = true;
+            selected[i] = true;
+          }
         }
+        catch (...)
+        {
+          errors[i] = std::current_exception();
+        }
+      }
+      for (const auto& error : errors)
+      {
+        if (error) { std::rethrow_exception(error); }
       }
     }
     else
@@ -1408,8 +1441,8 @@ inline const double tol_div_factor
       const auto& pg = dspec[i];
       for (auto& p : pg)
       {
-        peak_to_pgs[p.mz].insert((int)i);
-        mz_to_intensities[p.mz] = p.intensity;
+        peak_to_pgs[p.getMZ()].insert((int)i);
+        mz_to_intensities[p.getMZ()] = p.getIntensity();
       }
     }
 

@@ -250,46 +250,33 @@ namespace OpenMS
     max_isotope_index_ = index;
   }
 
-  FLASHHelperClasses::LogMzPeak::LogMzPeak(const Peak1D& peak, const bool positive) :
-      mz(peak.getMZ()), intensity(peak.getIntensity()), logMz(getLogMz(peak.getMZ(), positive)), abs_charge(0), is_positive(positive), isotopeIndex(0)
+  FLASHHelperClasses::LogMzPeak::LogMzPeak(const Peak1D& peak, const bool positive):
+      data_ {peak.getMZ(),        FLASHHelperClasses::getLogMz(peak.getMZ(), positive),        0,
+             peak.getIntensity(), static_cast<std::int16_t>(positive ? 0 : NEGATIVE_POLARITY), 0}
   {
   }
 
   double FLASHHelperClasses::LogMzPeak::getUnchargedMass() const
   {
-    if (abs_charge == 0)
-    {
-      return .0;
-    }
-    if (mass <= 0)
-    {
-      return (mz - getChargeMass(is_positive)) * (float)abs_charge;
-    }
-    return mass;
+    if (getAbsCharge() == 0) { return .0; }
+    if (getMass() <= 0) { return (getMZ() - getChargeMass(isPositive())) * (float)getAbsCharge(); }
+    return getMass();
   }
 
   bool FLASHHelperClasses::LogMzPeak::operator<(const LogMzPeak& a) const
   {
-    if (this->logMz == a.logMz)
-    {
-      return this->intensity < a.intensity;
-    }
-    return this->logMz < a.logMz;
+    if (this->getLogMz() == a.getLogMz()) { return this->getIntensity() < a.getIntensity(); }
+    return this->getLogMz() < a.getLogMz();
   }
 
   bool FLASHHelperClasses::LogMzPeak::operator>(const LogMzPeak& a) const
   {
-    if (this->logMz == a.logMz)
-    {
-      return this->intensity > a.intensity;
-    }
-    return this->logMz > a.logMz;
+    if (this->getLogMz() == a.getLogMz()) { return this->getIntensity() > a.getIntensity(); }
+    return this->getLogMz() > a.getLogMz();
   }
 
   bool FLASHHelperClasses::LogMzPeak::operator==(const LogMzPeak& a) const
-  {
-    return this->logMz == a.logMz && this->intensity == a.intensity;
-  }
+  { return this->getLogMz() == a.getLogMz() && this->getIntensity() == a.getIntensity(); }
 
 
   float FLASHHelperClasses::getChargeMass(const bool positive_ioniziation_mode)

@@ -1,0 +1,106 @@
+{
+  "schema": "compact-source-provenance-r1",
+  "tested_source_manifest_sha256": "7d25df7e092ca2b80e7aa95e3e900fac5c3e4c607a1edfe293b6072bb585a962",
+  "base_commit": "92c66f1f07c15cf791c020f90d4a92acef92449e",
+  "code_baseline": "7d42c66d6e5cff8db76c2448ca9d7f65a61fac73",
+  "branch": "codex/flashdeconv-compact-peaks",
+  "source_files": {
+    "src/openms/include/OpenMS/ANALYSIS/TOPDOWN/FLASHHelperClasses.h": {
+      "tested_R2_sha256": "5daaa521b8d0aa6d441dc7b45f57f69d10d7bc6cb7fe79eb2c7b8bc6bbaed6f0",
+      "final_branch_sha256": "f8bd2c9337243ac9bc2923bbe203ae9324710dc9c8ab33495a4328d31862a1fc",
+      "bytes_identical": false
+    },
+    "src/openms/source/ANALYSIS/TOPDOWN/DeconvolvedSpectrum.cpp": {
+      "tested_R2_sha256": "82b23ab15bcccf0bf956196ec3e3f6aed355575546250ef2f756d5798227b0fd",
+      "final_branch_sha256": "82b23ab15bcccf0bf956196ec3e3f6aed355575546250ef2f756d5798227b0fd",
+      "bytes_identical": true
+    },
+    "src/openms/source/ANALYSIS/TOPDOWN/FLASHDeconvAlgorithm.cpp": {
+      "tested_R2_sha256": "bb98d5a4e7f2a9a2528a1ec809c8a1c1c21576118952b1302b91b19c55660d7c",
+      "final_branch_sha256": "bb98d5a4e7f2a9a2528a1ec809c8a1c1c21576118952b1302b91b19c55660d7c",
+      "bytes_identical": true
+    },
+    "src/openms/source/ANALYSIS/TOPDOWN/FLASHHelperClasses.cpp": {
+      "tested_R2_sha256": "86cdb92160af793478e2e9644a939809e9dc1ffbf88015a615ed8bcf47065c42",
+      "final_branch_sha256": "86cdb92160af793478e2e9644a939809e9dc1ffbf88015a615ed8bcf47065c42",
+      "bytes_identical": true
+    },
+    "src/openms/source/ANALYSIS/TOPDOWN/PeakGroup.cpp": {
+      "tested_R2_sha256": "8503785e2fa348fa483cfb0dbe5c12a1f756e553552b8974ea80e84d859c466e",
+      "final_branch_sha256": "8503785e2fa348fa483cfb0dbe5c12a1f756e553552b8974ea80e84d859c466e",
+      "bytes_identical": true
+    },
+    "src/openms/source/ANALYSIS/TOPDOWN/SpectralDeconvolution.cpp": {
+      "tested_R2_sha256": "ddc3213784dd9a79c7fa7fa8a6cfbc605b1d9c73821d8858eb1a82bdd9c243a0",
+      "final_branch_sha256": "ddc3213784dd9a79c7fa7fa8a6cfbc605b1d9c73821d8858eb1a82bdd9c243a0",
+      "bytes_identical": true
+    },
+    "src/openms/source/FORMAT/FLASHDeconvFeatureFile.cpp": {
+      "tested_R2_sha256": "8221398b0ec65a55440d29434e8acb99dda45daf22df0ad6e177245ddef5848c",
+      "final_branch_sha256": "8221398b0ec65a55440d29434e8acb99dda45daf22df0ad6e177245ddef5848c",
+      "bytes_identical": true
+    },
+    "src/openms/source/FORMAT/FLASHDeconvSpectrumFile.cpp": {
+      "tested_R2_sha256": "90637421c1c8f4100cd9b901b07e4ab885519d33276d4fbab6c8fcd344518794",
+      "final_branch_sha256": "90637421c1c8f4100cd9b901b07e4ab885519d33276d4fbab6c8fcd344518794",
+      "bytes_identical": true
+    },
+    "src/pyOpenMS/bindings/bind_analysis.cpp": {
+      "tested_R2_sha256": "d5fa7355b5536d83bf0c09232619080781cd6a6127ec77db5d6355e6b66a1667",
+      "final_branch_sha256": "d5fa7355b5536d83bf0c09232619080781cd6a6127ec77db5d6355e6b66a1667",
+      "bytes_identical": true
+    },
+    "src/pyOpenMS/tests/unittests/test_FLASHDeconv.py": {
+      "tested_R2_sha256": "4973286485714aa9bae1faff736d910d8f170a995aadba281f059458fd606f95",
+      "final_branch_sha256": "4973286485714aa9bae1faff736d910d8f170a995aadba281f059458fd606f95",
+      "bytes_identical": true
+    },
+    "src/tests/class_tests/openms/source/FLASHDeconvAlgorithm_regression_test.cpp": {
+      "tested_R2_sha256": "602842b9c6008d18e25cd2222451df3357fa2de6a6d6f69a430d7b9ea9dd9f17",
+      "final_branch_sha256": "602842b9c6008d18e25cd2222451df3357fa2de6a6d6f69a430d7b9ea9dd9f17",
+      "bytes_identical": true
+    },
+    "src/tests/class_tests/openms/source/FLASHDeconvHelperStructs_test.cpp": {
+      "tested_R2_sha256": "dcdd73f89dd36b75e32a2845c17de940b18e2b79d22812bef3b2e1135e63ac7b",
+      "final_branch_sha256": "dcdd73f89dd36b75e32a2845c17de940b18e2b79d22812bef3b2e1135e63ac7b",
+      "bytes_identical": true
+    },
+    "src/tests/class_tests/openms/source/FLASHDeconvSpectrumFile_parallel_test.cpp": {
+      "tested_R2_sha256": "e07a046e6c4d2f690673960f47e6989e12af94469d0e143ba49633427df715f7",
+      "final_branch_sha256": "e07a046e6c4d2f690673960f47e6989e12af94469d0e143ba49633427df715f7",
+      "bytes_identical": true
+    },
+    "src/tests/class_tests/openms/source/FLASHDeconvSpectrumFile_test.cpp": {
+      "tested_R2_sha256": "ad5f97207d31e82a766d0a90a488164e08e58d94148dcb0ce77f342b2e9818bd",
+      "final_branch_sha256": "ad5f97207d31e82a766d0a90a488164e08e58d94148dcb0ce77f342b2e9818bd",
+      "bytes_identical": true
+    },
+    "src/tests/class_tests/openms/source/FLASHHelperClasses_test.cpp": {
+      "tested_R2_sha256": "7012360f9510ba8f2c119768ae3fe3d5063ee4384ba61480f43210fc8973aaf5",
+      "final_branch_sha256": "41f1f63f532067e93665a9c07de7a6754273a20dfe3fac9930d62795b486b58f",
+      "bytes_identical": false
+    },
+    "src/tests/class_tests/openms/source/MassFeatureTrace_test.cpp": {
+      "tested_R2_sha256": "93872e6050d482598f81b0c1f07d0364964252d4f8d6b8a49dbdb3f376394b37",
+      "final_branch_sha256": "93872e6050d482598f81b0c1f07d0364964252d4f8d6b8a49dbdb3f376394b37",
+      "bytes_identical": true
+    },
+    "src/tests/class_tests/openms/source/PeakGroup_test.cpp": {
+      "tested_R2_sha256": "963eeda341abbde34322a2ba5d797b042b645791ea2cac1edd4a74e69c33ffad",
+      "final_branch_sha256": "963eeda341abbde34322a2ba5d797b042b645791ea2cac1edd4a74e69c33ffad",
+      "bytes_identical": true
+    },
+    "src/tests/class_tests/openms/source/SpectralDeconvolution_test.cpp": {
+      "tested_R2_sha256": "d52f21a63fdfb491279e9a367a88746ec92af5cf301138a6652bcd7e58919131",
+      "final_branch_sha256": "d52f21a63fdfb491279e9a367a88746ec92af5cf301138a6652bcd7e58919131",
+      "bytes_identical": true
+    }
+  },
+  "final_whitespace_delta": {
+    "receipt_sha256": "7ec4e29f634d659cc5d634582cecbbdbd91b1435bb1aed92e580e983be864aa8",
+    "files": 2,
+    "all_other_files_exact": 16,
+    "whitespace_stripped_bytes_and_line_counts_equal": true,
+    "scope": "Only namespace indentation and space between std::hash type and braced construction. Immutable R2 is the measured native source; this summary does not assert final-whitespace source was separately compiled."
+  }
+}

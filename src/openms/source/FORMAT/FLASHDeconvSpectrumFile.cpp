@@ -114,21 +114,21 @@ namespace OpenMS
         ss << std::fixed << std::setprecision(2);
         for (const auto& p : pg)
         {
-          ss << std::to_string(p.mz) << " ";
+          ss << std::to_string(p.getMZ()) << " ";
         }
 
         ss << "\t";
         ss << std::fixed << std::setprecision(1);
         for (const auto& p : pg)
         {
-          ss << p.intensity << " ";
+          ss << p.getIntensity() << " ";
         }
 
         ss << "\t";
         ss << std::setprecision(-1);
         for (const auto& p : pg)
         {
-          ss << (p.is_positive ? p.abs_charge : -p.abs_charge) << " ";
+          ss << (p.isPositive() ? p.getAbsCharge() : -p.getAbsCharge()) << " ";
         }
 
         ss << "\t";
@@ -140,15 +140,15 @@ namespace OpenMS
         ss << "\t";
         for (const auto& p : pg)
         {
-          ss << p.isotopeIndex << " ";
+          ss << p.getIsotopeIndex() << " ";
         }
 
         ss << "\t";
         ss << std::setprecision(2);
         for (const auto& p : pg)
         {
-          double average_mass = pg.getMonoMass() + p.isotopeIndex * pg.getIsotopeDaDistance();
-          double mass_error = (average_mass / p.abs_charge + FLASHHelperClasses::getChargeMass(p.is_positive) - p.mz) / p.mz;
+          double average_mass = pg.getMonoMass() + p.getIsotopeIndex() * pg.getIsotopeDaDistance();
+          double mass_error = (average_mass / p.getAbsCharge() + FLASHHelperClasses::getChargeMass(p.isPositive()) - p.getMZ()) / p.getMZ();
           ss << 1e6 * mass_error << " ";
         }
         ss << std::setprecision(-1);
@@ -156,21 +156,21 @@ namespace OpenMS
         ss << std::fixed << std::setprecision(2);
         for (const auto& np : noisy_peaks)
         {
-          ss << std::to_string(np.mz) << " ";
+          ss << std::to_string(np.getMZ()) << " ";
         }
 
         ss << "\t";
         ss << std::fixed << std::setprecision(1);
         for (const auto& np : noisy_peaks)
         {
-          ss << np.intensity << " ";
+          ss << np.getIntensity() << " ";
         }
 
         ss << "\t";
         ss << std::setprecision(-1);
         for (const auto& np : noisy_peaks)
         {
-          ss << (np.is_positive ? np.abs_charge : -np.abs_charge) << " ";
+          ss << (np.isPositive() ? np.getAbsCharge() : -np.getAbsCharge()) << " ";
         }
 
         ss << "\t";
@@ -182,15 +182,15 @@ namespace OpenMS
         ss << "\t";
         for (const auto& np : noisy_peaks)
         {
-          ss << np.isotopeIndex << " ";
+          ss << np.getIsotopeIndex() << " ";
         }
 
         ss << "\t";
         ss << std::setprecision(2);
         for (const auto& np : noisy_peaks)
         {
-          double average_mass = pg.getMonoMass() + np.isotopeIndex * pg.getIsotopeDaDistance();
-          double mass_error = (average_mass / np.abs_charge + FLASHHelperClasses::getChargeMass(np.is_positive) - np.mz) / np.mz;
+          double average_mass = pg.getMonoMass() + np.getIsotopeIndex() * pg.getIsotopeDaDistance();
+          double mass_error = (average_mass / np.getAbsCharge() + FLASHHelperClasses::getChargeMass(np.isPositive()) - np.getMZ()) / np.getMZ();
           ss << 1e6 * mass_error << " ";
         }
         ss << std::setprecision(-1);
@@ -598,15 +598,15 @@ namespace OpenMS
           {
             auto& p = pg[k];
 
-            // Increment the pindex while it points to values less than p.mz
-            while (pindex < anno_spec.size() - 1 && anno_spec[pindex].getMZ() < p.mz)
+            // Increment the pindex while it points to values less than p.getMZ()
+            while (pindex < anno_spec.size() - 1 && anno_spec[pindex].getMZ() < p.getMZ())
             {
               pindex++;
             }
             size_t nearest_index = pindex;
-            if (anno_spec[pindex].getMZ() != p.mz)
+            if (anno_spec[pindex].getMZ() != p.getMZ())
             {
-              if (pindex > 0 && std::abs(anno_spec[pindex - 1].getMZ() - p.mz) < std::abs(anno_spec[pindex].getMZ() - p.mz))
+              if (pindex > 0 && std::abs(anno_spec[pindex - 1].getMZ() - p.getMZ()) < std::abs(anno_spec[pindex].getMZ() - p.getMZ()))
               {
                 nearest_index = pindex - 1;
               }

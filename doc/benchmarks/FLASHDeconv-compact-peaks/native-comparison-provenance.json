@@ -1,0 +1,262 @@
+{
+  "passed": true,
+  "counts": [
+    16,
+    32,
+    64,
+    128,
+    192
+  ],
+  "records": [
+    {
+      "series": "Current 48-byte peaks",
+      "plotted": true,
+      "role": "cap64",
+      "physical_cores": 16,
+      "wall_s": 63.55986121902242,
+      "rss_gib": 7.188274383544922,
+      "user_s": 903.02,
+      "system_s": 15.78,
+      "cpu_s": 918.8,
+      "source_identity_sha256": "e6f30386aef3d297afe33368ea1d56b090da33c7e690a99e5a67171f054ba21f",
+      "cohort_manifest": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-control-capture-r1/native-control-r1/manifest.json",
+      "same_count_speedup_vs_fresh": 1.0,
+      "wall_reduction_vs_fresh_pct": 0.0,
+      "rss_reduction_vs_fresh_pct": 0.0
+    },
+    {
+      "series": "Current 48-byte peaks",
+      "plotted": true,
+      "role": "cap64",
+      "physical_cores": 32,
+      "wall_s": 37.17724710283801,
+      "rss_gib": 12.627216339111328,
+      "user_s": 925.52,
+      "system_s": 48.98,
+      "cpu_s": 974.5,
+      "source_identity_sha256": "e6f30386aef3d297afe33368ea1d56b090da33c7e690a99e5a67171f054ba21f",
+      "cohort_manifest": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-control-capture-r1/native-control-r1/manifest.json",
+      "same_count_speedup_vs_fresh": 1.0,
+      "wall_reduction_vs_fresh_pct": 0.0,
+      "rss_reduction_vs_fresh_pct": 0.0
+    },
+    {
+      "series": "Current 48-byte peaks",
+      "plotted": true,
+      "role": "cap64",
+      "physical_cores": 64,
+      "wall_s": 27.93995878426358,
+      "rss_gib": 23.24053192138672,
+      "user_s": 984.78,
+      "system_s": 243.8,
+      "cpu_s": 1228.58,
+      "source_identity_sha256": "e6f30386aef3d297afe33368ea1d56b090da33c7e690a99e5a67171f054ba21f",
+      "cohort_manifest": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-control-capture-r1/native-control-r1/manifest.json",
+      "same_count_speedup_vs_fresh": 1.0,
+      "wall_reduction_vs_fresh_pct": 0.0,
+      "rss_reduction_vs_fresh_pct": 0.0
+    },
+    {
+      "series": "Current 48-byte peaks",
+      "plotted": true,
+      "role": "cap64",
+      "physical_cores": 128,
+      "wall_s": 27.535215972922742,
+      "rss_gib": 26.49276351928711,
+      "user_s": 1027.56,
+      "system_s": 245.28,
+      "cpu_s": 1272.84,
+      "source_identity_sha256": "e6f30386aef3d297afe33368ea1d56b090da33c7e690a99e5a67171f054ba21f",
+      "cohort_manifest": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-control-capture-r1/native-control-r1/manifest.json",
+      "same_count_speedup_vs_fresh": 1.0,
+      "wall_reduction_vs_fresh_pct": 0.0,
+      "rss_reduction_vs_fresh_pct": 0.0
+    },
+    {
+      "series": "Current 48-byte peaks",
+      "plotted": true,
+      "role": "cap64",
+      "physical_cores": 192,
+      "wall_s": 27.897292802110314,
+      "rss_gib": 29.065868377685547,
+      "user_s": 1076.02,
+      "system_s": 250.5,
+      "cpu_s": 1326.52,
+      "source_identity_sha256": "e6f30386aef3d297afe33368ea1d56b090da33c7e690a99e5a67171f054ba21f",
+      "cohort_manifest": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-control-capture-r1/native-control-r1/manifest.json",
+      "same_count_speedup_vs_fresh": 1.0,
+      "wall_reduction_vs_fresh_pct": 0.0,
+      "rss_reduction_vs_fresh_pct": 0.0
+    },
+    {
+      "series": "Compact 32-byte peaks",
+      "plotted": true,
+      "role": "compact-inline32",
+      "physical_cores": 16,
+      "wall_s": 63.307579246815294,
+      "rss_gib": 5.276630401611328,
+      "user_s": 908.38,
+      "system_s": 12.19,
+      "cpu_s": 920.57,
+      "source_identity_sha256": "f95bc38cb0ec6e3242e078767918b057b413ed10b810803fadcb143e38ec3abd",
+      "cohort_manifest": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-compact-capture-r1/native-compact-inline32-r1/manifest.json",
+      "same_count_speedup_vs_fresh": 1.003985020043549,
+      "wall_reduction_vs_fresh_pct": 0.3969202691267437,
+      "rss_reduction_vs_fresh_pct": 26.593920598101317
+    },
+    {
+      "series": "Compact 32-byte peaks",
+      "plotted": true,
+      "role": "compact-inline32",
+      "physical_cores": 32,
+      "wall_s": 36.26849411288276,
+      "rss_gib": 8.956954956054688,
+      "user_s": 921.06,
+      "system_s": 35.17,
+      "cpu_s": 956.2299999999999,
+      "source_identity_sha256": "f95bc38cb0ec6e3242e078767918b057b413ed10b810803fadcb143e38ec3abd",
+      "cohort_manifest": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-compact-capture-r1/native-compact-inline32-r1/manifest.json",
+      "same_count_speedup_vs_fresh": 1.0250562647328787,
+      "wall_reduction_vs_fresh_pct": 2.4443794545666475,
+      "rss_reduction_vs_fresh_pct": 29.066274660143698
+    },
+    {
+      "series": "Compact 32-byte peaks",
+      "plotted": true,
+      "role": "compact-inline32",
+      "physical_cores": 64,
+      "wall_s": 26.25641094800085,
+      "rss_gib": 16.398757934570312,
+      "user_s": 972.42,
+      "system_s": 185.76,
+      "cpu_s": 1158.1799999999998,
+      "source_identity_sha256": "f95bc38cb0ec6e3242e078767918b057b413ed10b810803fadcb143e38ec3abd",
+      "cohort_manifest": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-compact-capture-r1/native-compact-inline32-r1/manifest.json",
+      "same_count_speedup_vs_fresh": 1.064119495981263,
+      "wall_reduction_vs_fresh_pct": 6.025591695614619,
+      "rss_reduction_vs_fresh_pct": 29.438973298715144
+    },
+    {
+      "series": "Compact 32-byte peaks",
+      "plotted": true,
+      "role": "compact-inline32",
+      "physical_cores": 128,
+      "wall_s": 25.747449367772788,
+      "rss_gib": 19.113792419433594,
+      "user_s": 1015.58,
+      "system_s": 186.38,
+      "cpu_s": 1201.96,
+      "source_identity_sha256": "f95bc38cb0ec6e3242e078767918b057b413ed10b810803fadcb143e38ec3abd",
+      "cohort_manifest": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-compact-capture-r1/native-compact-inline32-r1/manifest.json",
+      "same_count_speedup_vs_fresh": 1.0694347070893804,
+      "wall_reduction_vs_fresh_pct": 6.49265510358803,
+      "rss_reduction_vs_fresh_pct": 27.852779852436004
+    },
+    {
+      "series": "Compact 32-byte peaks",
+      "plotted": true,
+      "role": "compact-inline32",
+      "physical_cores": 192,
+      "wall_s": 26.08033571857959,
+      "rss_gib": 21.574485778808594,
+      "user_s": 1065.7,
+      "system_s": 186.21,
+      "cpu_s": 1251.91,
+      "source_identity_sha256": "f95bc38cb0ec6e3242e078767918b057b413ed10b810803fadcb143e38ec3abd",
+      "cohort_manifest": "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-compact-capture-r1/native-compact-inline32-r1/manifest.json",
+      "same_count_speedup_vs_fresh": 1.0696677030210284,
+      "wall_reduction_vs_fresh_pct": 6.513022953228198,
+      "rss_reduction_vs_fresh_pct": 25.77381312518513
+    }
+  ],
+  "source_identities": {
+    "Current 48-byte peaks": {
+      "elf": {
+        "binary": "75983ab721857272854204d040c06216b438368bd8d8228fe0df0ab472a471e6",
+        "library": "d975050cfc2d83e47f7d32c9dd60e64c9f9261b0e51d1ad17c6f8726111617ab",
+        "swath": "12301d4985009506e45ebe421c92c13adb91709cf1ccd92a4ad646bde6865bed"
+      },
+      "private_source": {
+        "src/openms/source/ANALYSIS/TOPDOWN/FLASHDeconvAlgorithm.cpp": "a0d515a1e58fd6f343d6ab5e28ec592d1ac6c974e9e83e7c56a8991a179c5eb2",
+        "src/tests/class_tests/openms/source/FLASHDeconvAlgorithm_regression_test.cpp": "09ce25b10b739b0f6b2563e13a8e0c646aff6318550638d8909fdda5aa8cb134"
+      },
+      "source_manifest": {
+        "path": "/ceph/ibmi/abi/oliver/flashdeconv-performance-20261006/ms1-20261020/variant-inputs-r1/cap64/candidate-manifest.json",
+        "sha256": "49542bb9ab6daeca96b8a8874fbce7a9b2f397a5afc03fe4f1ffa45132cee9dc"
+      }
+    },
+    "Compact 32-byte peaks": {
+      "elf": {
+        "binary": "c02784cbca5cfd7ae45ac8162bffe1f9fe5232a7ff499b24e8007670ade46ebc",
+        "library": "11f785918a7eefe1bde92a3c2f04ed2384b9cfbd4202a9b1c82c2b22081377d4",
+        "swath": "12301d4985009506e45ebe421c92c13adb91709cf1ccd92a4ad646bde6865bed"
+      },
+      "private_source": {
+        "src/openms/include/OpenMS/ANALYSIS/TOPDOWN/FLASHHelperClasses.h": "5daaa521b8d0aa6d441dc7b45f57f69d10d7bc6cb7fe79eb2c7b8bc6bbaed6f0",
+        "src/openms/source/ANALYSIS/TOPDOWN/DeconvolvedSpectrum.cpp": "82b23ab15bcccf0bf956196ec3e3f6aed355575546250ef2f756d5798227b0fd",
+        "src/openms/source/ANALYSIS/TOPDOWN/FLASHDeconvAlgorithm.cpp": "bb98d5a4e7f2a9a2528a1ec809c8a1c1c21576118952b1302b91b19c55660d7c",
+        "src/openms/source/ANALYSIS/TOPDOWN/FLASHHelperClasses.cpp": "86cdb92160af793478e2e9644a939809e9dc1ffbf88015a615ed8bcf47065c42",
+        "src/openms/source/ANALYSIS/TOPDOWN/PeakGroup.cpp": "8503785e2fa348fa483cfb0dbe5c12a1f756e553552b8974ea80e84d859c466e",
+        "src/openms/source/ANALYSIS/TOPDOWN/SpectralDeconvolution.cpp": "ddc3213784dd9a79c7fa7fa8a6cfbc605b1d9c73821d8858eb1a82bdd9c243a0",
+        "src/openms/source/FORMAT/FLASHDeconvFeatureFile.cpp": "8221398b0ec65a55440d29434e8acb99dda45daf22df0ad6e177245ddef5848c",
+        "src/openms/source/FORMAT/FLASHDeconvSpectrumFile.cpp": "90637421c1c8f4100cd9b901b07e4ab885519d33276d4fbab6c8fcd344518794",
+        "src/pyOpenMS/bindings/bind_analysis.cpp": "d5fa7355b5536d83bf0c09232619080781cd6a6127ec77db5d6355e6b66a1667",
+        "src/pyOpenMS/tests/unittests/test_FLASHDeconv.py": "4973286485714aa9bae1faff736d910d8f170a995aadba281f059458fd606f95",
+        "src/tests/class_tests/openms/source/FLASHDeconvAlgorithm_regression_test.cpp": "602842b9c6008d18e25cd2222451df3357fa2de6a6d6f69a430d7b9ea9dd9f17",
+        "src/tests/class_tests/openms/source/FLASHDeconvHelperStructs_test.cpp": "dcdd73f89dd36b75e32a2845c17de940b18e2b79d22812bef3b2e1135e63ac7b",
+        "src/tests/class_tests/openms/source/FLASHDeconvSpectrumFile_parallel_test.cpp": "e07a046e6c4d2f690673960f47e6989e12af94469d0e143ba49633427df715f7",
+        "src/tests/class_tests/openms/source/FLASHDeconvSpectrumFile_test.cpp": "ad5f97207d31e82a766d0a90a488164e08e58d94148dcb0ce77f342b2e9818bd",
+        "src/tests/class_tests/openms/source/FLASHHelperClasses_test.cpp": "7012360f9510ba8f2c119768ae3fe3d5063ee4384ba61480f43210fc8973aaf5",
+        "src/tests/class_tests/openms/source/MassFeatureTrace_test.cpp": "93872e6050d482598f81b0c1f07d0364964252d4f8d6b8a49dbdb3f376394b37",
+        "src/tests/class_tests/openms/source/PeakGroup_test.cpp": "963eeda341abbde34322a2ba5d797b042b645791ea2cac1edd4a74e69c33ffad",
+        "src/tests/class_tests/openms/source/SpectralDeconvolution_test.cpp": "d52f21a63fdfb491279e9a367a88746ec92af5cf301138a6652bcd7e58919131"
+      },
+      "source_manifest": {
+        "path": "/ceph/ibmi/abi/oliver/flashdeconv-performance-20261006/renewal-ms2-20261020/compact-native-inputs-r1/candidate-manifest.json",
+        "sha256": "7d25df7e092ca2b80e7aa95e3e900fac5c3e4c607a1edfe293b6072bb585a962"
+      }
+    }
+  },
+  "sources": {
+    "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/compact-native-plot-adoption-r1.json": "3a4397f0831fba9d01ae1a0ae704a9525909fbed3c4b615cb5077005be998d9b",
+    "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/plot_native_comparison_r1.py": "7654a86f272d31cd0473a4b561aac45bd65d270423aa7a95b348166753d7a2c1",
+    "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-control-capture-r1/native-control-r1/manifest.json": "4f35f6e726ab098e0f603216bf099ad9dbbdf27643122ebd8f802867ce6c4189",
+    "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-control-capture-r1/native-control-r1/completed.json": "5395b07db32f86da6f30c2b9a49124aaefe270fe617cfb66afc74150ad64afde",
+    "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-control-capture-r1/native-control-r1/runs/cap64/t016-r01/result.json": "84c4270eac54ee0b133904ed74a256abfce3f2611ed8d29762992af9d6970874",
+    "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-control-capture-r1/native-control-r1/runs/cap64/t016-r01/time.txt": "655d9dec598e518c7354f80ed5db3a90cc6263b8adcfe26d6af412a242a328be",
+    "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-control-capture-r1/native-control-r1/runs/cap64/t032-r01/result.json": "b0aaa9c3499c5c3f29c720a23c527de74778032bc269c85efd31cc3f8fbf0a76",
+    "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-control-capture-r1/native-control-r1/runs/cap64/t032-r01/time.txt": "9882f940b696b968ae34d1943bddb6b644b6fbc1c9b442a182ab98bd5211f1d8",
+    "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-control-capture-r1/native-control-r1/runs/cap64/t064-r01/result.json": "56a25ad87de4523643b1bed2694c62e6cf2f3059c12bb65cd25156291a1198e4",
+    "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-control-capture-r1/native-control-r1/runs/cap64/t064-r01/time.txt": "3123f3a4d41e491d5f5d53f6a0c89e04e4a9a16e567308367baf939149ad5e2d",
+    "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-control-capture-r1/native-control-r1/runs/cap64/t128-r01/result.json": "c91ce974beb6f4ccbdb0a5fd666ad501b865285660e9ba1dd86e09c08d6061b2",
+    "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-control-capture-r1/native-control-r1/runs/cap64/t128-r01/time.txt": "ca3db2da529185d5438d27c2ab0087b5b144ed23b914d4bc32f1c4b20c81f5c3",
+    "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-control-capture-r1/native-control-r1/runs/cap64/t192-r01/result.json": "f74233cb443daab3eeed91f2bc34bafa252cf7e17b3fa699d8a82338ee1ff562",
+    "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-control-capture-r1/native-control-r1/runs/cap64/t192-r01/time.txt": "b7da1f69a0790e30343d282ff26314d01f4670b6b0ddcb392a8758aa4599c7c1",
+    "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-compact-capture-r1/native-compact-inline32-r1/manifest.json": "9b2fdcef1af239bef0974e75def935edcb3c294da53db1e6c3e014f3689f2bc1",
+    "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-compact-capture-r1/native-compact-inline32-r1/completed.json": "3ab555f05613af0b2030e8be33af5b5add3c4b50a2fcea8049c407792a4f239c",
+    "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-compact-capture-r1/native-compact-inline32-r1/runs/compact-inline32/t016-r01/result.json": "8fd1abcae47e6970c9a6574f65370360a9056f1547ba458dc8909f40dfeb8883",
+    "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-compact-capture-r1/native-compact-inline32-r1/runs/compact-inline32/t016-r01/time.txt": "c1cea2d8ab1853395832b332c6b700fe74359fd265f182580cfc053921bdb520",
+    "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-compact-capture-r1/native-compact-inline32-r1/runs/compact-inline32/t032-r01/result.json": "df04fabe9a023bbe545d7df8750d78921c09f41992cea777d4614be574f80685",
+    "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-compact-capture-r1/native-compact-inline32-r1/runs/compact-inline32/t032-r01/time.txt": "72601de4d3248b9e422c6dbf8e91ae75b0d6adfc8a7acba953df3f00185c32d4",
+    "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-compact-capture-r1/native-compact-inline32-r1/runs/compact-inline32/t064-r01/result.json": "2d8177079c064fd017919c100082f0c5e1292bf2eb030ce270946875489aa8d2",
+    "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-compact-capture-r1/native-compact-inline32-r1/runs/compact-inline32/t064-r01/time.txt": "bf8d235b02c982967292cfcd7ffc7527006a8871468fe72c76d301a07a6b21ef",
+    "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-compact-capture-r1/native-compact-inline32-r1/runs/compact-inline32/t128-r01/result.json": "def2ab898777ef3aac90e64a9ba272a42be152b654d0358f7aaf00552c556a12",
+    "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-compact-capture-r1/native-compact-inline32-r1/runs/compact-inline32/t128-r01/time.txt": "2e77efb61b3ee41cbf4cfa61fc3606e7eebe3dc017024a1b741a1cdf43186341",
+    "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-compact-capture-r1/native-compact-inline32-r1/runs/compact-inline32/t192-r01/result.json": "0899571b7d32c192181086417116c782003e072b3f8e429221ad62ba54aa8c57",
+    "/Users/kohlbach/Claude/OpenMS/FLASHDeconv Issues/renewal-ms2-20261020/evidence/native-compact-capture-r1/native-compact-inline32-r1/runs/compact-inline32/t192-r01/time.txt": "cb48bc0b2be8571856efccf4c20c05d752e66d1929f265bead0f12fde3d3604b"
+  },
+  "outputs": {
+    "renewal-ms2-20261020/plots-compact-native-r1/native-comparison.png": "0e223b497d9b696aec93df4cb2a9236f5ae2ca316e6a54d7e9c035eee7cef9ef",
+    "renewal-ms2-20261020/plots-compact-native-r1/native-comparison.svg": "accad67464005eb7b51341a7e25fb12d37dbb913cc2aa522c414951734bbc873",
+    "renewal-ms2-20261020/plots-compact-native-r1/relative-scaling.png": "d4df9737da8ed7bf518197a7538024049452b238063c855f06250a0b2163d985",
+    "renewal-ms2-20261020/plots-compact-native-r1/relative-scaling.svg": "1975447b7c85b234db0c9f5163ff2ec2e1cc1dcba52f1b49e0fc5a3ad8199e34",
+    "renewal-ms2-20261020/plots-compact-native-r1/native-comparison.csv": "c250dbe7acde2d681427a7b1c5ed336f0f7aa0eac09a67388231201844884e73",
+    "renewal-ms2-20261020/plots-compact-native-r1/native-comparison.md": "82cfebfab3f6cb19331bb935db20e326ee2641317a4f449753d62e55129a032b"
+  },
+  "limits": [
+    "Each point n=1; no estimated noise, significance, or confidence interval.",
+    "No new one-core timing; no derived new T1 speedup or parallel efficiency.",
+    "Producer rehashed all three scientific exports; local plot validation uses compact evidence.",
+    "Cross-cohort cells are explicitly adopted by SHA/count; not fresh paired repetitions."
+  ]
+}

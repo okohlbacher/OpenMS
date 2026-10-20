@@ -911,32 +911,38 @@ Useful to update the matrix with user isotope correction values
     // -----------------------------------------------------------------------
     // LogMzPeak
     // -----------------------------------------------------------------------
-    nb::class_<OpenMS::FLASHHelperClasses::LogMzPeak>(m, "LogMzPeak", 
-        R"doc(
+    nb::class_<OpenMS::FLASHHelperClasses::LogMzPeak>(m, "LogMzPeak",
+                                                      R"doc(
 Log transformed peak from original peak.
 Contains information such as charge, isotope index, and uncharged mass.
 Constructors
 )doc")
-        .def(nb::init<>())
-        .def(nb::init<const OpenMS::FLASHHelperClasses::LogMzPeak &>())
-        .def("__copy__", [](const OpenMS::FLASHHelperClasses::LogMzPeak& self) { return OpenMS::FLASHHelperClasses::LogMzPeak(self); })
-        .def("__deepcopy__", [](const OpenMS::FLASHHelperClasses::LogMzPeak& self, nb::dict) { return OpenMS::FLASHHelperClasses::LogMzPeak(self); }, "memo"_a)
-        .def("getUnchargedMass", [](const OpenMS::FLASHHelperClasses::LogMzPeak& self) { return self.getUnchargedMass(); }, "Get uncharged mass (0 if no charge set)")
-        .def(nb::self < nb::self)
-        .def(nb::self > nb::self)
-        .def(nb::self == nb::self)
-        .def_rw("mz", &OpenMS::FLASHHelperClasses::LogMzPeak::mz)
-        .def_rw("intensity", &OpenMS::FLASHHelperClasses::LogMzPeak::intensity)
-        .def_rw("logMz", &OpenMS::FLASHHelperClasses::LogMzPeak::logMz)
-        .def_rw("mass", &OpenMS::FLASHHelperClasses::LogMzPeak::mass)
-        .def_rw("abs_charge", &OpenMS::FLASHHelperClasses::LogMzPeak::abs_charge)
-        .def_rw("is_positive", &OpenMS::FLASHHelperClasses::LogMzPeak::is_positive)
-        .def_rw("isotopeIndex", &OpenMS::FLASHHelperClasses::LogMzPeak::isotopeIndex)
+      .def(nb::init<>())
+      .def(nb::init<const OpenMS::FLASHHelperClasses::LogMzPeak&>())
+      .def("__copy__", [](const OpenMS::FLASHHelperClasses::LogMzPeak& self) { return OpenMS::FLASHHelperClasses::LogMzPeak(self); })
+      .def(
+        "__deepcopy__", [](const OpenMS::FLASHHelperClasses::LogMzPeak& self, nb::dict) { return OpenMS::FLASHHelperClasses::LogMzPeak(self); },
+        "memo"_a)
+      .def(
+        "getUnchargedMass", [](const OpenMS::FLASHHelperClasses::LogMzPeak& self) { return self.getUnchargedMass(); },
+        "Get uncharged mass (0 if no charge set)")
+      .def(nb::self < nb::self)
+      .def(nb::self > nb::self)
+      .def(nb::self == nb::self)
+      .def_prop_rw("mz", &OpenMS::FLASHHelperClasses::LogMzPeak::getMZ, &OpenMS::FLASHHelperClasses::LogMzPeak::setMZ)
+      .def_prop_rw("intensity", &OpenMS::FLASHHelperClasses::LogMzPeak::getIntensity, &OpenMS::FLASHHelperClasses::LogMzPeak::setIntensity)
+      .def_prop_rw("logMz", &OpenMS::FLASHHelperClasses::LogMzPeak::getLogMz, &OpenMS::FLASHHelperClasses::LogMzPeak::setLogMz)
+      .def_prop_rw("mass", &OpenMS::FLASHHelperClasses::LogMzPeak::getMass, &OpenMS::FLASHHelperClasses::LogMzPeak::setMass)
+      .def_prop_rw("abs_charge", &OpenMS::FLASHHelperClasses::LogMzPeak::getAbsCharge, &OpenMS::FLASHHelperClasses::LogMzPeak::setAbsCharge)
+      .def_prop_rw("is_positive", &OpenMS::FLASHHelperClasses::LogMzPeak::isPositive, &OpenMS::FLASHHelperClasses::LogMzPeak::setPositive)
+      .def_prop_rw("isotopeIndex", &OpenMS::FLASHHelperClasses::LogMzPeak::getIsotopeIndex, &OpenMS::FLASHHelperClasses::LogMzPeak::setIsotopeIndex)
 
-        .def("__init__", [](OpenMS::FLASHHelperClasses::LogMzPeak* self, const OpenMS::Peak1D& peak, bool positive) {
-            new (self) OpenMS::FLASHHelperClasses::LogMzPeak(peak, positive);
-        }, "peak"_a, "positive"_a)
-        ;
+      .def(
+        "__init__",
+        [](OpenMS::FLASHHelperClasses::LogMzPeak* self, const OpenMS::Peak1D& peak, bool positive) {
+          new (self) OpenMS::FLASHHelperClasses::LogMzPeak(peak, positive);
+        },
+        "peak"_a, "positive"_a);
 
     // -----------------------------------------------------------------------
     // MRMBatchFeatureSelector

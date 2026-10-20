@@ -15,6 +15,8 @@
 #include <OpenMS/CHEMISTRY/ISOTOPEDISTRIBUTION/CoarseIsotopePatternGenerator.h>
 #include <OpenMS/CONCEPT/Constants.h>
 #include <cmath>
+#include <limits>
+#include <type_traits>
 #include <unordered_set>
 
 ///////////////////////////
@@ -81,13 +83,111 @@ START_SECTION(LogMzPeak())
   TEST_NOT_EQUAL(lmp_ptr, lmp_null_ptr)
 
   // Check default values
-  TEST_REAL_SIMILAR(lmp_ptr->mz, 0.0)
-  TEST_REAL_SIMILAR(lmp_ptr->intensity, 0.0f)
-  TEST_REAL_SIMILAR(lmp_ptr->logMz, -1000.0)
-  TEST_REAL_SIMILAR(lmp_ptr->mass, 0.0)
-  TEST_EQUAL(lmp_ptr->abs_charge, 0)
-  TEST_EQUAL(lmp_ptr->is_positive, true)
-  TEST_EQUAL(lmp_ptr->isotopeIndex, -1)
+  TEST_REAL_SIMILAR(lmp_ptr->getMZ(), 0.0)
+  TEST_REAL_SIMILAR(lmp_ptr->getIntensity(), 0.0f)
+  TEST_REAL_SIMILAR(lmp_ptr->getLogMz(), -1000.0)
+  TEST_REAL_SIMILAR(lmp_ptr->getMass(), 0.0)
+  TEST_EQUAL(lmp_ptr->getAbsCharge(), 0)
+  TEST_EQUAL(lmp_ptr->isPositive(), true)
+  TEST_EQUAL(lmp_ptr->getIsotopeIndex(), -1)
+}
+END_SECTION
+
+START_SECTION([Compact facade] layout and independent packed fields)
+{
+  static_assert(std::is_trivially_copyable_v<LogMzPeak>);
+  TEST_EQUAL(sizeof(LogMzPeak), 32)
+  TEST_EQUAL(alignof(LogMzPeak), alignof(double))
+  LogMzPeak value;
+  for (int charge = 0; charge <= 200; ++charge)
+  {
+    for (bool positive : {false, true})
+    {
+      for (int isotope : {-65535, -32768, -2, -1, 0, 1, 32768, 65535})
+      {
+        // Deliberately change each shared-word component after its neighbours.
+        value.setPositive(! positive);
+        value.setIsotopeIndex(-isotope);
+        value.setAbsCharge(charge);
+        value.setIsotopeIndex(isotope);
+        value.setPositive(positive);
+        TEST_EQUAL(value.getAbsCharge(), charge)
+        TEST_EQUAL(value.isPositive(), positive)
+        TEST_EQUAL(value.getIsotopeIndex(), isotope)
+        value.setAbsCharge(200 - charge);
+        TEST_EQUAL(value.isPositive(), positive)
+        TEST_EQUAL(value.getIsotopeIndex(), isotope)
+      }
+    }
+  }
+}
+END_SECTION
+
+START_SECTION([Compact facade] invalid writes preserve the value)
+{
+  LogMzPeak value;
+  value.setAbsCharge(200);
+  value.setPositive(false);
+  value.setIsotopeIndex(-65535);
+  for (int invalid : {-1, 201, std::numeric_limits<int>::min(), std::numeric_limits<int>::max()})
+  {
+    TEST_EXCEPTION(Exception::InvalidValue, value.setAbsCharge(invalid))
+    TEST_EQUAL(value.getAbsCharge(), 200)
+    TEST_EQUAL(value.isPositive(), false)
+    TEST_EQUAL(value.getIsotopeIndex(), -65535)
+  }
+  for (int invalid : {-65536, 65536, std::numeric_limits<int>::min(), std::numeric_limits<int>::max()})
+  {
+    TEST_EXCEPTION(Exception::InvalidValue, value.setIsotopeIndex(invalid))
+    TEST_EQUAL(value.getAbsCharge(), 200)
+    TEST_EQUAL(value.isPositive(), false)
+    TEST_EQUAL(value.getIsotopeIndex(), -65535)
+  }
+}
+END_SECTION
+
+START_SECTION([Compact facade] independent values survive source destruction)
+{
+  LogMzPeak copy;
+  {
+    LogMzPeak source(Peak1D(1234.567890123, 987.5f), false);
+    source.setAbsCharge(200);
+    source.setIsotopeIndex(-42);
+    source.setMass(246000.123456789);
+    source.setLogMz(9.25);
+    copy = source;
+    source.setMZ(1);
+    source.setMass(1);
+  }
+  TEST_EQUAL(copy.getMZ(), 1234.567890123)
+  TEST_EQUAL(copy.getIntensity(), 987.5f)
+  TEST_EQUAL(copy.getLogMz(), 9.25)
+  TEST_EQUAL(copy.getMass(), 246000.123456789)
+  TEST_EQUAL(copy.getUnchargedMass(), 246000.123456789)
+  TEST_EQUAL(copy.getAbsCharge(), 200)
+  TEST_EQUAL(copy.isPositive(), false)
+  TEST_EQUAL(copy.getIsotopeIndex(), -42)
+  copy.setMZ(2);
+  TEST_EQUAL(copy.getLogMz(), 9.25)
+  TEST_EQUAL(copy.getMass(), 246000.123456789)
+  copy.setAbsCharge(0);
+  TEST_EQUAL(copy.isPositive(), false)
+  TEST_EQUAL(copy.getUnchargedMass(), 0)
+  copy.setAbsCharge(2);
+  copy.setMass(-1);
+  const double derived = (copy.getMZ() - FLASHHelperClasses::getChargeMass(false)) * 2.0f;
+  TEST_EQUAL(copy.getUnchargedMass(), derived)
+  copy.setMass(0);
+  TEST_EQUAL(copy.getUnchargedMass(), derived)
+  LogMzPeak equal(copy);
+  equal.setPositive(true);
+  equal.setAbsCharge(200);
+  equal.setIsotopeIndex(65535);
+  TEST_EQUAL(copy == equal, true)
+  TEST_EQUAL(std::hash<LogMzPeak> {}(copy), std::hash<LogMzPeak> {}(equal))
+  copy.setIsotopeIndex(-1);
+  copy.setIsotopeIndex(0);
+  TEST_EQUAL(copy.getIsotopeIndex(), 0)
 }
 END_SECTION
 
@@ -105,20 +205,20 @@ START_SECTION(explicit LogMzPeak(const Peak1D& peak, bool positive))
   peak.setIntensity(10000.0f);
 
   LogMzPeak lmp_pos(peak, true);
-  TEST_REAL_SIMILAR(lmp_pos.mz, 500.5)
-  TEST_REAL_SIMILAR(lmp_pos.intensity, 10000.0f)
-  TEST_EQUAL(lmp_pos.is_positive, true)
-  TEST_EQUAL(lmp_pos.abs_charge, 0)
-  TEST_EQUAL(lmp_pos.isotopeIndex, 0)
+  TEST_REAL_SIMILAR(lmp_pos.getMZ(), 500.5)
+  TEST_REAL_SIMILAR(lmp_pos.getIntensity(), 10000.0f)
+  TEST_EQUAL(lmp_pos.isPositive(), true)
+  TEST_EQUAL(lmp_pos.getAbsCharge(), 0)
+  TEST_EQUAL(lmp_pos.getIsotopeIndex(), 0)
   double expected_logMz = std::log(500.5 - Constants::PROTON_MASS_U);
-  TEST_REAL_SIMILAR(lmp_pos.logMz, expected_logMz)
+  TEST_REAL_SIMILAR(lmp_pos.getLogMz(), expected_logMz)
 
   // Test with negative mode
   LogMzPeak lmp_neg(peak, false);
-  TEST_REAL_SIMILAR(lmp_neg.mz, 500.5)
-  TEST_EQUAL(lmp_neg.is_positive, false)
+  TEST_REAL_SIMILAR(lmp_neg.getMZ(), 500.5)
+  TEST_EQUAL(lmp_neg.isPositive(), false)
   double expected_logMz_neg = std::log(500.5 + Constants::PROTON_MASS_U);
-  TEST_REAL_SIMILAR(lmp_neg.logMz, expected_logMz_neg)
+  TEST_REAL_SIMILAR(lmp_neg.getLogMz(), expected_logMz_neg)
 }
 END_SECTION
 
@@ -128,18 +228,18 @@ START_SECTION(LogMzPeak(const LogMzPeak&))
   peak.setMZ(750.25);
   peak.setIntensity(5000.0f);
   LogMzPeak original(peak, true);
-  original.abs_charge = 3;
-  original.isotopeIndex = 2;
-  original.mass = 2248.0;
+  original.setAbsCharge(3);
+  original.setIsotopeIndex(2);
+  original.setMass(2248.0);
 
   LogMzPeak copy(original);
-  TEST_REAL_SIMILAR(copy.mz, 750.25)
-  TEST_REAL_SIMILAR(copy.intensity, 5000.0f)
-  TEST_EQUAL(copy.abs_charge, 3)
-  TEST_EQUAL(copy.isotopeIndex, 2)
-  TEST_REAL_SIMILAR(copy.mass, 2248.0)
-  TEST_EQUAL(copy.is_positive, true)
-  TEST_REAL_SIMILAR(copy.logMz, original.logMz)
+  TEST_REAL_SIMILAR(copy.getMZ(), 750.25)
+  TEST_REAL_SIMILAR(copy.getIntensity(), 5000.0f)
+  TEST_EQUAL(copy.getAbsCharge(), 3)
+  TEST_EQUAL(copy.getIsotopeIndex(), 2)
+  TEST_REAL_SIMILAR(copy.getMass(), 2248.0)
+  TEST_EQUAL(copy.isPositive(), true)
+  TEST_REAL_SIMILAR(copy.getLogMz(), original.getLogMz())
 }
 END_SECTION
 
@@ -154,13 +254,13 @@ START_SECTION(double getUnchargedMass() const)
   TEST_REAL_SIMILAR(lmp.getUnchargedMass(), 0.0)
 
   // Set charge and mass = 0 (will calculate from mz)
-  lmp.abs_charge = 2;
-  lmp.mass = 0;
+  lmp.setAbsCharge(2);
+  lmp.setMass(0);
   double expected_mass = (500.5 - Constants::PROTON_MASS_U) * 2;
   TEST_REAL_SIMILAR(lmp.getUnchargedMass(), expected_mass)
 
   // With mass already set > 0, should return that mass
-  lmp.mass = 999.5;
+  lmp.setMass(999.5);
   TEST_REAL_SIMILAR(lmp.getUnchargedMass(), 999.5)
 
   // Test negative mode
@@ -168,8 +268,8 @@ START_SECTION(double getUnchargedMass() const)
   peak2.setMZ(500.5);
   peak2.setIntensity(1000.0f);
   LogMzPeak lmp_neg(peak2, false);
-  lmp_neg.abs_charge = 2;
-  lmp_neg.mass = 0;
+  lmp_neg.setAbsCharge(2);
+  lmp_neg.setMass(0);
   double expected_neg = (500.5 + Constants::PROTON_MASS_U) * 2;
   TEST_REAL_SIMILAR(lmp_neg.getUnchargedMass(), expected_neg)
 }
@@ -180,17 +280,17 @@ START_SECTION(bool operator<(const LogMzPeak& a) const)
   LogMzPeak lmp1, lmp2, lmp3;
 
   // Different logMz values
-  lmp1.logMz = 5.0;
-  lmp1.intensity = 100.0f;
-  lmp2.logMz = 6.0;
-  lmp2.intensity = 100.0f;
+  lmp1.setLogMz(5.0);
+  lmp1.setIntensity(100.0f);
+  lmp2.setLogMz(6.0);
+  lmp2.setIntensity(100.0f);
 
   TEST_EQUAL(lmp1 < lmp2, true)
   TEST_EQUAL(lmp2 < lmp1, false)
 
   // Same logMz, different intensity
-  lmp3.logMz = 5.0;
-  lmp3.intensity = 200.0f;
+  lmp3.setLogMz(5.0);
+  lmp3.setIntensity(200.0f);
   TEST_EQUAL(lmp1 < lmp3, true)   // same logMz, but lmp1 has lower intensity
   TEST_EQUAL(lmp3 < lmp1, false)
 }
@@ -201,17 +301,17 @@ START_SECTION(bool operator>(const LogMzPeak& a) const)
   LogMzPeak lmp1, lmp2, lmp3;
 
   // Different logMz values
-  lmp1.logMz = 6.0;
-  lmp1.intensity = 100.0f;
-  lmp2.logMz = 5.0;
-  lmp2.intensity = 100.0f;
+  lmp1.setLogMz(6.0);
+  lmp1.setIntensity(100.0f);
+  lmp2.setLogMz(5.0);
+  lmp2.setIntensity(100.0f);
 
   TEST_EQUAL(lmp1 > lmp2, true)
   TEST_EQUAL(lmp2 > lmp1, false)
 
   // Same logMz, different intensity
-  lmp3.logMz = 6.0;
-  lmp3.intensity = 50.0f;
+  lmp3.setLogMz(6.0);
+  lmp3.setIntensity(50.0f);
   TEST_EQUAL(lmp1 > lmp3, true)   // same logMz, but lmp1 has higher intensity
   TEST_EQUAL(lmp3 > lmp1, false)
 }
@@ -221,12 +321,12 @@ START_SECTION(bool operator==(const LogMzPeak& other) const)
 {
   LogMzPeak lmp1, lmp2, lmp3;
 
-  lmp1.logMz = 5.5;
-  lmp1.intensity = 100.0f;
-  lmp2.logMz = 5.5;
-  lmp2.intensity = 100.0f;
-  lmp3.logMz = 5.5;
-  lmp3.intensity = 200.0f;
+  lmp1.setLogMz(5.5);
+  lmp1.setIntensity(100.0f);
+  lmp2.setLogMz(5.5);
+  lmp2.setIntensity(100.0f);
+  lmp3.setLogMz(5.5);
+  lmp3.setIntensity(200.0f);
 
   TEST_EQUAL(lmp1 == lmp2, true)
   TEST_EQUAL(lmp1 == lmp3, false)  // same logMz but different intensity
@@ -692,8 +792,8 @@ START_SECTION([Integration] LogMzPeak with charge and mass calculations)
   peak.setIntensity(50000.0f);
 
   LogMzPeak lmp(peak, true);
-  lmp.abs_charge = 3;
-  lmp.isotopeIndex = 0;
+  lmp.setAbsCharge(3);
+  lmp.setIsotopeIndex(0);
 
   // Calculate uncharged mass
   double mass = lmp.getUnchargedMass();
@@ -702,7 +802,7 @@ START_SECTION([Integration] LogMzPeak with charge and mass calculations)
   TEST_REAL_SIMILAR(mass, expected_mass)
 
   // Set mass directly and verify
-  lmp.mass = 2568.0;
+  lmp.setMass(2568.0);
   TEST_REAL_SIMILAR(lmp.getUnchargedMass(), 2568.0)
 }
 END_SECTION
@@ -739,12 +839,12 @@ START_SECTION([Integration] LogMzPeak sorting)
   std::vector<LogMzPeak> peaks;
 
   LogMzPeak lmp1, lmp2, lmp3;
-  lmp1.logMz = 6.5;
-  lmp1.intensity = 1000.0f;
-  lmp2.logMz = 6.2;
-  lmp2.intensity = 2000.0f;
-  lmp3.logMz = 6.8;
-  lmp3.intensity = 1500.0f;
+  lmp1.setLogMz(6.5);
+  lmp1.setIntensity(1000.0f);
+  lmp2.setLogMz(6.2);
+  lmp2.setIntensity(2000.0f);
+  lmp3.setLogMz(6.8);
+  lmp3.setIntensity(1500.0f);
 
   peaks.push_back(lmp1);
   peaks.push_back(lmp2);
@@ -753,9 +853,9 @@ START_SECTION([Integration] LogMzPeak sorting)
   // Sort by logMz using operator<
   std::sort(peaks.begin(), peaks.end());
 
-  TEST_REAL_SIMILAR(peaks[0].logMz, 6.2)
-  TEST_REAL_SIMILAR(peaks[1].logMz, 6.5)
-  TEST_REAL_SIMILAR(peaks[2].logMz, 6.8)
+  TEST_REAL_SIMILAR(peaks[0].getLogMz(), 6.2)
+  TEST_REAL_SIMILAR(peaks[1].getLogMz(), 6.5)
+  TEST_REAL_SIMILAR(peaks[2].getLogMz(), 6.8)
 }
 END_SECTION
 
@@ -799,24 +899,24 @@ START_SECTION([LogMzPeak] std::hash)
 
   // Test that equal objects have equal hashes
   LogMzPeak lmp1, lmp2;
-  lmp1.logMz = 5.5;
-  lmp1.intensity = 100.0f;
-  lmp2.logMz = 5.5;
-  lmp2.intensity = 100.0f;
+  lmp1.setLogMz(5.5);
+  lmp1.setIntensity(100.0f);
+  lmp2.setLogMz(5.5);
+  lmp2.setIntensity(100.0f);
 
   TEST_EQUAL(lmp1 == lmp2, true)
   TEST_EQUAL(hasher(lmp1), hasher(lmp2))
 
   // Test that different objects have different hashes
   LogMzPeak lmp3;
-  lmp3.logMz = 5.5;
-  lmp3.intensity = 200.0f;  // Different intensity
+  lmp3.setLogMz(5.5);
+  lmp3.setIntensity(200.0f); // Different intensity
   TEST_EQUAL(lmp1 == lmp3, false)
   TEST_NOT_EQUAL(hasher(lmp1), hasher(lmp3))
 
   LogMzPeak lmp4;
-  lmp4.logMz = 6.0;  // Different logMz
-  lmp4.intensity = 100.0f;
+  lmp4.setLogMz(6.0); // Different logMz
+  lmp4.setIntensity(100.0f);
   TEST_EQUAL(lmp1 == lmp4, false)
   TEST_NOT_EQUAL(hasher(lmp1), hasher(lmp4))
 

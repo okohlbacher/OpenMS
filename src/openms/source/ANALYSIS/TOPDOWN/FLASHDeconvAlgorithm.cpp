@@ -17,6 +17,7 @@
 #include <OpenMS/PROCESSING/FILTERING/ThresholdMower.h>
 #include <OpenMS/PROCESSING/SPECTRAMERGING/SpectraMerger.h>
 #include <OpenMS/SYSTEM/BuildInfo.h>
+#include <array>
 #include <exception>
 #include <iterator>
 #include <memory>
@@ -344,12 +345,35 @@ void FLASHDeconvAlgorithm::appendDecoyPeakGroups_(DeconvolvedSpectrum& deconvolv
                                                   int scan_number,
                                                   const PeakGroup& precursor_pg)
 {
-#pragma omp parallel sections default(none) shared(spec, scan_number, precursor_pg, deconvolved_spectrum)
+  std::array<std::exception_ptr, 2> errors;
+#pragma omp parallel sections default(none) shared(spec, scan_number, precursor_pg, deconvolved_spectrum, errors)
   {
 #pragma omp section
-    sd_noise_decoy_.performSpectrumDeconvolution(spec, scan_number, precursor_pg);
+    {
+      try
+      {
+        sd_noise_decoy_.performSpectrumDeconvolution(spec, scan_number, precursor_pg);
+      }
+      catch (...)
+      {
+        errors[0] = std::current_exception();
+      }
+    }
 #pragma omp section
-    sd_signal_decoy_.performSpectrumDeconvolution(spec, scan_number, precursor_pg);
+    {
+      try
+      {
+        sd_signal_decoy_.performSpectrumDeconvolution(spec, scan_number, precursor_pg);
+      }
+      catch (...)
+      {
+        errors[1] = std::current_exception();
+      }
+    }
+  }
+  for (const auto& error : errors)
+  {
+    if (error) { std::rethrow_exception(error); }
   }
   deconvolved_spectrum.sortByQscore();
 
@@ -781,7 +805,7 @@ FLASHDeconvAlgorithm::findBestPrecursorPeakGroup_(const std::vector<DeconvolvedS
 
     for (const auto& pg : precursor_spectrum)
     {
-      if (pg[0].mz > end_mz || pg[pg.size() - 1].mz < start_mz) { continue; }
+      if (pg[0].getMZ() > end_mz || pg[pg.size() - 1].getMZ() < start_mz) { continue; }
 
       double max_intensity = 0.0;
       const FLASHHelperClasses::LogMzPeak* tmp_precursor = nullptr;
@@ -789,16 +813,16 @@ FLASHDeconvAlgorithm::findBestPrecursorPeakGroup_(const std::vector<DeconvolvedS
       int c = int(round(pg.getMonoMass() / start_mz));
       for (const auto& tmp_peak : pg)
       {
-        if (tmp_peak.abs_charge != c) { continue; }
-        if (tmp_peak.mz < start_mz || tmp_peak.mz > end_mz) { continue; }
-        if (tmp_peak.intensity < max_intensity) { continue; }
-        max_intensity = tmp_peak.intensity;
+        if (tmp_peak.getAbsCharge() != c) { continue; }
+        if (tmp_peak.getMZ() < start_mz || tmp_peak.getMZ() > end_mz) { continue; }
+        if (tmp_peak.getIntensity() < max_intensity) { continue; }
+        max_intensity = tmp_peak.getIntensity();
         tmp_precursor = &tmp_peak;
       }
 
       if (tmp_precursor == nullptr) { continue; }
 
-      auto score = pg.getChargeSNR(tmp_precursor->abs_charge);
+      auto score = pg.getChargeSNR(tmp_precursor->getAbsCharge());
       if (score < max_score) { continue; }
       max_score = score;
       best_pg = pg;
@@ -881,18 +905,21 @@ void FLASHDeconvAlgorithm::findPrecursorPeakGroupsForMSnSpectra_(const MSExperim
         if (survey->getOriginalSpectrum().getMSLevel() != ms_level - 1 || survey->empty()) { continue; }
         for (const auto& pg : *survey)
         {
-          if (pg[0].mz > job.end_mz || pg[pg.size() - 1].mz < job.start_mz) { continue; }
+          if (pg[0].getMZ() > job.end_mz || pg[pg.size() - 1].getMZ() < job.start_mz) { continue; }
           double max_intensity = 0.0;
           const FLASHHelperClasses::LogMzPeak* selected = nullptr;
           const int charge = int(round(pg.getMonoMass() / job.start_mz));
           for (const auto& peak : pg)
           {
-            if (peak.abs_charge != charge || peak.mz < job.start_mz || peak.mz > job.end_mz || peak.intensity < max_intensity) { continue; }
-            max_intensity = peak.intensity;
+            if (peak.getAbsCharge() != charge || peak.getMZ() < job.start_mz || peak.getMZ() > job.end_mz || peak.getIntensity() < max_intensity)
+            {
+              continue;
+            }
+            max_intensity = peak.getIntensity();
             selected = &peak;
           }
           if (selected == nullptr) { continue; }
-          const double score = pg.getChargeSNR(selected->abs_charge);
+          const double score = pg.getChargeSNR(selected->getAbsCharge());
           if (score < max_score) { continue; }
           max_score = score;
           best = &pg;

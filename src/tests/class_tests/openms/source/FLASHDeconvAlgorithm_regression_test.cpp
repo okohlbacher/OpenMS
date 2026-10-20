@@ -61,10 +61,10 @@ void compareGroups(const PeakGroup& left, const PeakGroup& right, uint feature_i
   TEST_TRUE(left.getIsotopeIntensities() == right.getIsotopeIntensities())
   for (Size i = 0; i < std::min(left.size(), right.size()); ++i)
   {
-    TEST_EQUAL(left[i].mz, right[i].mz)
-    TEST_EQUAL(left[i].intensity, right[i].intensity)
-    TEST_EQUAL(left[i].abs_charge, right[i].abs_charge)
-    TEST_EQUAL(left[i].isotopeIndex, right[i].isotopeIndex)
+    TEST_EQUAL(left[i].getMZ(), right[i].getMZ())
+    TEST_EQUAL(left[i].getIntensity(), right[i].getIntensity())
+    TEST_EQUAL(left[i].getAbsCharge(), right[i].getAbsCharge())
+    TEST_EQUAL(left[i].getIsotopeIndex(), right[i].getIsotopeIndex())
   }
 }
 } // namespace

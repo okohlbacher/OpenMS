@@ -75,8 +75,8 @@ Spectrum spectrum(unsigned scan, unsigned level, bool positive, const Avg& avg)
       if (isotope >= 0)
       {
         FLASHHelperClasses::LogMzPeak log_peak(peak, positive);
-        log_peak.abs_charge = charge;
-        log_peak.isotopeIndex = isotope;
+        log_peak.setAbsCharge(charge);
+        log_peak.setIsotopeIndex(isotope);
         pg.push_back(log_peak);
         // A quarter-isotope offset is outside 10ppm and avoids half-bin rounding ties.
         if (isotope == first_noise_isotope) { raw.emplace_back(mz + .25 * pg.getIsotopeDaDistance() / charge, 17.98765); }
@@ -116,7 +116,7 @@ std::string state(const std::vector<Spectrum>& spectra)
           << '\t' << pg.getQscore2D() << '\t' << pg.size();
       for (const auto& peak : pg)
       {
-        out << '\t' << peak.mz << ',' << peak.intensity << ',' << peak.abs_charge << ',' << peak.isotopeIndex;
+        out << '\t' << peak.getMZ() << ',' << peak.getIntensity() << ',' << peak.getAbsCharge() << ',' << peak.getIsotopeIndex();
       }
       // Observe recruited negative peaks through their isotope effect on a copy.
       auto probe = pg;
