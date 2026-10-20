@@ -587,8 +587,8 @@ namespace OpenMS
   {
     const double mul_tol = .8; // not all peaks within tolerance are considered as signal peaks.
     noisy_peaks.clear();
-    // Keep this group's own capacity; signal peaks are staged in a per-worker scratch
-    // buffer and copied back once, instead of freeing and reserving a worst-case size.
+    // Keep this group's own capacity (bounded by its real peak count) instead of freeing it and
+    // reserving a worst-case size on every renewal.
     if (renew_signal_peaks) logMzpeaks_.clear();
 
     if (mono_mass < 0) { return; }
@@ -608,8 +608,6 @@ namespace OpenMS
 
     negative_iso_peaks_.clear();
 
-    thread_local std::vector<LogMzPeak> signal_peaks; // per-worker scratch
-    signal_peaks.clear();
 
     // scan from the largest to the smallest charges and recruit the raw peaks for this monoisotopic_mass
     for (int c = max_abs_charge_; c >= min_abs_charge_; c--)
@@ -639,7 +637,7 @@ namespace OpenMS
           else
           {
             max_signal_isotope = std::max(max_signal_isotope, iso_index);
-            if (renew_signal_peaks) signal_peaks.push_back(p);
+            if (renew_signal_peaks) logMzpeaks_.push_back(p);
           }
         }
         else if (iso_index >= 0)
@@ -656,7 +654,6 @@ namespace OpenMS
       if (index >= spec.size()) { break; }
     }
 
-    if (renew_signal_peaks) { logMzpeaks_.assign(signal_peaks.begin(), signal_peaks.end()); }
     noisy_peaks.erase(std::remove_if(noisy_peaks.begin(), noisy_peaks.end(), [max_signal_isotope](const LogMzPeak& p) { return p.getIsotopeIndex() > max_signal_isotope; }),
                       noisy_peaks.end());
   }

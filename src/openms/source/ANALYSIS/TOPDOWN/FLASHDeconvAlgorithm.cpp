@@ -29,6 +29,7 @@
 #include <numeric>
 #include <optional>
 #include <set>
+#include <thread>
 #include <utility>
 
 #ifdef _OPENMP
@@ -640,6 +641,26 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
         int level_workers = (int)std::min(spectrum_workers.size(), spectrum_indices.size());
         // MS2 and later levels retain the requested available team.
         if (ms_level == 1) { level_workers = std::min(level_workers, (int)ms1Cap_()); }
+        // Experiment (FD_OPT=ftoverlap): MS1 feature tracing only reads/updates MS1 peak groups, which MS2
+        // workers never touch (they use precursor copies), so it can run beside the MS2 wave. It must
+        // finish before MS2 results are appended to deconvolved_spectra.
+        std::thread ms1_tracer;
+        std::exception_ptr ms1_tracer_error;
+        if (ms_level == 2 && current_min_ms_level_ == 1 && merge_spec_ != 2 && FLASHTrace::opt("ftoverlap"))
+        {
+          ms1_tracer = std::thread([&] {
+            try
+            {
+              FLASHTrace::Scope trace_ft("feature_tracing_ms1");
+              ms1_features_ = traceMinLevelFeatures_(deconvolved_spectra);
+              ms1_features_ready_ = true;
+            }
+            catch (...)
+            {
+              ms1_tracer_error = std::current_exception();
+            }
+          });
+        }
         // Experiment (FD_OPT=lpt): start the most expensive spectra first (peak count as cost proxy);
         // results stay in input slots, so output order is unchanged.
         std::vector<SignedSize> job_order(spectrum_indices.size());
@@ -687,6 +708,7 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
         }
         FLASHTrace::heapSnapshot(ms_level == 1 ? "mem.after_ms1_wave" : "mem.after_ms2_wave");
         FLASHTrace::Scope trace_commit("level_commit", ms_level);
+        if (ms1_tracer.joinable()) { ms1_tracer.join(); }
         if (ms_level == 1) { discardStreamedMS1(); }
         // Commit in input order, including equal scan-number keys, after join.
         for (const auto& error : errors)
@@ -697,6 +719,7 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
             std::rethrow_exception(error);
           }
         }
+        if (ms1_tracer_error) { std::rethrow_exception(ms1_tracer_error); }
         deconvolved_spectra.reserve(deconvolved_spectra.size() + level_results.size());
         for (auto& result : level_results)
         {
@@ -1223,14 +1246,8 @@ void FLASHDeconvAlgorithm::updatePrecursorQScores_(std::vector<DeconvolvedSpectr
   }
 }
 
-void FLASHDeconvAlgorithm::runFeatureFinding_(std::vector<DeconvolvedSpectrum>& deconvolved_spectra,
-                                              std::vector<FLASHHelperClasses::MassFeature>& deconvolved_features)
+Param FLASHDeconvAlgorithm::featureParams_() const
 {
-  if (merge_spec_ == 2) return;
-
-  auto mass_tracer = MassFeatureTrace();
-  auto decoy_mass_tracer = MassFeatureTrace();
-
   Param mf_param = param_.copy("ft:", true);
 
   if (((double)mf_param.getValue("mass_error_ppm")) < 0) { mf_param.setValue("mass_error_ppm", tols_[0]); }
@@ -1241,10 +1258,15 @@ void FLASHDeconvAlgorithm::runFeatureFinding_(std::vector<DeconvolvedSpectrum>& 
   mf_param.setValue("trace_termination_criterion", "outlier");
   mf_param.setValue("trace_termination_outliers", 20);
   mf_param.setValue("chrom_peak_snr", .0);
+  return mf_param;
+}
 
-  mass_tracer.setParameters(mf_param); // maybe go to set param
+std::vector<FLASHHelperClasses::MassFeature> FLASHDeconvAlgorithm::traceMinLevelFeatures_(std::vector<DeconvolvedSpectrum>& deconvolved_spectra)
+{
+  auto mass_tracer = MassFeatureTrace();
+  mass_tracer.setParameters(featureParams_()); // maybe go to set param
   // Find features for MS1 or the minimum MS level in the dataset.
-  deconvolved_features = mass_tracer.findFeaturesAndUpdateQscore2D(sd_.getAveragine(), deconvolved_spectra, (int)current_min_ms_level_, false);
+  auto deconvolved_features = mass_tracer.findFeaturesAndUpdateQscore2D(sd_.getAveragine(), deconvolved_spectra, (int)current_min_ms_level_, false);
 
   if (report_decoy_)
   {
@@ -1252,7 +1274,24 @@ void FLASHDeconvAlgorithm::runFeatureFinding_(std::vector<DeconvolvedSpectrum>& 
       = mass_tracer.findFeaturesAndUpdateQscore2D(sd_.getAveragine(), deconvolved_spectra, (int)current_min_ms_level_, true);
     deconvolved_features.insert(deconvolved_features.end(), decoy_deconvolved_features.begin(), decoy_deconvolved_features.end());
   }
+  return deconvolved_features;
+}
 
+void FLASHDeconvAlgorithm::runFeatureFinding_(std::vector<DeconvolvedSpectrum>& deconvolved_spectra,
+                                              std::vector<FLASHHelperClasses::MassFeature>& deconvolved_features)
+{
+  if (merge_spec_ == 2) return;
+
+  if (ms1_features_ready_)
+  {
+    deconvolved_features = std::move(ms1_features_); // traced during the MS2 wave
+    ms1_features_ = {};
+    ms1_features_ready_ = false;
+  }
+  else { deconvolved_features = traceMinLevelFeatures_(deconvolved_spectra); }
+
+  auto mass_tracer = MassFeatureTrace();
+  Param mf_param = featureParams_();
   mf_param.setValue("min_trace_length", 1e-5); // allow all traces for MSn
   mass_tracer.setParameters(mf_param);
   // Find features for MSn
