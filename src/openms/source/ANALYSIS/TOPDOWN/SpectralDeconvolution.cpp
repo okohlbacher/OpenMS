@@ -934,7 +934,7 @@ inline const double tol_div_factor
           pg.setScanNumber(deconvolved_spectrum_.getScanNumber());
           pg.sort();
 
-          deconvolved_spectrum_.push_back(std::move(pg)); //
+          if (! fused_scoring_ || scoreCandidate_(pg)) { deconvolved_spectrum_.push_back(std::move(pg)); }
         }
       }
       mass_bin_index = binned_log_masses_.find_next(mass_bin_index);
@@ -1054,6 +1054,13 @@ inline const double tol_div_factor
       const Matrix<int>& per_mass_abs_charge_ranges = *per_mass_abs_charge_ranges_ptr;
       // main algorithm to generate peak groups
       FLASHTrace::Scope trace_cand("sd.cand", ms_level_);
+      // Fusing is only valid where scoring would run as an ordinary serial loop (outer spectrum workers).
+      static const bool fuse = FLASHTrace::opt("fuse");
+      fused_scoring_ = fuse && target_decoy_type_ == PeakGroup::target
+#ifdef _OPENMP
+                       && Internal::OpenMSBuildInfo::isOpenMPParallelRegion()
+#endif
+        ;
       getCandidatePeakGroups_(per_mass_abs_charge_ranges);
       trace_cand.b = (int64_t)deconvolved_spectrum_.size();
     }
@@ -1084,21 +1091,12 @@ inline const double tol_div_factor
   }
 
 
-  void SpectralDeconvolution::scoreAndFilterPeakGroups_()
+  bool SpectralDeconvolution::scoreCandidate_(PeakGroup& peak_group)
   {
-    double tol = tolerance_[ms_level_ - 1];
-    auto selected = boost::dynamic_bitset<>(deconvolved_spectrum_.size());
-    double snr_threshold = min_snr_[ms_level_ - 1];
-
-    // Outer spectrum workers own their candidate state and execute ordinary C++
-    // loops so exceptions remain inside the worker's enclosing try/catch.
-    bool parallel_candidates = true;
-#ifdef _OPENMP
-    parallel_candidates = target_decoy_type_ != PeakGroup::target || !Internal::OpenMSBuildInfo::isOpenMPParallelRegion();
-#endif
-    const auto score_candidate = [&](int i) {
+    const double tol = tolerance_[ms_level_ - 1];
+    const double snr_threshold = min_snr_[ms_level_ - 1];
+    {
       int offset = 0;
-      auto& peak_group = deconvolved_spectrum_[i];
       peak_group.setTargetDecoyType(target_decoy_type_);
 
       if (isPeakGroupInExcludedMassForDecoyRuns_(peak_group, tol)) { return false; }
@@ -1162,10 +1160,30 @@ inline const double tol_div_factor
       }
 
       return true;
-    };
+    }
+  }
+
+  void SpectralDeconvolution::scoreAndFilterPeakGroups_()
+  {
+    double tol = tolerance_[ms_level_ - 1];
+    auto selected = boost::dynamic_bitset<>(deconvolved_spectrum_.size());
+    double snr_threshold = min_snr_[ms_level_ - 1];
+
+    // Outer spectrum workers own their candidate state and execute ordinary C++
+    // loops so exceptions remain inside the worker's enclosing try/catch.
+    bool parallel_candidates = true;
+#ifdef _OPENMP
+    parallel_candidates = target_decoy_type_ != PeakGroup::target || !Internal::OpenMSBuildInfo::isOpenMPParallelRegion();
+#endif
+    const auto score_candidate = [&](int i) { return scoreCandidate_(deconvolved_spectrum_[i]); };
     std::optional<FLASHTrace::Scope> trace_score;
     trace_score.emplace("sd.score", ms_level_, (int64_t)deconvolved_spectrum_.size());
-    if (parallel_candidates)
+    if (fused_scoring_)
+    {
+      selected.set(); // candidates were scored during generation; only survivors were kept
+      fused_scoring_ = false;
+    }
+    else if (parallel_candidates)
     {
       // Checked compact setters may reject an isotope outside their domain.
       // Collect exceptions by candidate so none escapes an OpenMP region.

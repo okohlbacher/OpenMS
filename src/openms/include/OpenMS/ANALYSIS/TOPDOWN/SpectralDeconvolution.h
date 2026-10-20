@@ -318,6 +318,13 @@ namespace OpenMS
     /// function for peak group scoring and filtering
     void scoreAndFilterPeakGroups_();
 
+    /// isotope/charge scoring of one candidate; true if it survives the first filter
+    bool scoreCandidate_(PeakGroup& peak_group);
+
+    /// Experiment (FD_OPT=fuse): score each candidate as soon as it is built and keep only survivors,
+    /// so a worker never holds a spectrum's full candidate set (its arena high-water mark)
+    bool fused_scoring_ = false;
+
     /// filter out charge error masses
     void removeChargeErrorPeakGroups_(DeconvolvedSpectrum& dspec, const PeakGroup::TargetDecoyType& target_decoy_type) const;
 
