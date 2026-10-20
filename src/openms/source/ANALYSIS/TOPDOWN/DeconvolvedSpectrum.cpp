@@ -337,6 +337,11 @@ namespace OpenMS
     peak_groups_ = x;
   }
 
+  void DeconvolvedSpectrum::setPeakGroups(std::vector<PeakGroup>&& x)
+  {
+    peak_groups_ = std::move(x);
+  }
+
   void DeconvolvedSpectrum::sort()
   {
     std::sort(peak_groups_.begin(), peak_groups_.end());

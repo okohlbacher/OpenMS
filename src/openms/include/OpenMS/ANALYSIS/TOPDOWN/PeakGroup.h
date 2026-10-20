@@ -59,7 +59,7 @@ namespace OpenMS
     PeakGroup(const PeakGroup&) = default;
 
     /// move constructor
-    PeakGroup(PeakGroup&& other) = default;
+    PeakGroup(PeakGroup&& other) noexcept = default;
 
     /// comparison operators
     bool operator<(const PeakGroup& a) const;
@@ -70,6 +70,9 @@ namespace OpenMS
 
     /// assignment operator
     PeakGroup& operator=(const PeakGroup& t) = default;
+
+    /// move assignment (without it std::sort and vector moves deep-copy every peak vector)
+    PeakGroup& operator=(PeakGroup&& t) noexcept = default;
 
     /**
            @brief add monoisotopic indices of peaks by offset and discard negative isotope peaks. Total intensity is also updated

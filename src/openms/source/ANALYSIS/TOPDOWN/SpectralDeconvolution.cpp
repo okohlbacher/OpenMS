@@ -911,7 +911,7 @@ inline const double tol_div_factor
           pg.setScanNumber(deconvolved_spectrum_.getScanNumber());
           pg.sort();
 
-          deconvolved_spectrum_.push_back(pg); //
+          deconvolved_spectrum_.push_back(std::move(pg)); //
         }
       }
       mass_bin_index = binned_log_masses_.find_next(mass_bin_index);
@@ -1187,7 +1187,7 @@ inline const double tol_div_factor
     while (index != selected.npos)
     {
       if (filtered_peak_groups.empty() || filtered_peak_groups.back().getMonoMass() < deconvolved_spectrum_[index].getMonoMass())
-        filtered_peak_groups.push_back(deconvolved_spectrum_[index]);
+        filtered_peak_groups.push_back(std::move(deconvolved_spectrum_[index]));
       index = selected.find_next(index);
     }
 
@@ -1199,7 +1199,7 @@ inline const double tol_div_factor
       }
     }
 
-    deconvolved_spectrum_.setPeakGroups(filtered_peak_groups);
+    deconvolved_spectrum_.setPeakGroups(std::move(filtered_peak_groups));
     deconvolved_spectrum_.sort();
 
     removeChargeErrorPeakGroups_(deconvolved_spectrum_, target_decoy_type_);
@@ -1208,7 +1208,7 @@ inline const double tol_div_factor
     trace_score.emplace("sd.harm", ms_level_, (int64_t)deconvolved_spectrum_.size());
     // final harmonics removal
     selected = boost::dynamic_bitset<>(deconvolved_spectrum_.size());
-    filtered_peak_groups = std::vector<PeakGroup>();
+    filtered_peak_groups.clear();
 
     const auto score_harmonics = [&](int i) {
       const auto& peak_group = deconvolved_spectrum_[i];
@@ -1278,21 +1278,21 @@ inline const double tol_div_factor
 
     while (index != selected.npos)
     {
-      const auto& peak_group = deconvolved_spectrum_[index];
+      auto& peak_group = deconvolved_spectrum_[index];
       if (filtered_peak_groups.empty() || filtered_peak_groups.back().getMonoMass() < peak_group.getMonoMass())
-        filtered_peak_groups.push_back(peak_group);
+        filtered_peak_groups.push_back(std::move(peak_group));
 
       index = selected.find_next(index);
     }
 
-    deconvolved_spectrum_.setPeakGroups(filtered_peak_groups);
+    deconvolved_spectrum_.setPeakGroups(std::move(filtered_peak_groups));
     deconvolved_spectrum_.sort();
 
     removeOverlappingPeakGroups_(deconvolved_spectrum_, tol * 1.2, target_decoy_type_);
     removeExcludedMasses_(deconvolved_spectrum_, excluded_masses_, tol);
 
     /// test
-    filtered_peak_groups.clear();
+    filtered_peak_groups = std::vector<PeakGroup>();
     filtered_peak_groups.reserve(deconvolved_spectrum_.size());
 
     std::set<Size> indices;
@@ -1333,10 +1333,10 @@ inline const double tol_div_factor
       auto& pg = deconvolved_spectrum_[k];
 
       if (! indices.empty() && (! indices.contains(k))) { continue; }
-      if (pg.getQscore() >= min_qscore_ && pg.getChargeSNR(pg.getRepAbsCharge()) > snr_threshold) { filtered_peak_groups.push_back(pg); }
+      if (pg.getQscore() >= min_qscore_ && pg.getChargeSNR(pg.getRepAbsCharge()) > snr_threshold) { filtered_peak_groups.push_back(std::move(pg)); }
     }
 
-    deconvolved_spectrum_.setPeakGroups(filtered_peak_groups);
+    deconvolved_spectrum_.setPeakGroups(std::move(filtered_peak_groups));
     deconvolved_spectrum_.sort();
   }
 
@@ -1503,9 +1503,9 @@ inline const double tol_div_factor
       {
         continue;
       }
-      filtered_pg_vec.push_back(dspec[i]);
+      filtered_pg_vec.push_back(std::move(dspec[i]));
     }
-    dspec.setPeakGroups(filtered_pg_vec);
+    dspec.setPeakGroups(std::move(filtered_pg_vec));
   }
 
   void SpectralDeconvolution::removeOverlappingPeakGroups_(DeconvolvedSpectrum& dspec, double tol, PeakGroup::TargetDecoyType target_decoy_type)
@@ -1529,7 +1529,7 @@ inline const double tol_div_factor
         {
           if (dspec[local_max_index].getTargetDecoyType() == target_decoy_type
               && last_local_max_index != local_max_index)
-            filtered_pg_vec.push_back(dspec[local_max_index]);
+            filtered_pg_vec.push_back(std::move(dspec[local_max_index]));
         }
         last_local_max_index = local_max_index;
         start_mass = mass;
@@ -1546,7 +1546,7 @@ inline const double tol_div_factor
       if (dspec[i].isTargeted())
       {
         if (dspec[i].getTargetDecoyType() == target_decoy_type)
-          filtered_pg_vec.push_back(dspec[i]);
+          filtered_pg_vec.push_back(std::move(dspec[i]));
       }
     }
 
@@ -1556,12 +1556,11 @@ inline const double tol_div_factor
       {
         if (dspec[local_max_index].getTargetDecoyType() == target_decoy_type
             && last_local_max_index != local_max_index)
-          filtered_pg_vec.push_back(dspec[local_max_index]);
+          filtered_pg_vec.push_back(std::move(dspec[local_max_index]));
       }
     }
 
-    dspec.setPeakGroups(filtered_pg_vec);
-    std::vector<PeakGroup>().swap(filtered_pg_vec);
+    dspec.setPeakGroups(std::move(filtered_pg_vec));
   }
 
   void SpectralDeconvolution::removeExcludedMasses_(DeconvolvedSpectrum& dspec, std::vector<double> excluded_masses, double tol) const
@@ -1571,7 +1570,7 @@ inline const double tol_div_factor
     filtered_pg_vec.reserve(dspec.size());
     // spec.sort();
 
-    for (const auto& peak_group : dspec)
+    for (auto& peak_group : dspec)
     {
       if (peak_group.getTargetDecoyType() != target_decoy_type_) continue;
       double delta = peak_group.getMonoMass() * tol;
@@ -1588,10 +1587,9 @@ inline const double tol_div_factor
         --upper;
       }
       if (exclude) { continue; }
-      filtered_pg_vec.push_back(peak_group);
+      filtered_pg_vec.push_back(std::move(peak_group));
     }
-    dspec.setPeakGroups(filtered_pg_vec);
-    std::vector<PeakGroup>().swap(filtered_pg_vec);
+    dspec.setPeakGroups(std::move(filtered_pg_vec));
   }
 
   void SpectralDeconvolution::setTargetMasses(const std::vector<double>& masses, bool excluded)
