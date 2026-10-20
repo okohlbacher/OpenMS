@@ -8,6 +8,7 @@
 
 #include <OpenMS/ANALYSIS/TOPDOWN/FLASHHelperClasses.h>
 #include <OpenMS/CHEMISTRY/ModificationsDB.h>
+#include <OpenMS/SYSTEM/BuildInfo.h>
 #include <exception>
 #include <typeinfo>
 #include <utility>
@@ -150,7 +151,7 @@ namespace OpenMS
     {
       int worker_count = 1;
 #ifdef _OPENMP
-      if (omp_get_level() == 0)
+      if (!Internal::OpenMSBuildInfo::isOpenMPParallelRegion())
       {
         worker_count = static_cast<int>(std::min(bin_count, static_cast<Size>(omp_get_max_threads())));
         worker_count = std::max(1, worker_count);

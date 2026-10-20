@@ -17,6 +17,8 @@ PR - Pull Request (on GitHub), i.e. integration of a new feature or bugfix
 ------------------------------------------------------------------------------------------
 
 General:
+  - FLASHDeconv uses a version-aware OpenMP region check compatible with MSVC
+    OpenMP 2.0, retaining inactive-region detection on newer runtimes.
   - FLASHDeconv distributes ordinary target spectra and eligible precursor matching across
     OpenMP workers, shares an immutable averagine model, compacts retained peak buffers,
     and reduces scratch storage and copying while preserving ordered results.

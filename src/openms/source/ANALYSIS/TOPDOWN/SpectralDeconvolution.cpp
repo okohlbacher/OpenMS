@@ -11,6 +11,7 @@
 #include <OpenMS/ANALYSIS/TOPDOWN/SpectralDeconvolution.h>
 #include <OpenMS/CONCEPT/Exception.h>
 #include <OpenMS/CONCEPT/LogStream.h>
+#include <OpenMS/SYSTEM/BuildInfo.h>
 #include <type_traits>
 #include <utility>
 #ifdef _OPENMP
@@ -1036,7 +1037,7 @@ inline const double tol_div_factor
     // loops so exceptions remain inside the worker's enclosing try/catch.
     bool parallel_candidates = true;
 #ifdef _OPENMP
-    parallel_candidates = target_decoy_type_ != PeakGroup::target || omp_get_level() == 0;
+    parallel_candidates = target_decoy_type_ != PeakGroup::target || !Internal::OpenMSBuildInfo::isOpenMPParallelRegion();
 #endif
     const auto score_candidate = [&](int i) {
       int offset = 0;

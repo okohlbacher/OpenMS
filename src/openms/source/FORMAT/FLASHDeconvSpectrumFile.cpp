@@ -10,6 +10,7 @@
 #include <OpenMS/FORMAT/MzMLFile.h>
 #include <random>
 
+#include <OpenMS/SYSTEM/BuildInfo.h>
 #include <exception>
 #ifdef _OPENMP
   #include <omp.h>
@@ -265,7 +266,7 @@ namespace OpenMS
     std::vector<Size> jobs;
     int worker_count = 1;
 #ifdef _OPENMP
-    if (write_detail && !report_decoy && omp_get_level() == 0)
+    if (write_detail && !report_decoy && !Internal::OpenMSBuildInfo::isOpenMPParallelRegion())
     {
       worker_count = std::min(64, omp_get_max_threads());
     }

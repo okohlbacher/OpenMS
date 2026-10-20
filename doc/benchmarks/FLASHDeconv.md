@@ -2,6 +2,8 @@
 
 At 64 physical cores the port is **13.23× faster** (388.99 → 29.40 seconds), with peak RSS 5.375 → 23.266 GiB. All complete output files match. This is a fresh comparison of unchanged fork develop `0bee1589e6baa5fad030115804ba94c5ac2f52da` and the integrated port, using one measurement per cell. Historical FVdeploy timings are separate evidence.
 
+The measurements below were captured at PR commit `c0967b50464817419fe69520d6aeccb8a97cdbc7`. The subsequent Windows compatibility fix uses an OpenMP 2.0 region-query fallback on older runtimes while preserving the measured OpenMP 3.0+ nesting check; these timings have not been rerun for that follow-up.
+
 ## Results
 
 | Physical cores | Develop wall (s) | Port wall (s) | Speedup | Peak RSS, develop / port (GiB) | CPU, develop / port (s) |

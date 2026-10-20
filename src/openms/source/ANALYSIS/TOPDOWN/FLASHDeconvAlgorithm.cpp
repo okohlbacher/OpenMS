@@ -16,6 +16,7 @@
 #include <OpenMS/METADATA/SpectrumLookup.h>
 #include <OpenMS/PROCESSING/FILTERING/ThresholdMower.h>
 #include <OpenMS/PROCESSING/SPECTRAMERGING/SpectraMerger.h>
+#include <OpenMS/SYSTEM/BuildInfo.h>
 #include <exception>
 #include <iterator>
 #include <memory>
@@ -385,7 +386,7 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
   int worker_count = 0;
 #ifdef _OPENMP
   const auto& worker_parameters = sd_.getParameters();
-  if (! report_decoy_ && merge_spec_ == 0 && ida_log_file_.empty() && omp_get_level() == 0 && (int)worker_parameters.getValue("precursor_charge") == 0
+  if (! report_decoy_ && merge_spec_ == 0 && ida_log_file_.empty() && !Internal::OpenMSBuildInfo::isOpenMPParallelRegion() && (int)worker_parameters.getValue("precursor_charge") == 0
       && (double)worker_parameters.getValue("precursor_mz") == 0)
   {
     std::vector<Size> level_counts(current_max_ms_level_ + 1, 0);
@@ -812,7 +813,7 @@ void FLASHDeconvAlgorithm::findPrecursorPeakGroupsForMSnSpectra_(const MSExperim
   bool parallel_registration = false;
 #ifdef _OPENMP
   const auto& parameters = sd_.getParameters();
-  parallel_registration = ! report_decoy_ && merge_spec_ == 0 && ida_log_file_.empty() && omp_get_level() == 0 && omp_get_max_threads() > 1
+  parallel_registration = ! report_decoy_ && merge_spec_ == 0 && ida_log_file_.empty() && !Internal::OpenMSBuildInfo::isOpenMPParallelRegion() && omp_get_max_threads() > 1
                           && (int)parameters.getValue("precursor_charge") == 0 && (double)parameters.getValue("precursor_mz") == 0;
 #endif
   std::vector<Size> indices;
