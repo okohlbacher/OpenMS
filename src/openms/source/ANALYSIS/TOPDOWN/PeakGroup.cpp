@@ -434,6 +434,13 @@ namespace OpenMS
     thread_local std::vector<std::uint32_t> chain_length;
     chain_sum.resize(peak_count);
     chain_length.resize(peak_count);
+    // the bound needs finite terms in the normal positive range (no cancellation, relative rounding) and chains far
+    // shorter than 2^24 / 10
+    bool bounded_terms = peak_count < 1000000;
+    for (Size i = 0; i < peak_count; i++)
+    {
+      bounded_terms &= std::isfinite(intensity[i]) && intensity[i] >= std::numeric_limits<float>::min();
+    }
     for (Size k = 0; k < max_bin_number; k++)
     {
       if (per_bin_start_index[k] == -2) { continue; }
@@ -450,7 +457,7 @@ namespace OpenMS
       while (prefix < peak_count && edges[prefix] != 0) { ++prefix; }
       const auto relative_bound = [&](Size i) { return 2.5 * (double)(chain_length[edges[i]] + 1) * 5.9604644775390625e-08; };
       double best_lower = 0;
-      bool finite = true;
+      bool finite = bounded_terms;
       for (Size i = 0; i < prefix; i++)
       {
         finite &= std::isfinite(chain_sum[i]) && chain_sum[i] > 0;
