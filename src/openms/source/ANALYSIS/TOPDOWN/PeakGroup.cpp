@@ -278,6 +278,14 @@ namespace OpenMS
             && normalized_dist >= .75) // if both are signals, and they are different from each other by more than .75 isotope distance, do not
                                        // connect. Otherwise, connect as they may a part of consecutive other noisy peaks.
         {
+          // Past the d = 1 cutoff every later peak is either a signal peak (skipped here) or a noisy peak (which would
+          // stop the loop below), so stopping now gives the same edges without visiting the rest of the list.
+          if (monotone_cutoff)
+          {
+            const double distance = normalized_dist / div_factors[0] * (max_bin_number - bin_number_margin);
+            const Size bin_floor = (Size)distance;
+            if (bin_floor + (distance - (double)bin_floor >= 0.5 ? 1 : 0) >= max_bin_number) { break; }
+          }
           continue;
         }
 
