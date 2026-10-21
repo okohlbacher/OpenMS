@@ -15,6 +15,7 @@
 #include <array>
 #include <limits>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 
 namespace OpenMS
@@ -238,13 +239,14 @@ namespace OpenMS
     float charge_noise_pwr = 0;
 
     const Size peak_count = all_peaks.size();
-    thread_local std::vector<Size> per_bin_edges;
+    // 32-bit successor indices; a bin's row is zeroed when the bin is first used (rows of unused bins are never read)
+    thread_local std::vector<std::uint32_t> per_bin_edges;
     // Check the single slab's element bound before multiplying its dimensions.
-    if (peak_count > per_bin_edges.max_size() / max_bin_number)
+    if (peak_count > std::numeric_limits<std::uint32_t>::max() || peak_count > per_bin_edges.max_size() / max_bin_number)
     {
       throw Exception::InvalidSize(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, peak_count, "Noise-peak graph exceeds the supported allocation size");
     }
-    per_bin_edges.assign(max_bin_number * peak_count, Size(0));
+    per_bin_edges.resize(max_bin_number * peak_count);
     std::array<int, max_bin_number> per_bin_start_index;
     per_bin_start_index.fill(-2); // -2 means bin is empty. -1 means bin is used. zero or positive = edge index
     // (sum, bin) pairs; equal sums keep the last bin like the former std::map, visited by descending sum
@@ -290,23 +292,28 @@ namespace OpenMS
         }
 
         bool reached_cutoff = false;
-        for (double d : div_factors)
+        for (Size di = 0; di < div_factors.size(); di++)
         {
-          double distance = normalized_dist / d * (max_bin_number - bin_number_margin);
+          const double d = div_factors[di];
+          // same values as normalized_dist / d * 12: x / 1 == x and x / 2 == x * 0.5 exactly
+          const double distance = di == 0 ? normalized_dist * (max_bin_number - bin_number_margin)
+                                  : di == 1 ? (normalized_dist * 0.5) * (max_bin_number - bin_number_margin)
+                                            : normalized_dist / d * (max_bin_number - bin_number_margin);
           // == (Size)round(distance) for the non-negative distances of a mass-sorted list, without the libm call
           const Size bin_floor = (Size)distance;
           const Size bin = bin_floor + (distance - (double)bin_floor >= 0.5 ? 1 : 0);
           if (bin == 0) { continue; }
           if (bin >= max_bin_number)
           {
-            reached_cutoff = monotone_cutoff && d == div_factors[0];
+            reached_cutoff = monotone_cutoff && di == 0;
             break;
           }
 
+          if (per_bin_start_index[bin] == -2) { std::fill_n(per_bin_edges.data() + bin * peak_count, peak_count, std::uint32_t(0)); }
           per_bin_start_index[bin] = -1;
           double current_error = d * max_bin_number + std::abs((double)bin - distance); // larger when d gets larger. For the same d, comparable.
           if (per_bin_error[bin] >= 0 && per_bin_error[bin] < current_error) { continue; }
-          per_bin_edges[bin * peak_count + i] = j;
+          per_bin_edges[bin * peak_count + i] = static_cast<std::uint32_t>(j);
           per_bin_error[bin] = current_error;
         }
         if (reached_cutoff) { break; }
@@ -317,7 +324,7 @@ namespace OpenMS
     for (Size k = 0; k < max_bin_number; k++)
     {
       if (per_bin_start_index[k] == -2) { continue; }
-      const Size* edges = per_bin_edges.data() + k * peak_count;
+      const std::uint32_t* edges = per_bin_edges.data() + k * peak_count;
       float max_sum_intensity = 0;
       for (Size i = 0; i < peak_count; i++)
       {
@@ -364,7 +371,7 @@ namespace OpenMS
       int index = per_bin_start_index[bin];
       if (index < 0) { continue; }
 
-      const Size* edges = per_bin_edges.data() + bin * peak_count;
+      const std::uint32_t* edges = per_bin_edges.data() + bin * peak_count;
       const double ori_mass = all_peaks[index].first.getMZ();
       const int ori_index = index;
       float sum_intensity = .0;
