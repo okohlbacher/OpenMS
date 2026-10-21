@@ -782,6 +782,44 @@ void FLASHDeconvAlgorithm::run(MSExperiment& map,
   // run spectral deconvolution here and get deconvolved spectra
   runSpectralDeconvolution_(map, deconvolved_spectra);
 
+  // MS1 results are final once their features are traced; write them while the serial MSn feature finding and
+  // q-value phases run. Qvalue writes only the q-value field of the MS1 peak groups, which the writer does not read
+  // without decoys; the MSn tracer touches MSn peak groups only.
+  std::thread early_writer;
+  std::exception_ptr early_writer_error;
+  if (early_ms1_writer_ && ! report_decoy_ && merge_spec_ != 2 && current_min_ms_level_ == 1 && ms1_features_ready_)
+  {
+    bool unique_ms1_scans = true;
+    int previous_ms1_scan = std::numeric_limits<int>::min();
+    for (const auto& dspec : deconvolved_spectra)
+    {
+      if (dspec.getOriginalSpectrum().getMSLevel() != 1) { continue; }
+      if (dspec.getScanNumber() == previous_ms1_scan) { unique_ms1_scans = false; }
+      previous_ms1_scan = dspec.getScanNumber();
+    }
+    if (unique_ms1_scans)
+    {
+      const auto write = [&]() {
+        try
+        {
+          early_ms1_writer_(deconvolved_spectra);
+        }
+        catch (...)
+        {
+          early_writer_error = std::current_exception();
+        }
+      };
+      try
+      {
+        early_writer = std::thread(write);
+      }
+      catch (const std::system_error&)
+      {
+        write(); // no thread available: same output, no overlap
+      }
+    }
+  }
+
   // feature tracing here and update FeatureQScores
   {
     runFeatureFinding_(deconvolved_spectra, deconvolved_features);
@@ -790,6 +828,9 @@ void FLASHDeconvAlgorithm::run(MSExperiment& map,
   {
     noise_decoy_weight_ = Qvalue::updatePeakGroupQvalues(deconvolved_spectra);
   }
+
+  if (early_writer.joinable()) { early_writer.join(); }
+  if (early_writer_error) { std::rethrow_exception(early_writer_error); }
 
   TopDownIsobaricQuantification quantifier;
   Param quant_param = param_.copy("iq:", true);
@@ -1120,6 +1161,11 @@ std::vector<FLASHHelperClasses::MassFeature> FLASHDeconvAlgorithm::traceMinLevel
     deconvolved_features.insert(deconvolved_features.end(), decoy_deconvolved_features.begin(), decoy_deconvolved_features.end());
   }
   return deconvolved_features;
+}
+
+void FLASHDeconvAlgorithm::setEarlyMS1Writer(std::function<void(const std::vector<DeconvolvedSpectrum>&)> writer)
+{
+  early_ms1_writer_ = std::move(writer);
 }
 
 void FLASHDeconvAlgorithm::runFeatureFinding_(std::vector<DeconvolvedSpectrum>& deconvolved_spectra,
