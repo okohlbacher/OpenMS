@@ -17,6 +17,7 @@
 #include <OpenMS/KERNEL/MSExperiment.h>
 #include <OpenMS/KERNEL/MSSpectrum.h>
 #include <boost/dynamic_bitset.hpp>
+#include <functional>
 #include <iostream>
 
 namespace OpenMS
@@ -73,6 +74,17 @@ namespace OpenMS
     {
       return noise_decoy_weight_;
     }
+
+    /**
+      @brief Register a writer for the MS1 (minimum level) results that runs on its own thread while the serial
+      MSn feature finding and q-value phases execute, instead of after run() returns.
+
+      The writer receives the final deconvolved spectra (sorted by scan number) once the MS1 features are traced; the
+      MS1 peak groups' feature indices and 2D q-scores are final at that point. It is used only when decoys are not
+      reported (q-values are assigned concurrently and must not be read) and MS1 scan numbers are unique (so the
+      MS1 row order equals the final order). Otherwise the writer is not called and the caller writes after run().
+    */
+    void setEarlyMS1Writer(std::function<void(const std::vector<DeconvolvedSpectrum>&)> writer);
     /// get scan number of the spectrum in @p index -th in @p map
     static int getScanNumber(const MSExperiment& map, Size index);
 
@@ -101,6 +113,7 @@ namespace OpenMS
     /// MS1 (minimum level) features traced concurrently with the MS2 wave
     std::vector<FLASHHelperClasses::MassFeature> ms1_features_;
     bool ms1_features_ready_ = false;
+    std::function<void(const std::vector<DeconvolvedSpectrum>&)> early_ms1_writer_;
 
     /// feature tracing parameters derived from ft:* and the MS1 settings
     Param featureParams_() const;
