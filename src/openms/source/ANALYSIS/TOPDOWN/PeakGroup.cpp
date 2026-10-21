@@ -15,6 +15,8 @@
 #include <array>
 #include <limits>
 #include <cmath>
+#include <cstdint>
+#include <cstring>
 #include <cstdlib>
 
 namespace OpenMS
@@ -197,12 +199,9 @@ namespace OpenMS
     if (noisy_begin == noisy_end) return 0;
     const Size max_noisy_peak_number
       = z == 0 ? std::min(200, 40 * (max_abs_charge_ - min_abs_charge_ + 1)) : 40; // too many noise peaks will slow down the process
-    const Size bin_number_margin = 8;
-    const Size max_bin_number = bin_number_margin + 12; // 12 bin + 8 extra bin
+    constexpr Size bin_number_margin = 8;
+    constexpr Size max_bin_number = bin_number_margin + 12; // 12 bin + 8 extra bin
     float threshold = -1;
-    thread_local std::vector<std::pair<Peak1D, bool>> all_peaks; // peak + is signal? (per-worker scratch)
-    all_peaks.clear();
-    all_peaks.reserve(max_noisy_peak_number + logMzpeaks_.size());
 
     // the ranges are already restricted to charge z (or to all charges for z == 0)
     const Size noise_peak_count = noisy_end - noisy_begin;
@@ -217,35 +216,90 @@ namespace OpenMS
       threshold = intensities[max_noisy_peak_number];
     }
 
-    // filter peaks and check which mzs are signal and which are noise.
+    // Peaks above the threshold as mass-sorted arrays (mass, intensity, is signal). Within one charge both ranges are
+    // already sorted by mass, so they are merged; otherwise (z == 0, or equal masses whose order std::sort would decide)
+    // the former sort is used.
+    struct MassIntensity
+    {
+      double mass;
+      float intensity;
+    };
+    thread_local std::vector<MassIntensity> noisy_kept, signal_kept;
+    noisy_kept.clear();
+    signal_kept.clear();
     for (const LogMzPeak* p = noisy_begin; p != noisy_end; ++p)
     {
       if (p->getIntensity() < threshold) continue;
-      all_peaks.emplace_back(Peak1D(p->getUnchargedMass(), p->getIntensity()), false);
+      noisy_kept.push_back({p->getUnchargedMass(), p->getIntensity()});
     }
-
-    if (all_peaks.empty()) return 0;
-
+    if (noisy_kept.empty()) return 0;
     for (const LogMzPeak* p = signal_begin; p != signal_end; ++p)
     {
       if (p->getIntensity() < threshold) continue;
-      all_peaks.emplace_back(Peak1D(p->getUnchargedMass(), p->getIntensity()), true);
+      signal_kept.push_back({p->getUnchargedMass(), p->getIntensity()});
+    }
+    thread_local std::vector<double> mass;
+    thread_local std::vector<float> intensity;
+    thread_local std::vector<char> is_signal;
+    mass.clear();
+    intensity.clear();
+    is_signal.clear();
+    const auto strictly_increasing = [](const std::vector<MassIntensity>& v) {
+      for (Size i = 1; i < v.size(); ++i)
+      {
+        if (! (v[i - 1].mass < v[i].mass)) return false;
+      }
+      return true;
+    };
+    bool merged = strictly_increasing(noisy_kept) && strictly_increasing(signal_kept);
+    for (Size a = 0, b = 0; merged && (a < noisy_kept.size() || b < signal_kept.size());)
+    {
+      if (b == signal_kept.size() || (a < noisy_kept.size() && noisy_kept[a].mass < signal_kept[b].mass))
+      {
+        mass.push_back(noisy_kept[a].mass);
+        intensity.push_back(noisy_kept[a].intensity);
+        is_signal.push_back(0);
+        ++a;
+      }
+      else if (a == noisy_kept.size() || signal_kept[b].mass < noisy_kept[a].mass)
+      {
+        mass.push_back(signal_kept[b].mass);
+        intensity.push_back(signal_kept[b].intensity);
+        is_signal.push_back(1);
+        ++b;
+      }
+      else { merged = false; }
+    }
+    if (! merged)
+    {
+      thread_local std::vector<std::pair<Peak1D, bool>> all_peaks; // peak + is signal?
+      all_peaks.clear();
+      for (const auto& p : noisy_kept) { all_peaks.emplace_back(Peak1D(p.mass, p.intensity), false); }
+      for (const auto& p : signal_kept) { all_peaks.emplace_back(Peak1D(p.mass, p.intensity), true); }
+      std::sort(all_peaks.begin(), all_peaks.end(),
+                [](std::pair<Peak1D, bool>& left, std::pair<Peak1D, bool>& right) { return left.first.getMZ() < right.first.getMZ(); });
+      mass.clear();
+      intensity.clear();
+      is_signal.clear();
+      for (const auto& [p, s] : all_peaks)
+      {
+        mass.push_back(p.getMZ());
+        intensity.push_back(p.getIntensity());
+        is_signal.push_back(s);
+      }
     }
 
-    std::sort(all_peaks.begin(), all_peaks.end(),
-              [](std::pair<Peak1D, bool>& left, std::pair<Peak1D, bool>& right) { return left.first.getMZ() < right.first.getMZ(); }); //
-
-    float charge_noise_pwr = 0;
-
-    const Size peak_count = all_peaks.size();
-    thread_local std::vector<Size> per_bin_edges;
-    // Check the single slab's element bound before multiplying its dimensions.
-    if (peak_count > per_bin_edges.max_size() / max_bin_number)
+    const Size peak_count = mass.size();
+    if (peak_count >= std::numeric_limits<std::uint32_t>::max() / (max_bin_number + 1))
     {
       throw Exception::InvalidSize(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, peak_count, "Noise-peak graph exceeds the supported allocation size");
     }
-    per_bin_edges.assign(max_bin_number * peak_count, Size(0));
-    std::array<int, max_bin_number> per_bin_start_index;
+    float charge_noise_pwr = 0;
+    // successor of peak i in bin k at [k * peak_count + i] (0 = none); row max_bin_number is a dummy target for
+    // updates that the reference would skip
+    thread_local std::vector<std::uint32_t> per_bin_edges;
+    per_bin_edges.assign((max_bin_number + 1) * peak_count, 0);
+    std::array<int, max_bin_number + 1> per_bin_start_index;
     per_bin_start_index.fill(-2); // -2 means bin is empty. -1 means bin is used. zero or positive = edge index
     // (sum, bin) pairs; equal sums keep the last bin like the former std::map, visited by descending sum
     std::array<std::pair<float, Size>, max_bin_number> max_intensity_sum_to_bin;
@@ -257,95 +311,89 @@ namespace OpenMS
     // The cutoff needs monotone, finite distances and defined legacy Size casts.
     // Unsupported spacing/mass domains retain the original pair traversal.
     bool monotone_cutoff = std::isfinite(iso_da_distance_) && iso_da_distance_ > 0
-                           && std::all_of(all_peaks.begin(), all_peaks.end(), [](const auto& p) { return std::isfinite(p.first.getMZ()); });
+                           && std::all_of(mass.begin(), mass.end(), [](double m) { return std::isfinite(m); });
     if (monotone_cutoff)
     {
-      const double max_normalized_dist = (all_peaks.back().first.getMZ() - all_peaks.front().first.getMZ()) / iso_da_distance_;
+      const double max_normalized_dist = (mass.back() - mass.front()) / iso_da_distance_;
       const double max_distance = max_normalized_dist / div_factors[0] * (max_bin_number - bin_number_margin);
       monotone_cutoff = std::isfinite(max_distance) && max_distance >= 0 && round(max_distance) < (double)std::numeric_limits<Size>::max();
     }
-    // first collect all possible edges. An edge means mass difference between two peaks.
-    for (Size i = 0; i < all_peaks.size(); i++)
+    // first collect all possible edges. An edge means mass difference between two peaks. The per-bin update below is
+    // done with bit masks instead of branches (its outcome is data-dependent and mispredicts); pairs and divisors the
+    // former code skipped update the dummy row. Arithmetic and update order are unchanged.
+    const auto to_bits = [](double x) {
+      std::uint64_t u;
+      std::memcpy(&u, &x, sizeof(u));
+      return u;
+    };
+    const auto from_bits = [](std::uint64_t u) {
+      double x;
+      std::memcpy(&x, &u, sizeof(x));
+      return x;
+    };
+    for (Size i = 0; i < peak_count; i++)
     {
-      const auto& [p1, p1_signal] = all_peaks[i];
-      const auto p1_mass = p1.getMZ();
-      std::array<double, max_bin_number> per_bin_error;
+      const double p1_mass = mass[i];
+      const std::uint64_t p1_signal = (std::uint64_t)is_signal[i];
+      std::array<double, max_bin_number + 1> per_bin_error;
       per_bin_error.fill(-1.0);
-      for (Size j = i + 1; j < all_peaks.size(); j++)
+      std::uint32_t* edges_of_i = per_bin_edges.data() + i;
+      for (Size j = i + 1; j < peak_count; j++)
       {
-        const auto& [p2, p2_signal] = all_peaks[j];
-        const double normalized_dist = (p2.getMZ() - p1_mass) / iso_da_distance_;
-
-        if (p1_signal && p2_signal
-            && normalized_dist >= .75) // if both are signals, and they are different from each other by more than .75 isotope distance, do not
-                                       // connect. Otherwise, connect as they may a part of consecutive other noisy peaks.
+        const double normalized_dist = (mass[j] - p1_mass) / iso_da_distance_;
+        // == (Size)round(distance) for the non-negative distances of a mass-sorted list, without the libm call
+        const double distance1 = normalized_dist * bins_per_divisor[0];
+        const Size bin1_floor = (Size)distance1;
+        if (bin1_floor + (Size)(distance1 - (double)bin1_floor >= 0.5) >= max_bin_number)
         {
-          // Past the d = 1 cutoff every later peak is either a signal peak (skipped here) or a noisy peak (which would
-          // stop the loop below), so stopping now gives the same edges without visiting the rest of the list.
-          if (monotone_cutoff)
-          {
-            const double distance = normalized_dist / div_factors[0] * (max_bin_number - bin_number_margin);
-            const Size bin_floor = (Size)distance;
-            if (bin_floor + (distance - (double)bin_floor >= 0.5 ? 1 : 0) >= max_bin_number) { break; }
-          }
+          if (monotone_cutoff) { break; }
           continue;
         }
-
-        bool reached_cutoff = false;
+        // if both are signals, and they are different from each other by more than .75 isotope distance, do not
+        // connect. Otherwise, connect as they may a part of consecutive other noisy peaks.
+        const std::uint64_t keep = 1u ^ (p1_signal & (std::uint64_t)is_signal[j] & (std::uint64_t)(normalized_dist >= .75));
         for (Size di = 0; di < div_factors.size(); di++)
         {
-          const double d = div_factors[di];
-          // normalized_dist * (12 / d); for d = 3 this can differ from the former normalized_dist / d * 12 in the
-          // last bit (float reassociation)
           const double distance = normalized_dist * bins_per_divisor[di];
-          // == (Size)round(distance) for the non-negative distances of a mass-sorted list, without the libm call
           const Size bin_floor = (Size)distance;
-          const Size bin = bin_floor + (distance - (double)bin_floor >= 0.5 ? 1 : 0);
-          if (bin == 0) { continue; }
-          if (bin >= max_bin_number)
-          {
-            reached_cutoff = monotone_cutoff && di == 0;
-            break;
-          }
-
-          per_bin_start_index[bin] = -1;
-          double current_error = d * max_bin_number + std::abs((double)bin - distance); // larger when d gets larger. For the same d, comparable.
-          if (per_bin_error[bin] >= 0 && per_bin_error[bin] < current_error) { continue; }
-          per_bin_edges[bin * peak_count + i] = j;
-          per_bin_error[bin] = current_error;
+          const Size bin = bin_floor + (Size)(distance - (double)bin_floor >= 0.5);
+          const std::uint64_t valid = keep & (std::uint64_t)(bin != 0);
+          const Size slot = max_bin_number ^ ((max_bin_number ^ bin) & (Size)(0 - valid));
+          per_bin_start_index[slot] = -1;
+          const double current_error = div_factors[di] * max_bin_number + std::abs((double)bin - distance); // larger when d gets larger
+          const double previous_error = per_bin_error[slot];
+          const std::uint64_t take = valid & (std::uint64_t)(! ((previous_error >= 0) & (previous_error < current_error)));
+          const std::uint64_t mask = 0 - take;
+          std::uint32_t& edge = edges_of_i[slot * peak_count];
+          edge ^= (edge ^ (std::uint32_t)j) & (std::uint32_t)mask;
+          per_bin_error[slot] = from_bits(to_bits(previous_error) ^ ((to_bits(previous_error) ^ to_bits(current_error)) & mask));
         }
-        if (reached_cutoff) { break; }
       }
     }
 
     // then from each bin find the highest intensity path consisting of the same mass differences.
+    thread_local std::vector<float> chain_sum;
+    chain_sum.resize(peak_count);
     for (Size k = 0; k < max_bin_number; k++)
     {
       if (per_bin_start_index[k] == -2) { continue; }
-      const Size* edges = per_bin_edges.data() + k * peak_count;
+      const std::uint32_t* edges = per_bin_edges.data() + k * peak_count;
       // Path intensity from each peak along its successor chain, computed once from the end (successors have larger
-      // indices) instead of re-walking the chain from every start peak. A chain without a successor ends with peak 0,
-      // as the former walk did. Summation order differs from the former left-to-right walk (float reassociation).
-      thread_local std::vector<float> chain_sum;
-      chain_sum.resize(peak_count);
-      const float tail_intensity = all_peaks[0].first.getIntensity();
-      for (Size i = peak_count; i-- > 0;)
-      {
-        chain_sum[i] = all_peaks[i].first.getIntensity() + (edges[i] != 0 ? chain_sum[edges[i]] : tail_intensity);
-      }
+      // indices). A chain without a successor ends with peak 0, as the former walk did; chain_sum[0] holds that tail
+      // until peak 0's own sum is computed. Summation order differs from a left-to-right walk (float reassociation).
+      chain_sum[0] = intensity[0];
+      for (Size i = peak_count - 1; i > 0; --i) { chain_sum[i] = intensity[i] + chain_sum[edges[i]]; }
+      chain_sum[0] = intensity[0] + chain_sum[edges[0]];
       float max_sum_intensity = 0;
+      int max_start = per_bin_start_index[k];
       for (Size i = 0; i < peak_count; i++)
       {
         if (edges[i] == 0) { break; }
-
-        const float sum_intensity = chain_sum[i];
-
-        if (max_sum_intensity < sum_intensity) // at least two edges should be there.
-        {
-          max_sum_intensity = sum_intensity;
-          per_bin_start_index[k] = (int)i; //
-        }
+        const bool better = max_sum_intensity < chain_sum[i]; // at least two edges should be there.
+        max_sum_intensity = better ? chain_sum[i] : max_sum_intensity;
+        max_start = better ? (int)i : max_start;
       }
+      per_bin_start_index[k] = max_start;
       // how to deal with profile peaks?
       bool replaced = false;
       for (Size m = 0; m < max_intensity_sum_count; ++m)
@@ -361,49 +409,39 @@ namespace OpenMS
     }
 
     thread_local std::vector<char> unused;
-    unused.assign(all_peaks.size(), 1);
+    unused.assign(peak_count, 1);
     std::sort(max_intensity_sum_to_bin.begin(), max_intensity_sum_to_bin.begin() + max_intensity_sum_count,
               [](const auto& l, const auto& r) { return l.first > r.first; });
 
     // Now from the highest intensity path to the lowest, sum up intensities excluding already used peaks or signal peaks.
     for (auto it = max_intensity_sum_to_bin.begin(); it != max_intensity_sum_to_bin.begin() + max_intensity_sum_count; ++it)
     {
-      // if (signal_pwr / 100 > it->first * it->first) continue; // if the noise summed intensity is too small, skip
       Size bin = it->second;
       int index = per_bin_start_index[bin];
       if (index < 0) { continue; }
 
-      const Size* edges = per_bin_edges.data() + bin * peak_count;
-      const double ori_mass = all_peaks[index].first.getMZ();
+      const std::uint32_t* edges = per_bin_edges.data() + bin * peak_count;
+      const double ori_mass = mass[index];
       const int ori_index = index;
       float sum_intensity = .0;
 
-      while (index < (int)all_peaks.size())
+      while (index < (int)peak_count)
       {
-        const auto& p = all_peaks[index].first;
-        if (p.getMZ() - ori_mass > tol / 2.0 * p.getMZ()) break;
-        float intensity = // p_signal ? 0 :
-          p.getIntensity();
-
+        if (mass[index] - ori_mass > tol / 2.0 * mass[index]) break;
         Size j = edges[index];
         if (j == 0) { break; }
-
         if (unused[index])
         {
-          sum_intensity += intensity;
+          sum_intensity += intensity[index];
           unused[index] = false;
         }
-        else
-        {
-          break;
-        }
-
+        else { break; }
         for (; j < peak_count; j = edges[j])
         {
           if (j == 0) { break; }
           if (unused[j])
           {
-            sum_intensity += all_peaks[j].first.getIntensity();
+            sum_intensity += intensity[j];
             unused[j] = false;
           }
           else
@@ -415,30 +453,21 @@ namespace OpenMS
       index = ori_index - 1;
       while (index >= 0)
       {
-        const auto& p = all_peaks[index].first;
-        if (ori_mass - p.getMZ() > tol / 2.0 * ori_mass) break;
-        float intensity = // p_signal ? 0 :
-          p.getIntensity();
-
+        if (ori_mass - mass[index] > tol / 2.0 * ori_mass) break;
         Size j = edges[index];
         if (j == 0) { break; }
-
         if (unused[index])
         {
-          sum_intensity += intensity;
+          sum_intensity += intensity[index];
           unused[index] = false;
         }
-        else
-        {
-          break;
-        }
-
+        else { break; }
         for (; j < peak_count; j = edges[j])
         {
           if (j == 0) { break; }
           if (unused[j])
           {
-            sum_intensity += all_peaks[j].first.getIntensity();
+            sum_intensity += intensity[j];
             unused[j] = false;
           }
           else
@@ -453,26 +482,21 @@ namespace OpenMS
     // if still peaks are remaining, add their individual power.
     double prev_mass = .0;
     float tmp_int_sum = 0;
-    for (Size index = 0; index < unused.size(); ++index)
+    for (Size index = 0; index < peak_count; ++index)
     {
-      if (! unused[index]) { continue; }
-      const auto& [p, p_signal] = all_peaks[index];
-      if (! p_signal)
+      if (! unused[index] || is_signal[index]) { continue; }
+      if (mass[index] - prev_mass > mass[index] * tol)
       {
-        if (p.getMZ() - prev_mass > p.getMZ() * tol)
-        {
-          charge_noise_pwr += tmp_int_sum * tmp_int_sum;
-          prev_mass = p.getMZ();
-          tmp_int_sum = 0;
-        }
-        tmp_int_sum += p.getIntensity();
+        charge_noise_pwr += tmp_int_sum * tmp_int_sum;
+        prev_mass = mass[index];
+        tmp_int_sum = 0;
       }
+      tmp_int_sum += intensity[index];
     }
     charge_noise_pwr += tmp_int_sum * tmp_int_sum;
 
     return charge_noise_pwr;
   }
-
 
   void PeakGroup::updatePerChargeInformation_(const std::vector<LogMzPeak>& noisy_peaks, const double tol, const bool is_last)
   {
