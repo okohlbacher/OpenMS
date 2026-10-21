@@ -215,8 +215,8 @@ namespace OpenMS
     return h_offset;
   }
 
-  float PeakGroup::getNoisePeakPower_(const LogMzPeak* noisy_begin, const LogMzPeak* noisy_end, const LogMzPeak* signal_begin,
-                                      const LogMzPeak* signal_end, const int z, const double tol) const
+  float PeakGroup::getNoisePeakPower_(const NoisePeak_* noisy_begin, const NoisePeak_* noisy_end, const NoisePeak_* signal_begin,
+                                      const NoisePeak_* signal_end, const int z, const double tol) const
   {
     if (noisy_begin == noisy_end) return 0;
     const Size max_noisy_peak_number
@@ -233,7 +233,7 @@ namespace OpenMS
       thread_local std::vector<float> intensities;
       intensities.clear();
       intensities.reserve(noise_peak_count);
-      for (const LogMzPeak* p = noisy_begin; p != noisy_end; ++p) { intensities.push_back(p->getIntensity()); }
+      for (const NoisePeak_* p = noisy_begin; p != noisy_end; ++p) { intensities.push_back(p->intensity); }
       std::nth_element(intensities.begin(), intensities.begin() + max_noisy_peak_number, intensities.end(), std::greater<float>());
       threshold = intensities[max_noisy_peak_number];
     }
@@ -241,24 +241,19 @@ namespace OpenMS
     // Peaks above the threshold as mass-sorted arrays (mass, intensity, is signal). Within one charge both ranges are
     // already sorted by mass, so they are merged; otherwise (z == 0, or equal masses whose order std::sort would decide)
     // the former sort is used.
-    struct MassIntensity
-    {
-      double mass;
-      float intensity;
-    };
-    thread_local std::vector<MassIntensity> noisy_kept, signal_kept;
+    thread_local std::vector<NoisePeak_> noisy_kept, signal_kept;
     noisy_kept.clear();
     signal_kept.clear();
-    for (const LogMzPeak* p = noisy_begin; p != noisy_end; ++p)
+    for (const NoisePeak_* p = noisy_begin; p != noisy_end; ++p)
     {
-      if (p->getIntensity() < threshold) continue;
-      noisy_kept.push_back({p->getUnchargedMass(), p->getIntensity()});
+      if (p->intensity < threshold) continue;
+      noisy_kept.push_back(*p);
     }
     if (noisy_kept.empty()) return 0;
-    for (const LogMzPeak* p = signal_begin; p != signal_end; ++p)
+    for (const NoisePeak_* p = signal_begin; p != signal_end; ++p)
     {
-      if (p->getIntensity() < threshold) continue;
-      signal_kept.push_back({p->getUnchargedMass(), p->getIntensity()});
+      if (p->intensity < threshold) continue;
+      signal_kept.push_back(*p);
     }
     thread_local std::vector<double> mass;
     thread_local std::vector<float> intensity;
@@ -266,7 +261,7 @@ namespace OpenMS
     mass.clear();
     intensity.clear();
     is_signal.clear();
-    const auto strictly_increasing = [](const std::vector<MassIntensity>& v) {
+    const auto strictly_increasing = [](const std::vector<NoisePeak_>& v) {
       for (Size i = 1; i < v.size(); ++i)
       {
         if (! (v[i - 1].mass < v[i].mass)) return false;
@@ -353,7 +348,31 @@ namespace OpenMS
       std::memcpy(&x, &u, sizeof(x));
       return x;
     };
-    for (Size i = 0; i < peak_count; i++)
+    for (Size i = 0; ! monotone_cutoff && i < peak_count; i++)
+    {
+      // Non-finite spacing or masses: the original branching traversal (no unconditional float-to-integer casts).
+      std::array<double, max_bin_number> per_bin_error;
+      per_bin_error.fill(-1.0);
+      for (Size j = i + 1; j < peak_count; j++)
+      {
+        const double normalized_dist = (mass[j] - mass[i]) / iso_da_distance_;
+        if (is_signal[i] && is_signal[j] && normalized_dist >= .75) { continue; }
+        for (Size di = 0; di < div_factors.size(); di++)
+        {
+          const double distance = normalized_dist * bins_per_divisor[di];
+          const Size bin_floor = (Size)distance;
+          const Size bin = bin_floor + (distance - (double)bin_floor >= 0.5 ? 1 : 0);
+          if (bin == 0) { continue; }
+          if (bin >= max_bin_number) { break; }
+          per_bin_start_index[bin] = -1;
+          const double current_error = div_factors[di] * max_bin_number + std::abs((double)bin - distance);
+          if (per_bin_error[bin] >= 0 && per_bin_error[bin] < current_error) { continue; }
+          per_bin_edges[bin * peak_count + i] = (std::uint32_t)j;
+          per_bin_error[bin] = current_error;
+        }
+      }
+    }
+    for (Size i = 0; monotone_cutoff && i < peak_count; i++)
     {
       const double p1_mass = mass[i];
       const std::uint64_t p1_signal = (std::uint64_t)is_signal[i];
@@ -366,11 +385,7 @@ namespace OpenMS
         // == (Size)round(distance) for the non-negative distances of a mass-sorted list, without the libm call
         const double distance1 = normalized_dist * bins_per_divisor[0];
         const Size bin1_floor = (Size)distance1;
-        if (bin1_floor + (Size)(distance1 - (double)bin1_floor >= 0.5) >= max_bin_number)
-        {
-          if (monotone_cutoff) { break; }
-          continue;
-        }
+        if (bin1_floor + (Size)(distance1 - (double)bin1_floor >= 0.5) >= max_bin_number) { break; }
         // if both are signals, and they are different from each other by more than .75 isotope distance, do not
         // connect. Otherwise, connect as they may a part of consecutive other noisy peaks.
         const std::uint64_t keep = 1u ^ (p1_signal & (std::uint64_t)is_signal[j] & (std::uint64_t)(normalized_dist >= .75));
@@ -556,34 +571,38 @@ namespace OpenMS
 
     if (is_last)
     {
-      // Group noisy and signal peaks by charge once (stable, so each group keeps the original order) instead of
-      // rescanning both lists for every charge.
-      thread_local std::vector<LogMzPeak> noisy_by_charge, signal_by_charge; // per-worker scratch
+      // Uncharged mass and intensity of every noisy and signal peak, computed once, in the original order (for the
+      // all-charge call) and grouped by charge (stable, so each group keeps that order) for the per-charge calls.
+      thread_local std::vector<NoisePeak_> noisy_all, signal_all, noisy_by_charge, signal_by_charge; // per-worker scratch
       thread_local std::vector<Size> noisy_offset, signal_offset;
-      const auto group_by_charge = [&](const std::vector<LogMzPeak>& peaks, std::vector<LogMzPeak>& grouped, std::vector<Size>& offset) {
+      const auto group_by_charge = [&](const std::vector<LogMzPeak>& peaks, std::vector<NoisePeak_>& all, std::vector<NoisePeak_>& grouped,
+                                       std::vector<Size>& offset) {
+        all.clear();
         offset.assign(max_abs_charge_ + 2, 0);
         for (const auto& p : peaks)
         {
+          all.push_back({p.getUnchargedMass(), p.getIntensity()});
           if (p.getAbsCharge() >= min_abs_charge_ && p.getAbsCharge() <= max_abs_charge_) offset[p.getAbsCharge() + 1]++;
         }
         for (int z = 1; z <= max_abs_charge_ + 1; z++) offset[z] += offset[z - 1];
         grouped.resize(offset[max_abs_charge_ + 1]);
         thread_local std::vector<Size> fill;
         fill.assign(offset.begin(), offset.end());
-        for (const auto& p : peaks)
+        for (Size i = 0; i < peaks.size(); ++i)
         {
-          if (p.getAbsCharge() >= min_abs_charge_ && p.getAbsCharge() <= max_abs_charge_) grouped[fill[p.getAbsCharge()]++] = p;
+          const int c = peaks[i].getAbsCharge();
+          if (c >= min_abs_charge_ && c <= max_abs_charge_) grouped[fill[c]++] = all[i];
         }
       };
-      group_by_charge(noisy_peaks, noisy_by_charge, noisy_offset);
-      group_by_charge(logMzpeaks_, signal_by_charge, signal_offset);
+      group_by_charge(noisy_peaks, noisy_all, noisy_by_charge, noisy_offset);
+      group_by_charge(logMzpeaks_, signal_all, signal_by_charge, signal_offset);
       for (int z = min_abs_charge_; z <= max_abs_charge_; z++)
       {
         per_charge_noise_pwr_[z] = getNoisePeakPower_(noisy_by_charge.data() + noisy_offset[z], noisy_by_charge.data() + noisy_offset[z + 1],
                                                       signal_by_charge.data() + signal_offset[z], signal_by_charge.data() + signal_offset[z + 1], z, tol);
       }
-      per_charge_noise_pwr_[0] = getNoisePeakPower_(noisy_peaks.data(), noisy_peaks.data() + noisy_peaks.size(), logMzpeaks_.data(),
-                                                    logMzpeaks_.data() + logMzpeaks_.size(), 0, tol);
+      per_charge_noise_pwr_[0] = getNoisePeakPower_(noisy_all.data(), noisy_all.data() + noisy_all.size(), signal_all.data(),
+                                                    signal_all.data() + signal_all.size(), 0, tol);
     }
     else
     {
