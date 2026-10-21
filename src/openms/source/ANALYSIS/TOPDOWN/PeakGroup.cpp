@@ -294,20 +294,28 @@ namespace OpenMS
     }
     if (! merged)
     {
-      thread_local std::vector<std::pair<Peak1D, bool>> all_peaks; // peak + is signal?
+      // std::sort's permutation depends only on the comparison results, so sorting these 16-byte records in the same
+      // initial order (noisy, then signal) with the same comparator gives the same order as the former
+      // std::pair<Peak1D, bool> sort, ties included.
+      struct SortedPeak
+      {
+        double mass;
+        float intensity;
+        bool signal;
+      };
+      thread_local std::vector<SortedPeak> all_peaks;
       all_peaks.clear();
-      for (const auto& p : noisy_kept) { all_peaks.emplace_back(Peak1D(p.mass, p.intensity), false); }
-      for (const auto& p : signal_kept) { all_peaks.emplace_back(Peak1D(p.mass, p.intensity), true); }
-      std::sort(all_peaks.begin(), all_peaks.end(),
-                [](std::pair<Peak1D, bool>& left, std::pair<Peak1D, bool>& right) { return left.first.getMZ() < right.first.getMZ(); });
+      for (const auto& p : noisy_kept) { all_peaks.push_back({p.mass, p.intensity, false}); }
+      for (const auto& p : signal_kept) { all_peaks.push_back({p.mass, p.intensity, true}); }
+      std::sort(all_peaks.begin(), all_peaks.end(), [](const SortedPeak& left, const SortedPeak& right) { return left.mass < right.mass; });
       mass.clear();
       intensity.clear();
       is_signal.clear();
-      for (const auto& [p, s] : all_peaks)
+      for (const auto& p : all_peaks)
       {
-        mass.push_back(p.getMZ());
-        intensity.push_back(p.getIntensity());
-        is_signal.push_back(s);
+        mass.push_back(p.mass);
+        intensity.push_back(p.intensity);
+        is_signal.push_back(p.signal);
       }
     }
 
@@ -355,7 +363,7 @@ namespace OpenMS
     };
     for (Size i = 0; ! monotone_cutoff && i < peak_count; i++)
     {
-      // Non-finite spacing or masses: the original branching traversal (no unconditional float-to-integer casts).
+      // Non-finite spacing or masses: the original branching traversal (pairs the original skipped are not cast).
       std::array<double, max_bin_number> per_bin_error;
       per_bin_error.fill(-1.0);
       for (Size j = i + 1; j < peak_count; j++)
