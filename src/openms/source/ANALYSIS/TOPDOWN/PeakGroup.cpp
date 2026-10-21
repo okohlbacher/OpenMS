@@ -426,25 +426,52 @@ namespace OpenMS
     }
 
     // then from each bin find the highest intensity path consisting of the same mass differences.
+    // The path intensity of a start is its chain summed left to right (a chain without a successor ends with peak 0).
+    // Right-to-left sums D(i) of the same L(i) positive terms differ from those exact sums by at most about
+    // 2 * L(i) * 2^-24 relative, so only starts whose D could still reach the largest exact sum are walked; the result
+    // (largest sum, first start reaching it) is the same as walking every start.
+    thread_local std::vector<float> chain_sum;
+    thread_local std::vector<std::uint32_t> chain_length;
+    chain_sum.resize(peak_count);
+    chain_length.resize(peak_count);
     for (Size k = 0; k < max_bin_number; k++)
     {
       if (per_bin_start_index[k] == -2) { continue; }
       const std::uint32_t* edges = per_bin_edges.data() + k * peak_count;
+      chain_sum[0] = intensity[0]; // tail for chains without a successor until peak 0's own sum is set
+      chain_length[0] = 1;
+      for (Size i = peak_count - 1; i > 0; --i)
+      {
+        chain_sum[i] = intensity[i] + chain_sum[edges[i]];
+        chain_length[i] = 1 + chain_length[edges[i]];
+      }
+      chain_sum[0] = intensity[0] + chain_sum[edges[0]];
+      Size prefix = 0;
+      while (prefix < peak_count && edges[prefix] != 0) { ++prefix; }
+      const auto relative_bound = [&](Size i) { return 2.5 * (double)(chain_length[edges[i]] + 1) * 5.9604644775390625e-08; };
+      double best_lower = 0;
+      bool finite = true;
+      for (Size i = 0; i < prefix; i++)
+      {
+        finite &= std::isfinite(chain_sum[i]) && chain_sum[i] > 0;
+        best_lower = std::max(best_lower, (double)chain_sum[i] * (1 - relative_bound(i)));
+      }
       float max_sum_intensity = 0;
       int max_start = per_bin_start_index[k];
-      for (Size i = 0; i < peak_count; i++)
+      for (Size i = 0; i < prefix; i++)
       {
-        if (edges[i] == 0) { break; }
-        // path intensity along the successor chain, summed left to right; a chain without a successor ends with peak 0
+        if (finite && (double)chain_sum[i] * (1 + relative_bound(i)) < best_lower) { continue; }
         float sum_intensity = intensity[i];
         for (Size j = edges[i]; j < peak_count; j = edges[j])
         {
           sum_intensity += intensity[j];
           if (j == 0) break;
         }
-        const bool better = max_sum_intensity < sum_intensity; // at least two edges should be there.
-        max_sum_intensity = better ? sum_intensity : max_sum_intensity;
-        max_start = better ? (int)i : max_start;
+        if (max_sum_intensity < sum_intensity) // at least two edges should be there.
+        {
+          max_sum_intensity = sum_intensity;
+          max_start = (int)i;
+        }
       }
       per_bin_start_index[k] = max_start;
       // how to deal with profile peaks?
