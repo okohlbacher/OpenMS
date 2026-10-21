@@ -335,8 +335,12 @@ namespace OpenMS
     std::array<std::pair<float, Size>, max_bin_number> max_intensity_sum_to_bin;
     Size max_intensity_sum_count = 0;
     const std::array<double, 3> div_factors {1.0, 2.0, 3.0}; // allow two skips for each bin
-    const std::array<double, 3> bins_per_divisor {(max_bin_number - bin_number_margin) / 1.0, (max_bin_number - bin_number_margin) / 2.0,
-                                                  (max_bin_number - bin_number_margin) / 3.0};
+    // normalized_dist / d * 12 as originally computed: for d = 1 and 2 this equals normalized_dist * (12 / d) exactly
+    // (division by 1 or 2 is exact), for d = 3 the division is kept
+    const std::array<double, 3> bins_per_divisor {(max_bin_number - bin_number_margin) / 1.0, (max_bin_number - bin_number_margin) / 2.0, 0.0};
+    const auto bin_distance = [&](double normalized_dist, Size di) {
+      return di == 2 ? normalized_dist / div_factors[2] * (max_bin_number - bin_number_margin) : normalized_dist * bins_per_divisor[di];
+    };
 
     // The cutoff needs monotone, finite distances and defined legacy Size casts.
     // Unsupported spacing/mass domains retain the original pair traversal.
@@ -372,7 +376,7 @@ namespace OpenMS
         if (is_signal[i] && is_signal[j] && normalized_dist >= .75) { continue; }
         for (Size di = 0; di < div_factors.size(); di++)
         {
-          const double distance = normalized_dist * bins_per_divisor[di];
+          const double distance = bin_distance(normalized_dist, di);
           const Size bin_floor = (Size)distance;
           const Size bin = bin_floor + (distance - (double)bin_floor >= 0.5 ? 1 : 0);
           if (bin == 0) { continue; }
@@ -404,7 +408,7 @@ namespace OpenMS
         const std::uint64_t keep = 1u ^ (p1_signal & (std::uint64_t)is_signal[j] & (std::uint64_t)(normalized_dist >= .75));
         for (Size di = 0; di < div_factors.size(); di++)
         {
-          const double distance = normalized_dist * bins_per_divisor[di];
+          const double distance = bin_distance(normalized_dist, di);
           const Size bin_floor = (Size)distance;
           const Size bin = bin_floor + (Size)(distance - (double)bin_floor >= 0.5);
           const std::uint64_t valid = keep & (std::uint64_t)(bin != 0);
@@ -422,25 +426,24 @@ namespace OpenMS
     }
 
     // then from each bin find the highest intensity path consisting of the same mass differences.
-    thread_local std::vector<float> chain_sum;
-    chain_sum.resize(peak_count);
     for (Size k = 0; k < max_bin_number; k++)
     {
       if (per_bin_start_index[k] == -2) { continue; }
       const std::uint32_t* edges = per_bin_edges.data() + k * peak_count;
-      // Path intensity from each peak along its successor chain, computed once from the end (successors have larger
-      // indices). A chain without a successor ends with peak 0, as the former walk did; chain_sum[0] holds that tail
-      // until peak 0's own sum is computed. Summation order differs from a left-to-right walk (float reassociation).
-      chain_sum[0] = intensity[0];
-      for (Size i = peak_count - 1; i > 0; --i) { chain_sum[i] = intensity[i] + chain_sum[edges[i]]; }
-      chain_sum[0] = intensity[0] + chain_sum[edges[0]];
       float max_sum_intensity = 0;
       int max_start = per_bin_start_index[k];
       for (Size i = 0; i < peak_count; i++)
       {
         if (edges[i] == 0) { break; }
-        const bool better = max_sum_intensity < chain_sum[i]; // at least two edges should be there.
-        max_sum_intensity = better ? chain_sum[i] : max_sum_intensity;
+        // path intensity along the successor chain, summed left to right; a chain without a successor ends with peak 0
+        float sum_intensity = intensity[i];
+        for (Size j = edges[i]; j < peak_count; j = edges[j])
+        {
+          sum_intensity += intensity[j];
+          if (j == 0) break;
+        }
+        const bool better = max_sum_intensity < sum_intensity; // at least two edges should be there.
+        max_sum_intensity = better ? sum_intensity : max_sum_intensity;
         max_start = better ? (int)i : max_start;
       }
       per_bin_start_index[k] = max_start;
