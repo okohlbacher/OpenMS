@@ -251,6 +251,8 @@ namespace OpenMS
     std::array<std::pair<float, Size>, max_bin_number> max_intensity_sum_to_bin;
     Size max_intensity_sum_count = 0;
     const std::array<double, 3> div_factors {1.0, 2.0, 3.0}; // allow two skips for each bin
+    const std::array<double, 3> bins_per_divisor {(max_bin_number - bin_number_margin) / 1.0, (max_bin_number - bin_number_margin) / 2.0,
+                                                  (max_bin_number - bin_number_margin) / 3.0};
 
     // The cutoff needs monotone, finite distances and defined legacy Size casts.
     // Unsupported spacing/mass domains retain the original pair traversal.
@@ -290,16 +292,19 @@ namespace OpenMS
         }
 
         bool reached_cutoff = false;
-        for (double d : div_factors)
+        for (Size di = 0; di < div_factors.size(); di++)
         {
-          double distance = normalized_dist / d * (max_bin_number - bin_number_margin);
+          const double d = div_factors[di];
+          // normalized_dist * (12 / d); for d = 3 this can differ from the former normalized_dist / d * 12 in the
+          // last bit (float reassociation)
+          const double distance = normalized_dist * bins_per_divisor[di];
           // == (Size)round(distance) for the non-negative distances of a mass-sorted list, without the libm call
           const Size bin_floor = (Size)distance;
           const Size bin = bin_floor + (distance - (double)bin_floor >= 0.5 ? 1 : 0);
           if (bin == 0) { continue; }
           if (bin >= max_bin_number)
           {
-            reached_cutoff = monotone_cutoff && d == div_factors[0];
+            reached_cutoff = monotone_cutoff && di == 0;
             break;
           }
 
@@ -318,18 +323,22 @@ namespace OpenMS
     {
       if (per_bin_start_index[k] == -2) { continue; }
       const Size* edges = per_bin_edges.data() + k * peak_count;
+      // Path intensity from each peak along its successor chain, computed once from the end (successors have larger
+      // indices) instead of re-walking the chain from every start peak. A chain without a successor ends with peak 0,
+      // as the former walk did. Summation order differs from the former left-to-right walk (float reassociation).
+      thread_local std::vector<float> chain_sum;
+      chain_sum.resize(peak_count);
+      const float tail_intensity = all_peaks[0].first.getIntensity();
+      for (Size i = peak_count; i-- > 0;)
+      {
+        chain_sum[i] = all_peaks[i].first.getIntensity() + (edges[i] != 0 ? chain_sum[edges[i]] : tail_intensity);
+      }
       float max_sum_intensity = 0;
       for (Size i = 0; i < peak_count; i++)
       {
         if (edges[i] == 0) { break; }
 
-        float sum_intensity = all_peaks[i].first.getIntensity();
-
-        for (Size j = edges[i]; j < peak_count; j = edges[j])
-        {
-          sum_intensity += all_peaks[j].first.getIntensity();
-          if (j == 0) break;
-        }
+        const float sum_intensity = chain_sum[i];
 
         if (max_sum_intensity < sum_intensity) // at least two edges should be there.
         {
