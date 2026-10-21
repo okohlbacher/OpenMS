@@ -29,7 +29,7 @@ namespace OpenMS
   class OPENMS_DLLAPI PeakGroupScoring
   {
   public:
-    typedef FLASHHelperClasses::LogMzPeak LogMzPeak;
+    typedef FLASHHelperClasses::InternalLogMzPeak LogMzPeak;
 
     /// get QScore for a peak group of specific abs_charge
     static double getQscore(const PeakGroup* pg);

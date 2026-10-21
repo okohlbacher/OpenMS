@@ -422,7 +422,7 @@ Constructors
         .def("__copy__", [](const OpenMS::DeconvolvedSpectrum& self) { return OpenMS::DeconvolvedSpectrum(self); })
         .def("__deepcopy__", [](const OpenMS::DeconvolvedSpectrum& self, nb::dict) { return OpenMS::DeconvolvedSpectrum(self); }, "memo"_a)
         .def("toSpectrum", [](OpenMS::DeconvolvedSpectrum& self, int to_charge, double tol, bool retain_undeconvolved) { return self.toSpectrum(to_charge, tol, retain_undeconvolved); }, "to_charge"_a, "tol"_a = 10.0, "retain_undeconvolved"_a = false)
-        .def("getOriginalSpectrum", [](const OpenMS::DeconvolvedSpectrum& self) -> OpenMS::MSSpectrum { return self.getOriginalSpectrum(); }, "Returns the original spectrum")
+        .def("getOriginalSpectrum", [](const OpenMS::DeconvolvedSpectrum& self) -> OpenMS::MSSpectrum { return OpenMS::MSSpectrum(self.getOriginalSpectrum()); }, "Returns the original spectrum")
         .def("getPrecursorPeakGroup", [](const OpenMS::DeconvolvedSpectrum& self) -> OpenMS::PeakGroup { return self.getPrecursorPeakGroup(); }, "Returns the precursor peak group (MSn, n>1)")
         .def("getPrecursorCharge", [](const OpenMS::DeconvolvedSpectrum& self) { return self.getPrecursorCharge(); }, "Returns the precursor charge")
         .def("getPrecursor", [](const OpenMS::DeconvolvedSpectrum& self) -> OpenMS::Precursor { return self.getPrecursor(); }, "Returns the precursor peak")
@@ -943,6 +943,25 @@ Constructors
           new (self) OpenMS::FLASHHelperClasses::LogMzPeak(peak, positive);
         },
         "peak"_a, "positive"_a);
+
+    nb::class_<OpenMS::FLASHHelperClasses::InternalLogMzPeak>(m, "InternalLogMzPeak", "Experimental mass-free support peak")
+      .def(nb::init<>())
+      .def(nb::init<const OpenMS::FLASHHelperClasses::InternalLogMzPeak&>())
+      .def(nb::init<const OpenMS::Peak1D&, bool>())
+      .def(nb::init<const OpenMS::FLASHHelperClasses::LogMzPeak&>())
+      .def_prop_ro("mz", &OpenMS::FLASHHelperClasses::InternalLogMzPeak::getMZ)
+      .def_prop_ro("intensity", &OpenMS::FLASHHelperClasses::InternalLogMzPeak::getIntensity)
+      .def_prop_ro("logMz", &OpenMS::FLASHHelperClasses::InternalLogMzPeak::getLogMz)
+      .def_prop_rw("abs_charge", &OpenMS::FLASHHelperClasses::InternalLogMzPeak::getAbsCharge,
+                   &OpenMS::FLASHHelperClasses::InternalLogMzPeak::setAbsCharge)
+      .def_prop_rw("is_positive", &OpenMS::FLASHHelperClasses::InternalLogMzPeak::isPositive,
+                   &OpenMS::FLASHHelperClasses::InternalLogMzPeak::setPositive)
+      .def_prop_rw("isotopeIndex", &OpenMS::FLASHHelperClasses::InternalLogMzPeak::getIsotopeIndex,
+                   &OpenMS::FLASHHelperClasses::InternalLogMzPeak::setIsotopeIndex)
+      .def("getUnchargedMass", &OpenMS::FLASHHelperClasses::InternalLogMzPeak::getUnchargedMass)
+      .def(nb::self < nb::self)
+      .def(nb::self > nb::self)
+      .def(nb::self == nb::self);
 
     // -----------------------------------------------------------------------
     // MRMBatchFeatureSelector
@@ -1933,6 +1952,7 @@ Constructors
         .def("__getitem__", [](OpenMS::PeakGroup& self, size_t i) { if (i >= self.size()) throw nb::index_error(); return self[i]; })
         .def("getMassErrors", [](const OpenMS::PeakGroup& self, bool ppm) { return self.getMassErrors(ppm); }, "ppm"_a = true, "Returns mass errors per isotope")
         .def("push_back", [](OpenMS::PeakGroup& self, const OpenMS::FLASHHelperClasses::LogMzPeak& pg) { return self.push_back(pg); }, "pg"_a, "Adds a LogMzPeak")
+        .def("push_back", [](OpenMS::PeakGroup& self, const OpenMS::FLASHHelperClasses::InternalLogMzPeak& pg) { self.push_back(pg); }, "pg"_a)
         .def("size", [](const OpenMS::PeakGroup& self) { return self.size(); }, "Returns number of LogMzPeaks")
         .def("reserve", [](OpenMS::PeakGroup& self, size_t n) { return self.reserve(n); }, "n"_a, "Reserves space for n peaks")
         .def("empty", [](const OpenMS::PeakGroup& self) { return self.empty(); }, "Returns true if no peaks")

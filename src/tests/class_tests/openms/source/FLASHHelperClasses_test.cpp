@@ -11,10 +11,13 @@
 
 ///////////////////////////
 
+#include <OpenMS/ANALYSIS/TOPDOWN/DeconvolvedSpectrum.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/FLASHHelperClasses.h>
 #include <OpenMS/CHEMISTRY/ISOTOPEDISTRIBUTION/CoarseIsotopePatternGenerator.h>
 #include <OpenMS/CONCEPT/Constants.h>
+#include <bit>
 #include <cmath>
+#include <exception>
 #include <limits>
 #include <type_traits>
 #include <unordered_set>
@@ -936,4 +939,195 @@ END_SECTION
 
 /////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////
+START_SECTION((Experimental mass - free peak layouts preserve exact scientific fields))
+{
+  using InternalPeak = FLASHHelperClasses::InternalLogMzPeak;
+  using PublicPeak = FLASHHelperClasses::LogMzPeak;
+  static_assert(std::is_trivially_copyable_v<InternalPeak>);
+  static_assert(std::is_standard_layout_v<InternalPeak>);
+  static_assert(alignof(InternalPeak) == 8);
+  static_assert(sizeof(PublicPeak) == 32);
+#if OPENMS_FLASHDECONV_PEAK_LAYOUT == 24
+  static_assert(sizeof(InternalPeak) == 24);
+#else
+  static_assert(sizeof(InternalPeak) == 16);
+#endif
+  InternalPeak empty;
+  TEST_EQUAL(empty.getMZ(), 0)
+  TEST_EQUAL(empty.getLogMz(), -1000)
+  TEST_EQUAL(empty.getIsotopeIndex(), -1)
+  TEST_EQUAL(empty.getUnchargedMass(), 0)
+  bool equal = true;
+  std::vector<InternalPeak> compact;
+  std::vector<PublicPeak> reference;
+  for (int polarity = 0; polarity < 2; ++polarity)
+  {
+    for (int i = 0; i < 2048; ++i)
+    {
+      Peak1D source;
+      source.setMZ(100.0 + (i % 503) * 0.123456789012345);
+      source.setIntensity(static_cast<float>(i % 13));
+      PublicPeak public_peak(source, polarity != 0);
+      InternalPeak peak(source, polarity != 0);
+      for (int z : {0, 1, 7, 200})
+      {
+        public_peak.setAbsCharge(z);
+        peak.setAbsCharge(z);
+        equal &= std::bit_cast<std::uint64_t>(peak.getUnchargedMass()) == std::bit_cast<std::uint64_t>(public_peak.getUnchargedMass());
+      }
+      for (int isotope : {-65535, -1, 0, 1, 65535})
+      {
+        peak.setIsotopeIndex(isotope);
+        equal &= peak.getIsotopeIndex() == isotope && peak.getAbsCharge() == 200 && peak.isPositive() == (polarity != 0);
+      }
+      equal &= std::bit_cast<std::uint64_t>(peak.getMZ()) == std::bit_cast<std::uint64_t>(public_peak.getMZ());
+      equal &= std::bit_cast<std::uint64_t>(peak.getLogMz()) == std::bit_cast<std::uint64_t>(public_peak.getLogMz());
+      equal &= peak.getIntensity() == public_peak.getIntensity();
+      equal &= std::hash<InternalPeak> {}(peak) == std::hash<PublicPeak> {}(public_peak);
+      compact.push_back(peak);
+      reference.push_back(public_peak);
+    }
+  }
+  TEST_EQUAL(equal, true)
+  std::sort(compact.begin(), compact.end());
+  std::sort(reference.begin(), reference.end());
+  bool sorted_equal = true;
+  for (Size i = 0; i < compact.size(); ++i)
+  {
+    sorted_equal &= compact[i].getMZ() == reference[i].getMZ() && compact[i].getIntensity() == reference[i].getIntensity();
+  }
+  TEST_EQUAL(sorted_equal, true)
+  TEST_EXCEPTION(Exception::InvalidValue, empty.setAbsCharge(201))
+  TEST_EXCEPTION(Exception::InvalidValue, empty.setIsotopeIndex(65536))
+  Peak1D carrier_source;
+  carrier_source.setMZ(1125.5118055019082);
+  PublicPeak carrier_reference(carrier_source, true);
+  InternalPeak carrier_peak(carrier_source, true);
+  carrier_reference.setPositive(false);
+  carrier_peak.setPositive(false);
+  TEST_EQUAL(std::bit_cast<std::uint64_t>(carrier_peak.getLogMz()), std::bit_cast<std::uint64_t>(carrier_reference.getLogMz()))
+  TEST_EQUAL(std::bit_cast<std::uint64_t>(carrier_peak.getUnchargedMass()), std::bit_cast<std::uint64_t>(carrier_reference.getUnchargedMass()))
+  PublicPeak inconsistent(carrier_source, true);
+  inconsistent.setLogMz(1.234);
+  TEST_EXCEPTION(Exception::InvalidValue, InternalPeak invalid(inconsistent))
+  inconsistent.setLogMz(-1000);
+  InternalPeak sentinel(inconsistent);
+  TEST_EQUAL(sentinel.getLogMz(), -1000)
+  PublicPeak overridden;
+  overridden.setMass(1);
+  TEST_EXCEPTION(Exception::InvalidValue, InternalPeak invalid(overridden))
+  overridden.setMass(std::numeric_limits<double>::quiet_NaN());
+  TEST_EXCEPTION(Exception::InvalidValue, InternalPeak invalid(overridden))
+  overridden.setMass(-std::numeric_limits<double>::infinity());
+  InternalPeak derived(overridden);
+  TEST_EQUAL(derived.getUnchargedMass(), 0)
+
+  // More than one source page; verify shared snapshots, caller isolation, source
+  // destruction, detached copies and both sides of the 65536-element boundary.
+  std::vector<InternalPeak> detached;
+  {
+    MSSpectrum source;
+    source.setMSLevel(2);
+    source.setRT(123.456);
+    source.setNativeID("scan=42");
+    for (Size i = 0; i < 65540; ++i)
+    {
+      Peak1D p;
+      p.setMZ(400.0 + i * 0.000123456789);
+      p.setIntensity(static_cast<float>(i));
+      source.push_back(p);
+    }
+    DeconvolvedSpectrum ds;
+    ds.setOriginalSpectrum(source);
+    DeconvolvedSpectrum copy(ds);
+    TEST_EQUAL(&ds.getOriginalSpectrum(), &copy.getOriginalSpectrum())
+    TEST_EQUAL(copy.getOriginalSpectrum().getNativeID(), "scan=42")
+    const auto before_standalone = InternalPeak::getSourceStatistics()[3];
+    for (Size i : {Size(0), Size(65535), Size(65536), Size(65539)})
+    {
+      detached.emplace_back(copy.getOriginalSpectrum()[i], false);
+#if OPENMS_FLASHDECONV_PEAK_LAYOUT == 17
+      TEST_EQUAL(detached.back().getSourcePeak(), &copy.getOriginalSpectrum()[i])
+#endif
+    }
+    TEST_EQUAL(InternalPeak::getSourceStatistics()[3], before_standalone)
+    source[0].setMZ(99999);
+    TEST_EQUAL(copy.getOriginalSpectrum()[0].getMZ(), 400)
+    auto moved = std::move(ds);
+    TEST_EQUAL(ds.getOriginalSpectrum().empty(), true)
+    TEST_EQUAL(moved.getOriginalSpectrum().size(), 65540)
+  }
+  TEST_EQUAL(detached[0].getMZ(), 400)
+  TEST_EQUAL(detached[1].getIntensity(), 65535)
+  TEST_EQUAL(detached[2].getIntensity(), 65536)
+  TEST_EQUAL(detached[3].getIntensity(), 65539)
+  std::vector<InternalPeak> concurrent(512);
+#pragma omp parallel for num_threads(4)
+  for (int job = 0; job < 8; ++job)
+  {
+    MSSpectrum source;
+    for (int j = 0; j < 64; ++j)
+    {
+      Peak1D p;
+      p.setMZ(1000.0 + job * 10.0 + j * 0.0123456789);
+      p.setIntensity(static_cast<float>(job * 64 + j));
+      source.push_back(p);
+    }
+    DeconvolvedSpectrum ds;
+    ds.setOriginalSpectrum(source);
+    for (Size j = 0; j < 64; ++j)
+    { concurrent[job * 64 + j] = InternalPeak(ds.getOriginalSpectrum()[j], true); }
+  }
+  bool concurrent_equal = true;
+  for (Size i = 0; i < concurrent.size(); ++i)
+  {
+    const double mz = 1000.0 + (i / 64) * 10.0 + (i % 64) * 0.0123456789;
+    concurrent_equal &= concurrent[i].getMZ() == mz && concurrent[i].getIntensity() == static_cast<float>(i);
+    concurrent_equal &= std::bit_cast<std::uint64_t>(concurrent[i].getLogMz()) == std::bit_cast<std::uint64_t>(FLASHHelperClasses::getLogMz(mz, true));
+  }
+  TEST_EQUAL(concurrent_equal, true)
+
+}
+END_SECTION
+
+#if OPENMS_FLASHDECONV_PEAK_LAYOUT == 17
+START_SECTION((Indexed source capacity failures preserve existing values and cross parallel joins))
+{
+  using InternalPeak = FLASHHelperClasses::InternalLogMzPeak;
+  const auto free_pages = 65535 - InternalPeak::getSourceStatistics()[1];
+  MSSpectrum source;
+  source.push_back(Peak1D(500.123456789, 12.5f));
+  DeconvolvedSpectrum last;
+  InternalPeak first;
+  for (std::uint64_t i = 0; i < free_pages; ++i)
+  {
+    last.setOriginalSpectrum(source);
+    if (i == 0) { first = InternalPeak(last.getOriginalSpectrum()[0], true); }
+  }
+  TEST_EQUAL(InternalPeak::getSourceStatistics()[1], 65535)
+  const auto* last_owner = &last.getOriginalSpectrum();
+  TEST_EXCEPTION(Exception::InvalidValue, last.setOriginalSpectrum(source))
+  TEST_EQUAL(&last.getOriginalSpectrum(), last_owner)
+  TEST_EQUAL(first.getMZ(), 500.123456789)
+  std::array<std::exception_ptr, 4> errors;
+#pragma omp parallel for num_threads(4)
+  for (int job = 0; job < 4; ++job)
+  {
+    try
+    {
+      DeconvolvedSpectrum ds;
+      ds.setOriginalSpectrum(source);
+    }
+    catch (...) { errors[job] = std::current_exception(); }
+  }
+  for (const auto& error : errors)
+  {
+    TEST_EQUAL(static_cast<bool>(error), true)
+    if (error) { TEST_EXCEPTION(Exception::InvalidValue, std::rethrow_exception(error)) }
+  }
+  TEST_EQUAL(first.getMZ(), 500.123456789)
+}
+END_SECTION
+#endif
+
 END_TEST

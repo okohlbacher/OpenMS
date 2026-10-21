@@ -475,6 +475,12 @@ protected:
       }
     }
 
+    // Record auxiliary-storage accounting once, after all scientific output.
+    const auto storage = FLASHHelperClasses::InternalLogMzPeak::getSourceStatistics();
+    OPENMS_LOG_INFO << "Peak storage layout=" << OPENMS_FLASHDECONV_PEAK_LAYOUT
+                    << " registrations=" << storage[0] << " pages=" << storage[1]
+                    << " retained_points=" << storage[2] << " standalone_records=" << storage[3]
+                    << " tls_miss_locks=" << storage[4] << " standalone_pages=" << storage[5] << '\n';
     return EXECUTION_OK;
   }
 };

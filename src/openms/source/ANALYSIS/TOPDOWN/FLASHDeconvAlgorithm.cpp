@@ -808,7 +808,7 @@ FLASHDeconvAlgorithm::findBestPrecursorPeakGroup_(const std::vector<DeconvolvedS
       if (pg[0].getMZ() > end_mz || pg[pg.size() - 1].getMZ() < start_mz) { continue; }
 
       double max_intensity = 0.0;
-      const FLASHHelperClasses::LogMzPeak* tmp_precursor = nullptr;
+      const FLASHHelperClasses::InternalLogMzPeak* tmp_precursor = nullptr;
 
       int c = int(round(pg.getMonoMass() / start_mz));
       for (const auto& tmp_peak : pg)
@@ -907,7 +907,7 @@ void FLASHDeconvAlgorithm::findPrecursorPeakGroupsForMSnSpectra_(const MSExperim
         {
           if (pg[0].getMZ() > job.end_mz || pg[pg.size() - 1].getMZ() < job.start_mz) { continue; }
           double max_intensity = 0.0;
-          const FLASHHelperClasses::LogMzPeak* selected = nullptr;
+          const FLASHHelperClasses::InternalLogMzPeak* selected = nullptr;
           const int charge = int(round(pg.getMonoMass() / job.start_mz));
           for (const auto& peak : pg)
           {

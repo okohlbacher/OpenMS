@@ -164,7 +164,7 @@ namespace OpenMS
     return h_offset;
   }
 
-  float PeakGroup::getNoisePeakPower_(const std::vector<FLASHHelperClasses::LogMzPeak>& noisy_peaks, const int z, const double tol) const
+  float PeakGroup::getNoisePeakPower_(const std::vector<FLASHHelperClasses::InternalLogMzPeak>& noisy_peaks, const int z, const double tol) const
   {
     if (noisy_peaks.empty()) return 0;
     const Size max_noisy_peak_number
@@ -532,11 +532,11 @@ namespace OpenMS
     else { sort(); }
   }
 
-  std::vector<FLASHHelperClasses::LogMzPeak> PeakGroup::recruitAllPeaksInSpectrum(const MSSpectrum& spec,
-                                                                                  const double tol,
-                                                                                  const FLASHHelperClasses::PrecalculatedAveragine& avg,
-                                                                                  double mono_mass,
-                                                                                  bool renew_signal_peaks)
+  std::vector<FLASHHelperClasses::InternalLogMzPeak> PeakGroup::recruitAllPeaksInSpectrum(const MSSpectrum& spec,
+                                                                                          const double tol,
+                                                                                          const FLASHHelperClasses::PrecalculatedAveragine& avg,
+                                                                                          double mono_mass,
+                                                                                          bool renew_signal_peaks)
   {
     const double mul_tol = .8; // not all peaks within tolerance are considered as signal peaks.
     std::vector<LogMzPeak> noisy_peaks;
@@ -619,9 +619,8 @@ namespace OpenMS
     return _noisy_peaks;
   }
 
-  std::vector<FLASHHelperClasses::LogMzPeak> PeakGroup::getNoisyPeaks(const MSSpectrum& spec,
-                                                                       const double tol,
-                                                                       const FLASHHelperClasses::PrecalculatedAveragine& avg) const
+  std::vector<FLASHHelperClasses::InternalLogMzPeak>
+  PeakGroup::getNoisyPeaks(const MSSpectrum& spec, const double tol, const FLASHHelperClasses::PrecalculatedAveragine& avg) const
   {
     // Const version of recruitAllPeaksInSpectrum for use in output functions
     // Uses existing member values instead of modifying them
@@ -1129,37 +1128,37 @@ namespace OpenMS
     qscore2D_ = fqscore;
   }
 
-  std::vector<FLASHHelperClasses::LogMzPeak>::const_iterator PeakGroup::begin() const noexcept
+  std::vector<FLASHHelperClasses::InternalLogMzPeak>::const_iterator PeakGroup::begin() const noexcept
   {
     return logMzpeaks_.begin();
   }
 
-  std::vector<FLASHHelperClasses::LogMzPeak>::const_iterator PeakGroup::end() const noexcept
+  std::vector<FLASHHelperClasses::InternalLogMzPeak>::const_iterator PeakGroup::end() const noexcept
   {
     return logMzpeaks_.end();
   }
 
-  std::vector<FLASHHelperClasses::LogMzPeak>::iterator PeakGroup::begin() noexcept
+  std::vector<FLASHHelperClasses::InternalLogMzPeak>::iterator PeakGroup::begin() noexcept
   {
     return logMzpeaks_.begin();
   }
 
-  std::vector<FLASHHelperClasses::LogMzPeak>::iterator PeakGroup::end() noexcept
+  std::vector<FLASHHelperClasses::InternalLogMzPeak>::iterator PeakGroup::end() noexcept
   {
     return logMzpeaks_.end();
   }
 
-  const FLASHHelperClasses::LogMzPeak& PeakGroup::operator[](const Size i) const
+  const FLASHHelperClasses::InternalLogMzPeak& PeakGroup::operator[](const Size i) const
   {
     return logMzpeaks_[i];
   }
 
-  void PeakGroup::push_back(const FLASHHelperClasses::LogMzPeak& pg)
+  void PeakGroup::push_back(const FLASHHelperClasses::InternalLogMzPeak& pg)
   {
     logMzpeaks_.push_back(pg);
   }
 
-  FLASHHelperClasses::LogMzPeak& PeakGroup::back()
+  FLASHHelperClasses::InternalLogMzPeak& PeakGroup::back()
   {
     return logMzpeaks_.back();
   }
@@ -1184,7 +1183,7 @@ namespace OpenMS
     return logMzpeaks_.empty();
   }
 
-  void PeakGroup::swap(std::vector<FLASHHelperClasses::LogMzPeak>& x)
+  void PeakGroup::swap(std::vector<FLASHHelperClasses::InternalLogMzPeak>& x)
   {
     logMzpeaks_.swap(x);
   }

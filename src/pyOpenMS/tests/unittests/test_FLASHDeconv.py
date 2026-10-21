@@ -1221,5 +1221,39 @@ class TestTargetDecoyTypeEnum(unittest.TestCase):
         self.assertEqual(pg.getTargetDecoyType(), pyopenms.PeakGroup.TargetDecoyType.signal_decoy)
 
 
+
+
+class TestInternalLogMzPeak(unittest.TestCase):
+    def test_internal_boundary_and_copy_lifetime(self):
+        p = pyopenms.Peak1D()
+        p.setMZ(1125.5118055019082)
+        p.setIntensity(123.0)
+        public = pyopenms.LogMzPeak(p, True)
+        internal = pyopenms.InternalLogMzPeak(public)
+        self.assertEqual(internal.mz, public.mz)
+        self.assertEqual(internal.logMz, public.logMz)
+        self.assertEqual(internal.intensity, public.intensity)
+        internal.abs_charge = 7
+        internal.isotopeIndex = -65535
+        pg = pyopenms.PeakGroup()
+        pg.push_back(internal)
+        pg.push_back(public)
+        del p, public, internal
+        self.assertEqual(pg[0].mz, 1125.5118055019082)
+        self.assertEqual(pg[0].isotopeIndex, -65535)
+        self.assertEqual(len(list(pg)), 2)
+
+    def test_snapshot_value_return(self):
+        source = pyopenms.MSSpectrum()
+        p = pyopenms.Peak1D()
+        p.setMZ(100.123)
+        source.push_back(p)
+        ds = pyopenms.DeconvolvedSpectrum()
+        ds.setOriginalSpectrum(source)
+        held = ds.getOriginalSpectrum()
+        ds.setOriginalSpectrum(pyopenms.MSSpectrum())
+        self.assertEqual(held[0].getMZ(), 100.123)
+
+
 if __name__ == '__main__':
     unittest.main()

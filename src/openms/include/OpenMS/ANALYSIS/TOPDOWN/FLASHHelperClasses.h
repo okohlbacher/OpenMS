@@ -8,6 +8,12 @@
 
 #pragma once
 
+// Experimental ABI selection: 24 = cached mz/log, 16 = mz-only, 17 = indexed log.
+#ifndef OPENMS_FLASHDECONV_PEAK_LAYOUT
+#define OPENMS_FLASHDECONV_PEAK_LAYOUT 24
+#endif
+static_assert(OPENMS_FLASHDECONV_PEAK_LAYOUT == 24 || OPENMS_FLASHDECONV_PEAK_LAYOUT == 16 || OPENMS_FLASHDECONV_PEAK_LAYOUT == 17);
+
 #include <OpenMS/CHEMISTRY/ISOTOPEDISTRIBUTION/CoarseIsotopePatternGenerator.h>
 #ifdef _MSC_VER
 using uint = unsigned int; // POSIX uint not available on MSVC; was provided transitively via Qt
@@ -18,12 +24,17 @@ using uint = unsigned int; // POSIX uint not available on MSVC; was provided tra
 #include <OpenMS/CONCEPT/HashUtils.h>
 #include <OpenMS/FEATUREFINDER/MassTraceDetection.h>
 #include <boost/dynamic_bitset.hpp>
+#include <array>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <string>
+#include <type_traits>
 
 namespace OpenMS
 {
+  class MSSpectrum;
+  class DeconvolvedSpectrum;
   class PeakGroup;
   class SpectralDeconvolution;
 
@@ -418,6 +429,103 @@ namespace OpenMS
     };
 
     /**
+      @brief Experimental mass-free support peak (24 B, raw-mz-only 16 B, or indexed 16 B).
+
+      Public LogMzPeak values remain independent 32-byte values. Pipeline containers
+      use this restricted type: neutral mass is derived and raw-mz-only logarithms
+      are recomputed with the same scalar function used by the public constructor.
+      Indexed peaks borrow immutable source records retained by a process-lifetime
+      registry; copying and sorting never allocate. This experimental registry does
+      not reclaim spectra between runs, so indexed layout is intended for one-file
+      process benchmarks until an explicit arena lifetime is added.
+    */
+    class OPENMS_DLLAPI InternalLogMzPeak
+    {
+    public:
+      InternalLogMzPeak() = default;
+      /// A mode-specific symbol rejects header/library layout mismatches at link time.
+      static int verifyLayout(std::integral_constant<int, OPENMS_FLASHDECONV_PEAK_LAYOUT>);
+      explicit InternalLogMzPeak(const Peak1D& peak, bool positive);
+      explicit InternalLogMzPeak(const LogMzPeak& peak);
+      double getMZ() const noexcept
+      {
+#if OPENMS_FLASHDECONV_PEAK_LAYOUT == 17
+        return source_blocks_[source_index_ >> 16][source_index_ & 65535].getMZ();
+#else
+        return mz_;
+#endif
+      }
+      float getIntensity() const noexcept
+      {
+#if OPENMS_FLASHDECONV_PEAK_LAYOUT == 17
+        return source_blocks_[source_index_ >> 16][source_index_ & 65535].getIntensity();
+#else
+        return intensity_;
+#endif
+      }
+      double getLogMz() const
+      {
+#if OPENMS_FLASHDECONV_PEAK_LAYOUT == 16
+        return (charge_flags_ & DEFAULT_LOG) ? -1000 : FLASHHelperClasses::getLogMz(mz_, (charge_flags_ & LOG_NEGATIVE_POLARITY) == 0);
+#else
+        return log_mz_;
+#endif
+      }
+      int getAbsCharge() const noexcept
+      { return charge_flags_ & 255; }
+      bool isPositive() const noexcept
+      { return (charge_flags_ & 256) == 0; }
+      int getIsotopeIndex() const noexcept
+      { return (charge_flags_ & 512) ? -static_cast<int>(isotope_magnitude_) : static_cast<int>(isotope_magnitude_); }
+      /// Set magnitude in [0, 200], preserving polarity and isotope sign.
+      void setAbsCharge(int value);
+      /// Set polarity without changing the logarithm computed at construction.
+      void setPositive(bool value) noexcept
+      { charge_flags_ = static_cast<std::int16_t>(value ? charge_flags_ & ~256 : charge_flags_ | 256); }
+      /// Set isotope index in [-65535, 65535], preserving charge and polarity.
+      void setIsotopeIndex(int value);
+      /// Derived neutral mass, with the original float charge-carrier arithmetic.
+      double getUnchargedMass() const;
+      bool operator<(const InternalLogMzPeak& other) const;
+      bool operator>(const InternalLogMzPeak& other) const;
+      bool operator==(const InternalLogMzPeak& other) const;
+
+      /// Diagnostic-only counts: registrations, source pages, retained points,
+      /// standalone records, TLS-miss locks, allocated standalone pages.
+      static std::array<std::uint64_t, 6> getSourceStatistics();
+      /// Source identity oracle; nullptr for layouts owning their coordinates.
+      const Peak1D* getSourcePeak() const noexcept
+      {
+#if OPENMS_FLASHDECONV_PEAK_LAYOUT == 17
+        return &source_blocks_[source_index_ >> 16][source_index_ & 65535];
+#else
+        return nullptr;
+#endif
+      }
+
+    private:
+      friend class DeconvolvedSpectrum;
+      static void registerSource(const std::shared_ptr<const MSSpectrum>& source);
+      static constexpr std::int16_t DEFAULT_LOG = 1024;
+      static constexpr std::int16_t LOG_NEGATIVE_POLARITY = 2048;
+#if OPENMS_FLASHDECONV_PEAK_LAYOUT == 17
+      double log_mz_ = -1000;
+      std::uint32_t source_index_ = 0;
+      static const Peak1D* source_blocks_[65536];
+      static std::uint32_t sourceIndex_(const Peak1D& peak);
+#elif OPENMS_FLASHDECONV_PEAK_LAYOUT == 16
+      double mz_ = 0;
+      float intensity_ = 0;
+#else
+      double mz_ = 0;
+      double log_mz_ = -1000;
+      float intensity_ = 0;
+#endif
+      std::int16_t charge_flags_ = 512 | DEFAULT_LOG;
+      std::uint16_t isotope_magnitude_ = 1;
+    };
+
+    /**
        @brief calculate log mzs from mzs
        @param[in] mz mz
        @param[in] positive determines the charge carrier mass
@@ -430,6 +538,12 @@ namespace OpenMS
     */
     static float getChargeMass(bool positive_ioniziation_mode);
   };
+  namespace FLASHDeconvLayoutDetail
+  {
+    // Internal linkage deliberately retains one mode-specific link reference per
+    // including translation unit, even when only inline getters are used.
+    [[maybe_unused]] const int layout_guard = FLASHHelperClasses::InternalLogMzPeak::verifyLayout({});
+  }
 } // namespace OpenMS
 
 namespace std
@@ -450,6 +564,18 @@ namespace std
   struct hash<OpenMS::FLASHHelperClasses::LogMzPeak>
   {
     std::size_t operator()(const OpenMS::FLASHHelperClasses::LogMzPeak& peak) const noexcept
+    {
+      // Hash based on logMz and intensity (the fields used in operator==)
+      std::size_t seed = OpenMS::hash_float(peak.getLogMz());
+      OpenMS::hash_combine(seed, OpenMS::hash_float(peak.getIntensity()));
+      return seed;
+    }
+  };
+  /// @brief Hash specialization for FLASHHelperClasses::InternalLogMzPeak
+  template<>
+  struct hash<OpenMS::FLASHHelperClasses::InternalLogMzPeak>
+  {
+    std::size_t operator()(const OpenMS::FLASHHelperClasses::InternalLogMzPeak& peak) const noexcept
     {
       // Hash based on logMz and intensity (the fields used in operator==)
       std::size_t seed = OpenMS::hash_float(peak.getLogMz());

@@ -8,8 +8,12 @@
 
 #include <OpenMS/ANALYSIS/TOPDOWN/FLASHHelperClasses.h>
 #include <OpenMS/CHEMISTRY/ModificationsDB.h>
+#include <OpenMS/KERNEL/MSSpectrum.h>
 #include <OpenMS/SYSTEM/BuildInfo.h>
+#include <bit>
 #include <exception>
+#include <map>
+#include <mutex>
 #include <typeinfo>
 #include <utility>
 #ifdef _OPENMP
@@ -293,5 +297,206 @@ namespace OpenMS
   {
     return quantities.empty();
   }
+
+
+#if OPENMS_FLASHDECONV_PEAK_LAYOUT == 17
+  namespace
+  {
+    const Peak1D empty_source_peak;
+    struct PeakSourceSpan
+    {
+      std::uintptr_t begin = 0, end = 0;
+      std::uint32_t first_block = 0;
+    };
+    // The registry owns snapshots until process exit. This deliberately includes
+    // all auxiliary storage in peak RSS and keeps detached peak copies valid.
+    struct PeakSourceRegistry
+    {
+      std::mutex mutex;
+      std::map<std::uintptr_t, PeakSourceSpan> spans;
+      std::vector<std::shared_ptr<const MSSpectrum>> owners;
+      std::vector<std::unique_ptr<Peak1D[]>> standalone_blocks;
+      std::uint32_t next_block = 1, standalone_block = 0, standalone_used = 65536;
+      std::uint64_t retained_points = 0, standalone_records = 0, tls_miss_locks = 0;
+    };
+    PeakSourceRegistry& peakSources()
+    {
+      static PeakSourceRegistry sources;
+      return sources;
+    }
+    void checkSourceCapacity(std::uint32_t next, Size count)
+    {
+      if (count > 65536 - next)
+      {
+        throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "Indexed peak registry exceeds 65535 source-page capacity",
+                                      std::to_string(count));
+      }
+    }
+  } // namespace
+  const Peak1D* FLASHHelperClasses::InternalLogMzPeak::source_blocks_[65536] = {&empty_source_peak};
+
+  std::uint32_t FLASHHelperClasses::InternalLogMzPeak::sourceIndex_(const Peak1D& peak)
+  {
+    thread_local PeakSourceSpan cached;
+    const auto address = reinterpret_cast<std::uintptr_t>(&peak);
+    auto index = [&]() {
+      const auto offset = (address - cached.begin) / sizeof(Peak1D);
+      return static_cast<std::uint32_t>(((cached.first_block + offset / 65536) << 16) | (offset & 65535));
+    };
+    if (address >= cached.begin && address < cached.end) { return index(); }
+    auto& registry = peakSources();
+    std::lock_guard<std::mutex> lock(registry.mutex);
+    ++registry.tls_miss_locks;
+    auto it = registry.spans.upper_bound(address);
+    if (it != registry.spans.begin())
+    {
+      --it;
+      if (address < it->second.end)
+      {
+        cached = it->second;
+        return index();
+      }
+    }
+    // Standalone/public boundary values have no registered spectrum. Store one
+    // immutable record in a bounded block, rather than borrowing stack storage.
+    if (registry.standalone_used == 65536)
+    {
+      checkSourceCapacity(registry.next_block, 1);
+      auto block = std::make_unique<Peak1D[]>(65536);
+      registry.standalone_blocks.push_back(std::move(block));
+      registry.standalone_block = registry.next_block++;
+      registry.standalone_used = 0;
+      source_blocks_[registry.standalone_block] = registry.standalone_blocks.back().get();
+    }
+    ++registry.standalone_records;
+    const auto offset = registry.standalone_used++;
+    registry.standalone_blocks.back()[offset] = peak;
+    return (registry.standalone_block << 16) | offset;
+  }
+#endif
+
+  void FLASHHelperClasses::InternalLogMzPeak::registerSource(const std::shared_ptr<const MSSpectrum>& source)
+  {
+#if OPENMS_FLASHDECONV_PEAK_LAYOUT == 17
+    if (! source || source->empty()) { return; }
+    auto& registry = peakSources();
+    std::lock_guard<std::mutex> lock(registry.mutex);
+    const auto begin = reinterpret_cast<std::uintptr_t>(&(*source)[0]);
+    if (registry.spans.contains(begin)) { return; }
+    const Size blocks = 1 + (source->size() - 1) / 65536;
+    checkSourceCapacity(registry.next_block, blocks);
+    registry.owners.push_back(source);
+    registry.spans.emplace(begin, PeakSourceSpan {begin, begin + source->size() * sizeof(Peak1D), registry.next_block});
+    registry.retained_points += source->size();
+    for (Size i = 0; i < blocks; ++i)
+    {
+      source_blocks_[registry.next_block++] = &(*source)[i * 65536];
+    }
+#else
+    (void)source;
+#endif
+  }
+
+  int FLASHHelperClasses::InternalLogMzPeak::verifyLayout(std::integral_constant<int, OPENMS_FLASHDECONV_PEAK_LAYOUT>)
+  {
+    return OPENMS_FLASHDECONV_PEAK_LAYOUT;
+  }
+
+  std::array<std::uint64_t, 6> FLASHHelperClasses::InternalLogMzPeak::getSourceStatistics()
+  {
+#if OPENMS_FLASHDECONV_PEAK_LAYOUT == 17
+    auto& registry = peakSources();
+    std::lock_guard<std::mutex> lock(registry.mutex);
+    return {registry.owners.size(), registry.next_block - 1, registry.retained_points,
+            registry.standalone_records, registry.tls_miss_locks, registry.standalone_blocks.size()};
+#else
+    return {};
+#endif
+  }
+
+  FLASHHelperClasses::InternalLogMzPeak::InternalLogMzPeak(const Peak1D& peak, bool positive)
+  {
+#if OPENMS_FLASHDECONV_PEAK_LAYOUT == 17
+    source_index_ = sourceIndex_(peak);
+#else
+    mz_ = peak.getMZ();
+    intensity_ = peak.getIntensity();
+#endif
+#if OPENMS_FLASHDECONV_PEAK_LAYOUT != 16
+    log_mz_ = FLASHHelperClasses::getLogMz(peak.getMZ(), positive);
+#endif
+    charge_flags_ = positive ? 0 : (256 | LOG_NEGATIVE_POLARITY);
+    isotope_magnitude_ = 0;
+  }
+
+  FLASHHelperClasses::InternalLogMzPeak::InternalLogMzPeak(const LogMzPeak& peak)
+  {
+    if (! (peak.getMass() <= 0))
+    {
+      throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "Internal peaks cannot store independent mass overrides",
+                                    std::to_string(peak.getMass()));
+    }
+    if (peak.getLogMz() != -1000 && std::bit_cast<std::uint64_t>(peak.getLogMz()) != std::bit_cast<std::uint64_t>(FLASHHelperClasses::getLogMz(peak.getMZ(), peak.isPositive())))
+    {
+      throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION,
+                                    "Raw-mz internal peaks require the derived logarithm or default sentinel", std::to_string(peak.getLogMz()));
+    }
+
+#if OPENMS_FLASHDECONV_PEAK_LAYOUT == 17
+    Peak1D value;
+    value.setMZ(peak.getMZ());
+    value.setIntensity(peak.getIntensity());
+    source_index_ = sourceIndex_(value);
+#else
+    mz_ = peak.getMZ();
+    intensity_ = peak.getIntensity();
+#endif
+#if OPENMS_FLASHDECONV_PEAK_LAYOUT != 16
+    log_mz_ = peak.getLogMz();
+#endif
+    charge_flags_ = static_cast<std::int16_t>(peak.isPositive() ? 0 : (256 | LOG_NEGATIVE_POLARITY));
+    if (peak.getLogMz() == -1000) { charge_flags_ |= DEFAULT_LOG; }
+    setAbsCharge(peak.getAbsCharge());
+    setIsotopeIndex(peak.getIsotopeIndex());
+  }
+
+  void FLASHHelperClasses::InternalLogMzPeak::setAbsCharge(int value)
+  {
+    if (value < 0 || value > 200)
+    {
+      throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "Internal peak charge must be in [0, 200]", std::to_string(value));
+    }
+    charge_flags_ = static_cast<std::int16_t>((charge_flags_ & ~255) | value);
+  }
+
+  void FLASHHelperClasses::InternalLogMzPeak::setIsotopeIndex(int value)
+  {
+    if (value < -65535 || value > 65535)
+    {
+      throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "Internal peak isotope must be in [-65535, 65535]",
+                                    std::to_string(value));
+    }
+    isotope_magnitude_ = static_cast<std::uint16_t>(value < 0 ? -value : value);
+    charge_flags_ = static_cast<std::int16_t>(value < 0 ? charge_flags_ | 512 : charge_flags_ & ~512);
+  }
+
+  double FLASHHelperClasses::InternalLogMzPeak::getUnchargedMass() const
+  {
+    if (getAbsCharge() == 0) { return .0; }
+    return (getMZ() - FLASHHelperClasses::getChargeMass(isPositive())) * (float)getAbsCharge();
+  }
+
+  bool FLASHHelperClasses::InternalLogMzPeak::operator<(const InternalLogMzPeak& other) const
+  {
+    const auto a = getLogMz(), b = other.getLogMz();
+    return a == b ? getIntensity() < other.getIntensity() : a < b;
+  }
+  bool FLASHHelperClasses::InternalLogMzPeak::operator>(const InternalLogMzPeak& other) const
+  {
+    const auto a = getLogMz(), b = other.getLogMz();
+    return a == b ? getIntensity() > other.getIntensity() : a > b;
+  }
+  bool FLASHHelperClasses::InternalLogMzPeak::operator==(const InternalLogMzPeak& other) const
+  { return getLogMz() == other.getLogMz() && getIntensity() == other.getIntensity(); }
 
 } // namespace OpenMS

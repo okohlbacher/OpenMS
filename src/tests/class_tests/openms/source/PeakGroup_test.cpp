@@ -17,7 +17,7 @@
 using namespace OpenMS;
 using namespace std;
 
-typedef FLASHHelperClasses::LogMzPeak LogMzPeak;
+typedef FLASHHelperClasses::InternalLogMzPeak LogMzPeak;
 LogMzPeak fillPeak(double mz, float it, int cs, int iso_idx)
 {
   Peak1D p;

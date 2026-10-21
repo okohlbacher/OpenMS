@@ -29,7 +29,7 @@ namespace OpenMS
   class OPENMS_DLLAPI DeconvolvedSpectrum
   {
   public:
-    typedef FLASHHelperClasses::LogMzPeak LogMzPeak;
+    typedef FLASHHelperClasses::InternalLogMzPeak LogMzPeak;
 
     /// default constructor
     DeconvolvedSpectrum() = default;
@@ -58,6 +58,7 @@ namespace OpenMS
     /// @param[in] retain_undeconvolved if set, undeconvolved peaks in the original peaks are output (assuming their abs charge == 1 and m/zs are adjusted with the to_charge parameter)
     MSSpectrum toSpectrum(int to_charge, double tol = 10.0, bool retain_undeconvolved = false);
 
+    /// Immutable snapshot getter. References are invalidated by replacement of the last owning DS.
     /// original spectrum getter
     const MSSpectrum& getOriginalSpectrum() const;
 
@@ -154,7 +155,7 @@ namespace OpenMS
     /// peak groups (deconvolved masses)
     std::vector<PeakGroup> peak_groups_;
     /// the original raw spectrum (not deconvolved)
-    MSSpectrum spec_;
+    std::shared_ptr<const MSSpectrum> spec_;
     /// precursor peakGroup (or mass)
     PeakGroup precursor_peak_group_;
     /// precursor raw peak (not deconvolved one)

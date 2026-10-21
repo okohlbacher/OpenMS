@@ -49,7 +49,7 @@ PeakGroup createTestPeakGroup(double mono_mass, int min_charge, int max_charge, 
     lp.setAbsCharge(z);
     lp.setPositive(is_positive);
     lp.setIsotopeIndex(0);
-    lp.setMass(mono_mass);
+    // Internal support peaks derive neutral mass from the original m/z.
     pg.push_back(lp);
   }
 
