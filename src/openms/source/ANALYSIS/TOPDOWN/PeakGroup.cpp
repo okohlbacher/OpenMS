@@ -568,13 +568,11 @@ namespace OpenMS
     const Size iso_cols = 1 + (Size)max_iso;
     const Size cells = (1 + (Size)max_abs_charge_) * iso_cols;
     if (per_charge_isotope_int.size() < cells) { per_charge_isotope_int.resize(cells, .0f); }
+    // record the cells first: the only allocation happens before the matrix is modified, so an exception cannot leave
+    // non-zero cells behind
     touched_cells.clear();
-    for (const auto& p : logMzpeaks_)
-    {
-      const Size cell = p.getAbsCharge() * iso_cols + p.getIsotopeIndex();
-      per_charge_isotope_int[cell] += p.getIntensity();
-      touched_cells.push_back(cell);
-    }
+    for (const auto& p : logMzpeaks_) { touched_cells.push_back(p.getAbsCharge() * iso_cols + p.getIsotopeIndex()); }
+    for (Size k = 0; k < logMzpeaks_.size(); ++k) { per_charge_isotope_int[touched_cells[k]] += logMzpeaks_[k].getIntensity(); }
     std::sort(touched_cells.begin(), touched_cells.end());
     touched_cells.erase(std::unique(touched_cells.begin(), touched_cells.end()), touched_cells.end());
     for (const Size cell : touched_cells)
