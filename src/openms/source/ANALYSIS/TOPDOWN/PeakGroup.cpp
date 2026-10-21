@@ -560,23 +560,33 @@ namespace OpenMS
       per_charge_int_[p.getAbsCharge()] += p.getIntensity();
       max_iso = std::max(max_iso, p.getIsotopeIndex());
     }
-    // per-worker scratch replaces a fresh (charge x isotope) matrix per call; row-major, same summation order
+    // Per (charge, isotope) intensity sums in a per-worker row-major matrix that is all zero between calls. Only the
+    // cells the peaks touch are visited, in ascending cell order (= charge, then isotope, as the former full scan),
+    // and reset afterwards; the skipped cells are zero and adding 0 to these non-negative sums changes nothing.
     thread_local std::vector<float> per_charge_isotope_int;
+    thread_local std::vector<Size> touched_cells;
     const Size iso_cols = 1 + (Size)max_iso;
-    per_charge_isotope_int.assign((1 + (Size)max_abs_charge_) * iso_cols, .0f);
+    const Size cells = (1 + (Size)max_abs_charge_) * iso_cols;
+    if (per_charge_isotope_int.size() < cells) { per_charge_isotope_int.resize(cells, .0f); }
+    touched_cells.clear();
     for (const auto& p : logMzpeaks_)
     {
-      per_charge_isotope_int[p.getAbsCharge() * iso_cols + p.getIsotopeIndex()] += p.getIntensity();
+      const Size cell = p.getAbsCharge() * iso_cols + p.getIsotopeIndex();
+      per_charge_isotope_int[cell] += p.getIntensity();
+      touched_cells.push_back(cell);
     }
-
-    for (int z = min_abs_charge_; z <= max_abs_charge_; z++)
+    std::sort(touched_cells.begin(), touched_cells.end());
+    touched_cells.erase(std::unique(touched_cells.begin(), touched_cells.end()), touched_cells.end());
+    for (const Size cell : touched_cells)
     {
-      for (Size i = 0; i < iso_cols; i++)
+      const int z = (int)(cell / iso_cols);
+      if (z >= min_abs_charge_ && z <= max_abs_charge_)
       {
-        float v = per_charge_isotope_int[z * iso_cols + i];
+        const float v = per_charge_isotope_int[cell];
         per_charge_sum_signal_squared_[0] += v * v;
         per_charge_sum_signal_squared_[z] += v * v;
       }
+      per_charge_isotope_int[cell] = .0f;
     }
 
     // for each charge calculate signal and noise power
