@@ -932,7 +932,7 @@ Constructors
       .def_prop_rw("mz", &OpenMS::FLASHHelperClasses::LogMzPeak::getMZ, &OpenMS::FLASHHelperClasses::LogMzPeak::setMZ)
       .def_prop_rw("intensity", &OpenMS::FLASHHelperClasses::LogMzPeak::getIntensity, &OpenMS::FLASHHelperClasses::LogMzPeak::setIntensity)
       .def_prop_rw("logMz", &OpenMS::FLASHHelperClasses::LogMzPeak::getLogMz, &OpenMS::FLASHHelperClasses::LogMzPeak::setLogMz)
-      .def_prop_rw("mass", &OpenMS::FLASHHelperClasses::LogMzPeak::getMass, &OpenMS::FLASHHelperClasses::LogMzPeak::setMass)
+      .def_prop_ro("mass", &OpenMS::FLASHHelperClasses::LogMzPeak::getMass)
       .def_prop_rw("abs_charge", &OpenMS::FLASHHelperClasses::LogMzPeak::getAbsCharge, &OpenMS::FLASHHelperClasses::LogMzPeak::setAbsCharge)
       .def_prop_rw("is_positive", &OpenMS::FLASHHelperClasses::LogMzPeak::isPositive, &OpenMS::FLASHHelperClasses::LogMzPeak::setPositive)
       .def_prop_rw("isotopeIndex", &OpenMS::FLASHHelperClasses::LogMzPeak::getIsotopeIndex, &OpenMS::FLASHHelperClasses::LogMzPeak::setIsotopeIndex)

@@ -251,7 +251,7 @@ namespace OpenMS
   }
 
   FLASHHelperClasses::LogMzPeak::LogMzPeak(const Peak1D& peak, const bool positive):
-      data_ {peak.getMZ(),        FLASHHelperClasses::getLogMz(peak.getMZ(), positive),        0,
+      data_ {peak.getMZ(),        FLASHHelperClasses::getLogMz(peak.getMZ(), positive),
              peak.getIntensity(), static_cast<std::int16_t>(positive ? 0 : NEGATIVE_POLARITY), 0}
   {
   }

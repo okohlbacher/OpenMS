@@ -316,7 +316,6 @@ namespace OpenMS
       {
         double mz = 0;
         double log_mz = -1000;
-        double mass = 0;
         float intensity = 0;
         std::int16_t charge_flags = NEGATIVE_ISOTOPE;
         std::uint16_t isotope_magnitude = 1;
@@ -341,12 +340,9 @@ namespace OpenMS
       /// Set the cached logarithm independently of mz.
       void setLogMz(double value) noexcept
       { data_.log_mz = value; }
-      /// determined mass after deconvolution. NOT monoisotopic but only decharged
+      /// decharged (NOT monoisotopic) mass derived from m/z, charge and polarity; same as getUnchargedMass()
       double getMass() const noexcept
-      { return data_.mass; }
-      /// Set the independent uncharged mass override (nonpositive means derive from mz).
-      void setMass(double value) noexcept
-      { data_.mass = value; }
+      { return getUnchargedMass(); }
       /// absolute charge (in case negative, is_positive is set to false)
       int getAbsCharge() const noexcept
       { return data_.charge_flags & CHARGE_MASK; }
@@ -403,7 +399,7 @@ namespace OpenMS
 
       /// constructor from Peak1D with a precomputed log(m/z - charge carrier mass)
       LogMzPeak(const Peak1D& peak, bool positive, double log_mz) noexcept :
-          data_ {peak.getMZ(), log_mz, 0, peak.getIntensity(), static_cast<std::int16_t>(positive ? 0 : NEGATIVE_POLARITY), 0}
+          data_ {peak.getMZ(), log_mz, peak.getIntensity(), static_cast<std::int16_t>(positive ? 0 : NEGATIVE_POLARITY), 0}
       {
       }
 
@@ -446,8 +442,7 @@ namespace OpenMS
   inline double FLASHHelperClasses::LogMzPeak::getUnchargedMass() const
   {
     if (getAbsCharge() == 0) { return .0; }
-    if (getMass() <= 0) { return (getMZ() - getChargeMass(isPositive())) * (float)getAbsCharge(); }
-    return getMass();
+    return (getMZ() - getChargeMass(isPositive())) * (float)getAbsCharge();
   }
 
   inline bool FLASHHelperClasses::LogMzPeak::operator<(const LogMzPeak& a) const
