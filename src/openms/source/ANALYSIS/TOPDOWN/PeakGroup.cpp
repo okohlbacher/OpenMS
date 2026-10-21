@@ -353,7 +353,31 @@ namespace OpenMS
       std::memcpy(&x, &u, sizeof(x));
       return x;
     };
-    for (Size i = 0; i < peak_count; i++)
+    for (Size i = 0; ! monotone_cutoff && i < peak_count; i++)
+    {
+      // Non-finite spacing or masses: the original branching traversal (no unconditional float-to-integer casts).
+      std::array<double, max_bin_number> per_bin_error;
+      per_bin_error.fill(-1.0);
+      for (Size j = i + 1; j < peak_count; j++)
+      {
+        const double normalized_dist = (mass[j] - mass[i]) / iso_da_distance_;
+        if (is_signal[i] && is_signal[j] && normalized_dist >= .75) { continue; }
+        for (Size di = 0; di < div_factors.size(); di++)
+        {
+          const double distance = normalized_dist * bins_per_divisor[di];
+          const Size bin_floor = (Size)distance;
+          const Size bin = bin_floor + (distance - (double)bin_floor >= 0.5 ? 1 : 0);
+          if (bin == 0) { continue; }
+          if (bin >= max_bin_number) { break; }
+          per_bin_start_index[bin] = -1;
+          const double current_error = div_factors[di] * max_bin_number + std::abs((double)bin - distance);
+          if (per_bin_error[bin] >= 0 && per_bin_error[bin] < current_error) { continue; }
+          per_bin_edges[bin * peak_count + i] = (std::uint32_t)j;
+          per_bin_error[bin] = current_error;
+        }
+      }
+    }
+    for (Size i = 0; monotone_cutoff && i < peak_count; i++)
     {
       const double p1_mass = mass[i];
       const std::uint64_t p1_signal = (std::uint64_t)is_signal[i];
@@ -366,11 +390,7 @@ namespace OpenMS
         // == (Size)round(distance) for the non-negative distances of a mass-sorted list, without the libm call
         const double distance1 = normalized_dist * bins_per_divisor[0];
         const Size bin1_floor = (Size)distance1;
-        if (bin1_floor + (Size)(distance1 - (double)bin1_floor >= 0.5) >= max_bin_number)
-        {
-          if (monotone_cutoff) { break; }
-          continue;
-        }
+        if (bin1_floor + (Size)(distance1 - (double)bin1_floor >= 0.5) >= max_bin_number) { break; }
         // if both are signals, and they are different from each other by more than .75 isotope distance, do not
         // connect. Otherwise, connect as they may a part of consecutive other noisy peaks.
         const std::uint64_t keep = 1u ^ (p1_signal & (std::uint64_t)is_signal[j] & (std::uint64_t)(normalized_dist >= .75));
