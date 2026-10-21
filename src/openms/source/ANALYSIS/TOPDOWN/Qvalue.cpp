@@ -35,7 +35,8 @@ namespace OpenMS
     std::map<uint, std::vector<double>> score_map_target; // target PeakGroupScoring vector per ms level
     std::map<uint, std::vector<double>> score_signal_decoy_map; // signal decoy PeakGroupScoring vector per ms level
     std::map<uint, std::vector<double>> score_noise_decoy_map; // noise decoy PeakGroupScoring vector per ms level
-    std::map<uint, std::map<double, double>> qscore_qvalue_map; // mapping from qscore to qvalue
+    // qscore -> qvalue per ms level as parallel arrays sorted by qscore (filled in descending order, then reversed)
+    std::map<uint, std::pair<std::vector<double>, std::vector<double>>> qscore_qvalue_map;
 
     // to calculate qvalues per ms level, store Qscores per ms level
     std::vector<char> used_feature_indices; // indexed by feature index (0 = none)
@@ -128,7 +129,9 @@ namespace OpenMS
       std::sort(scores_noise_decoy.rbegin(), scores_noise_decoy.rend());
 
       // now get the qvalues
-      auto& map_qvalue = qscore_qvalue_map[ms_level];
+      auto& [qscore_keys, qvalue_values] = qscore_qvalue_map[ms_level];
+      qscore_keys.reserve(scores_target.size());
+      qvalue_values.reserve(scores_target.size());
       double nom_i = 0, nom_c = 0, nom_n = 0;
       Size j_i = 0, j_n = 0;
 
@@ -155,7 +158,8 @@ namespace OpenMS
         nom_i += di;
         nom_c += dc;
         double tmp_q = (nom_i + nom_c + nom_n) / double(1 + i);
-        map_qvalue[ts] = std::min(1.0, tmp_q);
+        qscore_keys.push_back(ts); // ts values are unique and descending here
+        qvalue_values.push_back(std::min(1.0, tmp_q));
       }
     }
 
@@ -163,26 +167,17 @@ namespace OpenMS
     for (const auto& titem : score_map_target)
     {
       uint ms_level = titem.first;
-      auto& map_qvalue = qscore_qvalue_map[ms_level];
-
+      auto& [qscore_keys, qvalue_values] = qscore_qvalue_map[ms_level];
+      std::reverse(qscore_keys.begin(), qscore_keys.end());
+      std::reverse(qvalue_values.begin(), qvalue_values.end());
       double cummin = 1.0;
+      for (auto& qvalue : qvalue_values) // ascending qscore order, as the former std::map iteration
       {
-        for (auto&& rit = map_qvalue.begin(); rit != map_qvalue.end(); ++rit)
-        {
-          cummin = std::min(rit->second, cummin);
-          rit->second = cummin;
-        }
+        cummin = std::min(qvalue, cummin);
+        qvalue = cummin;
       }
       // Sorted arrays for the per-peak-group lookups; a score that is not a target score of this level maps to 0,
       // exactly what map_qvalue[score] used to return (and insert).
-      std::vector<double> qscore_keys, qvalue_values;
-      qscore_keys.reserve(map_qvalue.size());
-      qvalue_values.reserve(map_qvalue.size());
-      for (const auto& [score, qvalue] : map_qvalue)
-      {
-        qscore_keys.push_back(score);
-        qvalue_values.push_back(qvalue);
-      }
       const auto lookup = [&](double score) {
         const auto it = std::lower_bound(qscore_keys.begin(), qscore_keys.end(), score);
         return (it != qscore_keys.end() && *it == score) ? qvalue_values[it - qscore_keys.begin()] : 0.0;
