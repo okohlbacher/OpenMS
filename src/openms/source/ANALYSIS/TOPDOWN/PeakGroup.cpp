@@ -684,31 +684,26 @@ namespace OpenMS
         float pint = spec[index].getIntensity();
         if (pint <= 0) { continue; }
         double pmz = spec[index].getMZ();
-        int iso_index = (int)round((pmz - cmz) / iso_delta);
+        int iso_index = (int)FLASHHelperClasses::roundForIndex((pmz - cmz) / iso_delta);
         if (iso_index > max_isotope) { break; }
 
         if (iso_index < min_isotope) { continue; }
 
         if (std::abs(pmz - cmz - iso_index * iso_delta) <= pmz * tol * mul_tol)
         {
-          auto p = log_mz != nullptr ? LogMzPeak(spec[index], is_positive_, log_mz[index]) : LogMzPeak(spec[index], is_positive_);
+          if (iso_index >= 0) { max_signal_isotope = std::max(max_signal_isotope, iso_index); }
+          if (iso_index >= 0 && ! renew_signal_peaks) { continue; }
+          auto& target = iso_index < 0 ? negative_iso_peaks_ : logMzpeaks_;
+          auto& p = log_mz != nullptr ? target.emplace_back(spec[index], is_positive_, log_mz[index]) : target.emplace_back(spec[index], is_positive_);
           p.setIsotopeIndex(iso_index);
           p.setAbsCharge(c);
-          if (iso_index < 0) { negative_iso_peaks_.push_back(p); }
-          else
-          {
-            max_signal_isotope = std::max(max_signal_isotope, iso_index);
-            if (renew_signal_peaks) logMzpeaks_.push_back(p);
-          }
         }
         else if (iso_index >= 0)
         {
-          auto p = log_mz != nullptr ? LogMzPeak(spec[index], is_positive_, log_mz[index]) : LogMzPeak(spec[index], is_positive_);
-          int noise_iso_index = (int)floor((pmz - cmz) / iso_delta);
-
+          int noise_iso_index = (int)FLASHHelperClasses::floorForIndex((pmz - cmz) / iso_delta);
+          auto& p = log_mz != nullptr ? noisy_peaks.emplace_back(spec[index], is_positive_, log_mz[index]) : noisy_peaks.emplace_back(spec[index], is_positive_);
           p.setIsotopeIndex(noise_iso_index);
           p.setAbsCharge(c);
-          noisy_peaks.push_back(p);
         }
       }
 
@@ -762,7 +757,7 @@ namespace OpenMS
         float pint = spec[index].getIntensity();
         if (pint <= 0) { continue; }
         double pmz = spec[index].getMZ();
-        int iso_index = static_cast<int>(round((pmz - cmz) / iso_delta));
+        int iso_index = static_cast<int>(FLASHHelperClasses::roundForIndex((pmz - cmz) / iso_delta));
         if (iso_index > max_isotope) { break; }
         if (iso_index < min_isotope) { continue; }
 

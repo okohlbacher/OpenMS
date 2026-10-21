@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <cmath>
 #include <OpenMS/CHEMISTRY/ISOTOPEDISTRIBUTION/CoarseIsotopePatternGenerator.h>
 #ifdef _MSC_VER
 using uint = unsigned int; // POSIX uint not available on MSVC; was provided transitively via Qt
@@ -435,6 +436,24 @@ namespace OpenMS
        @param[in] positive_ioniziation_mode Determines the charge carrier mass (true = positive or false = negative)
     */
     static float getChargeMass(bool positive_ioniziation_mode);
+
+    /// std::round(x) for conversion to an integer, without a libm call (the build targets x86-64 without SSE4.1).
+    /// Same value as std::round except that -0.0 becomes +0.0; falls back to std::round for NaN, infinities and |x| >= 2^52.
+    static double roundForIndex(double x) noexcept
+    {
+      if (! (std::fabs(x) < 4503599627370496.0)) { return std::round(x); }
+      const double t = (double)(long long)x; // truncation toward zero, exact in this range
+      const double f = x - t;                // exact
+      return t + (double)(f >= 0.5) - (double)(f <= -0.5);
+    }
+
+    /// std::floor(x) for conversion to an integer, without a libm call; same caveats as roundForIndex.
+    static double floorForIndex(double x) noexcept
+    {
+      if (! (std::fabs(x) < 4503599627370496.0)) { return std::floor(x); }
+      const double t = (double)(long long)x;
+      return t - (double)(x < t);
+    }
   };
 
   // Hot in every peak-group sort and mass computation: defined inline (same arithmetic as before).

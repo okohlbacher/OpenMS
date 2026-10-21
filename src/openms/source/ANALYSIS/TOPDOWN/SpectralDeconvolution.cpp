@@ -345,7 +345,7 @@ inline const double tol_div_factor
   Size SpectralDeconvolution::getBinNumber_(const double value, const double min_value, const double bin_mul_factor)
   {
     if (value < min_value) { return 0; }
-    return (Size)round((value - min_value) * bin_mul_factor);
+    return (Size)FLASHHelperClasses::roundForIndex((value - min_value) * bin_mul_factor);
   }
 
   // From log mz to mz bins.
@@ -857,7 +857,7 @@ inline const double tol_div_factor
         {
           const double observed_mz = log_mz_peaks_[peak_index].getMZ();
           double mz_diff = observed_mz - mz;
-          int tmp_i = (int)round(mz_diff / iso_delta);
+          int tmp_i = (int)FLASHHelperClasses::roundForIndex(mz_diff / iso_delta);
 
           if (observed_mz - max_mz > (double)right_index * iso_delta + mz_delta) { break; }
 
@@ -878,7 +878,7 @@ inline const double tol_div_factor
         {
           const double observed_mz = log_mz_peaks_[peak_index].getMZ();
           double mz_diff = observed_mz - mz;
-          int tmp_i = (int)round(mz_diff / iso_delta);
+          int tmp_i = (int)FLASHHelperClasses::roundForIndex(mz_diff / iso_delta);
 
           if (max_mz - observed_mz > (float)left_index * iso_delta + mz_delta) { break; }
           if (std::abs(mz_diff - tmp_i * iso_delta) < mz_delta)
@@ -917,7 +917,7 @@ inline const double tol_div_factor
         int apex_index = (int)activeAveragine_().getApexIndex(t_mass);
         for (auto& p : bin_peaks)
         {
-          p.setIsotopeIndex((int)round((p.getUnchargedMass() - t_mass) / iso_da_distance_));
+          p.setIsotopeIndex((int)FLASHHelperClasses::roundForIndex((p.getUnchargedMass() - t_mass) / iso_da_distance_));
 
           if (std::abs(t_mass - p.getUnchargedMass() + iso_da_distance_ * p.getIsotopeIndex()) > iso_tolerance) { continue; }
           p.setIsotopeIndex(p.getIsotopeIndex() + (apex_index));
