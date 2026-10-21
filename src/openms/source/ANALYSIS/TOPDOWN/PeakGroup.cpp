@@ -41,6 +41,18 @@ namespace OpenMS
       rounded = (int)(f + (long long)(frac > 0.5));
       return true;
     }
+
+    /// MSSpectrum::findNearest(mz) with a plain double comparison in the binary search (same lower_bound position and
+    /// tie rule; the DPosition comparison it replaces is a spaceship operator on the same doubles)
+    inline Size nearestPeakIndex(const MSSpectrum& spec, double mz)
+    {
+      if (spec.empty()) { return spec.findNearest(mz); } // throws as before
+      const auto it = std::lower_bound(spec.begin(), spec.end(), mz, [](const Peak1D& p, double v) { return p.getMZ() < v; });
+      if (it == spec.begin()) { return 0; }
+      if (it == spec.end()) { return spec.size() - 1; }
+      const auto it2 = it - 1;
+      return std::fabs(it->getMZ() - mz) < std::fabs(it2->getMZ() - mz) ? Size(it - spec.begin()) : Size(it2 - spec.begin());
+    }
   } // namespace
 
   PeakGroup::PeakGroup(const int min_abs_charge, const int max_abs_charge, const bool is_positive):
@@ -736,7 +748,7 @@ namespace OpenMS
       if (c <= 0) { break; }
       double cmz = (mono_mass) / c + FLASHHelperClasses::getChargeMass(is_positive_);
       double left_mz = (mono_mass - (1 - min_negative_isotope_index_) * iso_da_distance_) / c + FLASHHelperClasses::getChargeMass(is_positive_);
-      Size index = spec.findNearest(left_mz * (1 - tol * mul_tol));
+      Size index = nearestPeakIndex(spec, left_mz * (1 - tol * mul_tol));
       double iso_delta = iso_da_distance_ / c;
       const double inv_iso_delta = 1.0 / iso_delta;
 
@@ -815,7 +827,7 @@ namespace OpenMS
       if (c <= 0) { break; }
       double cmz = mono_mass / c + FLASHHelperClasses::getChargeMass(is_positive_);
       double left_mz = (mono_mass - (1 - min_negative_isotope_index_) * iso_da_distance_) / c + FLASHHelperClasses::getChargeMass(is_positive_);
-      Size index = spec.findNearest(left_mz * (1 - tol * mul_tol));
+      Size index = nearestPeakIndex(spec, left_mz * (1 - tol * mul_tol));
       double iso_delta = iso_da_distance_ / c;
       const double inv_iso_delta = 1.0 / iso_delta;
 
