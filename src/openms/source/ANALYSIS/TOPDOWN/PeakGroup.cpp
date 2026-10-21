@@ -153,12 +153,14 @@ namespace OpenMS
                               const double tol,
                               const bool is_low_charge,
                               const std::vector<double>& excluded_masses,
-                              const bool is_last)
+                              const bool is_last,
+                              const bool full_noise)
   {
     qscore_ = 0;
 
     if (empty()) { return 0; }
-    updatePerChargeInformation_(noisy_peaks, tol, is_last);
+    // full_noise == false uses the summed noisy-peak power (as for non-final iterations) instead of the noise graph
+    updatePerChargeInformation_(noisy_peaks, tol, is_last && full_noise);
     updateChargeRange_();
     updateChargeFitScoreAndChargeIntensities_(is_low_charge);
     if (charge_score_ < .7f) //

@@ -1266,6 +1266,14 @@ inline const double tol_div_factor
         pg.setMonoisotopicMass(peak_group.getMonoMass() * hz);
         thread_local std::vector<LogMzPeak> nps; // per-worker scratch
         pg.recruitAllPeaksInSpectrum(deconvolved_spectrum_.getOriginalSpectrum(), tol, activeAveragine_(), pg.getMonoMass(), nps, true, raw_log_mz_.data());
+        // Screen with the summed noise power first; the noise graph is evaluated only for harmonics that still
+        // score (most do not). This changes results where the two noise models disagree on a harmonic.
+        {
+          PeakGroup screen = pg;
+          screen.updateQscore(nps, activeAveragine_(), min_isotope_cosine_[ms_level_ - 1], tol, (z1 + z2) * hz < 2 * low_charge_,
+                              excluded_masses_for_decoy_runs_, true, false);
+          if (screen.getQscore() <= 0) { continue; }
+        }
         pg.updateQscore(nps, activeAveragine_(), min_isotope_cosine_[ms_level_ - 1], tol, (z1 + z2) * hz < 2 * low_charge_,
                         excluded_masses_for_decoy_runs_, true);
 
