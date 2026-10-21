@@ -9,6 +9,8 @@
 #include <OpenMS/ANALYSIS/TOPDOWN/DeconvolvedSpectrum.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/PeakGroup.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/SpectralDeconvolution.h>
+#include <cmath>
+#include <cstdlib>
 #include <cstddef>
 #include <new>
 #include <memory>
@@ -232,7 +234,7 @@ inline const double tol_div_factor
   {
     min_abs_charge_ = param_.getValue("min_charge");
     max_abs_charge_ = param_.getValue("max_charge");
-    // Reject unsupported experimental charges before abs() or any parallel work.
+    // Reject unsupported experimental charges before std::abs() or any parallel work.
     if (min_abs_charge_ < -200 || min_abs_charge_ > 200 || max_abs_charge_ < -200 || max_abs_charge_ > 200)
     {
       throw Exception::InvalidParameter(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION,
@@ -240,8 +242,8 @@ inline const double tol_div_factor
     }
     is_positive_ = min_abs_charge_ > 0;
 
-    min_abs_charge_ = abs(min_abs_charge_);
-    max_abs_charge_ = abs(max_abs_charge_);
+    min_abs_charge_ = std::abs(min_abs_charge_);
+    max_abs_charge_ = std::abs(max_abs_charge_);
 
     if (min_abs_charge_ > max_abs_charge_)
     {
@@ -474,8 +476,8 @@ inline const double tol_div_factor
               const int nibr
                 = abs_charge > 1 ? (int)getBinNumber_(log_mz + (d * iso_div_by_mz / (abs_charge - 1)), mz_bin_min_value_, bin_mul_factor) : 0;
               const int nibl = (int)getBinNumber_(log_mz + (d * iso_div_by_mz / (abs_charge + 1)), mz_bin_min_value_, bin_mul_factor);
-              if (abs(nib - nibr) < tol_div_factor
-                  || abs(nib - nibl)
+              if (std::abs(nib - nibr) < tol_div_factor
+                  || std::abs(nib - nibl)
                        < tol_div_factor) // if different charges are not distinguishable, we ignore. Not informative and the source of the errors.
                 break;
 
@@ -568,10 +570,10 @@ inline const double tol_div_factor
                     if (h_intensity > low_threshold && h_intensity < high_threshold)
                     {
                       is_harmonic = true;
-                      if (abs(t) < min_dis)
+                      if (std::abs(t) < min_dis)
                       {
                         harmonic_intensity = h_intensity;
-                        min_dis = abs(t);
+                        min_dis = std::abs(t);
                       }
                     }
                   }
@@ -859,7 +861,7 @@ inline const double tol_div_factor
 
           if (observed_mz - max_mz > (double)right_index * iso_delta + mz_delta) { break; }
 
-          if (abs(mz_diff - tmp_i * iso_delta) < mz_delta) // if peak is signal
+          if (std::abs(mz_diff - tmp_i * iso_delta) < mz_delta) // if peak is signal
           {
             const Size bin = peak_bin_numbers[peak_index] + bin_offset;
             if (bin < mass_bin_size && ! (bin < excluded_mass_bins_for_decoy_runs_.size() && excluded_mass_bins_for_decoy_runs_[bin]))
@@ -879,7 +881,7 @@ inline const double tol_div_factor
           int tmp_i = (int)round(mz_diff / iso_delta);
 
           if (max_mz - observed_mz > (float)left_index * iso_delta + mz_delta) { break; }
-          if (abs(mz_diff - tmp_i * iso_delta) < mz_delta)
+          if (std::abs(mz_diff - tmp_i * iso_delta) < mz_delta)
           {
             const Size bin = peak_bin_numbers[peak_index] + bin_offset;
             if (bin < mass_bin_size && ! (bin < excluded_mass_bins_for_decoy_runs_.size() && excluded_mass_bins_for_decoy_runs_[bin]))
@@ -917,7 +919,7 @@ inline const double tol_div_factor
         {
           p.setIsotopeIndex((int)round((p.getUnchargedMass() - t_mass) / iso_da_distance_));
 
-          if (abs(t_mass - p.getUnchargedMass() + iso_da_distance_ * p.getIsotopeIndex()) > iso_tolerance) { continue; }
+          if (std::abs(t_mass - p.getUnchargedMass() + iso_da_distance_ * p.getIsotopeIndex()) > iso_tolerance) { continue; }
           p.setIsotopeIndex(p.getIsotopeIndex() + (apex_index));
           new_peaks.push_back(p);
           min_off = min_off > p.getIsotopeIndex() ? p.getIsotopeIndex() : min_off;
@@ -1416,7 +1418,7 @@ inline const double tol_div_factor
 
     for (int tmp_offset = -left; tmp_offset <= right; tmp_offset++)
     {
-      if (window_width >= 0 && abs(tmp_offset - iso_int_shift) > window_width)
+      if (window_width >= 0 && std::abs(tmp_offset - iso_int_shift) > window_width)
         continue;
       if (!excluded_masses.empty())
       {
@@ -1442,7 +1444,7 @@ inline const double tol_div_factor
     for (const auto& [o, c] : offset_cos)
     {
       if (o > right || o < -left) continue;
-      if (window_width >= 0 && abs(o - iso_int_shift) > window_width) //
+      if (window_width >= 0 && std::abs(o - iso_int_shift) > window_width) //
         continue;
 
       offset = o;

@@ -13,6 +13,8 @@
 #include <algorithm>
 #include <array>
 #include <limits>
+#include <cmath>
+#include <cstdlib>
 
 namespace OpenMS
 {
@@ -629,7 +631,7 @@ namespace OpenMS
 
         if (iso_index < min_isotope) { continue; }
 
-        if (abs(pmz - cmz - iso_index * iso_delta) <= pmz * tol * mul_tol)
+        if (std::abs(pmz - cmz - iso_index * iso_delta) <= pmz * tol * mul_tol)
         {
           auto p = log_mz != nullptr ? LogMzPeak(spec[index], is_positive_, log_mz[index]) : LogMzPeak(spec[index], is_positive_);
           p.setIsotopeIndex(iso_index);
@@ -707,7 +709,7 @@ namespace OpenMS
         if (iso_index < min_isotope) { continue; }
 
         // Only collect noisy peaks (those that don't match the isotope pattern tolerance)
-        if (!(abs(pmz - cmz - iso_index * iso_delta) <= pmz * tol * mul_tol))
+        if (!(std::abs(pmz - cmz - iso_index * iso_delta) <= pmz * tol * mul_tol))
         {
           if (iso_index >= 0)
           {
