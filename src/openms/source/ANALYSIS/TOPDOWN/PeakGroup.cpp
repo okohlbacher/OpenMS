@@ -11,6 +11,7 @@
 #include <OpenMS/ANALYSIS/TOPDOWN/SpectralDeconvolution.h>
 #include <OpenMS/CONCEPT/Exception.h>
 #include <algorithm>
+#include <functional>
 #include <array>
 #include <limits>
 #include <cmath>
@@ -190,9 +191,10 @@ namespace OpenMS
     return h_offset;
   }
 
-  float PeakGroup::getNoisePeakPower_(const std::vector<FLASHHelperClasses::LogMzPeak>& noisy_peaks, const int z, const double tol) const
+  float PeakGroup::getNoisePeakPower_(const LogMzPeak* noisy_begin, const LogMzPeak* noisy_end, const LogMzPeak* signal_begin,
+                                      const LogMzPeak* signal_end, const int z, const double tol) const
   {
-    if (noisy_peaks.empty()) return 0;
+    if (noisy_begin == noisy_end) return 0;
     const Size max_noisy_peak_number
       = z == 0 ? std::min(200, 40 * (max_abs_charge_ - min_abs_charge_ + 1)) : 40; // too many noise peaks will slow down the process
     const Size bin_number_margin = 8;
@@ -202,42 +204,32 @@ namespace OpenMS
     all_peaks.clear();
     all_peaks.reserve(max_noisy_peak_number + logMzpeaks_.size());
 
-    auto noise_peak_count
-      = std::count_if(noisy_peaks.begin(), noisy_peaks.end(), [&](const auto& noisy_peak) { return z == 0 || noisy_peak.getAbsCharge() == z; });
-
-    if (noise_peak_count == 0) return 0;
-    // get intensity threshold
-    if (noise_peak_count > (int)max_noisy_peak_number)
+    // the ranges are already restricted to charge z (or to all charges for z == 0)
+    const Size noise_peak_count = noisy_end - noisy_begin;
+    // get intensity threshold: the (max_noisy_peak_number + 1)-th largest intensity, as a full descending sort would give
+    if (noise_peak_count > max_noisy_peak_number)
     {
       thread_local std::vector<float> intensities;
       intensities.clear();
       intensities.reserve(noise_peak_count);
-      for (const auto& noisy_peak : noisy_peaks)
-      {
-        if (z > 0 && noisy_peak.getAbsCharge() != z) continue;
-        // if (noisy_peak.getAbsCharge() < min_abs_charge_ || noisy_peak.getAbsCharge() > max_abs_charge_) continue;
-        intensities.push_back(noisy_peak.getIntensity());
-      }
-
-      std::sort(intensities.rbegin(), intensities.rend());
+      for (const LogMzPeak* p = noisy_begin; p != noisy_end; ++p) { intensities.push_back(p->getIntensity()); }
+      std::nth_element(intensities.begin(), intensities.begin() + max_noisy_peak_number, intensities.end(), std::greater<float>());
       threshold = intensities[max_noisy_peak_number];
     }
 
     // filter peaks and check which mzs are signal and which are noise.
-    for (const auto& noisy_peak : noisy_peaks)
+    for (const LogMzPeak* p = noisy_begin; p != noisy_end; ++p)
     {
-      if ((z > 0 && noisy_peak.getAbsCharge() != z) || noisy_peak.getIntensity() < threshold) continue;
-      // if (noisy_peak.getAbsCharge() < min_abs_charge_ || noisy_peak.getAbsCharge() > max_abs_charge_) continue;
-      all_peaks.emplace_back(Peak1D(noisy_peak.getUnchargedMass(), noisy_peak.getIntensity()), false);
+      if (p->getIntensity() < threshold) continue;
+      all_peaks.emplace_back(Peak1D(p->getUnchargedMass(), p->getIntensity()), false);
     }
 
     if (all_peaks.empty()) return 0;
 
-    for (const auto& peak : logMzpeaks_)
+    for (const LogMzPeak* p = signal_begin; p != signal_end; ++p)
     {
-      if ((z > 0 && peak.getAbsCharge() != z) || peak.getIntensity() < threshold) continue;
-      // if (peak.getAbsCharge() < min_abs_charge_ || peak.getAbsCharge() > max_abs_charge_) continue;
-      all_peaks.emplace_back(Peak1D(peak.getUnchargedMass(), peak.getIntensity()), true);
+      if (p->getIntensity() < threshold) continue;
+      all_peaks.emplace_back(Peak1D(p->getUnchargedMass(), p->getIntensity()), true);
     }
 
     std::sort(all_peaks.begin(), all_peaks.end(),
@@ -293,7 +285,9 @@ namespace OpenMS
         for (double d : div_factors)
         {
           double distance = normalized_dist / d * (max_bin_number - bin_number_margin);
-          Size bin = (Size)round(distance);
+          // == (Size)round(distance) for the non-negative distances of a mass-sorted list, without the libm call
+          const Size bin_floor = (Size)distance;
+          const Size bin = bin_floor + (distance - (double)bin_floor >= 0.5 ? 1 : 0);
           if (bin == 0) { continue; }
           if (bin >= max_bin_number)
           {
@@ -499,11 +493,34 @@ namespace OpenMS
 
     if (is_last)
     {
+      // Group noisy and signal peaks by charge once (stable, so each group keeps the original order) instead of
+      // rescanning both lists for every charge.
+      thread_local std::vector<LogMzPeak> noisy_by_charge, signal_by_charge; // per-worker scratch
+      thread_local std::vector<Size> noisy_offset, signal_offset;
+      const auto group_by_charge = [&](const std::vector<LogMzPeak>& peaks, std::vector<LogMzPeak>& grouped, std::vector<Size>& offset) {
+        offset.assign(max_abs_charge_ + 2, 0);
+        for (const auto& p : peaks)
+        {
+          if (p.getAbsCharge() >= min_abs_charge_ && p.getAbsCharge() <= max_abs_charge_) offset[p.getAbsCharge() + 1]++;
+        }
+        for (int z = 1; z <= max_abs_charge_ + 1; z++) offset[z] += offset[z - 1];
+        grouped.resize(offset[max_abs_charge_ + 1]);
+        thread_local std::vector<Size> fill;
+        fill.assign(offset.begin(), offset.end());
+        for (const auto& p : peaks)
+        {
+          if (p.getAbsCharge() >= min_abs_charge_ && p.getAbsCharge() <= max_abs_charge_) grouped[fill[p.getAbsCharge()]++] = p;
+        }
+      };
+      group_by_charge(noisy_peaks, noisy_by_charge, noisy_offset);
+      group_by_charge(logMzpeaks_, signal_by_charge, signal_offset);
       for (int z = min_abs_charge_; z <= max_abs_charge_; z++)
       {
-        per_charge_noise_pwr_[z] = getNoisePeakPower_(noisy_peaks, z, tol);
+        per_charge_noise_pwr_[z] = getNoisePeakPower_(noisy_by_charge.data() + noisy_offset[z], noisy_by_charge.data() + noisy_offset[z + 1],
+                                                      signal_by_charge.data() + signal_offset[z], signal_by_charge.data() + signal_offset[z + 1], z, tol);
       }
-      per_charge_noise_pwr_[0] = getNoisePeakPower_(noisy_peaks, 0, tol);
+      per_charge_noise_pwr_[0] = getNoisePeakPower_(noisy_peaks.data(), noisy_peaks.data() + noisy_peaks.size(), logMzpeaks_.data(),
+                                                    logMzpeaks_.data() + logMzpeaks_.size(), 0, tol);
     }
     else
     {

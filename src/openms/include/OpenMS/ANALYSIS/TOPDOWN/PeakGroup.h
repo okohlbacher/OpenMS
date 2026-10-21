@@ -377,7 +377,10 @@ namespace OpenMS
      * @param[in] tol ppm tolerance
      * @return calculated noise power
      */
-    float getNoisePeakPower_(const std::vector<LogMzPeak>& noisy_peaks, int z, double tol) const;
+    /// noise power from the noisy peaks [noisy_begin, noisy_end) and the signal peaks [signal_begin, signal_end) of charge z (z == 0: all charges);
+    /// both ranges keep their original order
+    float getNoisePeakPower_(const LogMzPeak* noisy_begin, const LogMzPeak* noisy_end, const LogMzPeak* signal_begin, const LogMzPeak* signal_end, int z,
+                             double tol) const;
 
     /// log Mz peaks
     std::vector<FLASHHelperClasses::LogMzPeak> logMzpeaks_;
