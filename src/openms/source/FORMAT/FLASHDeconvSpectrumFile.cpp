@@ -16,6 +16,14 @@
 
 #include <OpenMS/SYSTEM/BuildInfo.h>
 #include <exception>
+#include <cstdint>
+#if defined(__unix__) || defined(__APPLE__)
+  #include <fcntl.h>
+  #include <unistd.h>
+  #define FLASHDECONV_PWRITE 1
+#else
+  #define FLASHDECONV_PWRITE 0
+#endif
 #ifdef _OPENMP
   #include <omp.h>
 #endif
@@ -333,6 +341,9 @@ namespace OpenMS
       // At most this many rows may be formatted ahead of the commit point, which bounds retained buffers
       // when an early row is slow.
       const Size window = 64 * (Size)worker_count;
+      // With pwrite available every row is formatted first and then written at its known offset from several
+      // threads, so the single-threaded copy of the output into the page cache no longer serializes the end of the run.
+      const bool parallel_write = FLASHDECONV_PWRITE != 0;
       std::mutex commit_mutex;
       const auto drain = [&]() noexcept { // caller holds commit_mutex
         while (! commit_failed && next_commit < n && ready[next_commit.load()].load(std::memory_order_acquire))
@@ -361,7 +372,7 @@ namespace OpenMS
       for (SignedSize row = 0; row < (SignedSize)n; ++row)
       {
         uint index = first_indices[row];
-        while ((Size)row >= next_commit.load() + window && ! commit_failed.load())
+        while (! parallel_write && (Size)row >= next_commit.load() + window && ! commit_failed.load())
         {
           std::unique_lock<std::mutex> lock(commit_mutex, std::try_to_lock);
           if (lock.owns_lock()) { drain(); }
@@ -382,8 +393,69 @@ namespace OpenMS
         }
         end_indices[row] = index;
         ready[row].store(true, std::memory_order_release);
+        if (parallel_write) { continue; }
         std::unique_lock<std::mutex> lock(commit_mutex, std::try_to_lock);
         if (lock.owns_lock()) { drain(); }
+      }
+      if (parallel_write)
+      {
+        for (Size row = 0; row < n; ++row)
+        {
+          if (errors[row]) { std::rethrow_exception(errors[row]); }
+        }
+        std::vector<std::int64_t> cursor(streams.size(), -1);
+        std::vector<std::int64_t> offsets(n, 0);
+        for (Size row = 0; row < n; ++row)
+        {
+          const auto level = spectra[jobs[row]].getOriginalSpectrum().getMSLevel();
+          auto& stream = streams[level - 1];
+          if (cursor[level - 1] < 0)
+          {
+            stream.flush(); // the header and anything written before this call precede our rows
+            cursor[level - 1] = stream.good() ? (std::int64_t)stream.tellp() : -1;
+            if (cursor[level - 1] < 0) { throw Exception::IOException(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, output_files[level - 1]); }
+          }
+          offsets[row] = cursor[level - 1];
+          cursor[level - 1] += (std::int64_t)buffers[row].size();
+          while (indices.size() <= level) { indices.push_back(1); }
+          indices[level - 1] = end_indices[row];
+        }
+#if FLASHDECONV_PWRITE
+        std::vector<int> fds(streams.size(), -1);
+        for (Size level = 0; level < streams.size(); ++level)
+        {
+          if (cursor[level] < 0) { continue; }
+          fds[level] = ::open(output_files[level].c_str(), O_WRONLY);
+          if (fds[level] < 0) { throw Exception::IOException(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, output_files[level]); }
+        }
+        std::atomic<bool> write_failed {false};
+#pragma omp parallel for num_threads(worker_count) schedule(dynamic, 8) default(none) shared(spectra, jobs, buffers, offsets, fds, n, write_failed)
+        for (SignedSize row = 0; row < (SignedSize)n; ++row)
+        {
+          if (write_failed.load()) { continue; }
+          const int fd = fds[spectra[jobs[row]].getOriginalSpectrum().getMSLevel() - 1];
+          const char* data = buffers[row].data();
+          std::size_t left = buffers[row].size();
+          std::int64_t at = offsets[row];
+          while (left > 0)
+          {
+            const ssize_t written = ::pwrite(fd, data, left, (off_t)at);
+            if (written <= 0) { write_failed.store(true); break; }
+            data += written; left -= (std::size_t)written; at += written;
+          }
+          std::string().swap(buffers[row]);
+        }
+        for (Size level = 0; level < streams.size(); ++level)
+        {
+          if (fds[level] < 0) { continue; }
+          ::close(fds[level]);
+          // the stream's own position continues after the rows written behind its back
+          streams[level].seekp((std::streamoff)cursor[level]);
+          if (write_failed) { streams[level].setstate(std::ios::badbit); }
+        }
+        if (write_failed) { throw Exception::IOException(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, file_name); }
+#endif
+        return;
       }
       drain(); // everything not yet committed, after the join
       if (commit_failed) { std::rethrow_exception(errors[next_commit]); }
