@@ -213,6 +213,18 @@ namespace OpenMS
     /// binned_log_mz_peaks_ stores the binned log mz peaks
     boost::dynamic_bitset<> binned_log_mz_peaks_;
 
+    /// Worker-owned pools for per-spectrum dense arrays (mass/m/z bin sized, several MB each).
+    /// They live as long as this worker, so spectra reuse capacity instead of mapping and zeroing fresh pages.
+    std::vector<float> mz_intensities_pool_;
+    std::vector<float> mass_intensities_pool_;
+    std::vector<unsigned char> mass_bin_state_pool_;
+    Matrix<int> abs_charge_ranges_pool_;
+    boost::dynamic_bitset<> to_skip_pool_;
+    std::vector<Size> mz_bin_index_reverse_pool_;
+    std::vector<Size> peak_bin_numbers_pool_;
+    /// candidate PeakGroup vector of the previous spectrum, kept for its capacity
+    std::vector<PeakGroup> candidate_pool_;
+
     /// This stores the "universal pattern"
     std::vector<double> universal_pattern_;
     /// This stores the patterns for harmonic reduction
@@ -281,13 +293,13 @@ namespace OpenMS
         @param[in] mz_intensities per mz bin intensity
         @return a matrix containing charge ranges for all found masses
      */
-    Matrix<int> updateMassBins_(const std::vector<float>& mz_intensities);
+    const Matrix<int>& updateMassBins_(const std::vector<float>& mz_intensities);
 
     /** @brief Subfunction of updateMassBins_.
         @param[in,out] mass_intensities per mass bin intensity
         @return a matrix containing charge ranges for all found masses
      */
-    Matrix<int> filterMassBins_(const std::vector<float>& mass_intensities);
+    const Matrix<int>& filterMassBins_(const std::vector<float>& mass_intensities);
 
     /** @brief Subfunction of updateMassBins_. It select candidate masses and update binned_log_masses_ using the universal pattern, eliminate possible harmonic masses
         @param[in] mass_intensities mass bin intensities which are updated in this function
@@ -305,6 +317,13 @@ namespace OpenMS
 
     /// function for peak group scoring and filtering
     void scoreAndFilterPeakGroups_();
+
+    /// isotope/charge scoring of one candidate; true if it survives the first filter
+    bool scoreCandidate_(PeakGroup& peak_group);
+
+    /// score each candidate as soon as it is built and keep only survivors (set per spectrum by
+    /// generatePeakGroupsFromSpectrum_), so a worker never holds a spectrum's full candidate set
+    bool fused_scoring_ = false;
 
     /// filter out charge error masses
     void removeChargeErrorPeakGroups_(DeconvolvedSpectrum& dspec, const PeakGroup::TargetDecoyType& target_decoy_type) const;

@@ -98,6 +98,15 @@ namespace OpenMS
     /// current minimum MS level.
     UInt current_min_ms_level_ = 0;
 
+    /// MS1 (minimum level) features traced concurrently with the MS2 wave
+    std::vector<FLASHHelperClasses::MassFeature> ms1_features_;
+    bool ms1_features_ready_ = false;
+
+    /// feature tracing parameters derived from ft:* and the MS1 settings
+    Param featureParams_() const;
+    /// trace features of the minimum MS level (targets, then decoys when reported)
+    std::vector<FLASHHelperClasses::MassFeature> traceMinLevelFeatures_(std::vector<DeconvolvedSpectrum>& deconvolved_spectra);
+
     /// the number of preceding full scans from which MS2 precursor mass will be searched.
     int precursor_MS1_window_ = 0;
 
