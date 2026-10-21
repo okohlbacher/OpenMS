@@ -27,7 +27,7 @@ namespace OpenMS
 
   class OPENMS_DLLAPI PeakGroup
   {
-    typedef FLASHHelperClasses::LogMzPeak LogMzPeak;
+    typedef FLASHHelperClasses::InternalLogMzPeak LogMzPeak;
     typedef FLASHHelperClasses::PrecalculatedAveragine PrecalculatedAveragine;
 
   public:
@@ -293,13 +293,13 @@ namespace OpenMS
     uint getFeatureIndex() const;
 
     /// iterators for the signal LogMz peaks in this PeakGroup
-    std::vector<FLASHHelperClasses::LogMzPeak>::const_iterator begin() const noexcept;
-    std::vector<FLASHHelperClasses::LogMzPeak>::const_iterator end() const noexcept;
+    std::vector<FLASHHelperClasses::InternalLogMzPeak>::const_iterator begin() const noexcept;
+    std::vector<FLASHHelperClasses::InternalLogMzPeak>::const_iterator end() const noexcept;
 
-    std::vector<FLASHHelperClasses::LogMzPeak>::iterator begin() noexcept;
-    std::vector<FLASHHelperClasses::LogMzPeak>::iterator end() noexcept;
+    std::vector<FLASHHelperClasses::InternalLogMzPeak>::iterator begin() noexcept;
+    std::vector<FLASHHelperClasses::InternalLogMzPeak>::iterator end() noexcept;
 
-    const FLASHHelperClasses::LogMzPeak& operator[](Size i) const;
+    const FLASHHelperClasses::InternalLogMzPeak& operator[](Size i) const;
 
     /**
      * @brief Get mass errors for each isotope index in this peak group.
@@ -315,13 +315,16 @@ namespace OpenMS
     std::vector<float> getMassErrors(bool ppm = true) const;
 
     /// vector operators for the LogMzPeaks in this PeakGroup
-    void push_back(const FLASHHelperClasses::LogMzPeak& pg);
-    FLASHHelperClasses::LogMzPeak& back();
+    void push_back(const FLASHHelperClasses::InternalLogMzPeak& pg);
+    /// Explicit boundary from the public value type; rejects independent mass overrides.
+    void push_back(const FLASHHelperClasses::LogMzPeak& peak)
+    { push_back(FLASHHelperClasses::InternalLogMzPeak(peak)); }
+    FLASHHelperClasses::InternalLogMzPeak& back();
     Size size() const noexcept;
 
     void reserve(Size n);
     bool empty() const;
-    void swap(std::vector<FLASHHelperClasses::LogMzPeak>& x);
+    void swap(std::vector<FLASHHelperClasses::InternalLogMzPeak>& x);
     void sort();
 
     /**
@@ -369,9 +372,9 @@ namespace OpenMS
     float getNoisePeakPower_(const std::vector<LogMzPeak>& noisy_peaks, int z, double tol) const;
 
     /// log Mz peaks
-    std::vector<FLASHHelperClasses::LogMzPeak> logMzpeaks_;
+    std::vector<FLASHHelperClasses::InternalLogMzPeak> logMzpeaks_;
     /// negative isotope index peaks
-    std::vector<FLASHHelperClasses::LogMzPeak> negative_iso_peaks_;
+    std::vector<FLASHHelperClasses::InternalLogMzPeak> negative_iso_peaks_;
     /// per charge summed signal squared, noise pwr, SNR, isotope cosine, and intensity vectors
     std::vector<float> per_charge_sum_signal_squared_;
     std::vector<float> per_charge_noise_pwr_;

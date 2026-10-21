@@ -7,6 +7,9 @@
 // --------------------------------------------------------------------------
 
 #include <OpenMS/CONCEPT/ClassTest.h>
+#include <OpenMS/CONCEPT/Constants.h>
+#include <algorithm>
+#include <vector>
 #include <OpenMS/test_config.h>
 
 ///////////////////////////
@@ -86,8 +89,35 @@ END_SECTION
 
 START_SECTION((MSSpectrum toSpectrum(const int mass_charge)))
 {
-  MSSpectrum peakgroup_spec = prec_deconv_spec_1.toSpectrum(9, 1);
-  TEST_EQUAL(peakgroup_spec.size(), 1);
+  MSSpectrum peakgroup_spec = prec_deconv_spec_1.toSpectrum(9, 1, false);
+  // The public conversion emits every nonempty target at neutral mass plus
+  // nine charge carriers; it does not divide the mass by the output charge.
+  const double charge_offset = 9.0 * static_cast<float>(Constants::PROTON_MASS_U);
+  std::vector<Peak1D> expected_peaks;
+  for (const auto& group : prec_deconv_spec_1)
+  {
+    if (!group.empty() && group.getTargetDecoyType() == PeakGroup::TargetDecoyType::target)
+    {
+      TEST_EQUAL(group.getMonoMass() > 0.0, true)
+      TEST_EQUAL(group.getIntensity() > 0.0, true)
+      expected_peaks.emplace_back(group.getMonoMass() + charge_offset, group.getIntensity());
+    }
+  }
+  std::sort(expected_peaks.begin(), expected_peaks.end(), [](const Peak1D& left, const Peak1D& right)
+  {
+    return left.getMZ() < right.getMZ();
+  });
+  TEST_EQUAL(expected_peaks.empty(), false)
+  TEST_EQUAL(peakgroup_spec.size(), expected_peaks.size())
+  if (peakgroup_spec.size() == expected_peaks.size())
+  {
+    for (Size i = 0; i < expected_peaks.size(); ++i)
+    {
+      TEST_REAL_SIMILAR(peakgroup_spec[i].getMZ(), expected_peaks[i].getMZ())
+      TEST_REAL_SIMILAR(peakgroup_spec[i].getIntensity(), expected_peaks[i].getIntensity())
+    }
+  }
+  TEST_REAL_SIMILAR(peakgroup_spec.getRT(), prec_deconv_spec_1.getOriginalSpectrum().getRT())
   TEST_REAL_SIMILAR(peakgroup_spec.getRT(), 251.72280736002);
 
   // empty (default-constructed) DeconvolvedSpectrum must not dereference peak_groups_[0] (regression): returns a header-only spectrum
@@ -99,6 +129,7 @@ END_SECTION
 
 START_SECTION((const MSSpectrum& getOriginalSpectrum() const))
 {
+  test_deconv_spec.setOriginalSpectrum(test_spec);
   MSSpectrum tmp_s = test_deconv_spec.getOriginalSpectrum();
   TEST_EQUAL(tmp_s.size(), test_spec.size());
 }

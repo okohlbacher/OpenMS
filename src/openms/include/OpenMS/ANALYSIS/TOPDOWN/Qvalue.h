@@ -24,7 +24,7 @@ namespace OpenMS
   class OPENMS_DLLAPI Qvalue
   {
   public:
-    typedef FLASHHelperClasses::LogMzPeak LogMzPeak;
+    typedef FLASHHelperClasses::InternalLogMzPeak LogMzPeak;
 
     /// Calculate and perform a batch update of peak group qvalues using Qscores of target and dummy peak groups in deconvolved spectra, when FDR report is necessary.
     /// @param[out] deconvolved_spectra target and decoy deconvolved spectra

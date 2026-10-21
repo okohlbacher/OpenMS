@@ -35,7 +35,7 @@ namespace OpenMS
   {
   public:
     typedef FLASHHelperClasses::PrecalculatedAveragine PrecalculatedAveragine;
-    typedef FLASHHelperClasses::LogMzPeak LogMzPeak;
+    typedef FLASHHelperClasses::InternalLogMzPeak LogMzPeak;
 
     /// default constructor
     SpectralDeconvolution();

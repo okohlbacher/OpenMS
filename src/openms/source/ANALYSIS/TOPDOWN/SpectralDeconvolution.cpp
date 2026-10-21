@@ -104,7 +104,7 @@ inline const double tol_div_factor
       = (precursor.getMZ() - FLASHHelperClasses::getChargeMass(target_precursor_charge_ > 0)) * std::abs(target_precursor_charge_);
     precursor.setCharge(target_precursor_charge_);
     PeakGroup precursorPeakGroup(1, std::abs(target_precursor_charge_), target_precursor_charge_ > 0);
-    precursorPeakGroup.push_back(FLASHHelperClasses::LogMzPeak());
+    precursorPeakGroup.push_back(FLASHHelperClasses::InternalLogMzPeak());
     precursorPeakGroup.setMonoisotopicMass(target_precursor_mass);
     precursorPeakGroup.setSNR(1.0);
 

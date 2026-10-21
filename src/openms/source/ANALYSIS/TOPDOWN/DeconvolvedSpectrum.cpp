@@ -33,7 +33,7 @@ namespace OpenMS
 
   MSSpectrum DeconvolvedSpectrum::toSpectrum(const int to_charge, double tol, bool retain_undeconvolved)
   {
-    auto out_spec = MSSpectrum(spec_);
+    auto out_spec = MSSpectrum(getOriginalSpectrum());
     out_spec.clear(false);
 
     // An empty (e.g. default-constructed) DeconvolvedSpectrum has no peak groups; return a header-only
@@ -130,7 +130,7 @@ namespace OpenMS
 
     if (retain_undeconvolved)
     {
-      for (const auto& p : spec_)
+      for (const auto& p : getOriginalSpectrum())
       {
         if (deconvolved_mzs.contains(p.getMZ())) // if p is deconvolved
         {
@@ -155,7 +155,8 @@ namespace OpenMS
 
   const MSSpectrum& DeconvolvedSpectrum::getOriginalSpectrum() const
   {
-    return spec_;
+    static const MSSpectrum empty;
+    return spec_ ? *spec_ : empty;
   }
 
   const PeakGroup& DeconvolvedSpectrum::getPrecursorPeakGroup() const
@@ -170,28 +171,19 @@ namespace OpenMS
 
   double DeconvolvedSpectrum::getCurrentMaxMass(const double max_mass) const
   {
-    if (spec_.getMSLevel() == 1 || precursor_peak_group_.empty())
-    {
-      return max_mass;
-    }
+    if (getOriginalSpectrum().getMSLevel() == 1 || precursor_peak_group_.empty()) { return max_mass; }
     return std::min(max_mass, precursor_peak_group_.getMonoMass());
   }
 
   double DeconvolvedSpectrum::getCurrentMinMass(const double min_mass) const
   {
-    if (spec_.getMSLevel() == 1)
-    {
-      return min_mass;
-    }
+    if (getOriginalSpectrum().getMSLevel() == 1) { return min_mass; }
     return 50.0;
   }
 
   int DeconvolvedSpectrum::getCurrentMaxAbsCharge(const int max_abs_charge) const
   {
-    if (spec_.getMSLevel() == 1 || precursor_peak_group_.empty())
-    {
-      return max_abs_charge;
-    }
+    if (getOriginalSpectrum().getMSLevel() == 1 || precursor_peak_group_.empty()) { return max_abs_charge; }
     return std::min(max_abs_charge, abs(precursor_peak_group_.getRepAbsCharge()));
   }
 
@@ -232,7 +224,9 @@ namespace OpenMS
 
   void DeconvolvedSpectrum::setOriginalSpectrum(const MSSpectrum& spec)
   {
-    spec_ = spec;
+    auto snapshot = std::make_shared<const MSSpectrum>(spec);
+    FLASHHelperClasses::InternalLogMzPeak::registerSource(snapshot);
+    spec_ = std::move(snapshot);
   }
 
   void DeconvolvedSpectrum::setPrecursorScanNumber(const int scan_number)

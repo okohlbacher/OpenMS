@@ -1,0 +1,207 @@
+{
+  "passed": true,
+  "measured_cells": 20,
+  "replicates": 1,
+  "full_scientific_output_hash_checks": 60,
+  "sources_and_native_cohorts": {
+    "counts": [
+      16,
+      32,
+      64,
+      128,
+      192
+    ],
+    "fresh_control": "24 B inline",
+    "series": [
+      {
+        "name": "24 B inline",
+        "cohorts": [
+          {
+            "manifest": "evidence/native-layout24-capture-r1/native-layout24-r1/manifest.json",
+            "sha256": "bdfee35b9ac81149f758f79deb81130a8e68056c569fe7f8e236ca0731813b2d",
+            "role": "layout24",
+            "counts": [
+              16,
+              32,
+              64,
+              128,
+              192
+            ]
+          }
+        ]
+      },
+      {
+        "name": "16 B recompute log",
+        "cohorts": [
+          {
+            "manifest": "evidence/native-raw16-capture-r2/native-raw16-recovered-r2/manifest.json",
+            "sha256": "c5b03afa0d53f9b68f43e5de7a0a736b54baf4f2c3016e05a4d9a777da45dcd3",
+            "role": "raw16",
+            "counts": [
+              16,
+              32,
+              64,
+              128,
+              192
+            ],
+            "allow_missing_warm_record_counts": [
+              64
+            ]
+          }
+        ]
+      },
+      {
+        "name": "16 B cached log + index",
+        "cohorts": [
+          {
+            "manifest": "evidence/native-indexed16-capture-r1/native-indexed16-r1/manifest.json",
+            "sha256": "cc6daf9903adbbb02e5e53f2b1324129003e9e4ecde8191be4bf63fb886fcf25",
+            "role": "indexed16",
+            "counts": [
+              16,
+              32,
+              64,
+              128,
+              192
+            ]
+          }
+        ]
+      },
+      {
+        "name": "8 B shared arrays",
+        "cohorts": [
+          {
+            "manifest": "../soa8-20261021/evidence/native-soa8-capture-r1/native-soa8-r1/manifest.json",
+            "sha256": "92fd0f513f38656f1774be4f2e412e235b1e5f9ed7000b6f053bde7023abfaab",
+            "role": "soa8",
+            "counts": [
+              16,
+              32,
+              64,
+              128,
+              192
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "soa_gates": [
+    {
+      "path": "soa8-20261021/evidence/gates-r1/checks-soa-shared-soa8-r1/full-peak-checks.json",
+      "sha256": "da0b3cf3ee520ffe1abce35584422269f7891d1c35fdfb7bb8ac15b6fb977988"
+    },
+    {
+      "path": "soa8-20261021/evidence/gates-r1/preprocess-soa8-r1/preprocess-closure.json",
+      "sha256": "639bb20a50a1f615bacdf00dd04684f3f24373aa1c0444f07ad68eaf3f94336f"
+    },
+    {
+      "path": "soa8-20261021/evidence/gates-r1/checks-python-soa8-r1/python-checks.json",
+      "sha256": "b56d72699bb56ab6f0ae48438b148931670616731b639c0f345566e9a571b7c5"
+    },
+    {
+      "path": "soa8-20261021/evidence/gates-r1/build-soa8-soa-r3/receipt.json",
+      "sha256": "caacaafec4b635fd5801ab6a3b3b8691a47ec9caf887331706e5f96d6b21609a"
+    },
+    {
+      "path": "soa8-20261021/evidence/gates-r1/checks-full-peak-soa8-r1/full-peak-checks.json",
+      "sha256": "3b7bf2cd1d29f94a4b8f9392aee1649092f1c63c90c10d65034a040bf652e3b0"
+    }
+  ],
+  "reviews": {
+    "scope": "Frozen SoA8 R1 source; review dispositions, not a benchmark or test-pass receipt.",
+    "source_manifest_sha256": "fb8c30b09a47c66b55ef03b23a2879f50fea8a7cf3b3a91d23b488ba117b6de4",
+    "reviews": {
+      "claude": {
+        "engine": "claude",
+        "returncode": 0,
+        "wall_s": 251.67994650000765,
+        "version": "2.1.288 (Claude Code)",
+        "packet_sha256": "ce23c9a633007d90fdca63704bcfda3044af0211a4aed05c6228727b81529b1b",
+        "packet_after": "ce23c9a633007d90fdca63704bcfda3044af0211a4aed05c6228727b81529b1b",
+        "response_sha256": "ac0bd48e14949583f3a3cfdcb264e852a407f1a59076e4a6bf9efeda86615cbd",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "modelUsage": {
+          "claude-opus-5-5": {
+            "inputTokens": 2,
+            "outputTokens": 24174,
+            "cacheReadInputTokens": 1467,
+            "cacheCreationInputTokens": 20298,
+            "webSearchRequests": 0,
+            "costUSD": 0.6461654,
+            "contextWindow": 1000000,
+            "maxOutputTokens": 128000,
+            "thinkingTokens": 21533,
+            "canonicalModel": "claude-opus-5-5",
+            "provider": "firstParty",
+            "costBasis": "list"
+          }
+        },
+        "is_error": false,
+        "permission_denials": []
+      },
+      "kimi": {
+        "engine": "kimi",
+        "returncode": 0,
+        "wall_s": 572.6973418330017,
+        "version": "2.2.0",
+        "packet_sha256": "ce23c9a633007d90fdca63704bcfda3044af0211a4aed05c6228727b81529b1b",
+        "packet_after": "ce23c9a633007d90fdca63704bcfda3044af0211a4aed05c6228727b81529b1b",
+        "response_sha256": "621f45c845f57555a0b524aca52c22ec5edf893c2b70694ad1e68e294e989d5d",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "event_types": [
+          "system.version",
+          "assistant",
+          "session.resume_hint"
+        ],
+        "tool_events": 0
+      }
+    },
+    "dispositions": {
+      "shared_bit_words": "Polarity words initialized before publication and never mutated; assignment polarity override stays local.",
+      "global_lock": "Array fill outside registry lock; call_once entered outside registry lock; readers use immutable pointers.",
+      "same_view_race_and_capacity": "Added diagnostic soa_shared_view_oracle_r1.cpp: both polarities, eight workers, bitwise scalar comparison, nonzero charge flips and capacity waiters. Actual pass recorded separately by executor.",
+      "fallback_and_pages": "Native harness requires zero standalone records and all 40,044,615 filtered source points; capacity is 65,535 pages, not unrestricted uint32 points.",
+      "memory_accounting": "8-byte assignment excludes shared auxiliary arrays: 12 B/source point plus 8.125 B per materialized polarity view, retained source ownership and table/container overhead. Actual peak RSS includes all.",
+      "null_padding": "No forged index is reachable through public constructors; scalar default page serves only index zero. Optional invalid-index padding does not fix arbitrary corrupt offsets and was not added.",
+      "layout_link_guard": "Distinct integral_constant-mangled symbols required per layout; actual wrong-header link failure gate required. No universal LTO claim.",
+      "cleanup": "Keep normal exit destructors and include them in whole-process wall time; deliberately leaking registry for benchmark speed rejected.",
+      "tls_cache": "Single cached span/polarity kept; two-entry cache deferred until measured alternation warrants it.",
+      "uniform_polarity": "Bitvector retained as requested. Uniform source-mode bool could replace it in a future measured variant."
+    },
+    "limitations": [
+      "Process-lifetime registry is a single-file benchmark prototype; spectrum reclamation and bounded multi-file arena lifetime remain future work.",
+      "Input snapshots and caller filtered map remain retained; no early-input-release gain claimed.",
+      "Public LogMzPeak retains old 32-byte value semantics; pipeline InternalLogMzPeak changes container/API element type.",
+      "No hardware cache-miss counters collected in these native timings."
+    ]
+  },
+  "source_state": "Frozen source manifests identify measured code; added benchmark documentation and CHANGELOG do not alter production source.",
+  "artifact_copy_transforms": [
+    {
+      "file": "native-comparison.csv",
+      "plot_output_sha256": "b9c46b5c71e5789fa08325d797dacaa0cd60b4ef19cd0df0eeb71e0b70025f9e",
+      "repository_copy_sha256": "d0760d01cfe18b0724d8e8500d23e2502dd69179b6a8d85bd23ddc0e641882fd",
+      "transform": "LF line endings and strip trailing whitespace in copied presentation artifacts only"
+    },
+    {
+      "file": "cached-layouts-comparison.svg",
+      "plot_output_sha256": "79542fdb3abeff51dafaf825b440046e6febf38bd48ad5b1138299b90eba5557",
+      "repository_copy_sha256": "b62d04a5d98e83b34f2e4d1f4ee98a6064a2699bf921639742efdec2bdd83d2b",
+      "transform": "LF line endings and strip trailing whitespace in copied presentation artifacts only"
+    },
+    {
+      "file": "native-comparison.svg",
+      "plot_output_sha256": "23cebf2790a3db82a122fb86b3ee510e4cce9907cd86ad880dd071d18ac8b1be",
+      "repository_copy_sha256": "1cbf075825d90d7cc71c2e78e69fb374b64024ae00d22e6da54a037f1edb2180",
+      "transform": "LF line endings and strip trailing whitespace in copied presentation artifacts only"
+    },
+    {
+      "file": "relative-scaling.svg",
+      "plot_output_sha256": "d896056d436f2b8ff55c1f21db4fbda32acd4d0bf813393d9d6e9a2b6ade0959",
+      "repository_copy_sha256": "dd9203724405e645d5c83a47db5181c967d78f4d641bf571c71053b849b3cf16",
+      "transform": "LF line endings and strip trailing whitespace in copied presentation artifacts only"
+    }
+  ],
+  "frozen_source_files_locally_reverified": true
+}

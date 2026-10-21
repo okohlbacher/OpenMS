@@ -17,6 +17,11 @@ PR - Pull Request (on GitHub), i.e. integration of a new feature or bugfix
 ------------------------------------------------------------------------------------------
 
 General:
+  - Experimental FLASHDeconv internal peaks use shared immutable input spectra and
+    8-byte assignments over shared m/z, logarithm, intensity and packed polarity arrays.
+    Public LogMzPeak remains a 32-byte independent value. PeakGroup container element
+    types change; rebuild all consumers. This one-file arena prototype retains source
+    arrays until process exit. See doc/benchmarks/FLASHDeconv-shared-layouts-20261021.md.
   - Experimental compact LogMzPeak facade: 32-byte peak storage on the tested 64-bit ABI,
     packed charge/polarity and uint16 isotope magnitude, with checked charge [0, 200]
     and signed isotope [-65535, 65535] domains. C++ field access becomes accessors;
