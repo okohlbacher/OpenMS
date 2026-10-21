@@ -91,7 +91,8 @@ namespace OpenMS
            @return returns isotope offset after isotope cosine calculation
       */
     int updateQscore(const std::vector<LogMzPeak>& noisy_peaks, const FLASHHelperClasses::PrecalculatedAveragine& avg, double min_cos,
-                     double tol, bool is_low_charge, const std::vector<double>& excluded_masses, bool is_last = false);
+                     double tol, bool is_low_charge, const std::vector<double>& excluded_masses, bool is_last = false,
+                     bool full_noise = true);
 
     /**
      * @brief given a monoisotopic mass, recruit raw peaks from the raw input spectrum and add to this peakGroup. This is a bit time-consuming and is done for only a small number of selected
