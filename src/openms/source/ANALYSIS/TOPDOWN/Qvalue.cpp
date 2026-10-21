@@ -8,6 +8,7 @@
 
 #include <OpenMS/ANALYSIS/TOPDOWN/PeakGroup.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/Qvalue.h>
+#include <algorithm>
 #include <OpenMS/DATASTRUCTURES/MatrixEigen.h>
 #include <Eigen/QR>
 
@@ -37,7 +38,7 @@ namespace OpenMS
     std::map<uint, std::map<double, double>> qscore_qvalue_map; // mapping from qscore to qvalue
 
     // to calculate qvalues per ms level, store Qscores per ms level
-    std::set<uint> used_feature_indices;
+    std::vector<char> used_feature_indices; // indexed by feature index (0 = none)
 
     for (auto& deconvolved_spectrum : deconvolved_spectra)
     {
@@ -47,9 +48,13 @@ namespace OpenMS
       uint ms_level = deconvolved_spectrum.getOriginalSpectrum().getMSLevel();
       for (auto& pg : deconvolved_spectrum)
       {
-        if (pg.getFeatureIndex() > 0 && used_feature_indices.contains(pg.getFeatureIndex()))
-          continue;
-        used_feature_indices.insert(pg.getFeatureIndex());
+        if (pg.getFeatureIndex() > 0)
+        {
+          const Size findex = pg.getFeatureIndex();
+          if (findex >= used_feature_indices.size()) { used_feature_indices.resize(findex + 1, 0); }
+          if (used_feature_indices[findex]) continue;
+          used_feature_indices[findex] = 1;
+        }
 
         if (pg.getTargetDecoyType() == PeakGroup::TargetDecoyType::target)
         {
@@ -168,6 +173,20 @@ namespace OpenMS
           rit->second = cummin;
         }
       }
+      // Sorted arrays for the per-peak-group lookups; a score that is not a target score of this level maps to 0,
+      // exactly what map_qvalue[score] used to return (and insert).
+      std::vector<double> qscore_keys, qvalue_values;
+      qscore_keys.reserve(map_qvalue.size());
+      qvalue_values.reserve(map_qvalue.size());
+      for (const auto& [score, qvalue] : map_qvalue)
+      {
+        qscore_keys.push_back(score);
+        qvalue_values.push_back(qvalue);
+      }
+      const auto lookup = [&](double score) {
+        const auto it = std::lower_bound(qscore_keys.begin(), qscore_keys.end(), score);
+        return (it != qscore_keys.end() && *it == score) ? qvalue_values[it - qscore_keys.begin()] : 0.0;
+      };
 
       for (auto& deconvolved_spectrum : deconvolved_spectra)
       {
@@ -180,7 +199,7 @@ namespace OpenMS
           auto precursor_pg = deconvolved_spectrum.getPrecursorPeakGroup();
           double qs = precursor_pg.getQscore2D();
 
-          precursor_pg.setQvalue(map_qvalue[qs]);
+          precursor_pg.setQvalue(lookup(qs));
           deconvolved_spectrum.setPrecursorPeakGroup(precursor_pg);
         }
 
@@ -191,7 +210,7 @@ namespace OpenMS
 
         for (auto& pg : deconvolved_spectrum)
         {
-          pg.setQvalue(map_qvalue[pg.getQscore2D()]);
+          pg.setQvalue(lookup(pg.getQscore2D()));
         }
       }
     }
