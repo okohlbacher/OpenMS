@@ -1123,8 +1123,19 @@ inline const double tol_div_factor
             peak_group.recruitAllPeaksInSpectrum(deconvolved_spectrum_.getOriginalSpectrum(), tol, activeAveragine_(),
                                                  peak_group.getMonoMass() + offset * iso_da_distance_, noisy_peaks, true, raw_log_mz_.data());
 
-          peak_group.updateQscore(noisy_peaks, activeAveragine_(), min_isotope_cosine_[ms_level_ - 1], tol, (z1 + z2) < 2 * low_charge_,
-                                  excluded_masses_for_decoy_runs_, true);
+          {
+            // Screen with the summed noise power; about half of the final evaluations fail the charge or cosine
+            // filter, and those no longer pay for the noise graph. Changes results where the two models disagree.
+            PeakGroup screen = peak_group;
+            screen.updateQscore(noisy_peaks, activeAveragine_(), min_isotope_cosine_[ms_level_ - 1], tol, (z1 + z2) < 2 * low_charge_,
+                                excluded_masses_for_decoy_runs_, true, false);
+            if (screen.getQscore() <= 0) { peak_group = std::move(screen); }
+            else
+            {
+              peak_group.updateQscore(noisy_peaks, activeAveragine_(), min_isotope_cosine_[ms_level_ - 1], tol, (z1 + z2) < 2 * low_charge_,
+                                      excluded_masses_for_decoy_runs_, true);
+            }
+          }
           mass_determined = true;
           break;
         }
