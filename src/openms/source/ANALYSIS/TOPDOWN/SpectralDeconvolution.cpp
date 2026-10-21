@@ -317,16 +317,19 @@ inline const double tol_div_factor
   // Generate uncharged log mz transformated peaks
   void SpectralDeconvolution::updateLogMzPeaks_()
   {
+    const auto& spec = deconvolved_spectrum_.getOriginalSpectrum();
+    // log(m/z - carrier mass) once per raw peak; recruitment reuses it for every candidate and iteration
+    raw_log_mz_.resize(spec.size());
+    for (Size i = 0; i < spec.size(); ++i) { raw_log_mz_[i] = FLASHHelperClasses::getLogMz(spec[i].getMZ(), is_positive_); }
     log_mz_peaks_.clear();
-    log_mz_peaks_.reserve(deconvolved_spectrum_.getOriginalSpectrum().size());
-
-    for (const auto& peak : deconvolved_spectrum_.getOriginalSpectrum())
+    log_mz_peaks_.reserve(spec.size());
+    for (Size i = 0; i < spec.size(); ++i)
     {
-      if (peak.getIntensity() <= 0) //
+      if (spec[i].getIntensity() <= 0) //
       {
         continue;
       }
-      log_mz_peaks_.emplace_back(peak, is_positive_);
+      log_mz_peaks_.emplace_back(spec[i], is_positive_, raw_log_mz_[i]);
     }
   }
 
@@ -1103,7 +1106,7 @@ inline const double tol_div_factor
       for (int k = 0; k < num_iteration; k++)
       {
         peak_group.recruitAllPeaksInSpectrum(deconvolved_spectrum_.getOriginalSpectrum(), tol, activeAveragine_(),
-                                             peak_group.getMonoMass() + offset * iso_da_distance_, noisy_peaks);
+                                             peak_group.getMonoMass() + offset * iso_da_distance_, noisy_peaks, true, raw_log_mz_.data());
         if (isPeakGroupInExcludedMassForDecoyRuns_(peak_group, tol)) { break; }
         // min cosine is checked in here. mono mass is also updated one last time. SNR, per charge SNR, and avg errors are updated here.
         const auto& [z1, z2] = peak_group.getAbsChargeRange();
@@ -1116,7 +1119,7 @@ inline const double tol_div_factor
             break;
           if (offset != 0)
             peak_group.recruitAllPeaksInSpectrum(deconvolved_spectrum_.getOriginalSpectrum(), tol, activeAveragine_(),
-                                                 peak_group.getMonoMass() + offset * iso_da_distance_, noisy_peaks);
+                                                 peak_group.getMonoMass() + offset * iso_da_distance_, noisy_peaks, true, raw_log_mz_.data());
 
           peak_group.updateQscore(noisy_peaks, activeAveragine_(), min_isotope_cosine_[ms_level_ - 1], tol, (z1 + z2) < 2 * low_charge_,
                                   excluded_masses_for_decoy_runs_, true);
@@ -1260,7 +1263,7 @@ inline const double tol_div_factor
         if (z2 - z1 > z2_ - z1_) break; // if harmonic charges are too high stop
         pg.setMonoisotopicMass(peak_group.getMonoMass() * hz);
         thread_local std::vector<LogMzPeak> nps; // per-worker scratch
-        pg.recruitAllPeaksInSpectrum(deconvolved_spectrum_.getOriginalSpectrum(), tol, activeAveragine_(), pg.getMonoMass(), nps);
+        pg.recruitAllPeaksInSpectrum(deconvolved_spectrum_.getOriginalSpectrum(), tol, activeAveragine_(), pg.getMonoMass(), nps, true, raw_log_mz_.data());
         pg.updateQscore(nps, activeAveragine_(), min_isotope_cosine_[ms_level_ - 1], tol, (z1 + z2) * hz < 2 * low_charge_,
                         excluded_masses_for_decoy_runs_, true);
 

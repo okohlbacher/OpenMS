@@ -107,7 +107,7 @@ namespace OpenMS
 
     /// as above, but writes the noisy peaks into @p noisy_peaks (cleared first) so callers can reuse its capacity
     void recruitAllPeaksInSpectrum(const MSSpectrum& spec, double tol, const FLASHHelperClasses::PrecalculatedAveragine& avg, double mono_mass,
-                                   std::vector<LogMzPeak>& noisy_peaks, bool renew_signal_peaks = true);
+                                   std::vector<LogMzPeak>& noisy_peaks, bool renew_signal_peaks = true, const double* log_mz = nullptr);
 
     /**
      * @brief Get noisy peaks for this PeakGroup without modifying any state (const-safe).

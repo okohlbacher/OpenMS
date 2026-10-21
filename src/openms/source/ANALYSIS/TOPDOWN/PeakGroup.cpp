@@ -583,7 +583,8 @@ namespace OpenMS
                                             const FLASHHelperClasses::PrecalculatedAveragine& avg,
                                             double mono_mass,
                                             std::vector<LogMzPeak>& noisy_peaks,
-                                            bool renew_signal_peaks)
+                                            bool renew_signal_peaks,
+                                            const double* log_mz)
   {
     const double mul_tol = .8; // not all peaks within tolerance are considered as signal peaks.
     noisy_peaks.clear();
@@ -630,7 +631,7 @@ namespace OpenMS
 
         if (abs(pmz - cmz - iso_index * iso_delta) <= pmz * tol * mul_tol)
         {
-          auto p = LogMzPeak(spec[index], is_positive_);
+          auto p = log_mz != nullptr ? LogMzPeak(spec[index], is_positive_, log_mz[index]) : LogMzPeak(spec[index], is_positive_);
           p.setIsotopeIndex(iso_index);
           p.setAbsCharge(c);
           if (iso_index < 0) { negative_iso_peaks_.push_back(p); }
@@ -642,7 +643,7 @@ namespace OpenMS
         }
         else if (iso_index >= 0)
         {
-          auto p = LogMzPeak(spec[index], is_positive_);
+          auto p = log_mz != nullptr ? LogMzPeak(spec[index], is_positive_, log_mz[index]) : LogMzPeak(spec[index], is_positive_);
           int noise_iso_index = (int)floor((pmz - cmz) / iso_delta);
 
           p.setIsotopeIndex(noise_iso_index);

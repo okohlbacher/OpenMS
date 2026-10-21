@@ -401,6 +401,12 @@ namespace OpenMS
       */
       explicit LogMzPeak(const Peak1D& peak, bool positive);
 
+      /// constructor from Peak1D with a precomputed log(m/z - charge carrier mass)
+      LogMzPeak(const Peak1D& peak, bool positive, double log_mz) noexcept :
+          data_ {peak.getMZ(), log_mz, 0, peak.getIntensity(), static_cast<std::int16_t>(positive ? 0 : NEGATIVE_POLARITY), 0}
+      {
+      }
+
       /// copy constructor
       LogMzPeak(const LogMzPeak&) = default;
 

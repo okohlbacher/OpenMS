@@ -222,6 +222,8 @@ namespace OpenMS
     boost::dynamic_bitset<> to_skip_pool_;
     std::vector<Size> mz_bin_index_reverse_pool_;
     std::vector<Size> peak_bin_numbers_pool_;
+    /// log(m/z - charge carrier mass) of every peak of the current spectrum, computed once per spectrum
+    std::vector<double> raw_log_mz_;
     /// candidate PeakGroup vector of the previous spectrum, kept for its capacity
     std::vector<PeakGroup> candidate_pool_;
 
