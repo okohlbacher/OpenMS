@@ -194,7 +194,20 @@ namespace OpenMS
 
   Size FLASHHelperClasses::PrecalculatedAveragine::massToIndex_(const double mass) const
   {
-    Size i = (Size)round(std::max(.0, mass - min_mass_) / mass_interval_);
+    // round(x / mass_interval_) via a per-thread cached reciprocal: the product is within |q| * 4e-16 of the divided
+    // value, so its rounding is the same whenever its fractional part is more than 1e-7 away from 0.5 (|q| < 1e8);
+    // otherwise divide as before
+    thread_local double cached_interval = 0, cached_inverse = 0;
+    if (mass_interval_ != cached_interval)
+    {
+      cached_interval = mass_interval_;
+      cached_inverse = 1.0 / mass_interval_;
+    }
+    const double x = std::max(.0, mass - min_mass_);
+    const double q = x * cached_inverse;
+    Size i;
+    if (q >= 0 && q < 1e8 && std::fabs(q - (double)(long long)q - 0.5) > 1e-7) { i = (Size)(long long)q + (Size)(q - (double)(long long)q > 0.5); }
+    else { i = (Size)round(x / mass_interval_); }
     i = std::min(i, isotopes_.size() - 1);
     return i;
   }
