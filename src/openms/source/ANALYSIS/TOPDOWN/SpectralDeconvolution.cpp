@@ -424,6 +424,15 @@ inline const double tol_div_factor
 
       double bin_mul_factor = bin_mul_factors_[ms_level_ - 1];
       std::vector<float> sub_max_h_intensity(h_charge_size, .0f);
+      // intensity-ratio factor per charge (same expression as before, evaluated once per spectrum)
+      thread_local std::vector<float> charge_factors;
+      charge_factors.resize(current_max_charge_ > 0 ? current_max_charge_ : 0);
+      for (int j = 0; j < current_max_charge_; j++)
+      {
+        const int abs_charge = j + 1;
+        const float highest_factor = 10.0f;
+        charge_factors[j] = abs_charge <= low_charge_ ? highest_factor : (highest_factor / 2 + highest_factor / 2 * low_charge_ / (float)abs_charge);
+      }
 
       // traverse from right to left in the log mz bin space
       for (auto iter = mz_bin_index_reverse.rbegin(); iter < mz_bin_index_reverse.rend(); iter++)
@@ -459,9 +468,7 @@ inline const double tol_div_factor
           bool pass_first_check = false;
 
           // intensity ratio between consecutive charges should not exceed the factor.
-          const float highest_factor = 10.0f;
-          const float factor
-            = abs_charge <= low_charge_ ? highest_factor : (highest_factor / 2 + highest_factor / 2 * low_charge_ / (float)abs_charge);
+          const float factor = charge_factors[j];
           // intensity ratio between consecutive charges for possible harmonic should be within this factor
 
           const float hfactor = factor / 2.0f;
@@ -471,7 +478,8 @@ inline const double tol_div_factor
           intensity_ratio = intensity_ratio < 1 ? 1.0f / intensity_ratio : intensity_ratio;
           float support_peak_intensity = 0;
           // check if peaks of continuous charges are present
-          std::fill(sub_max_h_intensity.begin(), sub_max_h_intensity.end(), .0f);
+          // cleared lazily: only the two blocks below read it, and the second adds to what the first accumulated
+          bool h_cleared = false;
 
           // if charge not continuous or intensity ratio is too high reset support_peak_count
           if (charge_not_continous || intensity_ratio > factor) { spc = 0; }
@@ -484,6 +492,8 @@ inline const double tol_div_factor
           // for low charges, check isotope peak presence.
           if (! pass_first_check && abs_charge <= low_charge_)
           {
+            std::fill(sub_max_h_intensity.begin(), sub_max_h_intensity.end(), .0f);
+            h_cleared = true;
             // find the next isotope peak(s) and try to avoid harmonic masses
             for (int d = 1; d >= (activeAveragine_().getApexIndex(mz * abs_charge) > 0 ? -1 : 1); d -= 2)
             {
@@ -552,6 +562,7 @@ inline const double tol_div_factor
           {
             if (prev_charge - j == -1) // check harmonic artifacts for high charge ranges
             {
+              if (! h_cleared) { std::fill(sub_max_h_intensity.begin(), sub_max_h_intensity.end(), .0f); }
               float max_intensity = intensity;
               float min_intensity = prev_intensity;
               if (prev_intensity <= .0)
