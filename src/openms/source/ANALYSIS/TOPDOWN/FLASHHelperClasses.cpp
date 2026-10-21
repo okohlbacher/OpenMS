@@ -256,33 +256,11 @@ namespace OpenMS
   {
   }
 
-  double FLASHHelperClasses::LogMzPeak::getUnchargedMass() const
-  {
-    if (getAbsCharge() == 0) { return .0; }
-    if (getMass() <= 0) { return (getMZ() - getChargeMass(isPositive())) * (float)getAbsCharge(); }
-    return getMass();
-  }
-
-  bool FLASHHelperClasses::LogMzPeak::operator<(const LogMzPeak& a) const
-  {
-    if (this->getLogMz() == a.getLogMz()) { return this->getIntensity() < a.getIntensity(); }
-    return this->getLogMz() < a.getLogMz();
-  }
-
-  bool FLASHHelperClasses::LogMzPeak::operator>(const LogMzPeak& a) const
-  {
-    if (this->getLogMz() == a.getLogMz()) { return this->getIntensity() > a.getIntensity(); }
-    return this->getLogMz() > a.getLogMz();
-  }
-
-  bool FLASHHelperClasses::LogMzPeak::operator==(const LogMzPeak& a) const
-  { return this->getLogMz() == a.getLogMz() && this->getIntensity() == a.getIntensity(); }
 
 
-  float FLASHHelperClasses::getChargeMass(const bool positive_ioniziation_mode)
-  {
-    return (float)(positive_ioniziation_mode ? Constants::PROTON_MASS_U : -Constants::PROTON_MASS_U);
-  }
+
+
+
 
   double FLASHHelperClasses::getLogMz(const double mz, const bool positive)
   {
