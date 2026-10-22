@@ -183,6 +183,16 @@ namespace OpenMS
 
     if (empty()) { return 0; }
     updatePerChargeInformation_(noisy_peaks, tol, is_last);
+    // The all-charge noise power is read only by updateSNR_, which most candidates of the final (is_last) call never reach (e.g. ~98 % of the
+    // harmonic hypotheses fail earlier). Keep its inputs as they are now (the next calls drop and reorder signal peaks and narrow the charge
+    // range) and compute it there: same inputs, same result. Too many noise peaks slow it down, hence the cap.
+    thread_local std::vector<LogMzPeak> all_charge_signal_peaks; // per-worker scratch
+    Size all_charge_max_noisy_peaks = 0;
+    if (is_last)
+    {
+      all_charge_signal_peaks.assign(logMzpeaks_.begin(), logMzpeaks_.end());
+      all_charge_max_noisy_peaks = std::min(200, 40 * (max_abs_charge_ - min_abs_charge_ + 1));
+    }
     updateChargeRange_();
     updateChargeFitScoreAndChargeIntensities_(is_low_charge);
     if (charge_score_ < .7f) //
@@ -203,6 +213,11 @@ namespace OpenMS
     if (isotope_cosine_score_ < min_cos) { return 0; }
     updatePerChargeCos_(avg, tol);
     updateAvgMassError_();
+    if (is_last)
+    {
+      per_charge_noise_pwr_[0] = getNoisePeakPower_(noisy_peaks.data(), noisy_peaks.data() + noisy_peaks.size(), all_charge_signal_peaks.data(),
+                                                    all_charge_signal_peaks.data() + all_charge_signal_peaks.size(), all_charge_max_noisy_peaks, tol);
+    }
     updateSNR_((float)avg.getSNRMultiplicationFactor(monoisotopic_mass_));
     //if (target_decoy_type_ == PeakGroup::signal_decoy) isotope_cosine_score_ = std::min(1.0f, isotope_cosine_score_ + .02f); // the smaller
 
@@ -216,16 +231,14 @@ namespace OpenMS
   }
 
   float PeakGroup::getNoisePeakPower_(const LogMzPeak* noisy_begin, const LogMzPeak* noisy_end, const LogMzPeak* signal_begin,
-                                      const LogMzPeak* signal_end, const int z, const double tol) const
+                                      const LogMzPeak* signal_end, const Size max_noisy_peak_number, const double tol) const
   {
     if (noisy_begin == noisy_end) return 0;
-    const Size max_noisy_peak_number
-      = z == 0 ? std::min(200, 40 * (max_abs_charge_ - min_abs_charge_ + 1)) : 40; // too many noise peaks will slow down the process
     constexpr Size bin_number_margin = 8;
     constexpr Size max_bin_number = bin_number_margin + 12; // 12 bin + 8 extra bin
     float threshold = -1;
 
-    // the ranges are already restricted to charge z (or to all charges for z == 0)
+    // the ranges are already restricted to one charge (or hold all charges for the all-charge power)
     const Size noise_peak_count = noisy_end - noisy_begin;
     // get intensity threshold: the (max_noisy_peak_number + 1)-th largest intensity, as a full descending sort would give
     if (noise_peak_count > max_noisy_peak_number)
@@ -653,10 +666,9 @@ namespace OpenMS
       for (int z = min_abs_charge_; z <= max_abs_charge_; z++)
       {
         per_charge_noise_pwr_[z] = getNoisePeakPower_(noisy_by_charge.data() + noisy_offset[z], noisy_by_charge.data() + noisy_offset[z + 1],
-                                                      signal_by_charge.data() + signal_offset[z], signal_by_charge.data() + signal_offset[z + 1], z, tol);
+                                                      signal_by_charge.data() + signal_offset[z], signal_by_charge.data() + signal_offset[z + 1], 40, tol);
       }
-      per_charge_noise_pwr_[0] = getNoisePeakPower_(noisy_peaks.data(), noisy_peaks.data() + noisy_peaks.size(), logMzpeaks_.data(),
-                                                    logMzpeaks_.data() + logMzpeaks_.size(), 0, tol);
+      // per_charge_noise_pwr_[0] (all charges) is computed in updateQscore when updateSNR_ needs it
     }
     else
     {
