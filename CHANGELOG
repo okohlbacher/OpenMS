@@ -17,7 +17,8 @@ PR - Pull Request (on GitHub), i.e. integration of a new feature or bugfix
 ------------------------------------------------------------------------------------------
 
 General:
-  - FLASHDeconv is faster and its output no longer depends on the thread count (on a 1.25 GB top-down file: TODO_NUMBERS):
+  - FLASHDeconv is faster and its output no longer depends on the thread count (1.25 GB top-down file, vs. develop of
+    15 Oct 2026: 1.8x at 1 thread, 12x at 16 and 39x at 64 threads; with -FD:report_FDR 1.7x, 16x and 62x):
     spectra and their FDR decoys are deconvolved by a pool of OpenMP workers, mzML is loaded in parallel, the noise
     model and candidate scoring avoid rescans, branches and divisions, spectrum TSVs are formatted in parallel (also
     with -FD:report_FDR), and on Linux/glibc the heap uses transparent huge pages (FLASH_NO_HUGETLB disables it).
