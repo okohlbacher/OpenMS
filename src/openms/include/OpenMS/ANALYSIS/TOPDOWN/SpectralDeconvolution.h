@@ -16,6 +16,7 @@
 #include <OpenMS/KERNEL/MSExperiment.h>
 #include <OpenMS/KERNEL/MSSpectrum.h>
 #include <boost/dynamic_bitset.hpp>
+#include <array>
 #include <iostream>
 #include <memory>
 
@@ -143,6 +144,14 @@ namespace OpenMS
     */
     void setSharedAveragine_(std::shared_ptr<const PrecalculatedAveragine> avg);
 
+    /**
+      @brief FDR: @p signal_decoy reuses the candidate mass bins of @p target for the same spectrum.
+      The signal decoy run bins the same spectrum with the same averagine, charges and isotope distance and only skips its excluded
+      bins, which no other bin depends on; so its candidate bins are the target's with the excluded bins cleared. Both objects must
+      outlive their use and the signal decoy must run right after the target on the same spectrum (checked, else it bins itself).
+    */
+    static void shareCandidateMassBins_(SpectralDeconvolution& target, SpectralDeconvolution& signal_decoy);
+
     /// Select the active model without reference-count operations in hot loops.
     const PrecalculatedAveragine& activeAveragine_() const noexcept
     {
@@ -217,6 +226,15 @@ namespace OpenMS
     /// They live as long as this worker, so spectra reuse capacity instead of mapping and zeroing fresh pages.
     std::vector<float> mz_intensities_pool_;
     std::vector<float> mass_intensities_pool_;
+    /// candidate mass bins kept by a target run for its signal decoy run (see shareCandidateMassBins_)
+    bool keep_candidate_mass_bins_ = false;
+    bool kept_mass_bins_valid_ = false;
+    std::vector<float> kept_mass_intensities_;
+    boost::dynamic_bitset<> kept_binned_log_masses_;
+    std::array<double, 5> kept_mass_bins_key_ {};
+    const SpectralDeconvolution* mass_bin_source_ = nullptr;
+    /// what the candidate mass bins of the current spectrum depend on besides the spectrum's peaks
+    std::array<double, 5> candidateMassBinsKey_(Size mz_bin_number) const;
     std::vector<unsigned char> mass_bin_state_pool_;
     Matrix<int> abs_charge_ranges_pool_;
     boost::dynamic_bitset<> to_skip_pool_;

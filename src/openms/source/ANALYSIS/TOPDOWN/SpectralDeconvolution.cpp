@@ -217,6 +217,7 @@ inline const double tol_div_factor
                          ? Constants::ISOTOPE_MASSDIFF_55K_U * noise_iso_delta_
                          : Constants::ISOTOPE_MASSDIFF_55K_U;
 
+    kept_mass_bins_valid_ = false; // a signal decoy run may only reuse the bins of this spectrum
     // excluded peak masses or mass bins or monoisotopic masses for signal decoy runs
     excluded_peak_masses_for_decoy_runs_.clear();
     excluded_mass_bins_for_decoy_runs_.reset();
@@ -786,10 +787,46 @@ inline const double tol_div_factor
     return abs_charge_ranges;
   }
 
+  void SpectralDeconvolution::shareCandidateMassBins_(SpectralDeconvolution& target, SpectralDeconvolution& signal_decoy)
+  {
+    target.keep_candidate_mass_bins_ = true;
+    signal_decoy.mass_bin_source_ = &target;
+  }
+
+  std::array<double, 5> SpectralDeconvolution::candidateMassBinsKey_(Size mz_bin_number) const
+  {
+    return {(double)deconvolved_spectrum_.getScanNumber(), (double)binned_log_masses_.size(), (double)mz_bin_number, (double)current_max_charge_,
+            mz_bin_min_value_};
+  }
+
   // update mass bins which will be used to select peaks in the input spectrum...
   const Matrix<int>& SpectralDeconvolution::updateMassBins_(const std::vector<float>& mz_intensities)
   {
-    updateCandidateMassBins_(mass_intensities_pool_, mz_intensities); // universal pattern matching
+    const SpectralDeconvolution* source = mass_bin_source_;
+    if (source != nullptr && source->kept_mass_bins_valid_ && source->kept_mass_bins_key_ == candidateMassBinsKey_(mz_intensities.size()))
+    {
+      // signal decoy: the target's candidate bins without the excluded ones (an excluded bin is skipped before it is touched)
+      mass_intensities_pool_ = source->kept_mass_intensities_;
+      binned_log_masses_ = source->kept_binned_log_masses_;
+      for (Size bin = excluded_mass_bins_for_decoy_runs_.find_first(); bin != excluded_mass_bins_for_decoy_runs_.npos;
+           bin = excluded_mass_bins_for_decoy_runs_.find_next(bin))
+      {
+        if (bin >= binned_log_masses_.size()) { break; }
+        mass_intensities_pool_[bin] = .0f;
+        binned_log_masses_[bin] = false;
+      }
+    }
+    else
+    {
+      updateCandidateMassBins_(mass_intensities_pool_, mz_intensities); // universal pattern matching
+      if (keep_candidate_mass_bins_)
+      {
+        kept_mass_intensities_ = mass_intensities_pool_;
+        kept_binned_log_masses_ = binned_log_masses_;
+        kept_mass_bins_key_ = candidateMassBinsKey_(mz_intensities.size());
+        kept_mass_bins_valid_ = true;
+      }
+    }
     return filterMassBins_(mass_intensities_pool_);
   }
 

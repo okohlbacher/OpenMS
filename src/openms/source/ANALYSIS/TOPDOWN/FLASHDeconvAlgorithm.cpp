@@ -474,6 +474,7 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
       signal_decoy_workers[w].setParameters(sd_signal_decoy_.getParameters());
       signal_decoy_workers[w].setTargetDecoyType(PeakGroup::TargetDecoyType::signal_decoy, spectrum_workers[w].getDeconvolvedSpectrum());
       signal_decoy_workers[w].setSharedAveragine_(signal_avg);
+      SpectralDeconvolution::shareCandidateMassBins_(spectrum_workers[w], signal_decoy_workers[w]);
     }
   }
 
@@ -805,6 +806,7 @@ void FLASHDeconvAlgorithm::run(MSExperiment& map,
     sd_signal_decoy_.setParameters(sd_param);
     sd_signal_decoy_.setTargetDecoyType(PeakGroup::TargetDecoyType::signal_decoy, sd_.getDeconvolvedSpectrum()); // isotope
     sd_signal_decoy_.setAveragine(avg);
+    SpectralDeconvolution::shareCandidateMassBins_(sd_, sd_signal_decoy_);
   }
 
   setLogType(CMD);
