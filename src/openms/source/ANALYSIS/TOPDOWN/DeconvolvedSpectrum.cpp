@@ -6,6 +6,8 @@
 // $Authors: Kyowon Jeong, Jihyung Kim $
 // --------------------------------------------------------------------------
 
+#include <cmath>
+#include <cstdlib>
 #include <OpenMS/ANALYSIS/TOPDOWN/DeconvolvedSpectrum.h>
 
 #include <unordered_set>
@@ -43,7 +45,7 @@ namespace OpenMS
       return out_spec;
     }
 
-    double charge_mass_offset = (double)abs(to_charge) * FLASHHelperClasses::getChargeMass(to_charge >= 0);
+    double charge_mass_offset = (double)std::abs(to_charge) * FLASHHelperClasses::getChargeMass(to_charge >= 0);
     std::unordered_set<double> deconvolved_mzs;
     std::stringstream val {};
 
@@ -192,7 +194,7 @@ namespace OpenMS
     {
       return max_abs_charge;
     }
-    return std::min(max_abs_charge, abs(precursor_peak_group_.getRepAbsCharge()));
+    return std::min(max_abs_charge, std::abs(precursor_peak_group_.getRepAbsCharge()));
   }
 
   const Precursor& DeconvolvedSpectrum::getPrecursor() const

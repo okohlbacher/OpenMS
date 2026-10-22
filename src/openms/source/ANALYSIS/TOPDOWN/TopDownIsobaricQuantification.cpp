@@ -6,6 +6,8 @@
 // $Authors: Kyowon Jeong$
 // --------------------------------------------------------------------------
 
+#include <cmath>
+#include <cstdlib>
 #include <OpenMS/ANALYSIS/QUANTITATION/IsobaricChannelExtractor.h>
 #include <OpenMS/ANALYSIS/QUANTITATION/IsobaricQuantifier.h>
 #include <OpenMS/ANALYSIS/QUANTITATION/IsobaricQuantitationMethod.h>
@@ -149,14 +151,14 @@ TopDownIsobaricQuantification::TopDownIsobaricQuantification() : DefaultParamHan
       for (auto& p : mass_trace)
       {
         auto trt = *rt_scan_map.lower_bound(p.getRT());
-        if (abs(trt.first - p.getRT()) > .01)
+        if (std::abs(trt.first - p.getRT()) > .01)
           continue;
         int scan = trt.second;
         if (!scan_precursors_map.contains(scan))
           continue;
         for (auto& pg : scan_precursors_map[scan])
         {
-          if (abs(pg.getMonoMass() - p.getMZ()) > .01)
+          if (std::abs(pg.getMonoMass() - p.getMZ()) > .01)
             continue;
           cluster.push_back(pg);
         }
@@ -202,7 +204,7 @@ TopDownIsobaricQuantification::TopDownIsobaricQuantification() : DefaultParamHan
         continue;
 
       auto trt = *rt_scan_map.lower_bound(feature.getRT());
-      if (abs(trt.first - feature.getRT()) > .01)
+      if (std::abs(trt.first - feature.getRT()) > .01)
         continue;
       int scan = trt.second;
       ms2_ints[scan] = intensities;
@@ -225,7 +227,7 @@ TopDownIsobaricQuantification::TopDownIsobaricQuantification() : DefaultParamHan
       {
         if (!ms2_ints.contains(ms2_scan) || ms2_ints[ms2_scan].empty())
           continue;
-        if (!ms2_scan_precursor_mz.contains(ms2_scan) || abs(ms2_scan_precursor_mz[ms2_scan] - pre_mz) > .01)
+        if (!ms2_scan_precursor_mz.contains(ms2_scan) || std::abs(ms2_scan_precursor_mz[ms2_scan] - pre_mz) > .01)
           continue;
         if (intensities.empty())
         {

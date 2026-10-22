@@ -6,6 +6,8 @@
 // $Authors: Kyowon Jeong, Jihyung Kim, Jaekwan Kim $
 // --------------------------------------------------------------------------
 
+#include <cmath>
+#include <cstdlib>
 #include <OpenMS/ANALYSIS/TOPDOWN/DeconvolvedSpectrum.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/PeakGroup.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/SpectralDeconvolution.h>
@@ -253,8 +255,8 @@ namespace OpenMS
     max_abs_charge_ = param_.getValue("max_charge");
     is_positive_ = min_abs_charge_ > 0;
 
-    min_abs_charge_ = abs(min_abs_charge_);
-    max_abs_charge_ = abs(max_abs_charge_);
+    min_abs_charge_ = std::abs(min_abs_charge_);
+    max_abs_charge_ = std::abs(max_abs_charge_);
 
     if (min_abs_charge_ > max_abs_charge_)
     {
@@ -462,8 +464,8 @@ namespace OpenMS
             const int nibr
               = abs_charge > 1 ? (int)getBinNumber_(log_mz + (d * iso_div_by_mz / (abs_charge - 1)), mz_bin_min_value_, bin_mul_factor) : 0;
             const int nibl = (int)getBinNumber_(log_mz + (d * iso_div_by_mz / (abs_charge + 1)), mz_bin_min_value_, bin_mul_factor);
-            if (abs(nib - nibr) < tol_div_factor
-                || abs(nib - nibl)
+            if (std::abs(nib - nibr) < tol_div_factor
+                || std::abs(nib - nibl)
                      < tol_div_factor) // if different charges are not distinguishable, we ignore. Not informative and the source of the errors.
               break;
 
@@ -554,10 +556,10 @@ namespace OpenMS
                   if (h_intensity > low_threshold && h_intensity < high_threshold)
                   {
                     is_harmonic = true;
-                    if (abs(t) < min_dis)
+                    if (std::abs(t) < min_dis)
                     {
                       harmonic_intensity = h_intensity;
-                      min_dis = abs(t);
+                      min_dis = std::abs(t);
                     }
                   }
                 }
@@ -800,7 +802,7 @@ namespace OpenMS
 
           if (observed_mz - max_mz > (double)right_index * iso_delta + mz_delta) { break; }
 
-          if (abs(mz_diff - tmp_i * iso_delta) < mz_delta) // if peak is signal
+          if (std::abs(mz_diff - tmp_i * iso_delta) < mz_delta) // if peak is signal
           {
             const Size bin = peak_bin_numbers[peak_index] + bin_offset;
             if (bin < mass_bin_size && ! (bin < bitsets_.impl->excluded_mass_bins_for_decoy_runs_.size() && bitsets_.impl->excluded_mass_bins_for_decoy_runs_[bin]))
@@ -820,7 +822,7 @@ namespace OpenMS
           int tmp_i = (int)round(mz_diff / iso_delta);
 
           if (max_mz - observed_mz > (float)left_index * iso_delta + mz_delta) { break; }
-          if (abs(mz_diff - tmp_i * iso_delta) < mz_delta)
+          if (std::abs(mz_diff - tmp_i * iso_delta) < mz_delta)
           {
             const Size bin = peak_bin_numbers[peak_index] + bin_offset;
             if (bin < mass_bin_size && ! (bin < bitsets_.impl->excluded_mass_bins_for_decoy_runs_.size() && bitsets_.impl->excluded_mass_bins_for_decoy_runs_[bin]))
@@ -858,7 +860,7 @@ namespace OpenMS
         {
           p.isotopeIndex = (int)round((p.getUnchargedMass() - t_mass) / iso_da_distance_);
 
-          if (abs(t_mass - p.getUnchargedMass() + iso_da_distance_ * p.isotopeIndex) > iso_tolerance) { continue; }
+          if (std::abs(t_mass - p.getUnchargedMass() + iso_da_distance_ * p.isotopeIndex) > iso_tolerance) { continue; }
           p.isotopeIndex += apex_index;
           new_peaks.push_back(p);
           min_off = min_off > p.isotopeIndex ? p.isotopeIndex : min_off;
@@ -1256,6 +1258,8 @@ namespace OpenMS
           excluded_masses_for_decoy_runs_.push_back(pg.getMonoMass() + j * iso_da_distance_);
         }
       }
+      // isPeakGroupInExcludedMassForDecoyRuns_ binary-searches this list; with allowed_isotope_error > 0 the entries interleave
+      std::sort(excluded_masses_for_decoy_runs_.begin(), excluded_masses_for_decoy_runs_.end());
 
       for (Size k = 0; k < deconvolved_spectrum_.size(); k++)
       {
@@ -1330,7 +1334,7 @@ namespace OpenMS
 
     for (int tmp_offset = -left; tmp_offset <= right; tmp_offset++)
     {
-      if (window_width >= 0 && abs(tmp_offset - iso_int_shift) > window_width)
+      if (window_width >= 0 && std::abs(tmp_offset - iso_int_shift) > window_width)
         continue;
       if (!excluded_masses.empty())
       {
@@ -1356,7 +1360,7 @@ namespace OpenMS
     for (const auto& [o, c] : offset_cos)
     {
       if (o > right || o < -left) continue;
-      if (window_width >= 0 && abs(o - iso_int_shift) > window_width) //
+      if (window_width >= 0 && std::abs(o - iso_int_shift) > window_width) //
         continue;
 
       offset = o;
