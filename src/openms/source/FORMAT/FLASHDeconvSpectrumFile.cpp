@@ -28,8 +28,8 @@ namespace OpenMS
 
    */
 
+  // Noise decoy rows are subsampled from one random sequence, drawn in spectrum order.
   inline std::default_random_engine generator_;
-  inline std::uniform_real_distribution<double> distribution_(0.0,1.0);
 
   namespace
   {
@@ -39,10 +39,18 @@ namespace OpenMS
       static std::vector<uint> indices;
       return indices;
     }
+
+    /// whether a noise decoy row is written: one draw per noise decoy peak group (a distribution has no state, so a fresh one per draw
+    /// gives the same sequence as a shared one)
+    bool keepNoiseDecoy_(std::default_random_engine& gen, const double noise_decoy_weight)
+    {
+      return std::uniform_real_distribution<double>(0.0, 1.0)(gen) <= noise_decoy_weight;
+    }
   }
 
   static void writeDeconvolvedMasses_(const DeconvolvedSpectrum& dspec, std::ostream& os, const std::string& file_name, const FLASHHelperClasses::PrecalculatedAveragine& avg, const FLASHHelperClasses::PrecalculatedAveragine& decoy_avg, double tol,
-                                                       const bool write_detail, const bool report_decoy, const double noise_decoy_weight, uint& index)
+                                                       const bool write_detail, const bool report_decoy, const double noise_decoy_weight, uint& index,
+                                                       std::default_random_engine& gen)
   {
     if (!report_decoy && dspec.isDecoy()) return;
     std::stringstream ss;
@@ -79,16 +87,7 @@ namespace OpenMS
       const auto& pg = dspec[i];
       if (!report_decoy && pg.getTargetDecoyType() != PeakGroup::TargetDecoyType::target) continue;
 
-      if (pg.getTargetDecoyType() == PeakGroup::TargetDecoyType::noise_decoy)
-      {
-        double number = distribution_(generator_);
-        if (number > noise_decoy_weight)
-        {
-          continue;
-        }
-        // Note: removed i-- logic as it doesn't work well with const iteration
-        // The random sampling behavior is preserved by the continue above
-      }
+      if (pg.getTargetDecoyType() == PeakGroup::TargetDecoyType::noise_decoy && ! keepNoiseDecoy_(gen, noise_decoy_weight)) { continue; }
 
       const auto& avg_ = pg.getTargetDecoyType() == PeakGroup::TargetDecoyType::noise_decoy? decoy_avg : avg;
       const double mono_mass = pg.getMonoMass();
@@ -256,7 +255,7 @@ namespace OpenMS
     auto& indices = writerIndices_();
     while (indices.size() <= dspec.getOriginalSpectrum().getMSLevel()) { indices.push_back(1); }
     writeDeconvolvedMasses_(dspec, os, file_name, avg, decoy_avg, tol, write_detail, report_decoy,
-                           noise_decoy_weight, indices[dspec.getOriginalSpectrum().getMSLevel() - 1]);
+                           noise_decoy_weight, indices[dspec.getOriginalSpectrum().getMSLevel() - 1], generator_);
   }
 
   void FLASHDeconvSpectrumFile::writeDeconvolvedMassesParallel(const std::vector<DeconvolvedSpectrum>& spectra,
@@ -270,7 +269,7 @@ namespace OpenMS
     std::vector<Size> jobs;
     int worker_count = 1;
 #ifdef _OPENMP
-    if (write_detail && !report_decoy && !Internal::OpenMSBuildInfo::isOpenMPParallelRegion())
+    if (write_detail && !Internal::OpenMSBuildInfo::isOpenMPParallelRegion())
     {
       worker_count = omp_get_max_threads(); // buffers are released as committed, so no string cap is needed
     }
@@ -311,7 +310,10 @@ namespace OpenMS
       // thread holds the commit lock, so formatting never waits at a wave barrier and each buffer is
       // released as soon as it is written.
       const Size n = jobs.size();
+      // With report_decoy a row also depends on the random sequence the noise decoys are drawn from: the draws are replayed here in
+      // input order, and each row formats from its own copy of the generator state.
       std::vector<uint> first_indices(n), end_indices(n);
+      std::vector<std::default_random_engine> first_gens(report_decoy ? n : 0);
       auto next_indices = indices;
       for (Size row = 0; row < n; ++row)
       {
@@ -319,9 +321,15 @@ namespace OpenMS
         const auto level = spectrum.getOriginalSpectrum().getMSLevel();
         while (next_indices.size() <= level) { next_indices.push_back(1); }
         first_indices[row] = next_indices[level - 1];
+        if (report_decoy) { first_gens[row] = generator_; }
         for (const auto& pg : spectrum)
         {
-          if (pg.getTargetDecoyType() == PeakGroup::TargetDecoyType::target) { ++next_indices[level - 1]; }
+          const auto type = pg.getTargetDecoyType();
+          if (type == PeakGroup::TargetDecoyType::target
+              || (report_decoy && (type != PeakGroup::TargetDecoyType::noise_decoy || keepNoiseDecoy_(generator_, noise_decoy_weight))))
+          {
+            ++next_indices[level - 1];
+          }
         }
       }
       std::vector<std::string> buffers(n);
@@ -357,7 +365,7 @@ namespace OpenMS
           commit_failed = true;
         }
       };
-#pragma omp parallel for num_threads(worker_count) schedule(dynamic, 1) default(none) shared(spectra, jobs, first_indices, end_indices, buffers, errors, ready, commit_mutex, drain, file_name, avg, decoy_avg, tols, write_detail, noise_decoy_weight, n, next_commit, commit_failed, window)
+#pragma omp parallel for num_threads(worker_count) schedule(dynamic, 1) default(none) shared(spectra, jobs, first_indices, end_indices, first_gens, buffers, errors, ready, commit_mutex, drain, file_name, avg, decoy_avg, tols, write_detail, report_decoy, noise_decoy_weight, n, next_commit, commit_failed, window)
       for (SignedSize row = 0; row < (SignedSize)n; ++row)
       {
         uint index = first_indices[row];
@@ -373,7 +381,8 @@ namespace OpenMS
           auto& spectrum = spectra[jobs[row]];
           const auto level = spectrum.getOriginalSpectrum().getMSLevel();
           std::ostringstream buffer;
-          writeDeconvolvedMasses_(spectrum, buffer, file_name, avg, decoy_avg, tols[level - 1], write_detail, false, noise_decoy_weight, index);
+          std::default_random_engine gen = report_decoy ? first_gens[row] : std::default_random_engine();
+          writeDeconvolvedMasses_(spectrum, buffer, file_name, avg, decoy_avg, tols[level - 1], write_detail, report_decoy, noise_decoy_weight, index, gen);
           buffers[row] = buffer.str();
         }
         catch (...)
