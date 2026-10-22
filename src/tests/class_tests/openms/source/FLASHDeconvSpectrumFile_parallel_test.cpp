@@ -303,8 +303,8 @@ START_SECTION((writeDeconvolvedMassesParallel : prevalidation preserves state an
   std::vector<Spectrum> spectra {spectrum(1, 1, true, avg), spectrum(2, 2, false, avg)};
   const auto before = state(spectra);
   const auto position = streams[0].tellp();
-  TEST_EXCEPTION(Exception::InvalidParameter, FLASHDeconvSpectrumFile::writeDeconvolvedMassesParallel(spectra, streams, {}, "fixture.mzML", avg,
-                                                                                                      decoy_avg, {10, 10}, true, false, 1.0))
+  // levels without an output file are skipped (nothing written), as the TOPP tool always did
+  FLASHDeconvSpectrumFile::writeDeconvolvedMassesParallel(spectra, streams, {}, "fixture.mzML", avg, decoy_avg, {10, 10}, true, false, 1.0);
   TEST_EXCEPTION(Exception::InvalidParameter, FLASHDeconvSpectrumFile::writeDeconvolvedMassesParallel(spectra, streams, names, "fixture.mzML", avg,
                                                                                                       decoy_avg, {}, true, false, 1.0))
   TEST_EQUAL(state(spectra), before)
