@@ -277,11 +277,8 @@ namespace OpenMS
     for (Size i = 0; i < spectra.size(); ++i)
     {
       const auto level = spectra[i].getOriginalSpectrum().getMSLevel();
-      if (level == 0 || level > output_files.size() || level > streams.size())
-      {
-        throw Exception::InvalidParameter(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "Detailed writer requires an output slot for each spectrum MS level");
-      }
-      if (output_files[level - 1].empty()) { continue; }
+      // levels without an output file (e.g. MS5 with out_spec1..4) are skipped, as before
+      if (level == 0 || level > output_files.size() || level > streams.size() || output_files[level - 1].empty()) { continue; }
       if (level > tols.size()) { throw Exception::InvalidParameter(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "Detailed writer lacks an MS-level tolerance"); }
       // Failed streams and invalid raw-spectrum state keep the original path.
       if (!streams[level - 1].good() || !streams[level - 1].is_open()
@@ -296,7 +293,7 @@ namespace OpenMS
       for (auto& spectrum : spectra)
       {
         const auto level = spectrum.getOriginalSpectrum().getMSLevel();
-        if (output_files[level - 1].empty()) { continue; }
+        if (level == 0 || level > output_files.size() || level > streams.size() || output_files[level - 1].empty()) { continue; }
         writeDeconvolvedMasses(spectrum, streams[level - 1], file_name, avg, decoy_avg, tols[level - 1],
                               write_detail, report_decoy, noise_decoy_weight);
       }
@@ -365,7 +362,13 @@ namespace OpenMS
           commit_failed = true;
         }
       };
+// rows are taken in input order: a nonmonotonic (OpenMP >= 5.0 default, e.g. clang/libomp work stealing) schedule would make the
+// commit window wait for blocks far ahead
+#if defined(_OPENMP) && _OPENMP >= 201511
+#pragma omp parallel for num_threads(worker_count) schedule(monotonic: dynamic, 1) default(none) shared(spectra, jobs, first_indices, end_indices, first_gens, buffers, errors, ready, commit_mutex, drain, file_name, avg, decoy_avg, tols, write_detail, report_decoy, noise_decoy_weight, n, next_commit, commit_failed, window)
+#else
 #pragma omp parallel for num_threads(worker_count) schedule(dynamic, 1) default(none) shared(spectra, jobs, first_indices, end_indices, first_gens, buffers, errors, ready, commit_mutex, drain, file_name, avg, decoy_avg, tols, write_detail, report_decoy, noise_decoy_weight, n, next_commit, commit_failed, window)
+#endif
       for (SignedSize row = 0; row < (SignedSize)n; ++row)
       {
         uint index = first_indices[row];

@@ -566,7 +566,12 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
           worker_index = omp_get_thread_num();
 #endif
           auto& worker = spectrum_workers[worker_index];
-#pragma omp for schedule(dynamic, 1)
+// costliest spectra first (job_order) only holds with a monotonic schedule (nonmonotonic is the OpenMP >= 5.0 default)
+#if defined(_OPENMP) && _OPENMP >= 201511
+  #pragma omp for schedule(monotonic: dynamic, 1)
+#else
+  #pragma omp for schedule(dynamic, 1)
+#endif
           for (SignedSize job_position = 0; job_position < (SignedSize)spectrum_indices.size(); ++job_position)
           {
             const SignedSize job = job_order[job_position];

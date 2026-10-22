@@ -100,6 +100,11 @@ inline const double tol_div_factor
     defaults_.setValue(
       "max_charge", 100,
       "Maximum charge state for spectra (can be negative for negative mode). Apart from min_charge, this option applies to all MS levels.");
+    // peaks store charges up to 200 (compact LogMzPeak): reject larger ones when the parameters are checked
+    defaults_.setMinInt("min_charge", -200);
+    defaults_.setMaxInt("min_charge", 200);
+    defaults_.setMinInt("max_charge", -200);
+    defaults_.setMaxInt("max_charge", 200);
     defaults_.setValue("precursor_charge", 0,
                        "Charge state of the target precursor. All precursor charge for MSn (n > 1) is fixed to this value. When precursor m/z is "
                        "provided within the input mzML file or is specified using precursor_mz option, "
