@@ -449,19 +449,21 @@ void FLASHTnTAlgorithm::updateMembers_()
 
 std::set<Size> FLASHTnTAlgorithm::getProteinsPassingFDR_(const std::vector<FASTAFile::FASTAEntry>& fasta_entry) const
 {
-  std::map<Size, double> best_score; // fasta index to the protein's best tag-based score over the run
+  // per fasta index, the protein's best tag-based score over the run (the meta value by index: a lookup by name takes a critical section)
+  const UInt mi_fasta_index = MetaInfoInterface::metaRegistry().registerName("FastaIndex");
+  std::vector<double> best_score(fasta_entry.size());
+  std::vector<bool> has_score(fasta_entry.size(), false);
   for (const auto& hit : protein_hits_)
   {
-    Size fi = (int)hit.getMetaValue("FastaIndex");
-    auto it = best_score.find(fi);
-    if (it == best_score.end() || it->second < hit.getScore()) best_score[fi] = hit.getScore();
+    const Size fi = (int)hit.getMetaValue(mi_fasta_index);
+    if (! has_score[fi] || best_score[fi] < hit.getScore()) best_score[fi] = hit.getScore();
+    has_score[fi] = true;
   }
 
-  std::vector<std::pair<double, Size>> ranked;
-  ranked.reserve(best_score.size());
-  for (const auto& [fi, score] : best_score)
+  std::vector<std::pair<double, Size>> ranked; // in fasta order before the sort, as from a map by fasta index
+  for (Size fi = 0; fi < fasta_entry.size(); fi++)
   {
-    ranked.emplace_back(score, fi);
+    if (has_score[fi]) ranked.emplace_back(best_score[fi], fi);
   }
   std::sort(ranked.begin(), ranked.end(), [](const auto& a, const auto& b) { return a.first > b.first; });
 
@@ -806,13 +808,34 @@ void FLASHTnTAlgorithm::vectorizeProteinSequence_(const std::vector<std::string>
   }
 }
 
+namespace
+{
+  /// free the elements of @p v with all threads (each moved out and destroyed by the thread that took it), then @p v itself
+  template<typename V>
+  void releaseInParallel(V& v)
+  {
+    using T = typename V::value_type;
+#pragma omp parallel for schedule(dynamic, 256)
+    for (SignedSize i = 0; i < (SignedSize)v.size(); i++)
+    {
+      T released(std::move(v[i]));
+    }
+    V().swap(v);
+  }
+} // namespace
+
 void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile::FASTAEntry>& original_fasta_entry)
 {
   setLogType(CMD);
 
-  std::map<String, std::vector<Size>> tag_to_protein_indices;   // tag to protein index in fasta
-  std::map<String, std::vector<Size>> tag_to_protein_positions; // tag to protein position
-  std::map<String, std::vector<double>> tag_to_n_flanking_masses, tag_to_c_flanking_masses; // tag to protein flanking masses
+  // per distinct tag sequence (tag_id_of: its position in tag_db): the proteins (index in fasta), positions and flanking masses of its hits
+  struct TagDbHits
+  {
+    std::vector<Size> proteins, positions;
+    std::vector<double> n_flanking_masses, c_flanking_masses;
+  };
+  std::unordered_map<std::string, Size> tag_id_of;
+  std::vector<TagDbHits> tag_db;
 
   std::map<int, std::vector<Size>> scan_to_tag_indices;         // scan number to tag indices
   std::vector<std::string> tag_seqs, protein_seqs, cleaned_protein_seqs;
@@ -1059,6 +1082,11 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       tagged[index].error = std::current_exception();
     }
   }
+  {
+    Size tag_total = tags_.size();
+    for (const auto& out : tagged) tag_total += out.tags.size();
+    tags_.reserve(tag_total);
+  }
   for (auto& out : tagged)
   {
     if (out.error) std::rethrow_exception(out.error);
@@ -1081,12 +1109,8 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
     const auto& seq = tags_[i].getUppercaseSequence();
     scan_to_tag_indices[tags_[i].getScan()].push_back(i);
     tags_[i].setIndex((int)i);
-    if (tag_to_protein_indices.find(seq) != tag_to_protein_indices.end()) continue;
-    tag_to_protein_indices[seq] = std::vector<Size>();
-    tag_to_protein_positions[seq] = std::vector<Size>();
-    tag_to_n_flanking_masses[seq] = std::vector<double>();
-    tag_to_c_flanking_masses[seq] = std::vector<double>();
-
+    if (! tag_id_of.emplace(seq, tag_db.size()).second) continue;
+    tag_db.emplace_back();
     tag_seqs.push_back(seq);
   } // now we have all the tags
 
@@ -1112,39 +1136,38 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
     }
   }
 
-  // The database positions and flanking masses of the tag sequences @p seqs (their entries in tag_to_protein_indices and the other maps
-  // exist, empty): an Aho-Corasick trie of them over the proteins. Also used for the new tag sequences of the chimeric search.
-  // Proteins run in parallel in blocks (each thread with its own trie state); the hits of a block are appended to the maps in protein
-  // order, so every vector is the same as that of one pass over the proteins.
+  // The database positions and flanking masses of the tag sequences @p seqs (their entries in tag_db exist, empty): an Aho-Corasick
+  // trie of them over the proteins. Also used for the new tag sequences of the chimeric search. Proteins run in parallel in blocks (each
+  // thread with its own trie state); the hits of a block are appended to tag_db in protein order, so every vector is the same as that
+  // of one pass over the proteins.
   auto searchTagSequences = [&](const std::vector<std::string>& seqs) {
     ACTrie ac_trie(0, 0); // no ambiguities, no mismatches
     ac_trie.addNeedlesAndCompress(seqs);
 
-    // the vectors of every tag sequence (std::map elements do not move)
-    std::vector<std::vector<Size>*> indices_of(seqs.size()), positions_of(seqs.size());
-    std::vector<std::vector<double>*> n_masses_of(seqs.size()), c_masses_of(seqs.size());
-    for (Size j = 0; j < seqs.size(); j++)
-    {
-      const String seq = seqs[j];
-      indices_of[j] = &tag_to_protein_indices[seq];
-      positions_of[j] = &tag_to_protein_positions[seq];
-      n_masses_of[j] = &tag_to_n_flanking_masses[seq];
-      c_masses_of[j] = &tag_to_c_flanking_masses[seq];
-    }
+    // the hits of every tag sequence (tag_db does not grow during the search)
+    std::vector<TagDbHits*> hits_of(seqs.size());
+    for (Size j = 0; j < seqs.size(); j++) hits_of[j] = &tag_db[tag_id_of.at(seqs[j])];
 
     struct TagHit
     {
       OpenMS::Hit::T needle_index;
       OpenMS::Hit::T query_pos;
-      bool summed; // false: the flanking masses are computed with AASequence when the hit is appended (serially, in protein order)
+      bool summed; // false: the flanking masses are computed with AASequence when the hit is appended
       double nmass;
       double cmass;
+      Size protein;
     };
 
     startProgress(0, (SignedSize)protein_seqs.size(), "Searching tags against database ...");
 
     const Size block_size = 4096;
     std::vector<std::vector<TagHit>> block_hits(block_size);
+    Size owners = 1;
+#ifdef _OPENMP
+    owners = (Size)omp_get_max_threads();
+#endif
+    std::vector<Size> owner_offset(block_size * owners), owner_start(owners + 1);
+    std::vector<TagHit> by_owner;
     for (Size block_start = 0; block_start < protein_seqs.size(); block_start += block_size)
     {
       const Size block_end = std::min(protein_seqs.size(), block_start + block_size);
@@ -1184,35 +1207,66 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
             const Size end = (Size)h.query_pos + seqs[h.needle_index].length();
             if (! plain || end > n)
             {
-              hits.push_back({h.needle_index, h.query_pos, false, .0, .0});
+              hits.push_back({h.needle_index, h.query_pos, false, .0, .0, (Size)i});
               continue;
             }
             const double nmass = h.query_pos <= 0 ? .0 : prefix[h.query_pos];
             double cmass = .0;
             for (Size k = end; k < n; k++) cmass += aa_internal_mass[(unsigned char)pseq[k]];
-            hits.push_back({h.needle_index, h.query_pos, true, nmass, cmass});
+            hits.push_back({h.needle_index, h.query_pos, true, nmass, cmass, (Size)i});
           }
         }
       }
 
-      for (Size i = block_start; i < block_end; i++)
+      // The hits of the block go to the vectors of their sequences in protein order. Each thread appends those of a range of sequences
+      // (owner): the hits are first sorted by owner (counting sort, stable in protein order) so that each thread reads only its own.
+      const Size block_n = block_end - block_start;
+      for (Size i = 0; i < block_n; i++) nextProgress();
+      std::fill(owner_offset.begin(), owner_offset.end(), 0);
+      auto ownerOf = [&](OpenMS::Hit::T needle) { return (Size)((double)needle * owners / seqs.size()); };
+#pragma omp parallel for schedule(dynamic, 64)
+      for (SignedSize i = 0; i < (SignedSize)block_n; i++)
       {
-        nextProgress();
-        for (const auto& h : block_hits[i - block_start])
+        for (const auto& h : block_hits[i]) owner_offset[i * owners + ownerOf(h.needle_index)]++;
+      }
+      Size total = 0;
+      for (Size o = 0; o < owners; o++)
+      {
+        owner_start[o] = total;
+        for (Size i = 0; i < block_n; i++)
         {
+          const Size count = owner_offset[i * owners + o];
+          owner_offset[i * owners + o] = total;
+          total += count;
+        }
+      }
+      owner_start[owners] = total;
+      if (by_owner.size() < total) by_owner.resize(total);
+#pragma omp parallel for schedule(dynamic, 64)
+      for (SignedSize i = 0; i < (SignedSize)block_n; i++)
+      {
+        for (const auto& h : block_hits[i]) by_owner[owner_offset[i * owners + ownerOf(h.needle_index)]++] = h;
+      }
+#pragma omp parallel for schedule(dynamic, 1)
+      for (SignedSize o = 0; o < (SignedSize)owners; o++)
+      {
+        for (Size k = owner_start[o]; k < owner_start[o + 1]; k++)
+        {
+          const auto& h = by_owner[k];
           double nmass = h.nmass, cmass = h.cmass;
           if (! h.summed)
           {
-            const String& cleanseq = cleaned_protein_seqs[i];
+            const String& cleanseq = cleaned_protein_seqs[h.protein];
             const String& seq = seqs[h.needle_index];
             nmass = h.query_pos <= 0 ? .0 : AASequence::fromString(cleanseq.substr(0, h.query_pos)).getMonoWeight(Residue::Internal);
             cmass = cleanseq.length() - seq.length() <= h.query_pos ? .0 :
               AASequence::fromString(cleanseq.substr(h.query_pos + seq.length(), cleanseq.length() - h.query_pos - seq.length())).getMonoWeight(Residue::Internal);
           }
-          indices_of[h.needle_index]->push_back(i);
-          positions_of[h.needle_index]->push_back(h.query_pos);
-          n_masses_of[h.needle_index]->push_back(nmass);
-          c_masses_of[h.needle_index]->push_back(cmass);
+          auto& th = *hits_of[h.needle_index];
+          th.proteins.push_back(h.protein);
+          th.positions.push_back(h.query_pos);
+          th.n_flanking_masses.push_back(nmass);
+          th.c_flanking_masses.push_back(cmass);
         }
       }
     }
@@ -1227,7 +1281,8 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
 
   // exact residue sums from the N- and the C-terminus per protein, for the protein-level score (FLASHTaggerAlgorithm::runMatchingExact)
   std::vector<std::vector<double>> pro_prefix(cleaned_protein_seqs.size()), pro_suffix(cleaned_protein_seqs.size());
-  for (Size k = 0; k < cleaned_protein_seqs.size(); k++)
+#pragma omp parallel for schedule(dynamic, 64)
+  for (SignedSize k = 0; k < (SignedSize)cleaned_protein_seqs.size(); k++)
   {
     const auto& seq = cleaned_protein_seqs[k];
     auto& pre = pro_prefix[k];
@@ -1262,7 +1317,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
              mi_sliding = registry.registerName("SlidingLadder"),
              mi_precursor_ladder = registry.registerName("PrecursorLadder"),
              mi_pl_start = registry.registerName("PrecursorLadderStart"), mi_pl_end = registry.registerName("PrecursorLadderEnd"),
-             mi_pl_isotope = registry.registerName("PrecursorLadderIsotope");
+             mi_pl_isotope = registry.registerName("PrecursorLadderIsotope"), mi_description = registry.registerName("Description");
   // gapped tags (only for spectra in which no sequence tag proposes a protein); their tags are kept per spectrum until appended to tags_
   FLASHGappedTaggerAlgorithm gapped_tagger;
   if (gapped_mode_ != "off")
@@ -1372,7 +1427,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
     }
     const auto& fe = fasta_entry[cand.protein];
     ProteinHit hit(cand.score, 0, fe.identifier, fe.sequence);
-    hit.setDescription(fe.description);
+    hit.setMetaValue(mi_description, fe.description); // as setDescription, without its registry lookup
     hit.setMetaValue(mi_scan, dspec.getScanNumber());
     hit.setMetaValue(mi_matched_aa, matched);
     hit.setCoverage((double)matched / (double)fe.sequence.length());
@@ -1391,7 +1446,8 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
   auto searchCandidates = [&](const DeconvolvedSpectrum& dspec, const std::vector<Size>* tag_indices_of_scan, const std::set<Size>& excluded,
                               bool with_precursor_ladders, std::vector<ProteinHit>& hits_out, std::vector<ProteinHit>& ladder_out,
                               std::vector<ProteinHit>& pl_out, std::vector<ProteinHit>& decoy_pl_out,
-                              std::vector<FLASHHelperClasses::Tag>& gtags, Size& pl_windows, String& note) {
+                              std::vector<FLASHHelperClasses::Tag>& gtags, Size& pl_windows, String& note,
+                              const std::vector<MassLadderAlgorithm::Candidate>* sliding) {
     // The sequence-tag candidates (proteins hit by a tag of the spectrum; thousands per spectrum) stay records until the cut below, and only
     // the kept ones become ProteinHits. Per candidate, ascending by protein: its covered positions and its tags (distinct, ascending), and
     // its shifts (protein residue sum up to the tag minus the tag flanking mass) with the tag flanking masses, in the order of the tags and
@@ -1431,10 +1487,11 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
         const auto& tag = tags_[tag_index];
         const auto& seq = tag.getUppercaseSequence();
 
-        const auto& pis = tag_to_protein_indices.at(seq);
-        const auto& pps = tag_to_protein_positions.at(seq);
-        const auto& n_flanking_masses = tag_to_n_flanking_masses.at(seq);
-        const auto& c_flanking_masses = tag_to_c_flanking_masses.at(seq);
+        const auto& db_hits = tag_db[tag_id_of.at(seq)];
+        const auto& pis = db_hits.proteins;
+        const auto& pps = db_hits.positions;
+        const auto& n_flanking_masses = db_hits.n_flanking_masses;
+        const auto& c_flanking_masses = db_hits.c_flanking_masses;
 
         for (Size i = 0; i < pis.size(); i++)
         {
@@ -1564,7 +1621,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
         const auto& fe = fasta_entry[pi];
         const double coverage = (double)positions.size() / (double)fe.sequence.length();
         ProteinHit hit(coverage, 0, fe.identifier, ""); // the sequence is set if the candidate survives the cut
-        hit.setDescription(fe.description);
+        hit.setMetaValue(mi_description, fe.description); // as setDescription, without its registry lookup
         hit.setMetaValue(mi_scan, dspec.getScanNumber());
         hit.setMetaValue(mi_matched_aa, (int)positions.size());
         hit.setCoverage(coverage);
@@ -1643,7 +1700,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       double coverage = (double)covered_pos / (double)fe.sequence.length();
       std::vector<int> positions(cand_positions.begin() + c.positions_first, cand_positions.begin() + (c.positions_first + covered_pos));
       ProteinHit hit(coverage, 0, fe.identifier, fe.sequence);
-      hit.setDescription(fe.description);
+      hit.setMetaValue(mi_description, fe.description); // as setDescription, without its registry lookup
       hit.setMetaValue(mi_scan, dspec.getScanNumber());
       hit.setMetaValue(mi_matched_aa, covered_pos);
       hit.setCoverage(coverage);
@@ -1733,7 +1790,8 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       std::vector<MassLadderAlgorithm::Candidate> found;
       if (native_rule)
       {
-        mass_ladders.searchSlidingLadders(masses, protein_tol, native_ladder_top, excluded, found);
+        if (sliding != nullptr) found = *sliding; // searched for all spectra at once (searchSlidingSpectra)
+        else mass_ladders.searchSlidingLadders(masses, protein_tol, native_ladder_top, excluded, found);
         nativeCut(found, [](const MassLadderAlgorithm::Candidate& c) { return c.score; }, [](const MassLadderAlgorithm::Candidate& c) { return c.protein; },
                   found.size() >= native_ladder_top, 1, note);
       }
@@ -1793,6 +1851,31 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
   };
   const std::set<Size> no_exclusion;
   std::vector<String> native_notes(dspecs.size());
+  // native mode: the sliding ladders of the spectra @p ds (with the proteins @p excluded_of of each, nullptr: none) in one batched pass
+  // over the database (MassLadderAlgorithm::searchSlidingLadders for many spectra), indexed by spectrum in @p out
+  auto searchSlidingSpectra = [&](const std::vector<DeconvolvedSpectrum>& ds, const std::vector<int>& which, const std::vector<std::set<Size>>* excluded_of,
+                                  std::vector<std::vector<MassLadderAlgorithm::Candidate>>& out) {
+    out.assign(ds.size(), {});
+    std::vector<std::vector<double>> masses(which.size());
+    std::vector<const std::vector<double>*> masses_of;
+    std::vector<const std::set<Size>*> excluded;
+    for (Size k = 0; k < which.size(); k++)
+    {
+      for (const auto& pg : ds[which[k]]) masses[k].push_back(pg.getMonoMass()); // as searchCandidates
+      masses_of.push_back(&masses[k]);
+      excluded.push_back(excluded_of == nullptr ? &no_exclusion : &(*excluded_of)[which[k]]);
+    }
+    std::vector<std::vector<MassLadderAlgorithm::Candidate>> found;
+    mass_ladders.searchSlidingLadders(masses_of, protein_tol, native_ladder_top, excluded, found);
+    for (Size k = 0; k < which.size(); k++) out[which[k]] = std::move(found[k]);
+  };
+  std::vector<std::vector<MassLadderAlgorithm::Candidate>> sliding_of;
+  if (native_rule)
+  {
+    std::vector<int> all(dspecs.size());
+    std::iota(all.begin(), all.end(), 0);
+    searchSlidingSpectra(dspecs, all, nullptr, sliding_of);
+  }
   // the precursor-ladder windows of all precursor masses searched below, in one pass over the database (the same windows as a sweep per mass)
   if (use_precursor_ladders)
   {
@@ -1805,13 +1888,20 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
     }
     mass_ladders.preparePrecursorWindows(all_precursor_masses, pl_precursor_tol);
   }
+  // the spectra with the most masses first (each writes its own slots, so the order does not change the result): a few heavy spectra
+  // at the end of the dynamic schedule were the tail of this loop
+  std::vector<int> search_order(dspecs.size());
+  std::iota(search_order.begin(), search_order.end(), 0);
+  std::stable_sort(search_order.begin(), search_order.end(), [&](int l, int r) { return dspecs[l].size() > dspecs[r].size(); });
 #pragma omp parallel for schedule(dynamic) if (parallel_over_spectra)
-  for (int d = 0; d < (int)dspecs.size(); d++)
+  for (int k = 0; k < (int)dspecs.size(); k++)
   {
+    const int d = search_order[k];
     nextProgress();
     const auto tag_it = scan_to_tag_indices.find(dspecs[d].getScanNumber());
     searchCandidates(dspecs[d], tag_it == scan_to_tag_indices.end() ? nullptr : &tag_it->second, no_exclusion, use_precursor_ladders, spec_hits[d],
-                     spec_ladder_hits[d], spec_pl_hits[d], spec_decoy_pl_hits[d], spec_gapped_tags[d], spec_pl_windows[d], native_notes[d]);
+                     spec_ladder_hits[d], spec_pl_hits[d], spec_decoy_pl_hits[d], spec_gapped_tags[d], spec_pl_windows[d], native_notes[d],
+                     native_rule ? &sliding_of[d] : nullptr);
   }
   mass_ladders.clearPrecursorWindows();
   if (native_rule)
@@ -1836,7 +1926,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
     }
     return tag_base;
   };
-  // sequence- and gapped-tag candidates: the local tag indices of gapped candidates become global
+  // sequence- and gapped-tag candidates: the local tag indices of gapped candidates become global (the residual rounds below)
   auto appendTagCandidates = [&](std::vector<ProteinHit>& from, std::vector<ProteinHit>& to, std::pair<Size, Size>& range, int tag_base) {
     range.first = to.size();
     for (auto& hit : from)
@@ -1851,7 +1941,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
     }
     range.second = to.size();
   };
-  // ladder candidates (terminal and precursor ladders): their tag indices -(local index + 1) become global
+  // ladder candidates (terminal and precursor ladders): their tag indices -(local index + 1) become global (the residual rounds below)
   auto appendLadderCandidates = [&](std::vector<ProteinHit>& from, std::vector<ProteinHit>& to, std::pair<Size, Size>& range, int tag_base) {
     range.first = to.size();
     for (auto& hit : from)
@@ -1863,13 +1953,54 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
     }
     range.second = to.size();
   };
-  for (Size d = 0; d < dspecs.size(); d++)
+  // The candidates of each spectrum are appended in spectrum order: their positions by prefix sums, then moved (and their tag indices made
+  // global) by spectrum in parallel. Sequence- and gapped-tag candidates: the local tag indices of gapped candidates become global; ladder
+  // candidates (terminal and precursor ladders): their tag indices -(local index + 1) become global.
+  std::vector<int> tag_bases(dspecs.size());
+  for (Size d = 0; d < dspecs.size(); d++) tag_bases[d] = appendSpectrumTags(spec_gapped_tags[d]);
+  auto placeCandidates = [&](const std::vector<std::vector<ProteinHit>>& from, std::vector<ProteinHit>& to, std::vector<std::pair<Size, Size>>& ranges) {
+    Size position = to.size();
+    for (Size d = 0; d < from.size(); d++)
+    {
+      ranges[d] = {position, position + from[d].size()};
+      position += from[d].size();
+    }
+    to.resize(position);
+  };
+  placeCandidates(spec_hits, protein_hits_, candidate_ranges);
+  placeCandidates(spec_ladder_hits, ladder_candidates, ladder_ranges);
+  placeCandidates(spec_pl_hits, pl_candidates, pl_ranges);
+  placeCandidates(spec_decoy_pl_hits, decoy_pl_candidates, decoy_pl_ranges);
+  auto moveLadderCandidates = [&](std::vector<ProteinHit>& from, std::vector<ProteinHit>& to, Size first, int tag_base) {
+    for (Size k = 0; k < from.size(); k++)
+    {
+      auto& hit = from[k];
+      auto indices = hit.getMetaValue(mi_tag_indices).toIntList();
+      for (auto& i : indices) i = tag_base - i - 1;
+      hit.setMetaValue(mi_tag_indices, indices);
+      to[first + k] = std::move(hit);
+    }
+    std::vector<ProteinHit>().swap(from);
+  };
+#pragma omp parallel for schedule(dynamic, 16)
+  for (SignedSize d = 0; d < (SignedSize)dspecs.size(); d++)
   {
-    const int tag_base = appendSpectrumTags(spec_gapped_tags[d]);
-    appendTagCandidates(spec_hits[d], protein_hits_, candidate_ranges[d], tag_base);
-    appendLadderCandidates(spec_ladder_hits[d], ladder_candidates, ladder_ranges[d], tag_base);
-    appendLadderCandidates(spec_pl_hits[d], pl_candidates, pl_ranges[d], tag_base);
-    appendLadderCandidates(spec_decoy_pl_hits[d], decoy_pl_candidates, decoy_pl_ranges[d], tag_base);
+    const int tag_base = tag_bases[d];
+    for (Size k = 0; k < spec_hits[d].size(); k++)
+    {
+      auto& hit = spec_hits[d][k];
+      if (hit.metaValueExists(mi_gapped))
+      {
+        auto indices = hit.getMetaValue(mi_tag_indices).toIntList();
+        for (auto& i : indices) i += tag_base;
+        hit.setMetaValue(mi_tag_indices, indices);
+      }
+      protein_hits_[candidate_ranges[d].first + k] = std::move(hit);
+    }
+    std::vector<ProteinHit>().swap(spec_hits[d]);
+    moveLadderCandidates(spec_ladder_hits[d], ladder_candidates, ladder_ranges[d].first, tag_base);
+    moveLadderCandidates(spec_pl_hits[d], pl_candidates, pl_ranges[d].first, tag_base);
+    moveLadderCandidates(spec_decoy_pl_hits[d], decoy_pl_candidates, decoy_pl_ranges[d].first, tag_base);
   }
   std::vector<std::vector<ProteinHit>>().swap(spec_hits);
   std::vector<std::vector<ProteinHit>>().swap(spec_ladder_hits);
@@ -2534,13 +2665,20 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
         std::vector<std::vector<Size>> residual_tags(dspecs.size());
         std::vector<std::string> new_seqs;
         Size tag_count = 0, new_tag_count = 0;
-        for (int d : searched)
+        // the tagging of the residual spectra in parallel (each spectrum its own tagger and slot), the tags then taken in spectrum order
+        std::vector<std::vector<FLASHHelperClasses::Tag>> found_of(dspecs.size());
+#pragma omp parallel for schedule(dynamic)
+        for (int k = 0; k < (int)searched.size(); k++)
         {
+          const int d = searched[k];
           FLASHTaggerAlgorithm tagger;
           tagger.setParameters(tagger_param_);
           tagger.run(residual[d], spectrum_tols[d]);
-          std::vector<FLASHHelperClasses::Tag> found;
-          tagger.fillTags(found);
+          tagger.fillTags(found_of[d]);
+        }
+        for (int d : searched)
+        {
+          auto& found = found_of[d];
           tag_count += found.size();
           auto& known = tags_of_scan[residual[d].getScanNumber()];
           for (auto& tag : found)
@@ -2557,21 +2695,19 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
             if (index == tags_.size())
             {
               const String seq = tag.getUppercaseSequence();
-              if (tag_to_protein_indices.find(seq) == tag_to_protein_indices.end())
+              if (tag_id_of.emplace(seq, tag_db.size()).second)
               {
-                tag_to_protein_indices[seq] = std::vector<Size>();
-                tag_to_protein_positions[seq] = std::vector<Size>();
-                tag_to_n_flanking_masses[seq] = std::vector<double>();
-                tag_to_c_flanking_masses[seq] = std::vector<double>();
+                tag_db.emplace_back();
                 new_seqs.push_back(seq);
               }
               tag.setIndex((int)index);
-              tags_.push_back(tag);
+              tags_.push_back(std::move(tag));
               known.push_back(index);
               new_tag_count++;
             }
             residual_tags[d].push_back(index);
           }
+          std::vector<FLASHHelperClasses::Tag>().swap(found);
         }
         if (! new_seqs.empty()) searchTagSequences(new_seqs);
 
@@ -2579,6 +2715,8 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
         std::vector<std::vector<ProteinHit>> r_hits(dspecs.size()), r_ladder_hits(dspecs.size()), r_pl_hits(dspecs.size()), r_decoy_pl_hits(dspecs.size());
         std::vector<std::vector<FLASHHelperClasses::Tag>> r_gapped_tags(dspecs.size());
         std::vector<Size> r_windows(dspecs.size(), 0);
+        std::vector<std::vector<MassLadderAlgorithm::Candidate>> r_sliding;
+        if (native_rule) searchSlidingSpectra(residual, searched, &excluded, r_sliding);
 #ifdef _OPENMP
         const bool residual_over_spectra = (int)searched.size() >= omp_get_max_threads();
 #else
@@ -2590,7 +2728,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
           const int d = searched[k];
           String note; // the native note of the first search is the one logged
           searchCandidates(residual[d], &residual_tags[d], excluded[d], false, r_hits[d], r_ladder_hits[d], r_pl_hits[d], r_decoy_pl_hits[d],
-                           r_gapped_tags[d], r_windows[d], note);
+                           r_gapped_tags[d], r_windows[d], note, native_rule ? &r_sliding[d] : nullptr);
         }
         std::vector<ProteinHit> r_candidates, r_ladder_candidates;
         std::vector<std::pair<Size, Size>> r_ranges(dspecs.size(), {0, 0}), r_ladder_ranges(dspecs.size(), {0, 0});
@@ -2947,12 +3085,24 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       if (! keep_decoy_ && decoys[i]) continue;
       // no PrSM-level filter: a PrSM is reported when its proteoform passes (every member carries its cluster's proteoform q-value)
       if (pro_fdr_ < 1 && (double)proteoform_hits_[i].getMetaValue("proqvalue", 1.0) > pro_fdr_) continue;
-      filtered_proteoform_hits.push_back(proteoform_hits_[i]);
+      filtered_proteoform_hits.push_back(std::move(proteoform_hits_[i]));
     }
     proteoform_hits_.swap(filtered_proteoform_hits);
   }
-  std::sort(proteoform_hits_.begin(), proteoform_hits_.end(),
-            [](const ProteinHit& left, const ProteinHit& right) { return left.getMetaValue("RT") < right.getMetaValue("RT"); });
+  {
+    // by RT: std::sort of the positions with the RT values taken out once (the same comparisons give std::sort the same permutation as
+    // sorting the hits, without a registry lookup per comparison), then the hits moved into that order
+    const UInt mi_rt = MetaInfoInterface::metaRegistry().registerName("RT");
+    std::vector<DataValue> rts(proteoform_hits_.size());
+    std::vector<Size> order(proteoform_hits_.size());
+    for (Size i = 0; i < proteoform_hits_.size(); i++) rts[i] = proteoform_hits_[i].getMetaValue(mi_rt);
+    std::iota(order.begin(), order.end(), 0);
+    std::sort(order.begin(), order.end(), [&rts](Size left, Size right) { return rts[left] < rts[right]; });
+    std::vector<ProteinHit> sorted;
+    sorted.reserve(order.size());
+    for (Size i : order) sorted.push_back(std::move(proteoform_hits_[i]));
+    proteoform_hits_.swap(sorted);
+  }
 
 
   //  define prsm index and tag to prsm indices.
@@ -3007,6 +3157,17 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       hit.setMetaValue("ProteoformIndex", it == prsm_to_proteoform.end() ? -1 : it->second);
     }
   }
+  // the large locals freed with all threads instead of by their destructors on return
+  releaseInParallel(dspecs);
+  releaseInParallel(uncapped_masses);
+  releaseInParallel(tag_db);
+  releaseInParallel(vec_pro);
+  releaseInParallel(rev_vec_pro);
+  releaseInParallel(pro_prefix);
+  releaseInParallel(pro_suffix);
+  releaseInParallel(ladder_candidates);
+  releaseInParallel(pl_candidates);
+  releaseInParallel(decoy_pl_candidates);
   // TODO
   // per scan, get the scan number and the precursor mass - maybe given or maybe deconvolved.
   // get all protoeforms - mass and score.
@@ -3174,6 +3335,16 @@ void FLASHTnTAlgorithm::getProteoformHitsMatchedBy(const FLASHHelperClasses::Tag
   {
     hits.push_back(proteoform_hits_[i]);
   }
+}
+
+void FLASHTnTAlgorithm::releaseResults()
+{
+  // hundreds of thousands of hits with sequences and meta values: their destructors in parallel instead of serially at exit
+  releaseInParallel(protein_hits_);
+  releaseInParallel(proteoform_hits_);
+  releaseInParallel(tags_);
+  matching_hits_indices_.clear();
+  releaseRawSpectra_();
 }
 
 void FLASHTnTAlgorithm::getTags(std::vector<FLASHHelperClasses::Tag>& tags) const

@@ -15,6 +15,13 @@
 #include <OpenMS/FORMAT/FileTypes.h>
 #include <OpenMS/FORMAT/MzMLFile.h>
 #include <QFileInfo>
+#include <limits>
+#if defined(__GLIBC__)
+  #include <malloc.h>
+#endif
+#ifdef _OPENMP
+  #include <omp.h>
+#endif
 
 using namespace OpenMS;
 using namespace std;
@@ -117,7 +124,12 @@ protected:
     // reading mzMLs with m/z and rt criteria.
 
     mzml.setLogType(log_type_);
-    mzml.load(in_file, map);
+    int threads = 1;
+#ifdef _OPENMP
+    threads = omp_get_max_threads();
+#endif
+    // indexed mzML is parsed in parallel, byte-balanced chunks; other inputs use the ordinary loader
+    if (! mzml.loadIndexedParallel(in_file, map, threads)) { mzml.load(in_file, map); }
 
     auto tnt_param = getParam_();
     tnt_param.remove("in");
@@ -142,7 +154,6 @@ protected:
     FASTAFile fasta_file;
     std::vector<FASTAFile::FASTAEntry> fasta_entry;
     fasta_file.load(in_fasta, fasta_entry);
-    std::vector<ProteinHit> proteoform_hits;
     // Run here!
     OPENMS_LOG_INFO << "Processing : " << in_file << endl;
 
@@ -184,7 +195,7 @@ protected:
       });
     }
     tnt.run(map, fasta_entry);
-    tnt.getProteoforms(proteoform_hits);
+    const auto& proteoform_hits = tnt.getProteoforms();
 
     OPENMS_LOG_INFO << "FLASHTnT run complete. Now writing the results in output files ..." << endl;
     if (! out_tag_file.empty())
@@ -205,12 +216,17 @@ protected:
     }
     if (! out_protein_file.empty())
     {
-      std::vector<ProteinHit> protein_hits;
-      tnt.getProteinHits(protein_hits);
-      FLASHTnTFile::writeProteins(protein_hits, out_protein_stream);
+      FLASHTnTFile::writeProteins(tnt.getProteinHits(), out_protein_stream);
       out_protein_stream.close();
     }
 
+    // the results and the input are freed with all threads instead of by the serial destructors
+    tnt.releaseResults();
+#pragma omp parallel for schedule(dynamic, 64)
+    for (SignedSize i = 0; i < (SignedSize)map.size(); ++i)
+    {
+      map[i] = MSSpectrum();
+    }
     return EXECUTION_OK;
   }
 };
@@ -218,6 +234,12 @@ protected:
 // the actual main function needed to create an executable
 int main(int argc, const char** argv)
 {
+#if defined(__GLIBC__)
+  // Keep freed heap memory in the per-thread arenas instead of trimming it back to the kernel after every
+  // work item: trim, refault and heap regrowth serialise on the process-wide mmap lock at high thread counts.
+  mallopt(M_TRIM_THRESHOLD, std::numeric_limits<int>::max());
+  mallopt(M_TOP_PAD, 256 << 20);
+#endif
   TOPPFLASHTnT tool;
   return tool.main(argc, argv);
 }

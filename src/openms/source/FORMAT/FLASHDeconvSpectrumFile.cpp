@@ -11,6 +11,10 @@
 #include <algorithm>
 #include <exception>
 #include <random>
+#include <sstream>
+#ifdef _OPENMP
+  #include <omp.h>
+#endif
 
 namespace OpenMS
 {
@@ -21,7 +25,6 @@ namespace OpenMS
    */
 
   inline std::default_random_engine generator_;
-  inline std::uniform_real_distribution<double> distribution_(0.0,1.0);
 
   namespace
   {
@@ -32,24 +35,47 @@ namespace OpenMS
       return (Size)std::count_if(dspec.begin(), dspec.end(),
                                  [](const PeakGroup& pg) { return pg.getTargetDecoyType() == PeakGroup::TargetDecoyType::target; });
     }
-  } // namespace
 
-  void FLASHDeconvSpectrumFile::writeDeconvolvedMasses(DeconvolvedSpectrum& dspec, std::fstream& fs, const String& file_name, const FLASHHelperClasses::PrecalculatedAveragine& avg, const FLASHHelperClasses::PrecalculatedAveragine& decoy_avg, double tol,
-                                                       const bool write_detail, const bool report_decoy, const double noise_decoy_weight)
-  {
-    if (!report_decoy && dspec.isDecoy()) return;
-    static std::vector<uint> indices {};
+    /// the row index of each MS level in the spectrum tsv files (1-based), continued over all calls of the writers
+    std::vector<uint>& writerIndices_()
+    {
+      static std::vector<uint> indices {};
+      return indices;
+    }
+
+    /// With report_decoy, a noise decoy mass is written with the probability noise_decoy_weight (repeated while the drawn number times the
+    /// weight exceeds 1). Returns whether peak group @p pg is written, drawing from @p gen; @p repeat tells whether it is written again.
+    bool drawNoiseDecoy_(const PeakGroup& pg, const double noise_decoy_weight, std::default_random_engine& gen, bool& repeat)
+    {
+      repeat = false;
+      if (pg.getTargetDecoyType() != PeakGroup::TargetDecoyType::noise_decoy) return true;
+      std::uniform_real_distribution<double> distribution(0.0, 1.0); // stateless: a fresh one draws as the one shared before did
+      const double number = distribution(gen);
+      if (number > noise_decoy_weight) return false;
+      repeat = number * noise_decoy_weight > 1.0;
+      return true;
+    }
+
+    /// the number of rows writeDeconvolvedMasses_ writes for @p dspec with report_decoy, drawing from @p gen exactly as it does
+    Size countDecoyReportRows_(const DeconvolvedSpectrum& dspec, const double noise_decoy_weight, std::default_random_engine& gen)
+    {
+      Size rows = 0;
+      for (int i = 0; i < (int)dspec.size(); i++)
+      {
+        bool repeat;
+        if (! drawNoiseDecoy_(dspec[i], noise_decoy_weight, gen, repeat)) continue;
+        if (repeat) i--;
+        rows++;
+      }
+      return rows;
+    }
+
+    /// the rows of the non-empty spectrum @p dspec into @p fs, numbered from @p index on (advanced past them); noise decoys are drawn from @p gen
+    void writeDeconvolvedMasses_(DeconvolvedSpectrum& dspec, std::ostream& fs, const String& file_name, const FLASHHelperClasses::PrecalculatedAveragine& avg,
+                                 const FLASHHelperClasses::PrecalculatedAveragine& decoy_avg, double tol, const bool write_detail, const bool report_decoy,
+                                 const double noise_decoy_weight, uint& index, std::default_random_engine& gen)
+    {
     std::stringstream ss;
-    if (dspec.empty())
-    {
-      return;
-    }
-
-    while (indices.size() <= dspec.getOriginalSpectrum().getMSLevel())
-    {
-      indices.push_back(1);
-    }
-    uint& index = indices[dspec.getOriginalSpectrum().getMSLevel() - 1];
 
     std::stringstream precursor_ss;
     if (dspec.getOriginalSpectrum().getMSLevel() > 1)
@@ -143,18 +169,9 @@ namespace OpenMS
       if (!report_decoy && pg.getTargetDecoyType() != PeakGroup::TargetDecoyType::target) continue;
 
       /// TODO : make this non-random. And move this to FLASHDeconv.cpp before this function is called.
-      if (pg.getTargetDecoyType() == PeakGroup::TargetDecoyType::noise_decoy)
-      {
-        double number = distribution_(generator_);
-        if (number > noise_decoy_weight)
-        {
-          continue;
-        }
-        if (number * noise_decoy_weight > 1.0)
-        {
-          i --;
-        }
-      }
+      bool repeat;
+      if (! drawNoiseDecoy_(pg, noise_decoy_weight, gen, repeat)) continue;
+      if (repeat) i--;
 
       const auto& avg_ = pg.getTargetDecoyType() == PeakGroup::TargetDecoyType::noise_decoy? decoy_avg : avg;
       const double mono_mass = pg.getMonoMass();
@@ -317,6 +334,92 @@ namespace OpenMS
       ss << "\n";
     }
     fs << ss.str();
+  }
+  } // namespace
+
+  void FLASHDeconvSpectrumFile::writeDeconvolvedMasses(DeconvolvedSpectrum& dspec, std::fstream& fs, const String& file_name, const FLASHHelperClasses::PrecalculatedAveragine& avg, const FLASHHelperClasses::PrecalculatedAveragine& decoy_avg, double tol,
+                                                       const bool write_detail, const bool report_decoy, const double noise_decoy_weight)
+  {
+    if (!report_decoy && dspec.isDecoy()) return;
+    if (dspec.empty()) return;
+    auto& indices = writerIndices_();
+    while (indices.size() <= dspec.getOriginalSpectrum().getMSLevel())
+    {
+      indices.push_back(1);
+    }
+    writeDeconvolvedMasses_(dspec, fs, file_name, avg, decoy_avg, tol, write_detail, report_decoy, noise_decoy_weight, indices[dspec.getOriginalSpectrum().getMSLevel() - 1],
+                            generator_);
+  }
+
+  void FLASHDeconvSpectrumFile::writeDeconvolvedMasses(std::vector<DeconvolvedSpectrum>& spectra, std::vector<std::fstream>& streams,
+                                                       const std::vector<String>& out_files, const String& file_name,
+                                                       const FLASHHelperClasses::PrecalculatedAveragine& avg,
+                                                       const FLASHHelperClasses::PrecalculatedAveragine& decoy_avg, const std::vector<double>& tols,
+                                                       const bool write_detail, const bool report_decoy, const double noise_decoy_weight)
+  {
+    // the spectra of the files to be written, in input order
+    std::vector<Size> jobs;
+    for (Size s = 0; s < spectra.size(); s++)
+    {
+      const uint ms_level = spectra[s].getOriginalSpectrum().getMSLevel();
+      if (ms_level == 0 || ms_level > out_files.size() || out_files[ms_level - 1].empty()) continue;
+      jobs.push_back(s);
+    }
+    // A spectrum's rows depend only on the spectrum, the index of its first row and, with report_decoy, the state of the random sequence the
+    // noise decoys are drawn from (one sequence in spectrum order). Both are advanced up front per spectrum (by one per target mass, or with
+    // report_decoy by replaying the draws), the spectra are formatted in parallel in waves, and each wave is written in input order.
+    auto& indices = writerIndices_();
+    int threads = 1;
+#ifdef _OPENMP
+    threads = omp_get_max_threads();
+#endif
+    const Size wave = 16 * (Size)std::max(1, threads); // bounds the formatted text held at once
+    std::vector<std::string> buffers;
+    std::vector<uint> first_index;
+    std::vector<std::default_random_engine> first_gen;
+    std::vector<std::exception_ptr> errors;
+    for (Size begin = 0; begin < jobs.size(); begin += wave)
+    {
+      const Size count = std::min(wave, jobs.size() - begin);
+      buffers.assign(count, std::string());
+      first_index.assign(count, 0);
+      first_gen.assign(count, generator_);
+      errors.assign(count, nullptr);
+      for (Size k = 0; k < count; k++)
+      {
+        const auto& dspec = spectra[jobs[begin + k]];
+        if ((! report_decoy && dspec.isDecoy()) || dspec.empty()) continue;
+        const uint ms_level = dspec.getOriginalSpectrum().getMSLevel();
+        while (indices.size() <= ms_level) indices.push_back(1);
+        first_index[k] = indices[ms_level - 1];
+        first_gen[k] = generator_;
+        indices[ms_level - 1] += (uint)(report_decoy ? countDecoyReportRows_(dspec, noise_decoy_weight, generator_) : countTargetMasses(dspec));
+      }
+#pragma omp parallel for schedule(dynamic, 1)
+      for (SignedSize k = 0; k < (SignedSize)count; k++)
+      {
+        auto& dspec = spectra[jobs[begin + k]];
+        if ((! report_decoy && dspec.isDecoy()) || dspec.empty()) continue;
+        try
+        {
+          std::ostringstream os;
+          uint index = first_index[k];
+          auto gen = first_gen[k];
+          writeDeconvolvedMasses_(dspec, os, file_name, avg, decoy_avg, tols[dspec.getOriginalSpectrum().getMSLevel() - 1], write_detail, report_decoy,
+                                  noise_decoy_weight, index, gen);
+          buffers[k] = os.str();
+        }
+        catch (...)
+        {
+          errors[k] = std::current_exception();
+        }
+      }
+      for (Size k = 0; k < count; k++)
+      {
+        if (errors[k]) std::rethrow_exception(errors[k]);
+        streams[spectra[jobs[begin + k]].getOriginalSpectrum().getMSLevel() - 1] << buffers[k];
+      }
+    }
   }
 
   void FLASHDeconvSpectrumFile::writeDeconvolvedMassesHeader(std::fstream& fs, const uint ms_level, const bool detail, const bool report_decoy)

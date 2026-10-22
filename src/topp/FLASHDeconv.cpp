@@ -14,6 +14,13 @@
 #include <OpenMS/FORMAT/FileTypes.h>
 #include <OpenMS/FORMAT/MzMLFile.h>
 #include <QFileInfo>
+#include <limits>
+#if defined(__GLIBC__)
+  #include <malloc.h>
+#endif
+#ifdef _OPENMP
+  #include <omp.h>
+#endif
 #ifdef TRAIN_OUT
   #include <OpenMS/ANALYSIS/TOPDOWN/Qscore.h>
 #endif
@@ -249,7 +256,12 @@ protected:
 
     mzml.setLogType(log_type_);
     mzml.setOptions(opt);
-    mzml.load(in_file, map);
+    int threads = 1;
+#ifdef _OPENMP
+    threads = omp_get_max_threads();
+#endif
+    // indexed mzML is parsed in byte-balanced chunks by all threads; other inputs use the ordinary loader
+    if (! mzml.loadIndexedParallel(in_file, map, threads)) { mzml.load(in_file, map); }
 
     std::vector<DeconvolvedSpectrum> deconvolved_spectra;
     std::vector<FLASHHelperClasses::MassFeature> deconvolved_features;
@@ -326,16 +338,20 @@ protected:
       }
 
 
+#ifdef TRAIN_OUT
       for (auto& deconvolved_spectrum : deconvolved_spectra)
       {
         uint ms_level = deconvolved_spectrum.getOriginalSpectrum().getMSLevel();
         if (out_spec_file[ms_level - 1].empty()) continue;
         FLASHDeconvSpectrumFile::writeDeconvolvedMasses(deconvolved_spectrum, out_spec_streams[ms_level - 1], in_file, fd.getAveragine(), fd.getDecoyAveragine(),
                                                         tols[ms_level - 1], write_detail, report_decoy, fd.getNoiseDecoyWeight());
-#ifdef TRAIN_OUT
         Qscore::writeAttCsvForQscoreTraining(deconvolved_spectrum, out_train_streams[ms_level - 1]);
-#endif
       }
+#else
+      // the same rows in the same order, formatted in parallel (with report_FDR, the noise-decoy draws are replayed serially up front)
+      FLASHDeconvSpectrumFile::writeDeconvolvedMasses(deconvolved_spectra, out_spec_streams, out_spec_file, in_file, fd.getAveragine(), fd.getDecoyAveragine(), tols,
+                                                      write_detail, report_decoy, fd.getNoiseDecoyWeight());
+#endif
 
       for (Size i = 0; i < out_spec_file.size(); i++)
       {
@@ -415,6 +431,17 @@ protected:
       }
     }
 
+    // release results and input in parallel instead of in the serial destructors
+#pragma omp parallel for schedule(dynamic, 16)
+    for (SignedSize i = 0; i < (SignedSize)deconvolved_spectra.size(); ++i)
+    {
+      deconvolved_spectra[i] = DeconvolvedSpectrum();
+    }
+#pragma omp parallel for schedule(dynamic, 16)
+    for (SignedSize i = 0; i < (SignedSize)map.size(); ++i)
+    {
+      map[i] = MSSpectrum();
+    }
     return EXECUTION_OK;
   }
 };
@@ -422,6 +449,12 @@ protected:
 // the actual main function needed to create an executable
 int main(int argc, const char** argv)
 {
+#if defined(__GLIBC__)
+  // Keep freed heap memory in the per-thread arenas instead of trimming it back to the kernel after every
+  // spectrum: trim, refault and heap regrowth serialise on the process-wide mmap lock at high thread counts.
+  mallopt(M_TRIM_THRESHOLD, std::numeric_limits<int>::max());
+  mallopt(M_TOP_PAD, 256 << 20);
+#endif
   TOPPFLASHDeconv tool;
   return tool.main(argc, argv);
 }
