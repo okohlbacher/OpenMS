@@ -496,7 +496,7 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
       std::vector<int> fallback_scans;
       std::vector<const PeakGroup*> precursors;
       const auto& precursor_groups = native_id_precursor_peak_group_map_;
-      int previous_lower_scan = 0;
+      int previous_lower_scan = -1; // same as findPrecursorScanNumber_: no lower-level spectrum before it
       Size progress_count = 0;
       for (Size index = 0; index < map.size(); ++index)
       {
@@ -576,7 +576,7 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
               const auto& precursor = precursors[job] == nullptr ? empty_precursor : *precursors[job];
               worker.performSpectrumDeconvolution(map[index], scan_numbers[index], precursor);
               auto& result = worker.getDeconvolvedSpectrum();
-              if (ms_level > 1 && precursor.empty()) { result.setPrecursorScanNumber(fallback_scans[job]); }
+              if (ms_level > 1 && precursor.empty() && fallback_scans[job] >= 0) { result.setPrecursorScanNumber(fallback_scans[job]); }
               if (report_decoy_ && ! result.empty())
               {
                 appendDecoyPeakGroups_(result, map[index], scan_numbers[index], precursor, noise_decoy_workers[worker_index],
