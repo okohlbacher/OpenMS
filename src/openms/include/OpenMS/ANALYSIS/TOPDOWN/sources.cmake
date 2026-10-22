@@ -7,6 +7,7 @@ set(sources_list_h
         SpectralDeconvolution.h
         FLASHDeconvAlgorithm.h
         FLASHHelperClasses.h
+        FLASHHugePages.h
         MassFeatureTrace.h
         PeakGroup.h
         PeakGroupScoring.h
