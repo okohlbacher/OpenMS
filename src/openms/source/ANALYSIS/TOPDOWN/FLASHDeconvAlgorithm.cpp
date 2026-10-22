@@ -363,8 +363,15 @@ void FLASHDeconvAlgorithm::appendDecoyPeakGroups_(DeconvolvedSpectrum& deconvolv
                                                   int scan_number,
                                                   const PeakGroup& precursor_pg)
 {
+  appendDecoyPeakGroups_(deconvolved_spectrum, spec, scan_number, precursor_pg, sd_noise_decoy_, sd_signal_decoy_);
+}
+
+void FLASHDeconvAlgorithm::appendDecoyPeakGroups_(DeconvolvedSpectrum& deconvolved_spectrum, const MSSpectrum& spec, int scan_number,
+                                                  const PeakGroup& precursor_pg, SpectralDeconvolution& sd_noise_decoy_,
+                                                  SpectralDeconvolution& sd_signal_decoy_)
+{
   std::array<std::exception_ptr, 2> errors;
-#pragma omp parallel sections default(none) shared(spec, scan_number, precursor_pg, deconvolved_spectrum, errors)
+#pragma omp parallel sections default(none) shared(spec, scan_number, precursor_pg, deconvolved_spectrum, errors, sd_noise_decoy_, sd_signal_decoy_)
   {
 #pragma omp section
     {
@@ -428,7 +435,7 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
   int worker_count = 0;
 #ifdef _OPENMP
   const auto& worker_parameters = sd_.getParameters();
-  if (! report_decoy_ && merge_spec_ == 0 && ida_log_file_.empty() && !Internal::OpenMSBuildInfo::isOpenMPParallelRegion() && (int)worker_parameters.getValue("precursor_charge") == 0
+  if (merge_spec_ == 0 && ida_log_file_.empty() && !Internal::OpenMSBuildInfo::isOpenMPParallelRegion() && (int)worker_parameters.getValue("precursor_charge") == 0
       && (double)worker_parameters.getValue("precursor_mz") == 0)
   {
     std::vector<Size> level_counts(current_max_ms_level_ + 1, 0);
@@ -451,6 +458,24 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
     worker.setParameters(sd_.getParameters());
     worker.setSharedAveragine_(shared_averagine);
   }
+  // FDR: per-worker noise and signal decoy deconvolutions, configured like sd_noise_decoy_ / sd_signal_decoy_, each
+  // excluding the masses of its own worker's target result for the same spectrum
+  std::vector<SpectralDeconvolution> noise_decoy_workers(report_decoy_ ? spectrum_workers.size() : 0);
+  std::vector<SpectralDeconvolution> signal_decoy_workers(report_decoy_ ? spectrum_workers.size() : 0);
+  if (report_decoy_ && ! spectrum_workers.empty())
+  {
+    const auto noise_avg = std::make_shared<const SpectralDeconvolution::PrecalculatedAveragine>(sd_noise_decoy_.getAveragine());
+    const auto signal_avg = std::make_shared<const SpectralDeconvolution::PrecalculatedAveragine>(sd_signal_decoy_.getAveragine());
+    for (Size w = 0; w < spectrum_workers.size(); ++w)
+    {
+      noise_decoy_workers[w].setParameters(sd_noise_decoy_.getParameters());
+      noise_decoy_workers[w].setTargetDecoyType(PeakGroup::TargetDecoyType::noise_decoy, spectrum_workers[w].getDeconvolvedSpectrum());
+      noise_decoy_workers[w].setSharedAveragine_(noise_avg);
+      signal_decoy_workers[w].setParameters(sd_signal_decoy_.getParameters());
+      signal_decoy_workers[w].setTargetDecoyType(PeakGroup::TargetDecoyType::signal_decoy, spectrum_workers[w].getDeconvolvedSpectrum());
+      signal_decoy_workers[w].setSharedAveragine_(signal_avg);
+    }
+  }
 
   for (uint ms_level = 1; ms_level <= current_max_ms_level_; ms_level++)
   {
@@ -471,7 +496,7 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
       std::vector<int> fallback_scans;
       std::vector<const PeakGroup*> precursors;
       const auto& precursor_groups = native_id_precursor_peak_group_map_;
-      int previous_lower_scan = 0;
+      int previous_lower_scan = -1; // same as findPrecursorScanNumber_: no lower-level spectrum before it
       Size progress_count = 0;
       for (Size index = 0; index < map.size(); ++index)
       {
@@ -533,7 +558,8 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
           }
         }
 #pragma omp parallel num_threads(level_workers) default(none) \
-  shared(map, spectrum_indices, scan_numbers, fallback_scans, precursors, empty_precursor, spectrum_workers, level_results, errors, ms_level, job_order)
+  shared(map, spectrum_indices, scan_numbers, fallback_scans, precursors, empty_precursor, spectrum_workers, level_results, errors, ms_level, job_order, \
+           noise_decoy_workers, signal_decoy_workers)
         {
           int worker_index = 0;
 #ifdef _OPENMP
@@ -550,7 +576,12 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
               const auto& precursor = precursors[job] == nullptr ? empty_precursor : *precursors[job];
               worker.performSpectrumDeconvolution(map[index], scan_numbers[index], precursor);
               auto& result = worker.getDeconvolvedSpectrum();
-              if (ms_level > 1 && precursor.empty()) { result.setPrecursorScanNumber(fallback_scans[job]); }
+              if (ms_level > 1 && precursor.empty() && fallback_scans[job] >= 0) { result.setPrecursorScanNumber(fallback_scans[job]); }
+              if (report_decoy_ && ! result.empty())
+              {
+                appendDecoyPeakGroups_(result, map[index], scan_numbers[index], precursor, noise_decoy_workers[worker_index],
+                                       signal_decoy_workers[worker_index]);
+              }
               // Assignment would copy: DeconvolvedSpectrum has no move assignment.
               level_results[job].emplace(std::move(result));
             }

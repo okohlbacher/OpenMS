@@ -159,6 +159,9 @@ namespace OpenMS
 
     /// append decoy peak groups to deconvolved spectrum
     void appendDecoyPeakGroups_(DeconvolvedSpectrum& deconvolved_spectrum, const MSSpectrum& spec, int scan_number, const PeakGroup& precursor_pg);
+    /// same with explicit decoy deconvolutions (per-worker copies in the parallel spectrum loop)
+    static void appendDecoyPeakGroups_(DeconvolvedSpectrum& deconvolved_spectrum, const MSSpectrum& spec, int scan_number, const PeakGroup& precursor_pg,
+                                       SpectralDeconvolution& noise_decoy, SpectralDeconvolution& signal_decoy);
 
     /// run feature finding to get deconvolved features
     void runFeatureFinding_(std::vector<DeconvolvedSpectrum>& deconvolved_spectra, std::vector<FLASHHelperClasses::MassFeature>& deconvolved_features);

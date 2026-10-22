@@ -29,6 +29,23 @@
 
 namespace OpenMS
 {
+  namespace
+  {
+    /// round(a / b) given inv_b = 1 / b, without the division; false when the product is within 1e-7 of a rounding
+    /// boundary (or large), in which case the caller divides. Same reasoning as in PeakGroup.cpp.
+    inline bool roundedQuotient(double a, double inv_b, int& rounded)
+    {
+      const double q = a * inv_b;
+      if (! (std::fabs(q) < 1e8)) { return false; }
+      const long long t = (long long)q;
+      const long long f = t - (long long)(q < (double)t);
+      const double frac = q - (double)f;
+      if (! (frac > 1e-7 && frac < 1 - 1e-7 && std::fabs(frac - 0.5) > 1e-7)) { return false; }
+      rounded = (int)(f + (long long)(frac > 0.5));
+      return true;
+    }
+  } // namespace
+
 /// harmonic charge factors that will be considered for harmonic mass reduction.
 inline const std::vector<int> harmonic_charges_ {2, 3, 5, 7, 11};
 /// high and low charges are differently deconvolved. This value determines the (inclusive) threshold for low charge.
@@ -407,6 +424,15 @@ inline const double tol_div_factor
 
       double bin_mul_factor = bin_mul_factors_[ms_level_ - 1];
       std::vector<float> sub_max_h_intensity(h_charge_size, .0f);
+      // intensity-ratio factor per charge (same expression as before, evaluated once per spectrum)
+      thread_local std::vector<float> charge_factors;
+      charge_factors.resize(current_max_charge_ > 0 ? current_max_charge_ : 0);
+      for (int j = 0; j < current_max_charge_; j++)
+      {
+        const int abs_charge = j + 1;
+        const float highest_factor = 10.0f;
+        charge_factors[j] = abs_charge <= low_charge_ ? highest_factor : (highest_factor / 2 + highest_factor / 2 * low_charge_ / (float)abs_charge);
+      }
 
       // traverse from right to left in the log mz bin space
       for (auto iter = mz_bin_index_reverse.rbegin(); iter < mz_bin_index_reverse.rend(); iter++)
@@ -442,9 +468,7 @@ inline const double tol_div_factor
           bool pass_first_check = false;
 
           // intensity ratio between consecutive charges should not exceed the factor.
-          const float highest_factor = 10.0f;
-          const float factor
-            = abs_charge <= low_charge_ ? highest_factor : (highest_factor / 2 + highest_factor / 2 * low_charge_ / (float)abs_charge);
+          const float factor = charge_factors[j];
           // intensity ratio between consecutive charges for possible harmonic should be within this factor
 
           const float hfactor = factor / 2.0f;
@@ -454,7 +478,8 @@ inline const double tol_div_factor
           intensity_ratio = intensity_ratio < 1 ? 1.0f / intensity_ratio : intensity_ratio;
           float support_peak_intensity = 0;
           // check if peaks of continuous charges are present
-          std::fill(sub_max_h_intensity.begin(), sub_max_h_intensity.end(), .0f);
+          // cleared lazily: only the two blocks below read it, and the second adds to what the first accumulated
+          bool h_cleared = false;
 
           // if charge not continuous or intensity ratio is too high reset support_peak_count
           if (charge_not_continous || intensity_ratio > factor) { spc = 0; }
@@ -467,6 +492,8 @@ inline const double tol_div_factor
           // for low charges, check isotope peak presence.
           if (! pass_first_check && abs_charge <= low_charge_)
           {
+            std::fill(sub_max_h_intensity.begin(), sub_max_h_intensity.end(), .0f);
+            h_cleared = true;
             // find the next isotope peak(s) and try to avoid harmonic masses
             for (int d = 1; d >= (activeAveragine_().getApexIndex(mz * abs_charge) > 0 ? -1 : 1); d -= 2)
             {
@@ -535,6 +562,7 @@ inline const double tol_div_factor
           {
             if (prev_charge - j == -1) // check harmonic artifacts for high charge ranges
             {
+              if (! h_cleared) { std::fill(sub_max_h_intensity.begin(), sub_max_h_intensity.end(), .0f); }
               float max_intensity = intensity;
               float min_intensity = prev_intensity;
               if (prev_intensity <= .0)
@@ -849,6 +877,7 @@ inline const double tol_div_factor
         // now we have a matching peak for this mass of charge  abs_charge. From here, isotope peaks are collected
         const double mz = log_mz_peaks_[max_peak_index].getMZ(); // charged mz
         const double iso_delta = iso_da_distance_ / (double)abs_charge;
+        const double inv_iso_delta = 1.0 / iso_delta;
         double mz_delta = std::min(max_mass_dalton_tolerance_ / (double)abs_charge, tol * mz); //
 
         double max_mz = mz;
@@ -857,7 +886,8 @@ inline const double tol_div_factor
         {
           const double observed_mz = log_mz_peaks_[peak_index].getMZ();
           double mz_diff = observed_mz - mz;
-          int tmp_i = (int)round(mz_diff / iso_delta);
+          int tmp_i;
+          if (! roundedQuotient(mz_diff, inv_iso_delta, tmp_i)) { tmp_i = (int)round(mz_diff / iso_delta); }
 
           if (observed_mz - max_mz > (double)right_index * iso_delta + mz_delta) { break; }
 
@@ -878,7 +908,8 @@ inline const double tol_div_factor
         {
           const double observed_mz = log_mz_peaks_[peak_index].getMZ();
           double mz_diff = observed_mz - mz;
-          int tmp_i = (int)round(mz_diff / iso_delta);
+          int tmp_i;
+          if (! roundedQuotient(mz_diff, inv_iso_delta, tmp_i)) { tmp_i = (int)round(mz_diff / iso_delta); }
 
           if (max_mz - observed_mz > (float)left_index * iso_delta + mz_delta) { break; }
           if (std::abs(mz_diff - tmp_i * iso_delta) < mz_delta)
@@ -1349,6 +1380,8 @@ inline const double tol_div_factor
           excluded_masses_for_decoy_runs_.push_back(pg.getMonoMass() + j * iso_da_distance_);
         }
       }
+      // isPeakGroupInExcludedMassForDecoyRuns_ binary-searches this list; with allowed_isotope_error > 0 the entries interleave
+      std::sort(excluded_masses_for_decoy_runs_.begin(), excluded_masses_for_decoy_runs_.end());
 
       for (Size k = 0; k < deconvolved_spectrum_.size(); k++)
       {
