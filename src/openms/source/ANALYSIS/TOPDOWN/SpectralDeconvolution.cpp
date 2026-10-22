@@ -443,11 +443,20 @@ inline const double tol_div_factor
         const double log_mz = getBinValue_(mz_bin_index, mz_bin_min_value_, bin_mul_factor); // uncharged log mz;
         const double mz = exp(log_mz);                                                       // uncharged mz
         const double iso_div_by_mz = iso_da_distance_ / mz;
+        // the m/z bin processed next maps to mass bins far from this one's (a cache miss per charge), so they are prefetched one bin ahead
+        const long next_mz_bin_index = iter + 1 < mz_bin_index_reverse.rend() ? (long)*(iter + 1) : -1;
         // scan through charges
         for (int j = 0; j < current_max_charge_; j++) // loop over all charges
         {
           // mass is given by shifting by binned_universal_pattern_[j]
           const long mass_bin_index = (long)mz_bin_index + binned_universal_pattern_[j];
+#if defined(__GNUC__) || defined(__clang__)
+          if (const long next = next_mz_bin_index + binned_universal_pattern_[j]; next_mz_bin_index >= 0 && next >= 0 && next < bin_end)
+          {
+            __builtin_prefetch(&states[next], 1);
+            __builtin_prefetch(&mass_intensities[next], 1);
+          }
+#endif
 
           if (mass_bin_index < 0) { continue; }
           if (mass_bin_index >= bin_end) { break; }
