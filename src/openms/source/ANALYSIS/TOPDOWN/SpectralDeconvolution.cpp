@@ -1199,11 +1199,11 @@ inline const double tol_div_factor
     auto selected = boost::dynamic_bitset<>(deconvolved_spectrum_.size());
     double snr_threshold = min_snr_[ms_level_ - 1];
 
-    // Outer spectrum workers own their candidate state and execute ordinary C++
-    // loops so exceptions remain inside the worker's enclosing try/catch.
+    // Outer spectrum workers (targets and decoys) own their candidate state and execute ordinary C++
+    // loops so exceptions remain inside the worker's enclosing try/catch; a nested team would have one thread.
     bool parallel_candidates = true;
 #ifdef _OPENMP
-    parallel_candidates = target_decoy_type_ != PeakGroup::target || !Internal::OpenMSBuildInfo::isOpenMPParallelRegion();
+    parallel_candidates = !Internal::OpenMSBuildInfo::isOpenMPParallelRegion();
 #endif
     const auto score_candidate = [&](int i) { return scoreCandidate_(deconvolved_spectrum_[i]); };
     if (fused_scoring_)
@@ -1216,16 +1216,13 @@ inline const double tol_div_factor
       // Checked compact setters may reject an isotope outside their domain.
       // Collect exceptions by candidate so none escapes an OpenMP region.
       std::vector<std::exception_ptr> errors(deconvolved_spectrum_.size());
-#pragma omp parallel for default(none) shared(score_candidate, selected, errors)
+      std::vector<char> passed(deconvolved_spectrum_.size(), 0); // one byte per candidate: no shared bitset word, no lock
+#pragma omp parallel for default(none) shared(score_candidate, passed, errors)
       for (int i = 0; i < (int)deconvolved_spectrum_.size(); i++)
       {
         try
         {
-          if (score_candidate(i))
-          {
-#pragma omp critical
-            selected[i] = true;
-          }
+          passed[i] = score_candidate(i);
         }
         catch (...)
         {
@@ -1235,6 +1232,10 @@ inline const double tol_div_factor
       for (const auto& error : errors)
       {
         if (error) { std::rethrow_exception(error); }
+      }
+      for (Size i = 0; i < passed.size(); ++i)
+      {
+        if (passed[i]) { selected[i] = true; }
       }
     }
     else
@@ -1311,16 +1312,13 @@ inline const double tol_div_factor
     if (parallel_candidates)
     {
       std::vector<std::exception_ptr> errors(deconvolved_spectrum_.size());
-#pragma omp parallel for default(none) shared(score_harmonics, selected, errors)
+      std::vector<char> passed(deconvolved_spectrum_.size(), 0); // one byte per candidate: no shared bitset word, no lock
+#pragma omp parallel for default(none) shared(score_harmonics, passed, errors)
       for (int i = 0; i < (int)deconvolved_spectrum_.size(); i++)
       {
         try
         {
-          if (score_harmonics(i))
-          {
-#pragma omp critical
-            selected[i] = true;
-          }
+          passed[i] = score_harmonics(i);
         }
         catch (...)
         {
@@ -1330,6 +1328,10 @@ inline const double tol_div_factor
       for (const auto& error : errors)
       {
         if (error) { std::rethrow_exception(error); }
+      }
+      for (Size i = 0; i < passed.size(); ++i)
+      {
+        if (passed[i]) { selected[i] = true; }
       }
     }
     else
