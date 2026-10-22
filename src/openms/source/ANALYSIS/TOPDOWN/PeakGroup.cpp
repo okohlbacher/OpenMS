@@ -249,15 +249,19 @@ namespace OpenMS
     thread_local std::vector<MassIntensity> noisy_kept, signal_kept;
     noisy_kept.clear();
     signal_kept.clear();
+    // whether every kept intensity is finite and at least FLT_MIN (used by the path-intensity shortcut below)
+    bool normal_positive_terms = true;
     for (const LogMzPeak* p = noisy_begin; p != noisy_end; ++p)
     {
       if (p->getIntensity() < threshold) continue;
+      normal_positive_terms &= p->getIntensity() >= std::numeric_limits<float>::min() && p->getIntensity() <= std::numeric_limits<float>::max();
       noisy_kept.push_back({p->getUnchargedMass(), p->getIntensity()});
     }
     if (noisy_kept.empty()) return 0;
     for (const LogMzPeak* p = signal_begin; p != signal_end; ++p)
     {
       if (p->getIntensity() < threshold) continue;
+      normal_positive_terms &= p->getIntensity() >= std::numeric_limits<float>::min() && p->getIntensity() <= std::numeric_limits<float>::max();
       signal_kept.push_back({p->getUnchargedMass(), p->getIntensity()});
     }
     thread_local std::vector<double> mass;
@@ -434,13 +438,9 @@ namespace OpenMS
     thread_local std::vector<std::uint32_t> chain_length;
     chain_sum.resize(peak_count);
     chain_length.resize(peak_count);
-    // the bound needs finite terms in the normal positive range (no cancellation, relative rounding) and chains far
-    // shorter than 2^24 / 10
-    bool bounded_terms = peak_count < 1000000;
-    for (Size i = 0; i < peak_count; i++)
-    {
-      bounded_terms &= std::isfinite(intensity[i]) && intensity[i] >= std::numeric_limits<float>::min();
-    }
+    // the bound needs finite terms in the normal positive range (no cancellation, relative rounding; checked while the
+    // peaks were copied) and chains far shorter than 2^24 / 10
+    const bool bounded_terms = normal_positive_terms && peak_count < 1000000;
     for (Size k = 0; k < max_bin_number; k++)
     {
       if (per_bin_start_index[k] == -2) { continue; }
