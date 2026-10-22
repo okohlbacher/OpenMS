@@ -10,7 +10,6 @@
 #include <OpenMS/CONCEPT/LogStream.h>
 #include <fstream>
 #include <OpenMS/ANALYSIS/TOPDOWN/FLASHDeconvAlgorithm.h>
-#include <OpenMS/ANALYSIS/TOPDOWN/FLASHHugePages.h>
 #include <OpenMS/APPLICATIONS/TOPPBase.h>
 #include <OpenMS/DATASTRUCTURES/ListUtils.h>
 #include <OpenMS/FORMAT/FLASHDeconvFeatureFile.h>
@@ -63,6 +62,11 @@ namespace
 }
 
 using namespace OpenMS;
+#if defined(__GLIBC__) && defined(__linux__)
+  #include <cstring>
+  #include <unistd.h>
+#endif
+
 using namespace std;
 
 namespace
@@ -475,37 +479,7 @@ protected:
     // Run FLASHDeconvAlgorithm here!
     OPENMS_LOG_INFO << "Processing : " << in_file << endl;
 
-    // The MS1 spectrum tsv is written on a side thread while the algorithm finishes its serial phases (see
-    // FLASHDeconvAlgorithm::setEarlyMS1Writer); the final writer below then skips that level.
-    bool ms1_written_early = false;
-    if (! out_spec_file.empty() && ! out_spec_file[0].empty() && ! report_decoy)
-    {
-      fd.setEarlyMS1Writer([&](const std::vector<DeconvolvedSpectrum>& spectra) {
-        Size ms1_count = 0;
-        for (const auto& dspec : spectra)
-        {
-          if (! dspec.empty() && dspec.getOriginalSpectrum().getMSLevel() == 1) { ++ms1_count; }
-        }
-        if (! keep_empty_out && ms1_count == 0) { return; }
-        OPENMS_LOG_INFO << "writing spectrum tsv for MS level 1 ..." << endl;
-        std::vector<ofstream> ms1_streams(out_spec_file.size());
-        ms1_streams[0].open(out_spec_file[0]);
-        if (! ms1_streams[0])
-        {
-          throw Exception::FileNotWritable(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, out_spec_file[0]);
-        }
-        FLASHDeconvSpectrumFile::writeDeconvolvedMassesHeader(ms1_streams[0], 1, write_detail, report_decoy);
-        StringList ms1_only(out_spec_file.size());
-        ms1_only[0] = out_spec_file[0];
-        FLASHDeconvSpectrumFile::writeDeconvolvedMassesParallel(spectra, ms1_streams, ms1_only, in_file, fd.getAveragine(), fd.getDecoyAveragine(),
-                                                               fd.getTolerances(), write_detail, report_decoy, fd.getNoiseDecoyWeight());
-        ms1_streams[0].close();
-        ms1_written_early = true;
-      });
-    }
-
     fd.run(map, deconvolved_spectra, deconvolved_features);
-    if (ms1_written_early) { out_spec_file[0] = ""; } // already on disk; the writer below handles the other levels
     tols = fd.getTolerances();
     // collect statistics for information
     for (const auto& it : map)
@@ -689,6 +663,46 @@ protected:
     return EXECUTION_OK;
   }
 };
+
+namespace
+{
+  /**
+    @brief Called first in main() of FLASHDeconv: puts the heap on transparent huge pages (Linux with glibc only).
+
+    glibc backs the heap with transparent huge pages only when asked at start-up (tunable glibc.malloc.hugetlb, read before main), so the
+    process executes itself once more with it set. With 4 KiB pages, the per-thread arenas (~20 GB for FLASHDeconv at 192 threads) cost tens
+    of seconds of page-fault system time and seconds of page-table teardown at exit; with huge pages FLASHDeconv is ~20 %
+    faster at 192 threads, with identical output. If the re-execution fails, the run continues as before. Skipped:
+    - when GLIBC_TUNABLES already names the tunable (set by the user), FLASH_NO_HUGETLB is set, or after the re-execution (FLASH_HUGETLB_EXEC
+      marks it, in case glibc drops the variable as in secure-execution mode);
+    - with OpenMP thread binding requested (OMP_PROC_BIND, OMP_PLACES, GOMP_CPU_AFFINITY, KMP_AFFINITY): the OpenMP runtime then binds the
+      main thread to the first place before main, and the re-executed process would inherit that one-CPU mask, so every thread would run on
+      one CPU. With binding, set GLIBC_TUNABLES=glibc.malloc.hugetlb=1 directly;
+    - under valgrind, where /proc/self/exe is valgrind's own executable.
+  */
+  inline void useTransparentHugePages(const char** argv)
+  {
+#if defined(__GLIBC__) && defined(__linux__)
+    if (std::getenv("FLASH_NO_HUGETLB") != nullptr || std::getenv("FLASH_HUGETLB_EXEC") != nullptr) return;
+    if (std::getenv("OMP_PROC_BIND") != nullptr || std::getenv("OMP_PLACES") != nullptr || std::getenv("GOMP_CPU_AFFINITY") != nullptr
+        || std::getenv("KMP_AFFINITY") != nullptr)
+      return;
+    const char* preload = std::getenv("LD_PRELOAD");
+    if (preload != nullptr && std::strstr(preload, "vgpreload") != nullptr) return;
+    const char* tunables = std::getenv("GLIBC_TUNABLES");
+    if (tunables != nullptr && std::strstr(tunables, "glibc.malloc.hugetlb") != nullptr) return;
+    const std::string tunables_before = tunables != nullptr ? tunables : "";
+    const std::string value = tunables != nullptr && *tunables != '\0' ? std::string(tunables) + ":glibc.malloc.hugetlb=1" : std::string("glibc.malloc.hugetlb=1");
+    if (setenv("GLIBC_TUNABLES", value.c_str(), 1) != 0 || setenv("FLASH_HUGETLB_EXEC", "1", 1) != 0) return;
+    execv("/proc/self/exe", const_cast<char* const*>(argv));
+    unsetenv("FLASH_HUGETLB_EXEC"); // the re-execution failed: the environment as it was
+    if (tunables != nullptr) { setenv("GLIBC_TUNABLES", tunables_before.c_str(), 1); }
+    else { unsetenv("GLIBC_TUNABLES"); }
+#else
+    (void)argv;
+#endif
+  }
+} // namespace
 
 // the actual main function needed to create an executable
 int main(int argc, const char** argv)

@@ -44,6 +44,37 @@ namespace OpenMS
       rounded = (int)(f + (long long)(frac > 0.5));
       return true;
     }
+
+    /// Bit i is set when score(i) holds, for i in [0, n). In parallel unless already inside a parallel region (an outer spectrum worker
+    /// owns this object and scores serially). Errors are collected per candidate so none escapes the region; the first is rethrown.
+    template<typename Score> boost::dynamic_bitset<> selectCandidates(int n, const Score& score)
+    {
+      std::vector<char> passed(n, 0); // one byte per candidate: no shared bitset word, no lock
+      std::vector<std::exception_ptr> errors(n);
+      bool in_region = false;
+#ifdef _OPENMP
+      in_region = Internal::OpenMSBuildInfo::isOpenMPParallelRegion();
+#endif
+#pragma omp parallel for if (! in_region) default(none) shared(n, score, passed, errors)
+      for (int i = 0; i < n; i++)
+      {
+        try
+        {
+          passed[i] = score(i);
+        }
+        catch (...)
+        {
+          errors[i] = std::current_exception();
+        }
+      }
+      boost::dynamic_bitset<> selected(n);
+      for (int i = 0; i < n; i++)
+      {
+        if (errors[i]) { std::rethrow_exception(errors[i]); }
+        selected[i] = passed[i] != 0;
+      }
+      return selected;
+    }
   } // namespace
 
 /// harmonic charge factors that will be considered for harmonic mass reduction.
@@ -400,19 +431,10 @@ inline const double tol_div_factor
     size_t h_charge_size = harmonic_charges_.size();
     long bin_end = (long)binned_log_masses_.size();
 
-    // Keep the legacy representation for charge domains with a truncated sentinel.
+    // Per mass bin: support count and the last charge index seen. Charges are in [0, 200] (checked in updateMembers_); a fixed charge
+    // maps occupied m/z bins injectively into mass bins, so the support count cannot exceed the number of charges, and the initial
+    // sentinel (max charge + 2) fits a byte as well.
     struct MassBinState
-    {
-      unsigned short support;
-      unsigned short previous_charge;
-      float previous_intensity;
-    };
-    struct CompactMassBinState
-    {
-      unsigned short support;
-      unsigned short previous_charge;
-    };
-    struct ByteMassBinState
     {
       std::uint8_t support;
       std::uint8_t previous_charge;
@@ -468,8 +490,7 @@ inline const double tol_div_factor
           const int abs_charge = (j + 1);
           auto& prev_charge = state.previous_charge;
           float prev_intensity = .0f;
-          if constexpr (std::is_same_v<std::decay_t<decltype(state)>, MassBinState>) { prev_intensity = state.previous_intensity; }
-          else if (prev_charge < current_max_charge_)
+          if (prev_charge < current_max_charge_)
           {
             const long previous_mz_bin_index = mass_bin_index - binned_universal_pattern_[prev_charge];
             prev_intensity = mz_intensities[previous_mz_bin_index];
@@ -645,50 +666,19 @@ inline const double tol_div_factor
               }
             }
           }
-          if constexpr (std::is_same_v<std::decay_t<decltype(state)>, MassBinState>) { state.previous_intensity = intensity; }
           prev_charge = j;
         }
       }
     };
 
-    // The initial sentinel and every stored charge must retain their full value.
-    // Wider/nonstandard charge domains use the original cached-intensity path.
-    const bool compact_state = current_max_charge_ >= 0 && current_max_charge_ <= std::numeric_limits<unsigned short>::max() - 2
-                               && sizeof(CompactMassBinState) < sizeof(MassBinState);
-    // A fixed charge maps occupied mz bins injectively into mass bins, so a
-    // support count cannot exceed the number of charges. The extra two values
-    // are needed for the initial sentinel, not for a stored charge index.
-    const bool byte_state = current_max_charge_ >= 0 && current_max_charge_ <= std::numeric_limits<std::uint8_t>::max() - 2
-                            && sizeof(ByteMassBinState) < sizeof(CompactMassBinState);
-    // The two compact layouts are trivially copyable and are placed in a worker-owned byte pool.
-    auto pooled_states = [&](auto init) {
-      using State = decltype(init);
-      static_assert(std::is_trivially_copyable_v<State> && alignof(State) <= alignof(std::max_align_t));
-      const Size n = binned_log_masses_.size();
-      if (mass_bin_state_pool_.size() < n * sizeof(State)) { mass_bin_state_pool_.resize(n * sizeof(State)); }
-      // create the trivially copyable states in the pooled bytes, then access them through a laundered pointer
-      std::uninitialized_fill_n(reinterpret_cast<State*>(mass_bin_state_pool_.data()), n, init);
-      State* first = std::launder(reinterpret_cast<State*>(mass_bin_state_pool_.data()));
-      struct View
-      {
-        State* d;
-        State& operator[](Size i) { return d[i]; }
-      } view {first};
-      update_mass_bins(view);
-    };
-    if (byte_state)
-    {
-      pooled_states(ByteMassBinState {0, static_cast<std::uint8_t>(current_max_charge_ + 2)});
-    }
-    else if (compact_state)
-    {
-      pooled_states(CompactMassBinState {0, (unsigned short)(current_max_charge_ + 2)});
-    }
-    else
-    {
-      std::vector<MassBinState> states(binned_log_masses_.size(), {0, (unsigned short)(current_max_charge_ + 2), .0f});
-      update_mass_bins(states);
-    }
+    // The states are trivially copyable and live in a worker-owned byte pool.
+    static_assert(std::is_trivially_copyable_v<MassBinState>);
+    const Size n = binned_log_masses_.size();
+    if (mass_bin_state_pool_.size() < n * sizeof(MassBinState)) { mass_bin_state_pool_.resize(n * sizeof(MassBinState)); }
+    std::uninitialized_fill_n(reinterpret_cast<MassBinState*>(mass_bin_state_pool_.data()), n,
+                              MassBinState {0, static_cast<std::uint8_t>(current_max_charge_ + 2)});
+    MassBinState* states = std::launder(reinterpret_cast<MassBinState*>(mass_bin_state_pool_.data()));
+    update_mass_bins(states);
   }
 
   // Subfunction of updateMassBins_. If a peak corresponds to multiple masses, only one mass is selected for the peak based on intensities.
@@ -1245,50 +1235,16 @@ inline const double tol_div_factor
     auto selected = boost::dynamic_bitset<>(deconvolved_spectrum_.size());
     double snr_threshold = min_snr_[ms_level_ - 1];
 
-    // Outer spectrum workers own their candidate state and execute ordinary C++
-    // loops so exceptions remain inside the worker's enclosing try/catch.
-    bool parallel_candidates = true;
-#ifdef _OPENMP
-    parallel_candidates = target_decoy_type_ != PeakGroup::target || !Internal::OpenMSBuildInfo::isOpenMPParallelRegion();
-#endif
     const auto score_candidate = [&](int i) { return scoreCandidate_(deconvolved_spectrum_[i]); };
     if (fused_scoring_)
     {
       selected.set(); // candidates were scored during generation; only survivors were kept
       fused_scoring_ = false;
     }
-    else if (parallel_candidates)
-    {
-      // Checked compact setters may reject an isotope outside their domain.
-      // Collect exceptions by candidate so none escapes an OpenMP region.
-      std::vector<std::exception_ptr> errors(deconvolved_spectrum_.size());
-#pragma omp parallel for default(none) shared(score_candidate, selected, errors)
-      for (int i = 0; i < (int)deconvolved_spectrum_.size(); i++)
-      {
-        try
-        {
-          if (score_candidate(i))
-          {
-#pragma omp critical
-            selected[i] = true;
-          }
-        }
-        catch (...)
-        {
-          errors[i] = std::current_exception();
-        }
-      }
-      for (const auto& error : errors)
-      {
-        if (error) { std::rethrow_exception(error); }
-      }
-    }
     else
     {
-      for (int i = 0; i < (int)deconvolved_spectrum_.size(); i++)
-      {
-        selected[i] = score_candidate(i);
-      }
+      // Checked compact setters may reject an isotope outside their domain: selectCandidates rethrows.
+      selected = selectCandidates((int)deconvolved_spectrum_.size(), score_candidate);
     }
 
     Size selected_count = selected.count();
@@ -1326,7 +1282,6 @@ inline const double tol_div_factor
     removeChargeErrorPeakGroups_(deconvolved_spectrum_, target_decoy_type_);
 
     // final harmonics removal
-    selected = boost::dynamic_bitset<>(deconvolved_spectrum_.size());
     filtered_peak_groups.clear();
 
     const auto score_harmonics = [&](int i) {
@@ -1354,37 +1309,7 @@ inline const double tol_div_factor
       }
       return pass;
     };
-    if (parallel_candidates)
-    {
-      std::vector<std::exception_ptr> errors(deconvolved_spectrum_.size());
-#pragma omp parallel for default(none) shared(score_harmonics, selected, errors)
-      for (int i = 0; i < (int)deconvolved_spectrum_.size(); i++)
-      {
-        try
-        {
-          if (score_harmonics(i))
-          {
-#pragma omp critical
-            selected[i] = true;
-          }
-        }
-        catch (...)
-        {
-          errors[i] = std::current_exception();
-        }
-      }
-      for (const auto& error : errors)
-      {
-        if (error) { std::rethrow_exception(error); }
-      }
-    }
-    else
-    {
-      for (int i = 0; i < (int)deconvolved_spectrum_.size(); i++)
-      {
-        selected[i] = score_harmonics(i);
-      }
-    }
+    selected = selectCandidates((int)deconvolved_spectrum_.size(), score_harmonics);
 
     selected_count = selected.count();
     if (selected_count == 0)

@@ -274,11 +274,11 @@ void FLASHDeconvAlgorithm::mergeSpectra_(MSExperiment& map, uint ms_level)
     else
     {
       // For ms n, first find precursors for all ms n. then make a tmp map having the precursor masses as precursor
+      // serial: inserting into the std::map from an OpenMP loop was a data race
       std::map<std::string, std::vector<Precursor>> original_precursor_map;
-#pragma omp parallel for default(none), shared(map, ms_level, original_precursor_map)
       for (int i = 0; i < (int)map.size(); i++)
       {
-        auto spec = map[i];
+        const auto& spec = map[i];
         if (spec.getMSLevel() != ms_level) continue;
 
         const auto& native_id = spec.getNativeID();
@@ -430,8 +430,8 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
     rt_scan_map[map[index].getRT()] = scan_number;
   }
 
-  // Outer parallelism is restricted to the ordinary target path.
-  // Keep merging, FDR, FLASHIda and manual precursor overrides on the serial path.
+  // Spectra are deconvolved by a pool of workers (targets and, with FDR, their decoys). Merging, FLASHIda and manual precursor
+  // overrides keep the serial path below.
   int worker_count = 0;
 #ifdef _OPENMP
   const auto& worker_parameters = sd_.getParameters();
@@ -465,7 +465,6 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
   if (report_decoy_ && ! spectrum_workers.empty())
   {
     const auto noise_avg = std::make_shared<const SpectralDeconvolution::PrecalculatedAveragine>(sd_noise_decoy_.getAveragine());
-    const auto signal_avg = std::make_shared<const SpectralDeconvolution::PrecalculatedAveragine>(sd_signal_decoy_.getAveragine());
     for (Size w = 0; w < spectrum_workers.size(); ++w)
     {
       noise_decoy_workers[w].setParameters(sd_noise_decoy_.getParameters());
@@ -473,7 +472,7 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
       noise_decoy_workers[w].setSharedAveragine_(noise_avg);
       signal_decoy_workers[w].setParameters(sd_signal_decoy_.getParameters());
       signal_decoy_workers[w].setTargetDecoyType(PeakGroup::TargetDecoyType::signal_decoy, spectrum_workers[w].getDeconvolvedSpectrum());
-      signal_decoy_workers[w].setSharedAveragine_(signal_avg);
+      signal_decoy_workers[w].setSharedAveragine_(shared_averagine); // the signal decoy uses the target averagine
       SpectralDeconvolution::shareCandidateMassBins_(spectrum_workers[w], signal_decoy_workers[w]);
     }
   }
@@ -537,7 +536,7 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
         }
         std::thread ms1_tracer;
         std::exception_ptr ms1_tracer_error;
-        if (ms_level == 2 && current_min_ms_level_ == 1 && merge_spec_ != 2 && unique_ms1_scans)
+        if (ms_level == 2 && current_min_ms_level_ == 1 && unique_ms1_scans) // worker path: no merging
         {
           try
           {
@@ -583,7 +582,6 @@ void FLASHDeconvAlgorithm::runSpectralDeconvolution_(MSExperiment& map, std::vec
                 appendDecoyPeakGroups_(result, map[index], scan_numbers[index], precursor, noise_decoy_workers[worker_index],
                                        signal_decoy_workers[worker_index]);
               }
-              // Assignment would copy: DeconvolvedSpectrum has no move assignment.
               level_results[job].emplace(std::move(result));
             }
             catch (...)
@@ -815,44 +813,6 @@ void FLASHDeconvAlgorithm::run(MSExperiment& map,
   // run spectral deconvolution here and get deconvolved spectra
   runSpectralDeconvolution_(map, deconvolved_spectra);
 
-  // MS1 results are final once their features are traced; write them while the serial MSn feature finding and
-  // q-value phases run. Qvalue writes only the q-value field of the MS1 peak groups, which the writer does not read
-  // without decoys; the MSn tracer touches MSn peak groups only.
-  std::thread early_writer;
-  std::exception_ptr early_writer_error;
-  if (early_ms1_writer_ && ! report_decoy_ && merge_spec_ != 2 && current_min_ms_level_ == 1 && ms1_features_ready_)
-  {
-    bool unique_ms1_scans = true;
-    int previous_ms1_scan = std::numeric_limits<int>::min();
-    for (const auto& dspec : deconvolved_spectra)
-    {
-      if (dspec.getOriginalSpectrum().getMSLevel() != 1) { continue; }
-      if (dspec.getScanNumber() == previous_ms1_scan) { unique_ms1_scans = false; }
-      previous_ms1_scan = dspec.getScanNumber();
-    }
-    if (unique_ms1_scans)
-    {
-      const auto write = [&]() {
-        try
-        {
-          early_ms1_writer_(deconvolved_spectra);
-        }
-        catch (...)
-        {
-          early_writer_error = std::current_exception();
-        }
-      };
-      try
-      {
-        early_writer = std::thread(write);
-      }
-      catch (const std::system_error&)
-      {
-        write(); // no thread available: same output, no overlap
-      }
-    }
-  }
-
   // feature tracing here and update FeatureQScores
   {
     runFeatureFinding_(deconvolved_spectra, deconvolved_features);
@@ -861,9 +821,6 @@ void FLASHDeconvAlgorithm::run(MSExperiment& map,
   {
     noise_decoy_weight_ = Qvalue::updatePeakGroupQvalues(deconvolved_spectra);
   }
-
-  if (early_writer.joinable()) { early_writer.join(); }
-  if (early_writer_error) { std::rethrow_exception(early_writer_error); }
 
   TopDownIsobaricQuantification quantifier;
   Param quant_param = param_.copy("iq:", true);
@@ -897,27 +854,6 @@ std::pair<int, int> FLASHDeconvAlgorithm::findScanNumberBounds_(const MSExperime
   return {b_scan_number, a_scan_number};
 }
 
-std::vector<DeconvolvedSpectrum> FLASHDeconvAlgorithm::collectSurveyScans_(const std::vector<DeconvolvedSpectrum>& deconvolved_spectra,
-                                                                           int b_scan_number,
-                                                                           int a_scan_number,
-                                                                           uint ms_level) const
-{
-  std::vector<DeconvolvedSpectrum> survey_scans;
-
-  auto diter = std::lower_bound(deconvolved_spectra.begin(), deconvolved_spectra.end(), DeconvolvedSpectrum(b_scan_number));
-  auto aiter = std::lower_bound(deconvolved_spectra.begin(), deconvolved_spectra.end(), DeconvolvedSpectrum(a_scan_number));
-
-  if (diter == deconvolved_spectra.end()) { return survey_scans; }
-
-  while (diter < deconvolved_spectra.end() && diter <= aiter)
-  {
-    if (diter->getOriginalSpectrum().getMSLevel() == ms_level - 1) { survey_scans.push_back(*diter); }
-    diter++;
-  }
-
-  return survey_scans;
-}
-
 std::pair<double, double> FLASHDeconvAlgorithm::getIsolationWindowMzRange_(const MSSpectrum& spec) const
 {
   double start_mz = 0;
@@ -937,78 +873,17 @@ std::pair<double, double> FLASHDeconvAlgorithm::getIsolationWindowMzRange_(const
   return {start_mz, end_mz};
 }
 
-PeakGroup
-FLASHDeconvAlgorithm::findBestPrecursorPeakGroup_(const std::vector<DeconvolvedSpectrum>& survey_scans, double start_mz, double end_mz) const
-{
-  PeakGroup best_pg;
-  double max_score = -1.0;
-
-  for (int i = (int)survey_scans.size() - 1; i >= 0; i--)
-  {
-    const auto& precursor_spectrum = survey_scans[i];
-    if (precursor_spectrum.empty()) { continue; }
-
-    for (const auto& pg : precursor_spectrum)
-    {
-      if (pg[0].getMZ() > end_mz || pg[pg.size() - 1].getMZ() < start_mz) { continue; }
-
-      double max_intensity = 0.0;
-      const FLASHHelperClasses::LogMzPeak* tmp_precursor = nullptr;
-
-      int c = int(round(pg.getMonoMass() / start_mz));
-      for (const auto& tmp_peak : pg)
-      {
-        if (tmp_peak.getAbsCharge() != c) { continue; }
-        if (tmp_peak.getMZ() < start_mz || tmp_peak.getMZ() > end_mz) { continue; }
-        if (tmp_peak.getIntensity() < max_intensity) { continue; }
-        max_intensity = tmp_peak.getIntensity();
-        tmp_precursor = &tmp_peak;
-      }
-
-      if (tmp_precursor == nullptr) { continue; }
-
-      auto score = pg.getChargeSNR(tmp_precursor->getAbsCharge());
-      if (score < max_score) { continue; }
-      max_score = score;
-      best_pg = pg;
-    }
-
-    if (! best_pg.empty()) { break; }
-  }
-
-  return best_pg;
-}
-
 void FLASHDeconvAlgorithm::findPrecursorPeakGroupsForMSnSpectra_(const MSExperiment& map,
                                                                  const std::vector<DeconvolvedSpectrum>& deconvolved_spectra,
                                                                  uint ms_level)
 {
-  bool parallel_registration = false;
-#ifdef _OPENMP
-  const auto& parameters = sd_.getParameters();
-  parallel_registration = merge_spec_ == 0 && ida_log_file_.empty() && !Internal::OpenMSBuildInfo::isOpenMPParallelRegion() && omp_get_max_threads() > 1
-                          && (int)parameters.getValue("precursor_charge") == 0 && (double)parameters.getValue("precursor_mz") == 0;
-#endif
+  // Match every MSn spectrum against the deconvolved survey scans (read only, so in parallel), then register the matches in input
+  // order; a later spectrum with the same native ID overwrites an earlier one.
   std::vector<Size> indices;
-  if (parallel_registration)
+  for (Size index = 0; index < map.size(); ++index)
   {
-    std::set<std::string> native_ids;
-    for (Size index = 0; index < map.size(); ++index)
-    {
-      const auto& spec = map[index];
-      if (spec.getMSLevel() != ms_level) { continue; }
-      const auto& id = spec.getNativeID();
-      // Duplicate or previously registered keys retain the serial overwrite order.
-      if (! native_ids.insert(id).second || native_id_precursor_peak_group_map_.contains(id))
-      {
-        parallel_registration = false;
-        break;
-      }
-      indices.push_back(index);
-    }
-    if (indices.size() < 2) { parallel_registration = false; }
+    if (map[index].getMSLevel() == ms_level) { indices.push_back(index); }
   }
-  if (parallel_registration)
   {
     struct PrecursorJob
     {
@@ -1098,27 +973,9 @@ void FLASHDeconvAlgorithm::findPrecursorPeakGroupsForMSnSpectra_(const MSExperim
     for (Size job = 0; job < jobs.size(); ++job)
     {
       if (errors[job]) { std::rethrow_exception(errors[job]); }
-      if (matches[job] != nullptr) { native_id_precursor_peak_group_map_.emplace(map[jobs[job].index].getNativeID(), *matches[job]); }
+      if (matches[job] != nullptr) { native_id_precursor_peak_group_map_[map[jobs[job].index].getNativeID()] = *matches[job]; }
     }
     if (preparation_error) { std::rethrow_exception(preparation_error); }
-    return;
-  }
-
-  for (Size index = 0; index < map.size(); index++)
-  {
-    const auto& spec = map[index];
-    if (spec.getMSLevel() != ms_level) { continue; }
-
-    const std::string& native_id = spec.getNativeID();
-
-    auto [b_scan_number, a_scan_number] = findScanNumberBounds_(map, index, ms_level);
-    auto survey_scans = collectSurveyScans_(deconvolved_spectra, b_scan_number, a_scan_number, ms_level);
-    if (survey_scans.empty()) { continue; }
-
-    auto [start_mz, end_mz] = getIsolationWindowMzRange_(spec);
-    PeakGroup best_pg = findBestPrecursorPeakGroup_(survey_scans, start_mz, end_mz);
-
-    if (! best_pg.empty()) { native_id_precursor_peak_group_map_[native_id] = best_pg; }
   }
 }
 
@@ -1194,11 +1051,6 @@ std::vector<FLASHHelperClasses::MassFeature> FLASHDeconvAlgorithm::traceMinLevel
     deconvolved_features.insert(deconvolved_features.end(), decoy_deconvolved_features.begin(), decoy_deconvolved_features.end());
   }
   return deconvolved_features;
-}
-
-void FLASHDeconvAlgorithm::setEarlyMS1Writer(std::function<void(const std::vector<DeconvolvedSpectrum>&)> writer)
-{
-  early_ms1_writer_ = std::move(writer);
 }
 
 void FLASHDeconvAlgorithm::runFeatureFinding_(std::vector<DeconvolvedSpectrum>& deconvolved_spectra,

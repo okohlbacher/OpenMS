@@ -66,26 +66,22 @@ namespace OpenMS
                                        bool record_decoy, double noise_decoy_weight);
 
     /**
-      @brief Write detailed spectrum TSVs using bounded, ordered spectrum buffers.
+      @brief Write the spectrum TSVs of all @p spectra, in input order.
 
-      FDR, minimal output, nested callers, failed streams and single-worker runs
-      use the original serial writer. Up to 64 workers dynamically format waves
-      containing at most four spectra per worker (256 spectra). This is a spectrum
-      count bound, not a byte budget. Each spectrum retains its original
-      stringstream lifetime and const peak-group semantics. Per-MS indices and stream writes
-      are committed on the caller thread in input order. On failure, later jobs
-      within the current wave may already have completed their local formatting.
-      This API does not make concurrent independent writer calls thread-safe.
+      With write_detail the spectra are formatted in parallel and written in input order (at most 64 rows per worker ahead of the
+      write position); with report_decoy the noise-decoy draws are replayed in input order first, so the output is the same for any
+      thread count. Without write_detail, inside a parallel region, or with a failed stream, the spectra are written one by one.
+      Concurrent independent calls are not thread-safe (shared row indices and random sequence).
 
       @param[in] spectra Spectra to write without mutating their peak groups.
       @param[in,out] streams Output streams indexed by MS level minus one.
       @param[in] output_files Output names; an empty name disables its MS-level stream.
       @param[in] file_name Input name recorded in each TSV row.
       @param[in] avg Target averagine.
-      @param[in] decoy_avg Noise-decoy averagine for the serial fallback.
+      @param[in] decoy_avg Noise-decoy averagine.
       @param[in] tols Per-MS tolerances in ppm.
       @param[in] write_detail Whether to write detailed peak fields.
-      @param[in] report_decoy Whether to report decoys (always serial).
+      @param[in] report_decoy Whether to report decoys.
       @param[in] noise_decoy_weight Original noise-decoy sampling weight.
       @throws Exception::InvalidParameter If output slots or tolerances are missing.
     */
