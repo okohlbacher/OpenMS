@@ -984,7 +984,7 @@ void FLASHDeconvAlgorithm::findPrecursorPeakGroupsForMSnSpectra_(const MSExperim
   bool parallel_registration = false;
 #ifdef _OPENMP
   const auto& parameters = sd_.getParameters();
-  parallel_registration = ! report_decoy_ && merge_spec_ == 0 && ida_log_file_.empty() && !Internal::OpenMSBuildInfo::isOpenMPParallelRegion() && omp_get_max_threads() > 1
+  parallel_registration = merge_spec_ == 0 && ida_log_file_.empty() && !Internal::OpenMSBuildInfo::isOpenMPParallelRegion() && omp_get_max_threads() > 1
                           && (int)parameters.getValue("precursor_charge") == 0 && (double)parameters.getValue("precursor_mz") == 0;
 #endif
   std::vector<Size> indices;
