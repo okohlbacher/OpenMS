@@ -14,6 +14,7 @@ Tests cover:
 import unittest
 import os
 import tempfile
+import copy
 
 import pyopenms
 
@@ -186,6 +187,47 @@ class TestLogMzPeak(unittest.TestCase):
         self.assertEqual(peak.abs_charge, 3)
         self.assertTrue(peak.is_positive)
         self.assertEqual(peak.isotopeIndex, 2)
+
+
+    def test_compact_packed_properties(self):
+        """Shared storage must preserve zero-charge polarity and negative isotopes."""
+        peak = pyopenms.LogMzPeak()
+        for charge in (0, 1, 200):
+            for positive in (False, True):
+                for isotope in (-65535, -2, -1, 0, 65535):
+                    peak.abs_charge = charge
+                    peak.is_positive = positive
+                    peak.isotopeIndex = isotope
+                    self.assertEqual(peak.abs_charge, charge)
+                    self.assertEqual(peak.is_positive, positive)
+                    self.assertEqual(peak.isotopeIndex, isotope)
+        for value in (-1, 201):
+            with self.assertRaisesRegex(RuntimeError, "Compact LogMzPeak charge"):
+                peak.abs_charge = value
+            self.assertEqual(peak.abs_charge, 200)
+        for value in (-65536, 65536):
+            with self.assertRaisesRegex(RuntimeError, "Compact LogMzPeak isotope index"):
+                peak.isotopeIndex = value
+            self.assertEqual(peak.isotopeIndex, 65535)
+
+    def test_compact_copy_independence(self):
+        peak = pyopenms.LogMzPeak()
+        peak.mz = 1234.567890123
+        peak.logMz = 9.25
+        peak.mass = 246000.123456789
+        peak.intensity = 987.5
+        peak.abs_charge = 200
+        peak.is_positive = False
+        peak.isotopeIndex = -42
+        for duplicate in (copy.copy(peak), copy.deepcopy(peak)):
+            duplicate.mz = 2.0
+            self.assertEqual(duplicate.logMz, 9.25)
+            self.assertEqual(duplicate.mass, 246000.123456789)
+            self.assertEqual(duplicate.getUnchargedMass(), 246000.123456789)
+            self.assertEqual(duplicate.abs_charge, 200)
+            self.assertFalse(duplicate.is_positive)
+            self.assertEqual(duplicate.isotopeIndex, -42)
+            self.assertEqual(peak.mz, 1234.567890123)
 
 
 class TestPrecalculatedAveragine(unittest.TestCase):

@@ -7,8 +7,18 @@
 // --------------------------------------------------------------------------
 
 #include <OpenMS/FORMAT/FLASHDeconvSpectrumFile.h>
+#include <mutex>
+#include <thread>
+#include <memory>
+#include <atomic>
 #include <OpenMS/FORMAT/MzMLFile.h>
 #include <random>
+
+#include <OpenMS/SYSTEM/BuildInfo.h>
+#include <exception>
+#ifdef _OPENMP
+  #include <omp.h>
+#endif
 
 namespace OpenMS
 {
@@ -18,25 +28,37 @@ namespace OpenMS
 
    */
 
+  // Noise decoy rows are subsampled from one random sequence, drawn in spectrum order.
   inline std::default_random_engine generator_;
-  inline std::uniform_real_distribution<double> distribution_(0.0,1.0);
 
-  void FLASHDeconvSpectrumFile::writeDeconvolvedMasses(const DeconvolvedSpectrum& dspec, std::ostream& os, const std::string& file_name, const FLASHHelperClasses::PrecalculatedAveragine& avg, const FLASHHelperClasses::PrecalculatedAveragine& decoy_avg, double tol,
-                                                       const bool write_detail, const bool report_decoy, const double noise_decoy_weight)
+  namespace
+  {
+    // Legacy and buffered writes share counters, advanced only by the caller.
+    std::vector<uint>& writerIndices_()
+    {
+      static std::vector<uint> indices;
+      return indices;
+    }
+
+    /// whether a noise decoy row is written: one draw per noise decoy peak group (a distribution has no state, so a fresh one per draw
+    /// gives the same sequence as a shared one)
+    bool keepNoiseDecoy_(std::default_random_engine& gen, const double noise_decoy_weight)
+    {
+      return std::uniform_real_distribution<double>(0.0, 1.0)(gen) <= noise_decoy_weight;
+    }
+  }
+
+  static void writeDeconvolvedMasses_(const DeconvolvedSpectrum& dspec, std::ostream& os, const std::string& file_name, const FLASHHelperClasses::PrecalculatedAveragine& avg, const FLASHHelperClasses::PrecalculatedAveragine& decoy_avg, double tol,
+                                                       const bool write_detail, const bool report_decoy, const double noise_decoy_weight, uint& index,
+                                                       std::default_random_engine& gen)
   {
     if (!report_decoy && dspec.isDecoy()) return;
-    static std::vector<uint> indices {};
     std::stringstream ss;
     if (dspec.empty())
     {
       return;
     }
 
-    while (indices.size() <= dspec.getOriginalSpectrum().getMSLevel())
-    {
-      indices.push_back(1);
-    }
-    uint& index = indices[dspec.getOriginalSpectrum().getMSLevel() - 1];
 
     std::stringstream precursor_ss;
     if (dspec.getOriginalSpectrum().getMSLevel() > 1)
@@ -65,16 +87,7 @@ namespace OpenMS
       const auto& pg = dspec[i];
       if (!report_decoy && pg.getTargetDecoyType() != PeakGroup::TargetDecoyType::target) continue;
 
-      if (pg.getTargetDecoyType() == PeakGroup::TargetDecoyType::noise_decoy)
-      {
-        double number = distribution_(generator_);
-        if (number > noise_decoy_weight)
-        {
-          continue;
-        }
-        // Note: removed i-- logic as it doesn't work well with const iteration
-        // The random sampling behavior is preserved by the continue above
-      }
+      if (pg.getTargetDecoyType() == PeakGroup::TargetDecoyType::noise_decoy && ! keepNoiseDecoy_(gen, noise_decoy_weight)) { continue; }
 
       const auto& avg_ = pg.getTargetDecoyType() == PeakGroup::TargetDecoyType::noise_decoy? decoy_avg : avg;
       const double mono_mass = pg.getMonoMass();
@@ -104,21 +117,21 @@ namespace OpenMS
         ss << std::fixed << std::setprecision(2);
         for (const auto& p : pg)
         {
-          ss << std::to_string(p.mz) << " ";
+          ss << std::to_string(p.getMZ()) << " ";
         }
 
         ss << "\t";
         ss << std::fixed << std::setprecision(1);
         for (const auto& p : pg)
         {
-          ss << p.intensity << " ";
+          ss << p.getIntensity() << " ";
         }
 
         ss << "\t";
         ss << std::setprecision(-1);
         for (const auto& p : pg)
         {
-          ss << (p.is_positive ? p.abs_charge : -p.abs_charge) << " ";
+          ss << (p.isPositive() ? p.getAbsCharge() : -p.getAbsCharge()) << " ";
         }
 
         ss << "\t";
@@ -130,15 +143,15 @@ namespace OpenMS
         ss << "\t";
         for (const auto& p : pg)
         {
-          ss << p.isotopeIndex << " ";
+          ss << p.getIsotopeIndex() << " ";
         }
 
         ss << "\t";
         ss << std::setprecision(2);
         for (const auto& p : pg)
         {
-          double average_mass = pg.getMonoMass() + p.isotopeIndex * pg.getIsotopeDaDistance();
-          double mass_error = (average_mass / p.abs_charge + FLASHHelperClasses::getChargeMass(p.is_positive) - p.mz) / p.mz;
+          double average_mass = pg.getMonoMass() + p.getIsotopeIndex() * pg.getIsotopeDaDistance();
+          double mass_error = (average_mass / p.getAbsCharge() + FLASHHelperClasses::getChargeMass(p.isPositive()) - p.getMZ()) / p.getMZ();
           ss << 1e6 * mass_error << " ";
         }
         ss << std::setprecision(-1);
@@ -146,21 +159,21 @@ namespace OpenMS
         ss << std::fixed << std::setprecision(2);
         for (const auto& np : noisy_peaks)
         {
-          ss << std::to_string(np.mz) << " ";
+          ss << std::to_string(np.getMZ()) << " ";
         }
 
         ss << "\t";
         ss << std::fixed << std::setprecision(1);
         for (const auto& np : noisy_peaks)
         {
-          ss << np.intensity << " ";
+          ss << np.getIntensity() << " ";
         }
 
         ss << "\t";
         ss << std::setprecision(-1);
         for (const auto& np : noisy_peaks)
         {
-          ss << (np.is_positive ? np.abs_charge : -np.abs_charge) << " ";
+          ss << (np.isPositive() ? np.getAbsCharge() : -np.getAbsCharge()) << " ";
         }
 
         ss << "\t";
@@ -172,15 +185,15 @@ namespace OpenMS
         ss << "\t";
         for (const auto& np : noisy_peaks)
         {
-          ss << np.isotopeIndex << " ";
+          ss << np.getIsotopeIndex() << " ";
         }
 
         ss << "\t";
         ss << std::setprecision(2);
         for (const auto& np : noisy_peaks)
         {
-          double average_mass = pg.getMonoMass() + np.isotopeIndex * pg.getIsotopeDaDistance();
-          double mass_error = (average_mass / np.abs_charge + FLASHHelperClasses::getChargeMass(np.is_positive) - np.mz) / np.mz;
+          double average_mass = pg.getMonoMass() + np.getIsotopeIndex() * pg.getIsotopeDaDistance();
+          double mass_error = (average_mass / np.getAbsCharge() + FLASHHelperClasses::getChargeMass(np.isPositive()) - np.getMZ()) / np.getMZ();
           ss << 1e6 * mass_error << " ";
         }
         ss << std::setprecision(-1);
@@ -231,6 +244,163 @@ namespace OpenMS
       ss << "\n";
     }
     os << ss.str();
+  }
+
+  void FLASHDeconvSpectrumFile::writeDeconvolvedMasses(const DeconvolvedSpectrum& dspec, std::ostream& os, const std::string& file_name,
+                                                       const FLASHHelperClasses::PrecalculatedAveragine& avg,
+                                                       const FLASHHelperClasses::PrecalculatedAveragine& decoy_avg, double tol,
+                                                       const bool write_detail, const bool report_decoy, const double noise_decoy_weight)
+  {
+    if ((!report_decoy && dspec.isDecoy()) || dspec.empty()) { return; }
+    auto& indices = writerIndices_();
+    while (indices.size() <= dspec.getOriginalSpectrum().getMSLevel()) { indices.push_back(1); }
+    writeDeconvolvedMasses_(dspec, os, file_name, avg, decoy_avg, tol, write_detail, report_decoy,
+                           noise_decoy_weight, indices[dspec.getOriginalSpectrum().getMSLevel() - 1], generator_);
+  }
+
+  void FLASHDeconvSpectrumFile::writeDeconvolvedMassesParallel(const std::vector<DeconvolvedSpectrum>& spectra,
+                                                              std::vector<std::ofstream>& streams, const StringList& output_files,
+                                                              const std::string& file_name,
+                                                              const FLASHHelperClasses::PrecalculatedAveragine& avg,
+                                                              const FLASHHelperClasses::PrecalculatedAveragine& decoy_avg,
+                                                              const DoubleList& tols, bool write_detail, bool report_decoy,
+                                                              double noise_decoy_weight)
+  {
+    std::vector<Size> jobs;
+    int worker_count = 1;
+#ifdef _OPENMP
+    if (write_detail && !Internal::OpenMSBuildInfo::isOpenMPParallelRegion())
+    {
+      worker_count = omp_get_max_threads(); // buffers are released as committed, so no string cap is needed
+    }
+#endif
+    for (Size i = 0; i < spectra.size(); ++i)
+    {
+      const auto level = spectra[i].getOriginalSpectrum().getMSLevel();
+      // levels without an output file (e.g. MS5 with out_spec1..4) are skipped, as before
+      if (level == 0 || level > output_files.size() || level > streams.size() || output_files[level - 1].empty()) { continue; }
+      if (level > tols.size()) { throw Exception::InvalidParameter(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "Detailed writer lacks an MS-level tolerance"); }
+      // Failed streams and invalid raw-spectrum state keep the original path.
+      if (!streams[level - 1].good() || !streams[level - 1].is_open()
+          || (!spectra[i].empty() && spectra[i].getOriginalSpectrum().empty()))
+      {
+        worker_count = 1;
+      }
+      if (!spectra[i].empty() && (!spectra[i].isDecoy() || report_decoy)) { jobs.push_back(i); }
+    }
+    if (worker_count <= 1 || jobs.size() <= 1)
+    {
+      for (auto& spectrum : spectra)
+      {
+        const auto level = spectrum.getOriginalSpectrum().getMSLevel();
+        if (level == 0 || level > output_files.size() || level > streams.size() || output_files[level - 1].empty()) { continue; }
+        writeDeconvolvedMasses(spectrum, streams[level - 1], file_name, avg, decoy_avg, tols[level - 1],
+                              write_detail, report_decoy, noise_decoy_weight);
+      }
+      return;
+    }
+    worker_count = (int)std::min((Size)worker_count, jobs.size());
+
+    auto& indices = writerIndices_();
+    {
+      // One dynamic workshare over all jobs. Finished buffers are committed in input order by whichever
+      // thread holds the commit lock, so formatting never waits at a wave barrier and each buffer is
+      // released as soon as it is written.
+      const Size n = jobs.size();
+      // With report_decoy a row also depends on the random sequence the noise decoys are drawn from: the draws are replayed here in
+      // input order, and each row formats from its own copy of the generator state.
+      std::vector<uint> first_indices(n), end_indices(n);
+      std::vector<std::default_random_engine> first_gens(report_decoy ? n : 0);
+      auto next_indices = indices;
+      for (Size row = 0; row < n; ++row)
+      {
+        const auto& spectrum = spectra[jobs[row]];
+        const auto level = spectrum.getOriginalSpectrum().getMSLevel();
+        while (next_indices.size() <= level) { next_indices.push_back(1); }
+        first_indices[row] = next_indices[level - 1];
+        if (report_decoy) { first_gens[row] = generator_; }
+        for (const auto& pg : spectrum)
+        {
+          const auto type = pg.getTargetDecoyType();
+          if (type == PeakGroup::TargetDecoyType::target
+              || (report_decoy && (type != PeakGroup::TargetDecoyType::noise_decoy || keepNoiseDecoy_(generator_, noise_decoy_weight))))
+          {
+            ++next_indices[level - 1];
+          }
+        }
+      }
+      std::vector<std::string> buffers(n);
+      std::vector<std::exception_ptr> errors(n);
+      std::unique_ptr<std::atomic<bool>[]> ready(new std::atomic<bool>[n]);
+      for (Size row = 0; row < n; ++row) { ready[row].store(false, std::memory_order_relaxed); }
+      std::atomic<Size> next_commit {0};
+      std::atomic<bool> commit_failed {false};
+      // At most this many rows may be formatted ahead of the commit point, which bounds retained buffers
+      // when an early row is slow.
+      const Size window = 64 * (Size)worker_count;
+      std::mutex commit_mutex;
+      const auto drain = [&]() noexcept { // caller holds commit_mutex
+        while (! commit_failed && next_commit < n && ready[next_commit.load()].load(std::memory_order_acquire))
+        try
+        {
+          const Size row = next_commit;
+          const auto level = spectra[jobs[row]].getOriginalSpectrum().getMSLevel();
+          while (indices.size() <= level) { indices.push_back(1); }
+          indices[level - 1] = end_indices[row];
+          if (errors[row])
+          {
+            commit_failed = true;
+            break;
+          }
+          streams[level - 1] << buffers[row];
+          std::string().swap(buffers[row]);
+          ++next_commit;
+        }
+        catch (...)
+        {
+          errors[next_commit] = std::current_exception(); // rethrown after the join, like a formatting error
+          commit_failed = true;
+        }
+      };
+// rows are taken in input order: a nonmonotonic (OpenMP >= 5.0 default, e.g. clang/libomp work stealing) schedule would make the
+// commit window wait for blocks far ahead
+#if defined(_OPENMP) && _OPENMP >= 201511
+#pragma omp parallel for num_threads(worker_count) schedule(monotonic: dynamic, 1) default(none) shared(spectra, jobs, first_indices, end_indices, first_gens, buffers, errors, ready, commit_mutex, drain, file_name, avg, decoy_avg, tols, write_detail, report_decoy, noise_decoy_weight, n, next_commit, commit_failed, window)
+#else
+#pragma omp parallel for num_threads(worker_count) schedule(dynamic, 1) default(none) shared(spectra, jobs, first_indices, end_indices, first_gens, buffers, errors, ready, commit_mutex, drain, file_name, avg, decoy_avg, tols, write_detail, report_decoy, noise_decoy_weight, n, next_commit, commit_failed, window)
+#endif
+      for (SignedSize row = 0; row < (SignedSize)n; ++row)
+      {
+        uint index = first_indices[row];
+        while ((Size)row >= next_commit.load() + window && ! commit_failed.load())
+        {
+          std::unique_lock<std::mutex> lock(commit_mutex, std::try_to_lock);
+          if (lock.owns_lock()) { drain(); }
+          else { std::this_thread::yield(); }
+        }
+        try
+        {
+          if (commit_failed.load()) { throw Exception::BaseException(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "Skipped", "an earlier row failed"); }
+          auto& spectrum = spectra[jobs[row]];
+          const auto level = spectrum.getOriginalSpectrum().getMSLevel();
+          std::ostringstream buffer;
+          std::default_random_engine gen = report_decoy ? first_gens[row] : std::default_random_engine();
+          writeDeconvolvedMasses_(spectrum, buffer, file_name, avg, decoy_avg, tols[level - 1], write_detail, report_decoy, noise_decoy_weight, index, gen);
+          buffers[row] = buffer.str();
+        }
+        catch (...)
+        {
+          errors[row] = std::current_exception();
+        }
+        end_indices[row] = index;
+        ready[row].store(true, std::memory_order_release);
+        std::unique_lock<std::mutex> lock(commit_mutex, std::try_to_lock);
+        if (lock.owns_lock()) { drain(); }
+      }
+      drain(); // everything not yet committed, after the join
+      if (commit_failed) { std::rethrow_exception(errors[next_commit]); }
+      return;
+    }
   }
 
   void FLASHDeconvSpectrumFile::writeDeconvolvedMassesHeader(std::ostream& os, const uint ms_level, const bool detail, const bool report_decoy)
@@ -472,15 +642,15 @@ namespace OpenMS
           {
             auto& p = pg[k];
 
-            // Increment the pindex while it points to values less than p.mz
-            while (pindex < anno_spec.size() - 1 && anno_spec[pindex].getMZ() < p.mz)
+            // Increment the pindex while it points to values less than p.getMZ()
+            while (pindex < anno_spec.size() - 1 && anno_spec[pindex].getMZ() < p.getMZ())
             {
               pindex++;
             }
             size_t nearest_index = pindex;
-            if (anno_spec[pindex].getMZ() != p.mz)
+            if (anno_spec[pindex].getMZ() != p.getMZ())
             {
-              if (pindex > 0 && std::abs(anno_spec[pindex - 1].getMZ() - p.mz) < std::abs(anno_spec[pindex].getMZ() - p.mz))
+              if (pindex > 0 && std::abs(anno_spec[pindex - 1].getMZ() - p.getMZ()) < std::abs(anno_spec[pindex].getMZ() - p.getMZ()))
               {
                 nearest_index = pindex - 1;
               }

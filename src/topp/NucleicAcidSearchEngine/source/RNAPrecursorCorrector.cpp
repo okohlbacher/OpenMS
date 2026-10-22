@@ -81,8 +81,8 @@ namespace OpenMS
       std::set<int> observed_mono;
       for (const auto& peak : group)
       {
-        const int z = peak.abs_charge;
-        if (z < min_abs_charge_ || z > max_abs_charge_ || peak.isotopeIndex < 0 ||
+        const int z = peak.getAbsCharge();
+        if (z < min_abs_charge_ || z > max_abs_charge_ || peak.getIsotopeIndex() < 0 ||
             (reported_charge != 0 && z != reported_charge))
         {
           continue;
@@ -92,11 +92,11 @@ namespace OpenMS
         {
           continue;
         }
-        if (peak.isotopeIndex == 0) observed_mono.insert(z);
-        const double error = std::abs(peak.mz - result.original_mz);
+        if (peak.getIsotopeIndex() == 0) observed_mono.insert(z);
+        const double error = std::abs(peak.getMZ() - result.original_mz);
         if (error > tolerance) continue;
         auto old = closest.find(z);
-        if (old == closest.end() || error < std::abs(old->second->mz - result.original_mz))
+        if (old == closest.end() || error < std::abs(old->second->getMZ() - result.original_mz))
         {
           closest[z] = &peak;
         }
@@ -107,7 +107,7 @@ namespace OpenMS
         // Preserve signed input conventions; unsigned and unknown input keeps
         // the existing positive-magnitude convention.
         candidate.charge = result.original_charge < 0 ? -z : z;
-        candidate.isotope = peak->isotopeIndex;
+        candidate.isotope = peak->getIsotopeIndex();
         // FLASH establishes the isotope index. Preserve the instrument's mass
         // precision instead of replacing it with an aggregate envelope mass,
         // which may drift when profile samples or several charge states overlap.
@@ -117,7 +117,7 @@ namespace OpenMS
         candidate.cosine = group.getChargeIsotopeCosine(z);
         candidate.snr = group.getChargeSNR(z);
         candidate.mono_observed = observed_mono.contains(z);
-        candidate.selected_error_ppm = (result.original_mz - peak->mz) / peak->mz * 1e6;
+        candidate.selected_error_ppm = (result.original_mz - peak->getMZ()) / peak->getMZ() * 1e6;
         if (!std::isfinite(candidate.corrected_mz) || candidate.corrected_mz <= 0) continue;
         candidate.status = candidate.isotope == 0 ? "monoisotopic" : "corrected";
         // Duplicate detections of the same mass/charge are one candidate.

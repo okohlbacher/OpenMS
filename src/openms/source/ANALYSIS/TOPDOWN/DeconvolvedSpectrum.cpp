@@ -7,6 +7,8 @@
 // --------------------------------------------------------------------------
 
 #include <OpenMS/ANALYSIS/TOPDOWN/DeconvolvedSpectrum.h>
+#include <cmath>
+#include <cstdlib>
 
 #include <unordered_set>
 
@@ -43,7 +45,7 @@ namespace OpenMS
       return out_spec;
     }
 
-    double charge_mass_offset = (double)abs(to_charge) * FLASHHelperClasses::getChargeMass(to_charge >= 0);
+    double charge_mass_offset = (double)std::abs(to_charge) * FLASHHelperClasses::getChargeMass(to_charge >= 0);
     std::unordered_set<double> deconvolved_mzs;
     std::stringstream val {};
 
@@ -73,8 +75,8 @@ namespace OpenMS
 
       for (auto& p : pg)
       {
-        min_iso = min_iso < 0 ? p.isotopeIndex : std::min(min_iso, p.isotopeIndex);
-        max_iso = std::max(max_iso, p.isotopeIndex);
+        min_iso = min_iso < 0 ? p.getIsotopeIndex() : std::min(min_iso, p.getIsotopeIndex());
+        max_iso = std::max(max_iso, p.getIsotopeIndex());
       }
       val << z1 << ":" << z2 << "," << min_iso << ":" << max_iso << ";";
 
@@ -82,7 +84,7 @@ namespace OpenMS
       {
         for (auto& p : pg)
         {
-          deconvolved_mzs.insert(p.mz);
+          deconvolved_mzs.insert(p.getMZ());
         }
       }
     }
@@ -192,7 +194,7 @@ namespace OpenMS
     {
       return max_abs_charge;
     }
-    return std::min(max_abs_charge, abs(precursor_peak_group_.getRepAbsCharge()));
+    return std::min(max_abs_charge, std::abs(precursor_peak_group_.getRepAbsCharge()));
   }
 
   const Precursor& DeconvolvedSpectrum::getPrecursor() const
@@ -295,6 +297,16 @@ namespace OpenMS
     return peak_groups_.size();
   }
 
+  void DeconvolvedSpectrum::push_back(PeakGroup&& pg)
+  {
+    peak_groups_.push_back(std::move(pg));
+  }
+
+  void DeconvolvedSpectrum::swapPeakGroups(std::vector<PeakGroup>& x)
+  {
+    peak_groups_.swap(x);
+  }
+
   void DeconvolvedSpectrum::clear()
   {
     std::vector<PeakGroup>().swap(peak_groups_);
@@ -335,6 +347,11 @@ namespace OpenMS
   {
     std::vector<PeakGroup>().swap(peak_groups_);
     peak_groups_ = x;
+  }
+
+  void DeconvolvedSpectrum::setPeakGroups(std::vector<PeakGroup>&& x)
+  {
+    peak_groups_ = std::move(x);
   }
 
   void DeconvolvedSpectrum::sort()

@@ -126,8 +126,8 @@ namespace
     for (int i = first_isotope; i <= 8; ++i)
     {
       FLASHHelperClasses::LogMzPeak peak(Peak1D((mass + i * Constants::C13C12_MASSDIFF_U) / charge + carrier, 1000), positive);
-      peak.abs_charge = charge;
-      peak.isotopeIndex = i;
+      peak.setAbsCharge(charge);
+      peak.setIsotopeIndex(i);
       group.push_back(peak);
     }
     return group;
@@ -1195,7 +1195,7 @@ START_SECTION(([EXTRA] FLASH MS1: Result match(const DeconvolvedSpectrum& groups
   groups.push_back(envelope());
   Precursor precursor;
   precursor.setCharge(2);
-  precursor.setMZ(groups[0][6].mz);
+  precursor.setMZ(groups[0][6].getMZ());
   auto result = corrector.match(groups, precursor);
   TEST_TRUE(result.accepted())
   TEST_EQUAL(result.status, "corrected")
@@ -1212,14 +1212,14 @@ START_SECTION(([EXTRA] FLASH MS1: Result match(const DeconvolvedSpectrum& groups
   precursor.setCharge(2);
 
   // The aggregate envelope mass must not replace the instrument's selected-ion precision.
-  precursor.setMZ(groups[0][6].mz + 0.001);
+  precursor.setMZ(groups[0][6].getMZ() + 0.001);
   result = corrector.match(groups, precursor);
   TEST_TRUE(result.accepted())
   TEST_EQUAL(result.isotope, 6)
   TEST_EQUAL(result.corrected_mz, precursor.getMZ() - 6 * Constants::C13C12_MASSDIFF_U / 2)
   TEST_EQUAL(result.mono_mass, (result.corrected_mz + Constants::PROTON_MASS_U) * 2)
 
-  precursor.setMZ(groups[0][0].mz);
+  precursor.setMZ(groups[0][0].getMZ());
   result = corrector.match(groups, precursor);
   TEST_EQUAL(result.status, "monoisotopic")
   TEST_EQUAL(result.isotope, 0)
@@ -1235,7 +1235,7 @@ START_SECTION(([EXTRA] FLASH MS1: Result match(const DeconvolvedSpectrum& groups
 
   groups.clear();
   groups.push_back(envelope(2500, 2, false, 1));
-  precursor.setMZ(groups[0][5].mz);
+  precursor.setMZ(groups[0][5].getMZ());
   precursor.setCharge(2);
   result = corrector.match(groups, precursor);
   TEST_TRUE(result.accepted())
@@ -1253,7 +1253,7 @@ START_SECTION(([EXTRA] FLASH MS1: Result match(const DeconvolvedSpectrum& groups
   RNAPrecursorCorrector positive(10, 1, 5, true, 8000);
   groups.clear();
   groups.push_back(envelope(2500, 2, true));
-  precursor.setMZ(groups[0][2].mz);
+  precursor.setMZ(groups[0][2].getMZ());
   result = positive.match(groups, precursor);
   TEST_REAL_SIMILAR(result.corrected_mz, 1250 + Constants::PROTON_MASS_U)
 }
@@ -1627,11 +1627,11 @@ START_SECTION((NASE directed deconvolution preserves ordinary FLASH and clears q
   {
     for (const auto& peak : group)
     {
-      if (peak.isotopeIndex >= 0)
+      if (peak.getIsotopeIndex() >= 0)
       {
         Precursor query;
-        query.setMZ(peak.mz);
-        query.setCharge(peak.abs_charge);
+        query.setMZ(peak.getMZ());
+        query.setCharge(peak.getAbsCharge());
         queries.push_back(query);
         break;
       }

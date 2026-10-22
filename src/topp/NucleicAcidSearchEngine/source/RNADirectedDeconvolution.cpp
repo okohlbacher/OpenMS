@@ -92,8 +92,8 @@ namespace OpenMS
         const double delta = precursor.getMZ() * context.tolerance;
         for (const auto& peak : group)
         {
-          if ((precursor.getCharge() == 0 || std::abs(precursor.getCharge()) == peak.abs_charge) &&
-              peak.isotopeIndex >= 0 && std::abs(peak.mz - precursor.getMZ()) <= delta)
+          if ((precursor.getCharge() == 0 || std::abs(precursor.getCharge()) == peak.getAbsCharge()) &&
+              peak.getIsotopeIndex() >= 0 && std::abs(peak.getMZ() - precursor.getMZ()) <= delta)
           {
             relevant = true;
             break;
@@ -103,7 +103,7 @@ namespace OpenMS
       }
       if (relevant)
       {
-        for (const auto& peak : group) evidence.insert(peak.mz);
+        for (const auto& peak : group) evidence.insert(peak.getMZ());
       }
     }
     // Also retain the seed intervals for neighboring groups and isotope aliases.

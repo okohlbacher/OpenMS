@@ -96,13 +96,13 @@ namespace OpenMS
       std::map<int, std::vector<Size>> monoisotopes;
       for (const auto& peak : group)
       {
-        const int z = peak.abs_charge;
-        if (z < 1 || z > assigned_max_charge || peak.isotopeIndex < 0 ||
+        const int z = peak.getAbsCharge();
+        if (z < 1 || z > assigned_max_charge || peak.getIsotopeIndex() < 0 ||
             group.getChargeIsotopeCosine(z) < min_cos_ || group.getChargeSNR(z) <= min_snr_) continue;
-        const Size index = index_of(peak.mz);
+        const Size index = index_of(peak.getMZ());
         if (index == spectrum.size()) continue;
         by_charge[z].push_back(index);
-        if (peak.isotopeIndex == 0) monoisotopes[z].push_back(index);
+        if (peak.getIsotopeIndex() == 0) monoisotopes[z].push_back(index);
       }
       for (const auto& [z, indices] : by_charge)
       {

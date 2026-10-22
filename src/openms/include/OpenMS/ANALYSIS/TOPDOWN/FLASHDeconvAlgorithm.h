@@ -72,6 +72,7 @@ namespace OpenMS
     {
       return noise_decoy_weight_;
     }
+
     /// get scan number of the spectrum in @p index -th in @p map
     static int getScanNumber(const MSExperiment& map, Size index);
 
@@ -96,6 +97,15 @@ namespace OpenMS
 
     /// current minimum MS level.
     UInt current_min_ms_level_ = 0;
+
+    /// MS1 (minimum level) features traced concurrently with the MS2 wave
+    std::vector<FLASHHelperClasses::MassFeature> ms1_features_;
+    bool ms1_features_ready_ = false;
+
+    /// feature tracing parameters derived from ft:* and the MS1 settings
+    Param featureParams_() const;
+    /// trace features of the minimum MS level (targets, then decoys when reported)
+    std::vector<FLASHHelperClasses::MassFeature> traceMinLevelFeatures_(std::vector<DeconvolvedSpectrum>& deconvolved_spectra);
 
     /// the number of preceding full scans from which MS2 precursor mass will be searched.
     int precursor_MS1_window_ = 0;
@@ -136,6 +146,9 @@ namespace OpenMS
 
     /// append decoy peak groups to deconvolved spectrum
     void appendDecoyPeakGroups_(DeconvolvedSpectrum& deconvolved_spectrum, const MSSpectrum& spec, int scan_number, const PeakGroup& precursor_pg);
+    /// same with explicit decoy deconvolutions (per-worker copies in the parallel spectrum loop)
+    static void appendDecoyPeakGroups_(DeconvolvedSpectrum& deconvolved_spectrum, const MSSpectrum& spec, int scan_number, const PeakGroup& precursor_pg,
+                                       SpectralDeconvolution& noise_decoy, SpectralDeconvolution& signal_decoy);
 
     /// run feature finding to get deconvolved features
     void runFeatureFinding_(std::vector<DeconvolvedSpectrum>& deconvolved_spectra, std::vector<FLASHHelperClasses::MassFeature>& deconvolved_features);
@@ -152,14 +165,8 @@ namespace OpenMS
     /// find scan number bounds for precursor search
     std::pair<int, int> findScanNumberBounds_(const MSExperiment& map, Size index, uint ms_level) const;
 
-    /// collect survey scans within the given scan number bounds
-    std::vector<DeconvolvedSpectrum> collectSurveyScans_(const std::vector<DeconvolvedSpectrum>& deconvolved_spectra, int b_scan_number, int a_scan_number, uint ms_level) const;
-
     /// get isolation window m/z range from precursors
     std::pair<double, double> getIsolationWindowMzRange_(const MSSpectrum& spec) const;
-
-    /// find the best precursor peak group from survey scans within the isolation window
-    PeakGroup findBestPrecursorPeakGroup_(const std::vector<DeconvolvedSpectrum>& survey_scans, double start_mz, double end_mz) const;
 
     /// determine tolerance
     void determineTolerance_(const MSExperiment& map, const Param& sd_param, const FLASHHelperClasses::PrecalculatedAveragine& avg, uint ms_level);

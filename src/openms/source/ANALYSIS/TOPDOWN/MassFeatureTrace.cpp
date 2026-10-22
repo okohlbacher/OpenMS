@@ -52,7 +52,7 @@ namespace OpenMS
     int prev_scan = 0;
     for (Size i = 0; i < deconvolved_spectra.size(); i++)
     {
-      auto deconvolved_spectrum = deconvolved_spectra[i];
+      const auto& deconvolved_spectrum = deconvolved_spectra[i]; // read only: no per-spectrum deep copy
       if (deconvolved_spectrum.empty())
         continue;
       if ((int)deconvolved_spectrum.getOriginalSpectrum().getMSLevel() != ms_level)
@@ -80,7 +80,7 @@ namespace OpenMS
         Peak1D tp(pg.getMonoMass(), (float)pg.getIntensity());
         deconv_spec.push_back(tp);
       }
-      map.addSpectrum(deconv_spec);
+      map.addSpectrum(std::move(deconv_spec));
     }
     map.sortSpectra();
     // when map size is less than 3, MassTraceDetection aborts - too few spectra for mass tracing.
@@ -167,7 +167,7 @@ namespace OpenMS
           per_charge_intensity[z] += zint;
         }
         int iso_off = (int)round((pg->getMonoMass() - mass) / pg->getIsotopeDaDistance());
-        auto iso_int = pg->getIsotopeIntensities();
+        const auto& iso_int = pg->getIsotopeIntensities();
         for (int i = 0; i + iso_off < (int)per_isotope_intensity.size(); i++)
         {
           if ((int)i + iso_off < 0 || i >= (int)iso_int.size())
@@ -186,12 +186,14 @@ namespace OpenMS
         continue;
       }
       double max_int = 0;
-      PeakGroup rep_pg = *pgs[0];
+      // representative group by reference (only charge and scan number are read, which the
+      // feature index / 2D q-score updates below do not touch)
+      auto rep_pg = pgs[0];
       for (auto& pg : pgs)
       {
         if (max_int <= pg->getIntensity())
         {
-          rep_pg = *pg;
+          rep_pg = pg;
           max_int = pg->getIntensity();
         }
 
@@ -214,11 +216,11 @@ namespace OpenMS
       mass_feature.per_charge_intensity = per_charge_intensity;
       mass_feature.per_isotope_intensity = per_isotope_intensity;
 
-      mass_feature.rep_mz = mass_feature.avg_mass / rep_pg.getRepAbsCharge();
-      mass_feature.scan_number = rep_pg.getScanNumber();
+      mass_feature.rep_mz = mass_feature.avg_mass / rep_pg->getRepAbsCharge();
+      mass_feature.scan_number = rep_pg->getScanNumber();
       mass_feature.min_scan_number = min_scan_number;
       mass_feature.max_scan_number = max_scan_number;
-      mass_feature.rep_charge = rep_pg.getRepAbsCharge();
+      mass_feature.rep_charge = rep_pg->getRepAbsCharge();
       mass_feature.index = findex;
       mass_feature.is_decoy = is_decoy;
       mass_feature.ms_level = ms_level;

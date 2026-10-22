@@ -15,10 +15,12 @@
 #include <OpenMS/DATASTRUCTURES/Matrix.h>
 #include <OpenMS/KERNEL/MSExperiment.h>
 #include <OpenMS/KERNEL/MSSpectrum.h>
+#include <array>
 #include <memory>
 #include <optional>
 #include <utility>
 #include <iostream>
+#include <memory>
 
 namespace OpenMS
 {
@@ -160,6 +162,32 @@ namespace OpenMS
       const DeconvolvedSpectrum* evidence, const std::vector<Size>& valid) const;
 
   private:
+    friend class FLASHDeconvAlgorithm;
+
+    /**
+      @brief Attach an immutable, lifetime-owned model to a fresh outer worker.
+      @param[in] avg Nonnull const heap model, kept alive through all worker calls.
+      @throws Exception::InvalidParameter if avg is null.
+      @note An existing owned model is retained. Caller must not mutate any
+      separate alias of the supplied model while it is shared. The factory
+      creates a const heap object and only publishes it before the team starts.
+    */
+    void setSharedAveragine_(std::shared_ptr<const PrecalculatedAveragine> avg);
+
+    /**
+      @brief FDR: @p signal_decoy reuses the candidate mass bins of @p target for the same spectrum.
+      The signal decoy run bins the same spectrum with the same averagine, charges and isotope distance and only skips its excluded
+      bins, which no other bin depends on; so its candidate bins are the target's with the excluded bins cleared. Both objects must
+      outlive their use and the signal decoy must run right after the target on the same spectrum (checked, else it bins itself).
+    */
+    static void shareCandidateMassBins_(SpectralDeconvolution& target, SpectralDeconvolution& signal_decoy);
+
+    /// Select the active model without reference-count operations in hot loops.
+    const PrecalculatedAveragine& activeAveragine_() const noexcept
+    {
+      return shared_avg_ ? *shared_avg_ : avg_;
+    }
+
     /// FLASHDeconv parameters
 
     /// allowed isotope error in deconvolved mass to calculate qvalue
@@ -199,7 +227,9 @@ namespace OpenMS
     PeakGroup::TargetDecoyType target_decoy_type_ = PeakGroup::TargetDecoyType::target;
 
     /// precalculated averagine distributions for fast averagine generation
-    FLASHHelperClasses::PrecalculatedAveragine avg_;
+    FLASHHelperClasses::PrecalculatedAveragine avg_{};
+    /// Optional immutable per-run model owner; empty in legacy callers.
+    std::shared_ptr<const PrecalculatedAveragine> shared_avg_;
 
     /// Value-semantic holder for the implementation's bitsets.
     struct OPENMS_DLLAPI Bitsets
@@ -235,6 +265,28 @@ namespace OpenMS
     std::vector<LogMzPeak> log_mz_peaks_;
     /// selected_peak_groups_ stores the deconvolved mass peak groups
     DeconvolvedSpectrum deconvolved_spectrum_;
+    /// Worker-owned pools for per-spectrum dense arrays (mass/m/z bin sized, several MB each).
+    /// They live as long as this worker, so spectra reuse capacity instead of mapping and zeroing fresh pages.
+    /// (The bit sets among them, including the candidate bins kept for the signal decoy, are in bitsets_.)
+    std::vector<float> mz_intensities_pool_;
+    std::vector<float> mass_intensities_pool_;
+    /// candidate mass bins kept by a target run for its signal decoy run (see shareCandidateMassBins_)
+    bool keep_candidate_mass_bins_ = false;
+    bool kept_mass_bins_valid_ = false;
+    std::vector<float> kept_mass_intensities_;
+    std::array<double, 5> kept_mass_bins_key_ {};
+    const SpectralDeconvolution* mass_bin_source_ = nullptr;
+    /// what the candidate mass bins of the current spectrum depend on besides the spectrum's peaks
+    std::array<double, 5> candidateMassBinsKey_(Size mz_bin_number) const;
+    std::vector<unsigned char> mass_bin_state_pool_;
+    Matrix<int> abs_charge_ranges_pool_;
+    std::vector<Size> mz_bin_index_reverse_pool_;
+    std::vector<Size> peak_bin_numbers_pool_;
+    /// log(m/z - charge carrier mass) of every peak of the current spectrum, computed once per spectrum
+    std::vector<double> raw_log_mz_;
+    /// candidate PeakGroup vector of the previous spectrum, kept for its capacity
+    std::vector<PeakGroup> candidate_pool_;
+
     /// This stores the "universal pattern"
     std::vector<double> universal_pattern_;
     /// This stores the patterns for harmonic reduction
@@ -303,13 +355,13 @@ namespace OpenMS
         @param[in] mz_intensities per mz bin intensity
         @return a matrix containing charge ranges for all found masses
      */
-    Matrix<int> updateMassBins_(const std::vector<float>& mz_intensities);
+    const Matrix<int>& updateMassBins_(const std::vector<float>& mz_intensities);
 
     /** @brief Subfunction of updateMassBins_.
         @param[in,out] mass_intensities per mass bin intensity
         @return a matrix containing charge ranges for all found masses
      */
-    Matrix<int> filterMassBins_(const std::vector<float>& mass_intensities);
+    const Matrix<int>& filterMassBins_(const std::vector<float>& mass_intensities);
 
     /** @brief Subfunction of updateMassBins_. It select candidate masses and update binned_log_masses_ using the universal pattern, eliminate possible harmonic masses
         @param[in] mass_intensities mass bin intensities which are updated in this function
@@ -327,6 +379,13 @@ namespace OpenMS
 
     /// function for peak group scoring and filtering
     void scoreAndFilterPeakGroups_();
+
+    /// isotope/charge scoring of one candidate; true if it survives the first filter
+    bool scoreCandidate_(PeakGroup& peak_group);
+
+    /// score each candidate as soon as it is built and keep only survivors (set per spectrum by
+    /// generatePeakGroupsFromSpectrum_), so a worker never holds a spectrum's full candidate set
+    bool fused_scoring_ = false;
 
     /// filter out charge error masses
     void removeChargeErrorPeakGroups_(DeconvolvedSpectrum& dspec, const PeakGroup::TargetDecoyType& target_decoy_type) const;

@@ -12,6 +12,7 @@
 ///////////////////////////
 #include <OpenMS/ANALYSIS/TOPDOWN/SpectralDeconvolution.h>
 #include <OpenMS/FORMAT/MzMLFile.h>
+#include <limits>
 ///////////////////////////
 
 using namespace OpenMS;
@@ -34,6 +35,29 @@ END_SECTION
 START_SECTION(~SpectralDeconvolution())
 {
   delete ptr;
+}
+END_SECTION
+
+START_SECTION([Compact facade] charge parameters are checked before processing)
+{
+  for (const auto& name : {"min_charge", "max_charge"})
+  {
+    for (int value : {-201, 201, std::numeric_limits<int>::min(), std::numeric_limits<int>::max()})
+    {
+      SpectralDeconvolution algorithm;
+      Param parameters = algorithm.getParameters();
+      parameters.setValue(name, value);
+      TEST_EXCEPTION(Exception::InvalidParameter, algorithm.setParameters(parameters))
+    }
+    for (int value : {-200, 200})
+    {
+      SpectralDeconvolution algorithm;
+      Param parameters = algorithm.getParameters();
+      parameters.setValue(name, value);
+      algorithm.setParameters(parameters);
+      TEST_EQUAL(static_cast<int>(algorithm.getParameters().getValue(name)), value)
+    }
+  }
 }
 END_SECTION
 
