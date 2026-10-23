@@ -240,6 +240,24 @@ namespace OpenMS
         #endif
       }
 
+      /**
+        @brief Return whether this task is enclosed by an OpenMP parallel region.
+
+        OpenMP 3.0 and newer also detect inactive/serialized regions. Older
+        runtimes, including MSVC's OpenMP 2.0 runtime, can only detect active
+        regions via @c omp_in_parallel(). Returns false without OpenMP.
+      */
+      static bool isOpenMPParallelRegion() noexcept
+      {
+#if defined(_OPENMP) && _OPENMP >= 200805
+        return omp_get_level() != 0;
+#elif defined(_OPENMP)
+        return omp_in_parallel() != 0;
+#else
+        return false;
+#endif
+      }
+
       /// Return the CMake build type baked into the library (e.g. @c "Release", @c "Debug"), captured from the @c OPENMS_BUILD_TYPE configure-time macro.
       static std::string getBuildType()
       {

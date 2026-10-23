@@ -215,6 +215,7 @@ set(format_executables_list
   FeatureXMLFile_test
   FLASHDeconvFeatureFile_test
   FLASHDeconvSpectrumFile_test
+  FLASHDeconvSpectrumFile_parallel_test
   FLASHHelperClasses_test
   FileHandler_test
   FileNameUtils_test
@@ -566,6 +567,7 @@ set(analysis_executables_list
   FIAMSDataProcessor_test
   FIAMSScheduler_test
   FLASHDeconvAlgorithm_test
+  FLASHDeconvAlgorithm_regression_test
   FLASHDeconvHelperStructs_test
   OpenSearchModificationAnalysis_test
   IDBoostGraph_test

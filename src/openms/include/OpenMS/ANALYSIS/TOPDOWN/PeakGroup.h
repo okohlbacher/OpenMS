@@ -59,7 +59,7 @@ namespace OpenMS
     PeakGroup(const PeakGroup&) = default;
 
     /// move constructor
-    PeakGroup(PeakGroup&& other) = default;
+    PeakGroup(PeakGroup&& other) noexcept = default;
 
     /// comparison operators
     bool operator<(const PeakGroup& a) const;
@@ -70,6 +70,9 @@ namespace OpenMS
 
     /// assignment operator
     PeakGroup& operator=(const PeakGroup& t) = default;
+
+    /// move assignment (without it std::sort and vector moves deep-copy every peak vector)
+    PeakGroup& operator=(PeakGroup&& t) noexcept = default;
 
     /**
            @brief add monoisotopic indices of peaks by offset and discard negative isotope peaks. Total intensity is also updated
@@ -101,6 +104,10 @@ namespace OpenMS
      * @return returns the noisy peaks for this peakgroup - i.e., the raw peaks within the range of this peakGroup that are not matched to any istope of this peakGroup mass.
      */
     std::vector<LogMzPeak> recruitAllPeaksInSpectrum(const MSSpectrum& spec, double tol, const FLASHHelperClasses::PrecalculatedAveragine& avg, double mono_mass, bool renew_signal_peaks = true);
+
+    /// as above, but writes the noisy peaks into @p noisy_peaks (cleared first) so callers can reuse its capacity
+    void recruitAllPeaksInSpectrum(const MSSpectrum& spec, double tol, const FLASHHelperClasses::PrecalculatedAveragine& avg, double mono_mass,
+                                   std::vector<LogMzPeak>& noisy_peaks, bool renew_signal_peaks = true, const double* log_mz = nullptr);
 
     /**
      * @brief Get noisy peaks for this PeakGroup without modifying any state (const-safe).
@@ -342,6 +349,10 @@ namespace OpenMS
     void updateChargeFitScoreAndChargeIntensities_(bool is_low_charge);
     /// update avg ppm error
     void updateAvgMassError_();
+    /// average absolute per-isotope mass error (same arithmetic as averaging getMassErrors(ppm))
+    float averageAbsMassError_(bool ppm) const;
+    /// sort peaks, skipping std::sort when already strictly increasing
+    void sortPeaks_();
     /// update avg Da error
     float getPPMError_(const LogMzPeak& p) const;
     /// get Da error of a logMzPeak from the closest isotope
@@ -361,12 +372,14 @@ namespace OpenMS
 
     /**
      * calculate noisy peak power. The goal of this function is to group noisy peaks that are possibly from the same molecule and sum their intensities before calculate power
-     * @param[in] noisy_peaks noisy peaks to calculate power
-     * @param[in] z charge
+     * @param[in] noisy_begin, noisy_end noisy peaks of one charge (or of all charges), in their original order
+     * @param[in] signal_begin, signal_end signal peaks of the same charge(s), in their original order
+     * @param[in] max_noisy_peak_number only the most intense noisy peaks up to this number are used
      * @param[in] tol ppm tolerance
      * @return calculated noise power
      */
-    float getNoisePeakPower_(const std::vector<LogMzPeak>& noisy_peaks, int z, double tol) const;
+    float getNoisePeakPower_(const LogMzPeak* noisy_begin, const LogMzPeak* noisy_end, const LogMzPeak* signal_begin, const LogMzPeak* signal_end,
+                             Size max_noisy_peak_number, double tol) const;
 
     /// log Mz peaks
     std::vector<FLASHHelperClasses::LogMzPeak> logMzpeaks_;

@@ -143,10 +143,10 @@ namespace OpenMS
 
         for (const auto& p : pg)
         {
-          if (p.abs_charge != pg.getRepAbsCharge()) continue;
-          if (p.intensity < p_int) continue;
-          p_int = p.intensity;
-          rep_mz = p.mz;
+          if (p.getAbsCharge() != pg.getRepAbsCharge()) continue;
+          if (p.getIntensity() < p_int) continue;
+          p_int = p.getIntensity();
+          rep_mz = p.getMZ();
         }
         ss << file_name << "\t0\t" << max_feature_index << "\t" << std::to_string(pg.getMonoMass()) << "\t" << std::to_string(pg.getIntensity()) << "\t" << std::to_string(rt)
            << "\t" << std::to_string(rt) << "\t" << pg.getScanNumber() << "\t" << pg.getScanNumber() << "\t"
@@ -187,10 +187,10 @@ namespace OpenMS
 
           for (const auto& p : pg)
           {
-            if (p.abs_charge != pg.getRepAbsCharge()) continue;
-            if (p.intensity < p_int) continue;
-            p_int = p.intensity;
-            rep_mz = p.mz;
+            if (p.getAbsCharge() != pg.getRepAbsCharge()) continue;
+            if (p.getIntensity() < p_int) continue;
+            p_int = p.getIntensity();
+            rep_mz = p.getMZ();
           }
 
           ss << std::to_string(pg.getIntensity()) << "\t0\t" << std::to_string(rt)

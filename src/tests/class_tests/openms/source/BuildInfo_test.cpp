@@ -101,6 +101,53 @@ START_SECTION((static std::string getActiveSIMDExtensions()))
 }
 END_SECTION
 
+START_SECTION((static bool isOpenMPParallelRegion()))
+{
+  TEST_FALSE(OpenMSBuildInfo::isOpenMPParallelRegion())
+#ifdef _OPENMP
+  bool active = false;
+  bool active_team = false;
+  bool inactive = false;
+  bool single_thread = false;
+  bool nested = false;
+#pragma omp parallel num_threads(2) shared(active, active_team, nested)
+  {
+#pragma omp single
+    {
+      active_team = omp_get_num_threads() > 1;
+      active = OpenMSBuildInfo::isOpenMPParallelRegion();
+#pragma omp parallel if(false) shared(nested)
+      {
+        nested = OpenMSBuildInfo::isOpenMPParallelRegion();
+      }
+    }
+  }
+#pragma omp parallel if(false) shared(inactive)
+  {
+    inactive = OpenMSBuildInfo::isOpenMPParallelRegion();
+  }
+#pragma omp parallel num_threads(1) shared(single_thread)
+  {
+    single_thread = OpenMSBuildInfo::isOpenMPParallelRegion();
+  }
+  TEST_TRUE(active || !active_team)
+#if _OPENMP >= 200805
+  TEST_TRUE(active)
+  TEST_TRUE(nested)
+  TEST_TRUE(inactive)
+  TEST_TRUE(single_thread)
+#else
+  // OpenMP 2.0 exposes active teams, but no inactive nesting-level query.
+  TEST_EQUAL(active, active_team)
+  TEST_EQUAL(active, nested)
+  TEST_FALSE(inactive)
+  TEST_FALSE(single_thread)
+#endif
+  TEST_FALSE(OpenMSBuildInfo::isOpenMPParallelRegion())
+#endif
+}
+END_SECTION
+
 /////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////
 END_TEST

@@ -24,8 +24,8 @@ LogMzPeak fillPeak(double mz, float it, int cs, int iso_idx)
   p.setIntensity(it);
   p.setMZ(mz);
   LogMzPeak lmp(p, true);
-  lmp.abs_charge = cs;
-  lmp.isotopeIndex = iso_idx;
+  lmp.setAbsCharge(cs);
+  lmp.setIsotopeIndex(iso_idx);
   return lmp;
 }
 
@@ -83,8 +83,8 @@ START_SECTION((PeakGroup(const PeakGroup &)))
 
   TEST_EQUAL(std::get<0>(sample_pg.getAbsChargeRange()), std::get<0>(copy_pg.getAbsChargeRange()));
   TEST_EQUAL(sample_pg.size(), copy_pg.size());
-  TEST_REAL_SIMILAR(sample_pg[0].intensity, copy_pg[0].intensity);
-  TEST_REAL_SIMILAR(sample_pg[1].mz, copy_pg[1].mz);
+  TEST_REAL_SIMILAR(sample_pg[0].getIntensity(), copy_pg[0].getIntensity());
+  TEST_REAL_SIMILAR(sample_pg[1].getMZ(), copy_pg[1].getMZ());
 }
 END_SECTION
 
@@ -95,8 +95,8 @@ START_SECTION((PeakGroup& operator=(const PeakGroup &t)))
 
   TEST_EQUAL(std::get<0>(sample_pg.getAbsChargeRange()), std::get<0>(tmp_pg.getAbsChargeRange()));
   TEST_EQUAL(sample_pg.size(), tmp_pg.size());
-  TEST_REAL_SIMILAR(sample_pg[0].intensity, tmp_pg[0].intensity);
-  TEST_REAL_SIMILAR(sample_pg[1].mz, tmp_pg[1].mz);
+  TEST_REAL_SIMILAR(sample_pg[0].getIntensity(), tmp_pg[0].getIntensity());
+  TEST_REAL_SIMILAR(sample_pg[1].getMZ(), tmp_pg[1].getMZ());
 }
 END_SECTION
 

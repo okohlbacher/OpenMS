@@ -10,6 +10,7 @@
 #include <OpenMS/ANALYSIS/TOPDOWN/DeconvolvedSpectrum.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/FLASHHelperClasses.h>
 #include <OpenMS/config.h>
+#include <fstream>
 #include <iomanip>
 
 namespace OpenMS
@@ -63,6 +64,37 @@ namespace OpenMS
                                        double tol,
                                        bool write_detail,
                                        bool record_decoy, double noise_decoy_weight);
+
+    /**
+      @brief Write the spectrum TSVs of all @p spectra, in input order.
+
+      With write_detail the spectra are formatted in parallel and written in input order (at most 64 rows per worker ahead of the
+      write position); with report_decoy the noise-decoy draws are replayed in input order first, so the output is the same for any
+      thread count. Without write_detail, inside a parallel region, or with a failed stream, the spectra are written one by one.
+      Concurrent independent calls are not thread-safe (shared row indices and random sequence).
+
+      @param[in] spectra Spectra to write without mutating their peak groups.
+      @param[in,out] streams Output streams indexed by MS level minus one.
+      @param[in] output_files Output names; an empty name disables its MS-level stream.
+      @param[in] file_name Input name recorded in each TSV row.
+      @param[in] avg Target averagine.
+      @param[in] decoy_avg Noise-decoy averagine.
+      @param[in] tols Per-MS tolerances in ppm.
+      @param[in] write_detail Whether to write detailed peak fields.
+      @param[in] report_decoy Whether to report decoys.
+      @param[in] noise_decoy_weight Original noise-decoy sampling weight.
+      @throws Exception::InvalidParameter If output slots or tolerances are missing.
+    */
+    static void writeDeconvolvedMassesParallel(const std::vector<DeconvolvedSpectrum>& spectra,
+                                               std::vector<std::ofstream>& streams,
+                                               const StringList& output_files,
+                                               const std::string& file_name,
+                                               const FLASHHelperClasses::PrecalculatedAveragine& avg,
+                                               const FLASHHelperClasses::PrecalculatedAveragine& decoy_avg,
+                                               const DoubleList& tols,
+                                               bool write_detail,
+                                               bool report_decoy,
+                                               double noise_decoy_weight);
 
     /**
      *
