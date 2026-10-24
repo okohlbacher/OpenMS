@@ -9,6 +9,8 @@
 
 #include <OpenMS/ANALYSIS/ID/PercolatorTypes.h>
 #include <OpenMS/DATASTRUCTURES/DefaultParamHandler.h>
+#include <OpenMS/METADATA/PeptideIdentificationList.h>
+#include <OpenMS/METADATA/ProteinIdentification.h>
 
 #include <cstdint>
 #include <utility>
@@ -54,6 +56,34 @@ namespace OpenMS
     RescoreOutput rescore(const RescoreInput& input, const std::vector<std::uint64_t>& coin_keys = {},
                           const std::vector<char>& decoy_set = {});
 
+    /// Outcome of rescoreRun()
+    struct RunResult
+    {
+      bool applied = false;
+      std::string skipped_reason;  ///< sentence for the user if not applied
+      std::size_t rows = 0;        ///< spectra (competition winners) rescored
+    };
+
+    /**
+      @brief Rescore one search run in place (ProSE's 'rescore_engine' psmrescorer_*).
+
+      Keeps the best hit per spectrum by the search score (target-decoy competition), builds PIN-like features
+      (charge 2-5 one-hot, peptide length, precursor mass, dm, absdm in Da, enzN, enzC and the run's
+      'extra_features'; not enzInt, which separates targets from decoys), rescores, and makes the RESET q-value the
+      main score (score type "q-value", lower is better; meta values "PSMRescorer_score", "PSMRescorer_q").
+      Training decoys get q = 1 and meta value "PSMRescorer_training_decoy". With decoy_mode "two", decoys whose
+      protein accessions start with @p second_decoy_prefix form set 2 (estimating), all others set 1 (training).
+      Hits other than the winner are removed.
+
+      @note Scope of the FDR guarantee: RESET controls the FDR of representative peptides (stems). The q-values written
+      here are per PSM (spectrum winner) and are heuristic in that sense: repeated spectra of one peptide share its
+      competition outcome. Protein-level FDR computed afterwards from these PSMs is likewise unvalidated.
+    */
+#ifndef PSMRESCORER_CORE_ONLY
+    RunResult rescoreRun(std::vector<ProteinIdentification>& protein_ids, PeptideIdentificationList& peptide_ids,
+                         const std::string& second_decoy_prefix = "DECOY_X_");
+#endif
+
     const Timing& timing() const { return timing_; }
     /// targets with q <= 0.01 in the last rescore()
     std::size_t accepted() const { return accepted_; }
@@ -70,6 +100,7 @@ namespace OpenMS
                                        double alpha = 0.01, std::size_t* accepted = nullptr);
 
   private:
+    std::vector<char> last_training_decoy_;  ///< per row of the last rescore(): decoy used for training (not for the estimate)
     Timing timing_;
     std::size_t accepted_ = 0;
     std::size_t training_rows_ = 0;

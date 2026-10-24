@@ -7,7 +7,10 @@
 
 #include <OpenMS/ANALYSIS/ID/PSMRescorer.h>
 
+#include <OpenMS/CHEMISTRY/AASequence.h>
+#include <OpenMS/CONCEPT/Constants.h>
 #include <OpenMS/CONCEPT/Exception.h>
+#include <OpenMS/CONCEPT/LogStream.h>
 
 #include <Eigen/Dense>
 
@@ -96,11 +99,13 @@ namespace OpenMS
         H.selfadjointView<Eigen::Lower>().rankUpdate(A.transpose());
         const Eigen::VectorXd step = H.selfadjointView<Eigen::Lower>().ldlt().solve(-g);
         double a = 1.0, fn = f;
+        bool accepted = false;
         for (; a > 1e-4; a *= 0.5)
         {
           fn = objective(w + a * step);
-          if (fn <= f + 1e-4 * a * g.dot(step)) break;
+          if (fn <= f + 1e-4 * a * g.dot(step)) { accepted = true; break; }
         }
+        if (!accepted) break;  // keep the last accepted iterate
         w += a * step;
         if (std::abs(f - fn) < 1e-10 * (1.0 + std::abs(f))) { f = fn; break; }
         f = fn;
@@ -161,8 +166,14 @@ namespace OpenMS
   {
     defaults_.setValue("method", "newton", "Learner core: 'newton' (squared-hinge linear SVM) or 'lda' (Fisher LDA).");
     defaults_.setValidStrings("method", {"newton", "lda"});
-    defaults_.setValue("train_cap", 500000, "Maximum number of training rows (uniform thinning after the decoy coin flip).");
+    defaults_.setValue("train_cap", 500000, "About this many training rows (uniform random thinning after the decoy coin flip; the size is approximate).");
+    defaults_.setMinInt("train_cap", 1000);
     defaults_.setValue("iterations", 5, "Semi-supervised iterations (RESET default).");
+    defaults_.setMinInt("iterations", 1);
+    defaults_.setValue("exclude_feature_prefixes", std::vector<std::string>{"ion_prior_"},
+                       "rescoreRun(): leave out features whose names start with one of these. Default: ProSE's self-trained ion "
+                       "priors, which are learned from the run's target/decoy labels before the decoy split and would leak the "
+                       "labels of estimating decoys.");
     defaults_.setValue("train_fdr", 0.01, "FDR for selecting training positives (pseudo-targets).");
     defaults_.setValue("test_fdr", 0.01, "FDR at which accepted() is counted.");
     defaults_.setValue("seed", 1, "Salt for the decoy coin and the fold assignment. Record it; do not optimise over it.");
@@ -239,17 +250,27 @@ namespace OpenMS
                                            const std::vector<char>& use, double factor, int threads, double alpha,
                                            std::size_t* accepted)
   {
+    if (is_target.size() != score.size() || use.size() != score.size() || score.size() >= (std::size_t(1) << 32))
+      throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "qValues: inconsistent or oversized input", std::to_string(score.size()));
     std::vector<Pair> order;
     order.reserve(score.size());
-    for (std::uint32_t i = 0; i < score.size(); ++i)
-      if (use[i]) order.emplace_back(score[i], i);
+    for (std::size_t i = 0; i < score.size(); ++i)
+      if (use[i])
+      {
+        if (!std::isfinite(score[i])) throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "qValues: non-finite score", std::to_string(i));
+        order.emplace_back(score[i], static_cast<std::uint32_t>(i));
+      }
     parallelSortDesc(order, threads);
+    // FDP is evaluated only at the end of each block of equal scores: a threshold cannot split a tie
     std::vector<double> fdp(order.size());
     double t = 0, dcy = 0;
-    for (std::size_t k = 0; k < order.size(); ++k)
+    for (std::size_t k = 0; k < order.size();)
     {
-      (is_target[order[k].second] ? t : dcy) += 1;
-      fdp[k] = factor * (dcy + 1) / std::max(t, 1.0);
+      std::size_t e = k;
+      while (e < order.size() && order[e].first == order[k].first) { (is_target[order[e].second] ? t : dcy) += 1; ++e; }
+      const double f = factor * (dcy + 1) / std::max(t, 1.0);
+      for (std::size_t m = k; m < e; ++m) fdp[m] = f;
+      k = e;
     }
     std::vector<double> q(score.size(), 1.0);
     double run = 1.0;
@@ -279,9 +300,34 @@ namespace OpenMS
     const std::size_t n = in.features.size();
     if (two && decoy_set.size() != n)
       throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "decoy_mode 'two' needs decoy_set for every row", std::to_string(n));
-    if (n == 0 || in.is_decoy.size() != n || (!coin_keys.empty() && coin_keys.size() != n))
+    if (n == 0 || in.is_decoy.size() != n || n >= (std::size_t(1) << 32))
       throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "inconsistent rescoring input", std::to_string(n));
+    if (!two && coin_keys.size() != n)
+      throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "decoy_mode 'single' needs a coin key (peptide stem) per row", std::to_string(coin_keys.size()));
+    if (!in.cv_group_keys.empty() && in.cv_group_keys.size() != n)
+      throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "cv_group_keys must be empty or one per row", std::to_string(in.cv_group_keys.size()));
     const std::size_t d = in.features[0].size();
+    {
+      std::size_t sets[3] = {0, 0, 0};
+      for (std::size_t i = 0; i < n; ++i)
+      {
+        if (in.features[i].size() != d)
+          throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "feature rows of different width", std::to_string(i));
+        for (double v : in.features[i])
+          if (!std::isfinite(v)) throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "non-finite feature value", std::to_string(i));
+        if (two && in.is_decoy[i])
+        {
+          if (decoy_set[i] != 1 && decoy_set[i] != 2)
+            throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "decoy_set must be 1 or 2 for decoys", std::to_string(i));
+          ++sets[int(decoy_set[i])];
+        }
+      }
+      // with two decoy databases both sets win about equally often; a lopsided split means the database was not built for it
+      if (two && (sets[1] == 0 || sets[2] == 0 || std::min(sets[1], sets[2]) * 3 < std::max(sets[1], sets[2])))
+        throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION,
+                                      "decoy_mode 'two' needs two decoy databases of equal size (found decoy winners " +
+                                      std::to_string(sets[1]) + " / " + std::to_string(sets[2]) + ")", "");
+    }
 
     // ---- standardize (parallel column moments), pack row-major with bias column
     Matrix X;
@@ -290,18 +336,20 @@ namespace OpenMS
     X.x.resize(n * X.d);
     std::vector<double> mean(d, 0), sd(d, 0);
 #pragma omp parallel for num_threads(threads)
-    for (std::size_t j = 0; j < d; ++j)
+    for (std::size_t j = 0; j < d; ++j)  // two-pass (centred) moments
     {
-      double s = 0, ss = 0;
-      for (std::size_t i = 0; i < n; ++i) { s += in.features[i][j]; ss += in.features[i][j] * in.features[i][j]; }
+      double s = 0;
+      for (std::size_t i = 0; i < n; ++i) s += in.features[i][j];
       mean[j] = s / n;
-      sd[j] = std::sqrt(std::max(ss / n - mean[j] * mean[j], 0.0)) + 1e-9;
+      double ss = 0;
+      for (std::size_t i = 0; i < n; ++i) { const double c = in.features[i][j] - mean[j]; ss += c * c; }
+      sd[j] = std::sqrt(ss / n);
     }
 #pragma omp parallel for num_threads(threads)
     for (std::size_t i = 0; i < n; ++i)
     {
       double* r = X.x.data() + i * X.d;
-      for (std::size_t j = 0; j < d; ++j) r[j] = (in.features[i][j] - mean[j]) / sd[j];
+      for (std::size_t j = 0; j < d; ++j) r[j] = sd[j] > 0 ? (in.features[i][j] - mean[j]) / sd[j] : 0.0;  // constant column -> 0
       r[d] = 1.0;
     }
 
@@ -312,17 +360,19 @@ namespace OpenMS
     for (std::size_t i = 0; i < n; ++i)
     {
       is_target[i] = !in.is_decoy[i];
-      const std::uint64_t key = coin_keys.empty() ? i : coin_keys[i];
+      const std::uint64_t key = coin_keys.empty() ? std::uint64_t(i) : coin_keys[i];
       if (in.is_decoy[i]) train_dec[i] = two ? decoy_set[i] == 1 : (mix(salt ^ key) & 1) != 0;
       if (keep >= 1.0 || double(mix(salt + 0x5bd1e995ULL + i) >> 11) * 0x1.0p-53 < keep) pool.push_back(static_cast<std::uint32_t>(i));
     }
     training_rows_ = pool.size();
     std::vector<std::uint8_t> fold(n);
-    for (std::size_t i = 0; i < n; ++i) fold[i] = static_cast<std::uint8_t>(mix(salt * 31 + i) % 3);
+    for (std::size_t i = 0; i < n; ++i)  // folds by CV group if given (rows of one group share a fold), else by row
+      fold[i] = static_cast<std::uint8_t>(mix(salt * 31 + (in.cv_group_keys.empty() ? std::uint64_t(i) : std::uint64_t(std::int64_t(in.cv_group_keys[i])))) % 3);
     // pool view used by the q-value helper: pseudo-targets are "targets", training decoys are "decoys"
     std::vector<char> pseudo(n), in_pool(n, 0);
     for (std::size_t i = 0; i < n; ++i) pseudo[i] = !train_dec[i];
     for (auto r : pool) in_pool[r] = 1;
+    last_training_decoy_ = train_dec;
     timing_.prep = since(t0);
 
     // ---- initial direction: best single standardized feature (either sign) by training discoveries
@@ -356,6 +406,10 @@ namespace OpenMS
         y[r] = train_dec[r] ? -1 : (q[r] <= train_fdr ? 1 : 0);
         if (y[r]) use.push_back(r);
       }
+      std::size_t n_pos = 0;
+      for (auto r : use) n_pos += y[r] > 0;
+      if (n_pos == 0 || n_pos == use.size())
+        throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "no training positives or negatives", std::to_string(n_pos));
       if (use_lda)
       {
         w = lda(X, use, y, threads);
@@ -405,4 +459,128 @@ namespace OpenMS
     timing_.qvalue = since(t3);
     return out;
   }
+
+#ifndef PSMRESCORER_CORE_ONLY
+  PSMRescorer::RunResult PSMRescorer::rescoreRun(std::vector<ProteinIdentification>& protein_ids,
+                                                 PeptideIdentificationList& peptide_ids,
+                                                 const std::string& second_decoy_prefix)
+  {
+    RunResult res;
+    if (protein_ids.empty()) { res.skipped_reason = "No search run to rescore."; return res; }
+    std::vector<std::string> extra;
+    const auto& sp = protein_ids.front().getSearchParameters();
+    const std::uint64_t tie_salt = mix(static_cast<std::uint64_t>(static_cast<int>(param_.getValue("seed"))) + 77);
+    const std::vector<std::string> excluded = param_.getValue("exclude_feature_prefixes");
+    // isotope_error follows report:isotope_error_convention: observed_minus_theoretical (default) is subtracted
+    const double iso_sign = (sp.metaValueExists("isotope_error_convention") &&
+                             sp.getMetaValue("isotope_error_convention").toString() == "theoretical_minus_observed") ? 1.0 : -1.0;
+    const bool tryptic = sp.digestion_enzyme.getName().find("Trypsin") != std::string::npos;
+    if (sp.metaValueExists("extra_features"))
+    {
+      const std::string all = sp.getMetaValue("extra_features").toString();
+      for (std::size_t a = 0; a <= all.size();)
+      {
+        const std::size_t b = std::min(all.find(',', a), all.size());
+        if (b > a)
+        {
+          const std::string name = all.substr(a, b - a);
+          bool skip = false;
+          for (const auto& e : excluded) skip = skip || name.rfind(e, 0) == 0;
+          if (!skip) extra.push_back(name);
+        }
+        a = b + 1;
+      }
+    }
+    else
+    {
+      extra.emplace_back("score");
+    }
+    RescoreInput in;
+    std::vector<std::uint64_t> keys;
+    std::vector<char> decoy_set;
+    std::vector<std::size_t> winner(peptide_ids.size(), std::size_t(-1));
+    std::size_t n_decoy = 0;
+    for (std::size_t p = 0; p < peptide_ids.size(); ++p)
+    {
+      const auto& pid = peptide_ids[p];
+      const auto& hits = pid.getHits();
+      if (hits.empty()) continue;
+      // target-decoy competition on the search score; ties broken by a label-independent random choice
+      std::size_t b = 0, n_tied = 1;
+      for (std::size_t h = 1; h < hits.size(); ++h)
+      {
+        const double s = hits[h].getScore(), sb = hits[b].getScore();
+        if (pid.isHigherScoreBetter() ? s > sb : s < sb) { b = h; n_tied = 1; }
+        else if (s == sb && mix(tie_salt ^ (p * 1315423911ULL + h)) % ++n_tied == 0) b = h;
+      }
+      winner[p] = b;
+      const PeptideHit& hit = hits[b];
+      const int z = hit.getCharge();
+      const double calc = hit.getSequence().getMonoWeight();
+      const double obs = (pid.getMZ() - Constants::PROTON_MASS_U) * z;
+      const double iso = hit.metaValueExists("isotope_error") ? double(hit.getMetaValue("isotope_error")) : 0.0;
+      const double dm = (obs + iso_sign * iso * Constants::C13C12_MASSDIFF_U - calc) / std::max(z, 1);
+      const std::string plain = hit.getSequence().toUnmodifiedString();
+      double enz_n = 0, enz_c = 0;
+      if (tryptic && !hit.getPeptideEvidences().empty() && !plain.empty())  // enzN/enzC for trypsin only, else 0
+      {
+        const auto& ev = hit.getPeptideEvidences()[0];
+        const char bf = ev.getAABefore(), af = ev.getAAAfter();
+        enz_n = (bf == '[' || bf == '-' || ((bf == 'K' || bf == 'R') && plain.front() != 'P')) ? 1 : 0;
+        enz_c = (af == ']' || af == '-' || ((plain.back() == 'K' || plain.back() == 'R') && af != 'P')) ? 1 : 0;
+      }
+      std::vector<double> f = {double(z == 2), double(z == 3), double(z == 4), double(z >= 5),
+                               double(plain.size()), obs, dm, std::abs(dm), enz_n, enz_c};
+      for (const auto& e : extra) f.push_back(e == "score" ? hit.getScore() : (hit.metaValueExists(e) ? double(hit.getMetaValue(e)) : 0.0));
+      in.features.push_back(std::move(f));
+      in.cv_group_keys.push_back(static_cast<int>(p));
+      const bool decoy = hit.isDecoy();
+      n_decoy += decoy;
+      in.is_decoy.push_back(decoy);
+      keys.push_back(std::hash<std::string>{}(plain));
+      char set = 0;
+      if (decoy)
+      {
+        set = 1;
+        for (const auto& ev : hit.getPeptideEvidences())
+          if (ev.getProteinAccession().rfind(second_decoy_prefix, 0) == 0) { set = 2; break; }
+      }
+      decoy_set.push_back(set);
+    }
+    res.rows = in.features.size();
+    if (res.rows < 100) { res.skipped_reason = "Only " + std::to_string(res.rows) + " PSMs, rescoring needs at least 100."; return res; }
+    if (n_decoy < 50) { res.skipped_reason = "Too few decoy PSMs (" + std::to_string(n_decoy) + ") for target-decoy rescoring."; return res; }
+    RescoreOutput out;
+    try { out = rescore(in, keys, decoy_set); }
+    catch (const Exception::BaseException& e) { res.skipped_reason = std::string("PSMRescorer failed: ") + e.what(); return res; }
+    std::size_t row = 0;
+    for (std::size_t p = 0; p < peptide_ids.size(); ++p)
+    {
+      if (winner[p] == std::size_t(-1)) continue;
+      auto& pid = peptide_ids[p];
+      auto& hits = pid.getHits();
+      PeptideHit hit = std::move(hits[winner[p]]);
+      hit.setMetaValue("PSMRescorer_score", out.scores[row]);
+      hit.setMetaValue("PSMRescorer_q", out.q_values[row]);
+      if (last_training_decoy_[row]) hit.setMetaValue("PSMRescorer_training_decoy", "true");
+      hit.setScore(out.q_values[row]);
+      hits.assign(1, std::move(hit));
+      pid.setScoreType("q-value");
+      pid.setHigherScoreBetter(false);
+      ++row;
+    }
+    for (ProteinIdentification& run : protein_ids)
+    {
+      run.setSearchEngine("PSMRescorer");
+      auto run_sp = run.getSearchParameters();
+      run_sp.setMetaValue("PSMRescorer:method", param_.getValue("method").toString());
+      run_sp.setMetaValue("PSMRescorer:decoy_mode", param_.getValue("decoy_mode").toString());
+      run_sp.setMetaValue("PSMRescorer:train_cap", static_cast<int>(param_.getValue("train_cap")));
+      run_sp.setMetaValue("PSMRescorer:seed", static_cast<int>(param_.getValue("seed")));
+      run.setSearchParameters(run_sp);
+    }
+    res.applied = true;
+    return res;
+  }
+#endif
 }
