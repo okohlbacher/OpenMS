@@ -1,0 +1,401 @@
+// Copyright (c) 2002-present, OpenMS Inc. -- EKU Tuebingen, ETH Zurich, and FU Berlin
+// SPDX-License-Identifier: BSD-3-Clause
+// --------------------------------------------------------------------------
+// $Maintainer: Oliver Kohlbacher $
+// $Authors: Oliver Kohlbacher $
+// --------------------------------------------------------------------------
+
+#include <OpenMS/ANALYSIS/ID/PSMRescorer.h>
+
+#include <OpenMS/CONCEPT/Exception.h>
+
+#include <Eigen/Dense>
+
+#include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <numeric>
+#include <queue>
+
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
+namespace OpenMS
+{
+  namespace
+  {
+    using Clock = std::chrono::steady_clock;
+    double since(Clock::time_point t) { return std::chrono::duration<double>(Clock::now() - t).count(); }
+
+    std::uint64_t mix(std::uint64_t x)  // splitmix64 finaliser
+    {
+      x += 0x9e3779b97f4a7c15ULL;
+      x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ULL;
+      x = (x ^ (x >> 27)) * 0x94d049bb133111ebULL;
+      return x ^ (x >> 31);
+    }
+
+    using Pair = std::pair<double, std::uint32_t>;
+    inline bool before(const Pair& a, const Pair& b) { return a.first > b.first || (a.first == b.first && a.second < b.second); }
+
+    // Row-major standardized matrix with a trailing 1 for the bias.
+    struct Matrix
+    {
+      std::size_t n = 0, d = 0;  // d includes the bias column
+      std::vector<double> x;
+      const double* row(std::size_t i) const { return x.data() + i * d; }
+    };
+
+    double dot(const double* a, const Eigen::VectorXd& w)
+    {
+      double s = 0;
+      for (Eigen::Index j = 0; j < w.size(); ++j) s += a[j] * w[j];
+      return s;
+    }
+
+    // min 0.5 w'w + sum_i C_i max(0, 1 - y_i w.x_i)^2 (Percolator's L2-SVM), explicit (d x d) Hessian.
+    Eigen::VectorXd newton(const Matrix& X, const std::vector<std::uint32_t>& rows, const std::vector<signed char>& y,
+                           double cp, double cn, const Eigen::VectorXd& w0)
+    {
+      const auto d = static_cast<Eigen::Index>(X.d);
+      Eigen::VectorXd w = w0;
+      auto objective = [&](const Eigen::VectorXd& v) {
+        double f = 0.5 * v.squaredNorm();
+        for (std::uint32_t r : rows)
+        {
+          const double m = 1.0 - y[r] * dot(X.row(r), v);
+          if (m > 0) f += (y[r] > 0 ? cp : cn) * m * m;
+        }
+        return f;
+      };
+      double f = objective(w);
+      Eigen::MatrixXd A;  // active rows scaled by sqrt(2 C)
+      for (int it = 0; it < 30; ++it)
+      {
+        Eigen::VectorXd g = w;
+        std::vector<std::uint32_t> act;
+        act.reserve(rows.size());
+        for (std::uint32_t r : rows)
+        {
+          const double m = 1.0 - y[r] * dot(X.row(r), w);
+          if (m <= 0) continue;
+          act.push_back(r);
+          const double c = y[r] > 0 ? cp : cn;
+          const double* xr = X.row(r);
+          for (Eigen::Index j = 0; j < d; ++j) g[j] -= 2.0 * c * y[r] * m * xr[j];
+        }
+        if (g.norm() < 1e-6 * (1.0 + w.norm())) break;
+        A.resize(static_cast<Eigen::Index>(act.size()), d);
+        for (std::size_t k = 0; k < act.size(); ++k)
+        {
+          const double s = std::sqrt(2.0 * (y[act[k]] > 0 ? cp : cn));
+          A.row(static_cast<Eigen::Index>(k)) = Eigen::Map<const Eigen::RowVectorXd>(X.row(act[k]), d) * s;
+        }
+        Eigen::MatrixXd H = Eigen::MatrixXd::Identity(d, d);
+        H.selfadjointView<Eigen::Lower>().rankUpdate(A.transpose());
+        const Eigen::VectorXd step = H.selfadjointView<Eigen::Lower>().ldlt().solve(-g);
+        double a = 1.0, fn = f;
+        for (; a > 1e-4; a *= 0.5)
+        {
+          fn = objective(w + a * step);
+          if (fn <= f + 1e-4 * a * g.dot(step)) break;
+        }
+        w += a * step;
+        if (std::abs(f - fn) < 1e-10 * (1.0 + std::abs(f))) { f = fn; break; }
+        f = fn;
+      }
+      return w;
+    }
+
+    // Fisher LDA: w = Sw^-1 (mu_pos - mu_neg); one parallel pass for means, one for the scatter.
+    Eigen::VectorXd lda(const Matrix& X, const std::vector<std::uint32_t>& rows, const std::vector<signed char>& y, int threads)
+    {
+      const auto d = static_cast<Eigen::Index>(X.d - 1);  // without bias
+      Eigen::VectorXd sp = Eigen::VectorXd::Zero(d), sn = Eigen::VectorXd::Zero(d);
+      Eigen::MatrixXd S = Eigen::MatrixXd::Zero(d, d);
+      std::size_t np = 0, nn = 0;
+#pragma omp parallel num_threads(threads)
+      {
+        Eigen::VectorXd lp = Eigen::VectorXd::Zero(d), ln = Eigen::VectorXd::Zero(d);
+        std::size_t cp = 0, cn = 0;
+#pragma omp for nowait
+        for (std::size_t k = 0; k < rows.size(); ++k)
+        {
+          const Eigen::Map<const Eigen::VectorXd> x(X.row(rows[k]), d);
+          if (y[rows[k]] > 0) { lp += x; ++cp; } else { ln += x; ++cn; }
+        }
+#pragma omp critical
+        { sp += lp; sn += ln; np += cp; nn += cn; }
+      }
+      if (np == 0 || nn == 0) throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "LDA needs both classes", "");
+      const Eigen::VectorXd mp = sp / double(np), mn = sn / double(nn);
+#pragma omp parallel num_threads(threads)
+      {
+        Eigen::MatrixXd L = Eigen::MatrixXd::Zero(d, d);
+        Eigen::MatrixXd B(256, d);
+        Eigen::Index fill = 0;
+#pragma omp for nowait
+        for (std::size_t k = 0; k < rows.size(); ++k)
+        {
+          const Eigen::Map<const Eigen::RowVectorXd> x(X.row(rows[k]), d);
+          B.row(fill++) = x - (y[rows[k]] > 0 ? mp : mn).transpose();
+          if (fill == B.rows()) { L.selfadjointView<Eigen::Lower>().rankUpdate(B.transpose()); fill = 0; }
+        }
+        if (fill) L.selfadjointView<Eigen::Lower>().rankUpdate(B.topRows(fill).transpose());
+#pragma omp critical
+        S += L;
+      }
+      Eigen::MatrixXd Sw = S.selfadjointView<Eigen::Lower>();
+      Sw /= double(np + nn);
+      Sw.diagonal().array() += 1e-6;
+      const Eigen::VectorXd w = Sw.ldlt().solve(mp - mn);
+      Eigen::VectorXd out(d + 1);
+      out.head(d) = w;
+      out[d] = -w.dot(mp + mn) / 2.0;
+      return out;
+    }
+  }
+
+  PSMRescorer::PSMRescorer() : DefaultParamHandler("PSMRescorer")
+  {
+    defaults_.setValue("method", "newton", "Learner core: 'newton' (squared-hinge linear SVM) or 'lda' (Fisher LDA).");
+    defaults_.setValidStrings("method", {"newton", "lda"});
+    defaults_.setValue("train_cap", 500000, "Maximum number of training rows (uniform thinning after the decoy coin flip).");
+    defaults_.setValue("iterations", 5, "Semi-supervised iterations (RESET default).");
+    defaults_.setValue("train_fdr", 0.01, "FDR for selecting training positives (pseudo-targets).");
+    defaults_.setValue("test_fdr", 0.01, "FDR at which accepted() is counted.");
+    defaults_.setValue("seed", 1, "Salt for the decoy coin and the fold assignment. Record it; do not optimise over it.");
+    defaults_.setValue("num_threads", 1, "Threads (OpenMP).");
+    defaultsToParam_();
+  }
+
+  void PSMRescorer::parallelSortDesc(std::vector<Pair>& v, int threads)
+  {
+    const std::size_t n = v.size();
+    const std::size_t p = static_cast<std::size_t>(std::max(1, threads));
+    if (p == 1 || n < (1u << 16)) { std::sort(v.begin(), v.end(), before); return; }
+    std::vector<std::size_t> lo(p + 1);
+    for (std::size_t j = 0; j <= p; ++j) lo[j] = n * j / p;
+#pragma omp parallel for num_threads(threads) schedule(static, 1)
+    for (std::size_t j = 0; j < p; ++j) std::sort(v.begin() + lo[j], v.begin() + lo[j + 1], before);
+    // regular sampling -> p-1 splitters
+    const std::size_t s = 32;
+    std::vector<Pair> sample;
+    sample.reserve(p * s);
+    for (std::size_t j = 0; j < p; ++j)
+      for (std::size_t k = 0; k < s; ++k)
+      {
+        const std::size_t len = lo[j + 1] - lo[j];
+        if (len) sample.push_back(v[lo[j] + len * k / s]);
+      }
+    std::sort(sample.begin(), sample.end(), before);
+    std::vector<Pair> split(p - 1);
+    for (std::size_t t = 1; t < p; ++t) split[t - 1] = sample[sample.size() * t / p];
+    // cut[j][t]: first position in chunk j that does not precede splitter t-1 (cut[j][0] = chunk begin)
+    std::vector<std::vector<std::size_t>> cut(p, std::vector<std::size_t>(p + 1));
+#pragma omp parallel for num_threads(threads)
+    for (std::size_t j = 0; j < p; ++j)
+    {
+      cut[j][0] = lo[j];
+      cut[j][p] = lo[j + 1];
+      for (std::size_t t = 1; t < p; ++t)
+        cut[j][t] = static_cast<std::size_t>(std::lower_bound(v.begin() + lo[j], v.begin() + lo[j + 1], split[t - 1], before) - v.begin());
+    }
+    std::vector<std::size_t> out_at(p + 1, 0);
+    for (std::size_t t = 0; t < p; ++t)
+    {
+      out_at[t + 1] = out_at[t];
+      for (std::size_t j = 0; j < p; ++j) out_at[t + 1] += cut[j][t + 1] - cut[j][t];
+    }
+    std::vector<Pair> out(n);
+#pragma omp parallel for num_threads(threads) schedule(dynamic, 1)
+    for (std::size_t t = 0; t < p; ++t)
+    {
+      using Head = std::pair<Pair, std::size_t>;  // value, chunk
+      auto worse = [](const Head& a, const Head& b) { return before(b.first, a.first); };
+      std::priority_queue<Head, std::vector<Head>, decltype(worse)> heap(worse);
+      std::vector<std::size_t> pos(p);
+      for (std::size_t j = 0; j < p; ++j)
+      {
+        pos[j] = cut[j][t];
+        if (pos[j] < cut[j][t + 1]) heap.push({v[pos[j]], j});
+      }
+      std::size_t o = out_at[t];
+      while (!heap.empty())
+      {
+        const auto [val, j] = heap.top();
+        heap.pop();
+        out[o++] = val;
+        if (++pos[j] < cut[j][t + 1]) heap.push({v[pos[j]], j});
+      }
+    }
+    v.swap(out);
+  }
+
+  std::vector<double> PSMRescorer::qValues(const std::vector<double>& score, const std::vector<char>& is_target,
+                                           const std::vector<char>& use, double factor, int threads, double alpha,
+                                           std::size_t* accepted)
+  {
+    std::vector<Pair> order;
+    order.reserve(score.size());
+    for (std::uint32_t i = 0; i < score.size(); ++i)
+      if (use[i]) order.emplace_back(score[i], i);
+    parallelSortDesc(order, threads);
+    std::vector<double> fdp(order.size());
+    double t = 0, dcy = 0;
+    for (std::size_t k = 0; k < order.size(); ++k)
+    {
+      (is_target[order[k].second] ? t : dcy) += 1;
+      fdp[k] = factor * (dcy + 1) / std::max(t, 1.0);
+    }
+    std::vector<double> q(score.size(), 1.0);
+    double run = 1.0;
+    std::size_t acc = 0;
+    for (std::size_t k = order.size(); k-- > 0;)
+    {
+      run = std::min(run, fdp[k]);
+      q[order[k].second] = run;
+      if (run <= alpha && is_target[order[k].second]) ++acc;
+    }
+    if (accepted) *accepted = acc;
+    return q;
+  }
+
+  RescoreOutput PSMRescorer::rescore(const RescoreInput& in, const std::vector<std::uint64_t>& coin_keys)
+  {
+    const auto t0 = Clock::now();
+    const int threads = std::max(1, static_cast<int>(param_.getValue("num_threads")));
+    const std::size_t cap = static_cast<std::size_t>(static_cast<int>(param_.getValue("train_cap")));
+    const int iterations = param_.getValue("iterations");
+    const double train_fdr = param_.getValue("train_fdr");
+    const std::uint64_t salt = mix(static_cast<std::uint64_t>(static_cast<int>(param_.getValue("seed"))));
+    const bool use_lda = param_.getValue("method").toString() == "lda";
+    const std::size_t n = in.features.size();
+    if (n == 0 || in.is_decoy.size() != n || (!coin_keys.empty() && coin_keys.size() != n))
+      throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "inconsistent rescoring input", std::to_string(n));
+    const std::size_t d = in.features[0].size();
+
+    // ---- standardize (parallel column moments), pack row-major with bias column
+    Matrix X;
+    X.n = n;
+    X.d = d + 1;
+    X.x.resize(n * X.d);
+    std::vector<double> mean(d, 0), sd(d, 0);
+#pragma omp parallel for num_threads(threads)
+    for (std::size_t j = 0; j < d; ++j)
+    {
+      double s = 0, ss = 0;
+      for (std::size_t i = 0; i < n; ++i) { s += in.features[i][j]; ss += in.features[i][j] * in.features[i][j]; }
+      mean[j] = s / n;
+      sd[j] = std::sqrt(std::max(ss / n - mean[j] * mean[j], 0.0)) + 1e-9;
+    }
+#pragma omp parallel for num_threads(threads)
+    for (std::size_t i = 0; i < n; ++i)
+    {
+      double* r = X.x.data() + i * X.d;
+      for (std::size_t j = 0; j < d; ++j) r[j] = (in.features[i][j] - mean[j]) / sd[j];
+      r[d] = 1.0;
+    }
+
+    // ---- decoy coin (one per key), training pool cap, folds
+    std::vector<char> train_dec(n, 0), is_target(n), pool_neg(n, 0);
+    std::vector<std::uint32_t> pool;
+    const double keep = n > cap ? double(cap) / n : 1.0;
+    for (std::size_t i = 0; i < n; ++i)
+    {
+      is_target[i] = !in.is_decoy[i];
+      const std::uint64_t key = coin_keys.empty() ? i : coin_keys[i];
+      if (in.is_decoy[i]) train_dec[i] = (mix(salt ^ key) & 1) != 0;
+      if (keep >= 1.0 || double(mix(salt + 0x5bd1e995ULL + i) >> 11) * 0x1.0p-53 < keep) pool.push_back(static_cast<std::uint32_t>(i));
+    }
+    training_rows_ = pool.size();
+    std::vector<std::uint8_t> fold(n);
+    for (std::size_t i = 0; i < n; ++i) fold[i] = static_cast<std::uint8_t>(mix(salt * 31 + i) % 3);
+    // pool view used by the q-value helper: pseudo-targets are "targets", training decoys are "decoys"
+    std::vector<char> pseudo(n), in_pool(n, 0);
+    for (std::size_t i = 0; i < n; ++i) pseudo[i] = !train_dec[i];
+    for (auto r : pool) in_pool[r] = 1;
+    timing_.prep = since(t0);
+
+    // ---- initial direction: best single standardized feature (either sign) by training discoveries
+    const auto t1 = Clock::now();
+    std::vector<double> score(n, 0.0);
+    {
+      std::size_t best = 0;
+      int best_j = 0, best_sign = 1;
+      std::vector<double> col(n);
+      for (std::size_t j = 0; j < d; ++j)
+        for (int sign : {1, -1})
+        {
+          for (auto r : pool) col[r] = sign * X.row(r)[j];
+          std::size_t acc = 0;
+          qValues(col, pseudo, in_pool, 3.0, threads, train_fdr, &acc);
+          if (acc > best) { best = acc; best_j = static_cast<int>(j); best_sign = sign; }
+        }
+      for (auto r : pool) score[r] = best_sign * X.row(r)[best_j];
+    }
+
+    static const double grid[3] = {0.1, 1.0, 10.0};
+    Eigen::VectorXd w = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(X.d));
+    std::vector<signed char> y(n, 0);
+    for (int it = 0; it < iterations; ++it)
+    {
+      // positives: pseudo-targets passing train_fdr against training decoys (factor 3)
+      const std::vector<double> q = qValues(score, pseudo, in_pool, 3.0, threads, train_fdr);
+      std::vector<std::uint32_t> use;
+      for (auto r : pool)
+      {
+        y[r] = train_dec[r] ? -1 : (q[r] <= train_fdr ? 1 : 0);
+        if (y[r]) use.push_back(r);
+      }
+      if (use_lda)
+      {
+        w = lda(X, use, y, threads);
+      }
+      else
+      {
+        std::vector<std::uint32_t> train[3], held[3];
+        for (auto r : use) for (int k = 0; k < 3; ++k) (fold[r] == k ? held[k] : train[k]).push_back(r);
+        std::vector<Eigen::VectorXd> wt(27);
+        std::vector<std::size_t> found(27, 0);
+#pragma omp parallel for num_threads(threads) schedule(dynamic, 1)
+        for (int task = 0; task < 27; ++task)
+        {
+          const int g = task / 3, k = task % 3;
+          wt[task] = newton(X, train[k], y, grid[g / 3], grid[g % 3], w);
+          const std::size_t m = held[k].size();  // held-out fold, compact
+          std::vector<double> s(m);
+          std::vector<char> h(m, 1), pos(m);
+          for (std::size_t a = 0; a < m; ++a) { s[a] = dot(X.row(held[k][a]), wt[task]); pos[a] = y[held[k][a]] > 0; }
+          qValues(s, pos, h, 3.0, 1, train_fdr, &found[task]);
+        }
+        int best = 0;
+        std::size_t best_found = 0;
+        for (int g = 0; g < 9; ++g)
+        {
+          const std::size_t f = found[3 * g] + found[3 * g + 1] + found[3 * g + 2];
+          if (f > best_found) { best_found = f; best = g; }
+        }
+        w = (wt[3 * best] + wt[3 * best + 1] + wt[3 * best + 2]) / 3.0;
+      }
+#pragma omp parallel for num_threads(threads)
+      for (std::size_t k = 0; k < pool.size(); ++k) score[pool[k]] = dot(X.row(pool[k]), w);
+    }
+    timing_.train = since(t1);
+
+    // ---- score every row, RESET estimate on targets + estimating decoys
+    const auto t2 = Clock::now();
+    RescoreOutput out;
+    out.scores.resize(n);
+#pragma omp parallel for num_threads(threads)
+    for (std::size_t i = 0; i < n; ++i) out.scores[i] = dot(X.row(i), w);
+    timing_.score = since(t2);
+    const auto t3 = Clock::now();
+    std::vector<char> estimating(n);
+    for (std::size_t i = 0; i < n; ++i) estimating[i] = !train_dec[i];
+    out.q_values = qValues(out.scores, is_target, estimating, 2.0, threads, param_.getValue("test_fdr"), &accepted_);
+    timing_.qvalue = since(t3);
+    return out;
+  }
+}
