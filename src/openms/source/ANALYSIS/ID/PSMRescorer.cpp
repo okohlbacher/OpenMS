@@ -178,6 +178,8 @@ namespace OpenMS
     defaults_.setValue("test_fdr", 0.01, "FDR at which accepted() is counted.");
     defaults_.setValue("seed", 1, "Salt for the decoy coin and the fold assignment. Record it; do not optimise over it.");
     defaults_.setValue("num_threads", 1, "Threads (OpenMP).");
+    defaults_.setValue("c_scale", 1.0, "Factor applied to the (C+, C-) grid {0.1, 1, 10} of method 'newton'. The squared-hinge loss sums over the training rows, so the same C regularises less the more rows there are.");
+    defaults_.setMinFloat("c_scale", 1e-9);
     defaults_.setValue("decoy_mode", "single", "'single': one decoy database, RESET coin per decoy key; 'two': two decoy databases (decoy_set 1 = training, 2 = estimating).");
     defaults_.setValidStrings("decoy_mode", {"single", "two"});
     defaultsToParam_();
@@ -295,6 +297,7 @@ namespace OpenMS
     const double train_fdr = param_.getValue("train_fdr");
     const std::uint64_t salt = mix(static_cast<std::uint64_t>(static_cast<int>(param_.getValue("seed"))));
     const bool use_lda = param_.getValue("method").toString() == "lda";
+    const double c_scale = param_.getValue("c_scale");
     const bool two = param_.getValue("decoy_mode").toString() == "two";
     const double train_factor = two ? 2.0 : 3.0, final_factor = two ? 1.0 : 2.0;  // c/(1-c): 2/3 resp. 1/2 and 3/4 resp. 2/3
     const std::size_t n = in.features.size();
@@ -424,7 +427,7 @@ namespace OpenMS
         for (int task = 0; task < 27; ++task)
         {
           const int g = task / 3, k = task % 3;
-          wt[task] = newton(X, train[k], y, grid[g / 3], grid[g % 3], w);
+          wt[task] = newton(X, train[k], y, c_scale * grid[g / 3], c_scale * grid[g % 3], w);
           const std::size_t m = held[k].size();  // held-out fold, compact
           std::vector<double> s(m);
           std::vector<char> h(m, 1), pos(m);
