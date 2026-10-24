@@ -180,6 +180,8 @@ namespace OpenMS
     defaults_.setValue("num_threads", 1, "Threads (OpenMP).");
     defaults_.setValue("c_scale", 1.0, "Factor applied to the (C+, C-) grid {0.1, 1, 10} of method 'newton'. The squared-hinge loss sums over the training rows, so the same C regularises less the more rows there are.");
     defaults_.setMinFloat("c_scale", 1e-9);
+    defaults_.setValue("top_hits", 1, "rescoreRun(): candidate hits per spectrum given to the learner (by search score). With more than 1, all are scored and each spectrum's target-decoy competition is re-run on the learned score.");
+    defaults_.setMinInt("top_hits", 1);
     defaults_.setValue("decoy_mode", "single", "'single': one decoy database, RESET coin per decoy key; 'two': two decoy databases (decoy_set 1 = training, 2 = estimating).");
     defaults_.setValidStrings("decoy_mode", {"single", "two"});
     defaultsToParam_();
@@ -542,68 +544,85 @@ namespace OpenMS
     RescoreInput in;
     std::vector<std::uint64_t> keys;
     std::vector<char> decoy_set;
-    std::vector<std::size_t> winner(peptide_ids.size(), std::size_t(-1));
+    std::vector<std::size_t> winner(peptide_ids.size(), std::size_t(-1));  // search-score winner (diagnostics)
     std::size_t n_decoy = 0;
+    const std::size_t top_k = static_cast<std::size_t>(static_cast<int>(param_.getValue("top_hits")));
+    std::vector<std::uint32_t> groups;
+    std::vector<double> sscore;
+    std::vector<std::pair<std::size_t, std::size_t>> where;  // (spectrum, hit) of each row
     for (std::size_t p = 0; p < peptide_ids.size(); ++p)
     {
       const auto& pid = peptide_ids[p];
       const auto& hits = pid.getHits();
       if (hits.empty()) continue;
-      // target-decoy competition on the search score; ties broken by a label-independent random choice
-      std::size_t b = 0, n_tied = 1;
-      for (std::size_t h = 1; h < hits.size(); ++h)
+      // the top_k hits by search score; ties broken label-independently
+      std::vector<std::size_t> pick(hits.size());
+      for (std::size_t h = 0; h < hits.size(); ++h) pick[h] = h;
+      const bool hib = pid.isHigherScoreBetter();
+      std::sort(pick.begin(), pick.end(), [&](std::size_t a, std::size_t b) {
+        const double sa = hits[a].getScore(), sb = hits[b].getScore();
+        if (sa != sb) return hib ? sa > sb : sa < sb;
+        return mix(tie_salt ^ (p * 1315423911ULL + a)) < mix(tie_salt ^ (p * 1315423911ULL + b));
+      });
+      pick.resize(std::min(pick.size(), top_k));
+      winner[p] = pick[0];
+      for (std::size_t h : pick)
       {
-        const double s = hits[h].getScore(), sb = hits[b].getScore();
-        if (pid.isHigherScoreBetter() ? s > sb : s < sb) { b = h; n_tied = 1; }
-        else if (s == sb && mix(tie_salt ^ (p * 1315423911ULL + h)) % ++n_tied == 0) b = h;
+        const PeptideHit& hit = hits[h];
+        const int z = hit.getCharge();
+        const double calc = hit.getSequence().getMonoWeight();
+        const double obs = (pid.getMZ() - Constants::PROTON_MASS_U) * z;
+        const double iso = hit.metaValueExists("isotope_error") ? double(hit.getMetaValue("isotope_error")) : 0.0;
+        const double dm = (obs + iso_sign * iso * Constants::C13C12_MASSDIFF_U - calc) / std::max(z, 1);
+        const std::string plain = hit.getSequence().toUnmodifiedString();
+        double enz_n = 0, enz_c = 0, enz_int = 0;
+        if (tryptic && !hit.getPeptideEvidences().empty() && !plain.empty())  // PIN enzN/enzC/enzInt, trypsin only, else 0
+        {
+          const auto& ev = hit.getPeptideEvidences()[0];
+          const char bf = ev.getAABefore(), af = ev.getAAAfter();
+          enz_n = (bf == '[' || bf == '-' || ((bf == 'K' || bf == 'R') && plain.front() != 'P')) ? 1 : 0;
+          enz_c = (af == ']' || af == '-' || ((plain.back() == 'K' || plain.back() == 'R') && af != 'P')) ? 1 : 0;
+          for (std::size_t k = 0; k + 1 < plain.size(); ++k) enz_int += (plain[k] == 'K' || plain[k] == 'R');
+        }
+        std::vector<double> f = {double(z == 2), double(z == 3), double(z == 4), double(z >= 5),
+                                 double(plain.size()), obs, dm, std::abs(dm), enz_n, enz_c, enz_int};
+        for (const auto& e : extra) f.push_back(e == "score" ? hit.getScore() : (hit.metaValueExists(e) ? double(hit.getMetaValue(e)) : 0.0));
+        in.features.push_back(std::move(f));
+        in.cv_group_keys.push_back(static_cast<int>(p));
+        const bool decoy = hit.isDecoy();
+        n_decoy += decoy;
+        in.is_decoy.push_back(decoy);
+        keys.push_back(std::hash<std::string>{}(plain));
+        char set = 0;
+        if (decoy)
+        {
+          set = 1;
+          for (const auto& ev : hit.getPeptideEvidences())
+            if (ev.getProteinAccession().rfind(second_decoy_prefix, 0) == 0) { set = 2; break; }
+        }
+        decoy_set.push_back(set);
+        groups.push_back(static_cast<std::uint32_t>(p));
+        sscore.push_back(hib ? hit.getScore() : -hit.getScore());
+        where.emplace_back(p, h);
       }
-      winner[p] = b;
-      const PeptideHit& hit = hits[b];
-      const int z = hit.getCharge();
-      const double calc = hit.getSequence().getMonoWeight();
-      const double obs = (pid.getMZ() - Constants::PROTON_MASS_U) * z;
-      const double iso = hit.metaValueExists("isotope_error") ? double(hit.getMetaValue("isotope_error")) : 0.0;
-      const double dm = (obs + iso_sign * iso * Constants::C13C12_MASSDIFF_U - calc) / std::max(z, 1);
-      const std::string plain = hit.getSequence().toUnmodifiedString();
-      double enz_n = 0, enz_c = 0;
-      if (tryptic && !hit.getPeptideEvidences().empty() && !plain.empty())  // enzN/enzC for trypsin only, else 0
-      {
-        const auto& ev = hit.getPeptideEvidences()[0];
-        const char bf = ev.getAABefore(), af = ev.getAAAfter();
-        enz_n = (bf == '[' || bf == '-' || ((bf == 'K' || bf == 'R') && plain.front() != 'P')) ? 1 : 0;
-        enz_c = (af == ']' || af == '-' || ((plain.back() == 'K' || plain.back() == 'R') && af != 'P')) ? 1 : 0;
-      }
-      std::vector<double> f = {double(z == 2), double(z == 3), double(z == 4), double(z >= 5),
-                               double(plain.size()), obs, dm, std::abs(dm), enz_n, enz_c};
-      for (const auto& e : extra) f.push_back(e == "score" ? hit.getScore() : (hit.metaValueExists(e) ? double(hit.getMetaValue(e)) : 0.0));
-      in.features.push_back(std::move(f));
-      in.cv_group_keys.push_back(static_cast<int>(p));
-      const bool decoy = hit.isDecoy();
-      n_decoy += decoy;
-      in.is_decoy.push_back(decoy);
-      keys.push_back(std::hash<std::string>{}(plain));
-      char set = 0;
-      if (decoy)
-      {
-        set = 1;
-        for (const auto& ev : hit.getPeptideEvidences())
-          if (ev.getProteinAccession().rfind(second_decoy_prefix, 0) == 0) { set = 2; break; }
-      }
-      decoy_set.push_back(set);
     }
     res.rows = in.features.size();
     if (res.rows < 100) { res.skipped_reason = "Only " + std::to_string(res.rows) + " PSMs, rescoring needs at least 100."; return res; }
     if (n_decoy < 50) { res.skipped_reason = "Too few decoy PSMs (" + std::to_string(n_decoy) + ") for target-decoy rescoring."; return res; }
     RescoreOutput out;
-    try { out = rescore(in, keys, decoy_set); }
+    try { out = top_k > 1 ? rescore(in, keys, decoy_set, groups, sscore) : rescore(in, keys, decoy_set); }
     catch (const Exception::BaseException& e) { res.skipped_reason = std::string("PSMRescorer failed: ") + e.what(); return res; }
-    std::size_t row = 0;
+    // write-back: per spectrum, the winner of the competition on the learned score (top_hits 1: the only row)
+    std::vector<std::size_t> best_row(peptide_ids.size(), std::size_t(-1));
+    for (std::size_t row = 0; row < where.size(); ++row)
+      if (top_k <= 1 || last_winner_[row]) best_row[where[row].first] = row;
     for (std::size_t p = 0; p < peptide_ids.size(); ++p)
     {
-      if (winner[p] == std::size_t(-1)) continue;
+      if (best_row[p] == std::size_t(-1)) continue;
+      const std::size_t row = best_row[p];
       auto& pid = peptide_ids[p];
       auto& hits = pid.getHits();
-      PeptideHit hit = std::move(hits[winner[p]]);
+      PeptideHit hit = std::move(hits[where[row].second]);
       hit.setMetaValue("PSMRescorer_score", out.scores[row]);
       hit.setMetaValue("PSMRescorer_q", out.q_values[row]);
       if (last_training_decoy_[row]) hit.setMetaValue("PSMRescorer_training_decoy", "true");
@@ -611,7 +630,6 @@ namespace OpenMS
       hits.assign(1, std::move(hit));
       pid.setScoreType("q-value");
       pid.setHigherScoreBetter(false);
-      ++row;
     }
     for (ProteinIdentification& run : protein_ids)
     {
@@ -620,6 +638,8 @@ namespace OpenMS
       run_sp.setMetaValue("PSMRescorer:method", param_.getValue("method").toString());
       run_sp.setMetaValue("PSMRescorer:decoy_mode", param_.getValue("decoy_mode").toString());
       run_sp.setMetaValue("PSMRescorer:train_cap", static_cast<int>(param_.getValue("train_cap")));
+      run_sp.setMetaValue("PSMRescorer:top_hits", static_cast<int>(param_.getValue("top_hits")));
+      run_sp.setMetaValue("PSMRescorer:c_scale", static_cast<double>(param_.getValue("c_scale")));
       run_sp.setMetaValue("PSMRescorer:seed", static_cast<int>(param_.getValue("seed")));
       run.setSearchParameters(run_sp);
     }
