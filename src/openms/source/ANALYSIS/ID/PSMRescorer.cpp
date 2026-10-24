@@ -167,6 +167,8 @@ namespace OpenMS
     defaults_.setValue("test_fdr", 0.01, "FDR at which accepted() is counted.");
     defaults_.setValue("seed", 1, "Salt for the decoy coin and the fold assignment. Record it; do not optimise over it.");
     defaults_.setValue("num_threads", 1, "Threads (OpenMP).");
+    defaults_.setValue("decoy_mode", "single", "'single': one decoy database, RESET coin per decoy key; 'two': two decoy databases (decoy_set 1 = training, 2 = estimating).");
+    defaults_.setValidStrings("decoy_mode", {"single", "two"});
     defaultsToParam_();
   }
 
@@ -262,7 +264,8 @@ namespace OpenMS
     return q;
   }
 
-  RescoreOutput PSMRescorer::rescore(const RescoreInput& in, const std::vector<std::uint64_t>& coin_keys)
+  RescoreOutput PSMRescorer::rescore(const RescoreInput& in, const std::vector<std::uint64_t>& coin_keys,
+                                     const std::vector<char>& decoy_set)
   {
     const auto t0 = Clock::now();
     const int threads = std::max(1, static_cast<int>(param_.getValue("num_threads")));
@@ -271,7 +274,11 @@ namespace OpenMS
     const double train_fdr = param_.getValue("train_fdr");
     const std::uint64_t salt = mix(static_cast<std::uint64_t>(static_cast<int>(param_.getValue("seed"))));
     const bool use_lda = param_.getValue("method").toString() == "lda";
+    const bool two = param_.getValue("decoy_mode").toString() == "two";
+    const double train_factor = two ? 2.0 : 3.0, final_factor = two ? 1.0 : 2.0;  // c/(1-c): 2/3 resp. 1/2 and 3/4 resp. 2/3
     const std::size_t n = in.features.size();
+    if (two && decoy_set.size() != n)
+      throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "decoy_mode 'two' needs decoy_set for every row", std::to_string(n));
     if (n == 0 || in.is_decoy.size() != n || (!coin_keys.empty() && coin_keys.size() != n))
       throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "inconsistent rescoring input", std::to_string(n));
     const std::size_t d = in.features[0].size();
@@ -306,7 +313,7 @@ namespace OpenMS
     {
       is_target[i] = !in.is_decoy[i];
       const std::uint64_t key = coin_keys.empty() ? i : coin_keys[i];
-      if (in.is_decoy[i]) train_dec[i] = (mix(salt ^ key) & 1) != 0;
+      if (in.is_decoy[i]) train_dec[i] = two ? decoy_set[i] == 1 : (mix(salt ^ key) & 1) != 0;
       if (keep >= 1.0 || double(mix(salt + 0x5bd1e995ULL + i) >> 11) * 0x1.0p-53 < keep) pool.push_back(static_cast<std::uint32_t>(i));
     }
     training_rows_ = pool.size();
@@ -330,7 +337,7 @@ namespace OpenMS
         {
           for (auto r : pool) col[r] = sign * X.row(r)[j];
           std::size_t acc = 0;
-          qValues(col, pseudo, in_pool, 3.0, threads, train_fdr, &acc);
+          qValues(col, pseudo, in_pool, train_factor, threads, train_fdr, &acc);
           if (acc > best) { best = acc; best_j = static_cast<int>(j); best_sign = sign; }
         }
       for (auto r : pool) score[r] = best_sign * X.row(r)[best_j];
@@ -342,7 +349,7 @@ namespace OpenMS
     for (int it = 0; it < iterations; ++it)
     {
       // positives: pseudo-targets passing train_fdr against training decoys (factor 3)
-      const std::vector<double> q = qValues(score, pseudo, in_pool, 3.0, threads, train_fdr);
+      const std::vector<double> q = qValues(score, pseudo, in_pool, train_factor, threads, train_fdr);
       std::vector<std::uint32_t> use;
       for (auto r : pool)
       {
@@ -368,7 +375,7 @@ namespace OpenMS
           std::vector<double> s(m);
           std::vector<char> h(m, 1), pos(m);
           for (std::size_t a = 0; a < m; ++a) { s[a] = dot(X.row(held[k][a]), wt[task]); pos[a] = y[held[k][a]] > 0; }
-          qValues(s, pos, h, 3.0, 1, train_fdr, &found[task]);
+          qValues(s, pos, h, train_factor, 1, train_fdr, &found[task]);
         }
         int best = 0;
         std::size_t best_found = 0;
@@ -394,7 +401,7 @@ namespace OpenMS
     const auto t3 = Clock::now();
     std::vector<char> estimating(n);
     for (std::size_t i = 0; i < n; ++i) estimating[i] = !train_dec[i];
-    out.q_values = qValues(out.scores, is_target, estimating, 2.0, threads, param_.getValue("test_fdr"), &accepted_);
+    out.q_values = qValues(out.scores, is_target, estimating, final_factor, threads, param_.getValue("test_fdr"), &accepted_);
     timing_.qvalue = since(t3);
     return out;
   }

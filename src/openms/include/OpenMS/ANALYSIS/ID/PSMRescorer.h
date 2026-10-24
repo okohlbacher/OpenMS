@@ -31,6 +31,12 @@ namespace OpenMS
     decoys only, FDP = 2(D_est+1)/T. The training set is capped (train_cap rows, uniform thinning after the
     coin flip); every row is scored.
 
+    decoy_mode "two" (Percolator-RESET two-decoy mode): search against targets plus two decoy databases, keep the
+    winner of the three-way competition, and pass @p decoy_set (1 or 2 for decoy rows). Set-1 winners are the
+    training decoys, set-2 winners the estimating decoys; no coin is drawn. Training positives use
+    FDP = 2(D_train+1)/T, reported q-values FDP = (D_est+1)/T. Costs a larger search, recovers the power the
+    single-decoy split loses, and lowers run-to-run variance (Freestone et al. 2025).
+
     Rows must already be competition winners (one row per spectrum / hypothesis).
     Output: scores for all rows; q-values for targets and estimating decoys (training decoys get q = 1);
     peps are not computed (left empty).
@@ -45,7 +51,8 @@ namespace OpenMS
 
     PSMRescorer();
 
-    RescoreOutput rescore(const RescoreInput& input, const std::vector<std::uint64_t>& coin_keys = {});
+    RescoreOutput rescore(const RescoreInput& input, const std::vector<std::uint64_t>& coin_keys = {},
+                          const std::vector<char>& decoy_set = {});
 
     const Timing& timing() const { return timing_; }
     /// targets with q <= 0.01 in the last rescore()
