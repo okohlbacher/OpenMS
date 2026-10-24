@@ -379,8 +379,9 @@ namespace OpenMS
     auto winners_by = [&](const std::vector<double>& s, std::uint64_t tie_salt) {
       std::vector<char> win(n, dynamic ? 0 : 1);
       if (!dynamic) return win;
+      const std::size_t ng = gstart.size() - 1;
 #pragma omp parallel for num_threads(threads) schedule(static)
-      for (std::size_t g = 0; g + 1 < gstart.size(); ++g)
+      for (std::size_t g = 0; g < ng; ++g)
       {
         std::size_t b = gstart[g], tied = 1;
         for (std::size_t i = gstart[g] + 1; i < gstart[g + 1]; ++i)
