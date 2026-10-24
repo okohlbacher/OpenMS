@@ -288,7 +288,8 @@ namespace OpenMS
   }
 
   RescoreOutput PSMRescorer::rescore(const RescoreInput& in, const std::vector<std::uint64_t>& coin_keys,
-                                     const std::vector<char>& decoy_set)
+                                     const std::vector<char>& decoy_set, const std::vector<std::uint32_t>& groups,
+                                     const std::vector<double>& search_score)
   {
     const auto t0 = Clock::now();
     const int threads = std::max(1, static_cast<int>(param_.getValue("num_threads")));
@@ -309,6 +310,22 @@ namespace OpenMS
       throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "decoy_mode 'single' needs a coin key (peptide stem) per row", std::to_string(coin_keys.size()));
     if (!in.cv_group_keys.empty() && in.cv_group_keys.size() != n)
       throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "cv_group_keys must be empty or one per row", std::to_string(in.cv_group_keys.size()));
+    const bool dynamic = !groups.empty();
+    if (dynamic && (groups.size() != n || search_score.size() != n))
+      throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "groups and search_score need one entry per row", std::to_string(groups.size()));
+    // contiguous groups (all candidate hits of one spectrum next to each other): [gstart[g], gstart[g+1])
+    std::vector<std::size_t> gstart;
+    if (dynamic)
+    {
+      gstart.push_back(0);
+      for (std::size_t i = 1; i < n; ++i)
+      {
+        if (groups[i] < groups[i - 1])
+          throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "groups must be contiguous and non-decreasing", std::to_string(i));
+        if (groups[i] != groups[i - 1]) gstart.push_back(i);
+      }
+      gstart.push_back(n);
+    }
     const std::size_t d = in.features[0].size();
     {
       std::size_t sets[3] = {0, 0, 0};
@@ -358,14 +375,34 @@ namespace OpenMS
 
     // ---- decoy coin (one per key), training pool cap, folds
     std::vector<char> train_dec(n, 0), is_target(n), pool_neg(n, 0);
+    // winner of each group's target-decoy competition: by the search score (dynamic mode), else every row
+    auto winners_by = [&](const std::vector<double>& s, std::uint64_t tie_salt) {
+      std::vector<char> win(n, dynamic ? 0 : 1);
+      if (!dynamic) return win;
+#pragma omp parallel for num_threads(threads) schedule(static)
+      for (std::size_t g = 0; g + 1 < gstart.size(); ++g)
+      {
+        std::size_t b = gstart[g], tied = 1;
+        for (std::size_t i = gstart[g] + 1; i < gstart[g + 1]; ++i)
+        {
+          if (s[i] > s[b]) { b = i; tied = 1; }
+          else if (s[i] == s[b] && mix(tie_salt ^ i) % ++tied == 0) b = i;  // label-independent tie break
+        }
+        win[b] = 1;
+      }
+      return win;
+    };
+    const std::vector<char> win0 = winners_by(dynamic ? search_score : std::vector<double>(), salt + 11);
+    std::size_t n_win = 0;
+    for (char c : win0) n_win += c;
     std::vector<std::uint32_t> pool;
-    const double keep = n > cap ? double(cap) / n : 1.0;
+    const double keep = n_win > cap ? double(cap) / n_win : 1.0;
     for (std::size_t i = 0; i < n; ++i)
     {
       is_target[i] = !in.is_decoy[i];
       const std::uint64_t key = coin_keys.empty() ? std::uint64_t(i) : coin_keys[i];
       if (in.is_decoy[i]) train_dec[i] = two ? decoy_set[i] == 1 : (mix(salt ^ key) & 1) != 0;
-      if (keep >= 1.0 || double(mix(salt + 0x5bd1e995ULL + i) >> 11) * 0x1.0p-53 < keep) pool.push_back(static_cast<std::uint32_t>(i));
+      if (win0[i] && (keep >= 1.0 || double(mix(salt + 0x5bd1e995ULL + i) >> 11) * 0x1.0p-53 < keep)) pool.push_back(static_cast<std::uint32_t>(i));
     }
     training_rows_ = pool.size();
     std::vector<std::uint8_t> fold(n);
@@ -456,8 +493,11 @@ namespace OpenMS
     for (std::size_t i = 0; i < n; ++i) out.scores[i] = dot(X.row(i), w);
     timing_.score = since(t2);
     const auto t3 = Clock::now();
+    // dynamic mode: re-run each spectrum's competition on the learned score; only its winner counts
+    const std::vector<char> win1 = winners_by(out.scores, salt + 13);
+    last_winner_ = win1;
     std::vector<char> estimating(n);
-    for (std::size_t i = 0; i < n; ++i) estimating[i] = !train_dec[i];
+    for (std::size_t i = 0; i < n; ++i) estimating[i] = win1[i] && !train_dec[i];
     out.q_values = qValues(out.scores, is_target, estimating, final_factor, threads, param_.getValue("test_fdr"), &accepted_);
     timing_.qvalue = since(t3);
     return out;

@@ -53,8 +53,15 @@ namespace OpenMS
 
     PSMRescorer();
 
+    /// @p groups / @p search_score (optional, one per row): dynamic competition. Rows are the candidate hits of each
+    /// spectrum (group ids contiguous, non-decreasing); training uses each group's winner by @p search_score (higher is
+    /// better), all rows are scored, the competition is re-run on the learned score, and q-values cover only the new
+    /// winners (others get q = 1). Without them every row is a winner.
     RescoreOutput rescore(const RescoreInput& input, const std::vector<std::uint64_t>& coin_keys = {},
-                          const std::vector<char>& decoy_set = {});
+                          const std::vector<char>& decoy_set = {}, const std::vector<std::uint32_t>& groups = {},
+                          const std::vector<double>& search_score = {});
+    /// per row of the last rescore(): winner of its group's competition on the learned score
+    const std::vector<char>& lastWinners() const { return last_winner_; }
 
     /// Outcome of rescoreRun()
     struct RunResult
@@ -100,6 +107,7 @@ namespace OpenMS
                                        double alpha = 0.01, std::size_t* accepted = nullptr);
 
   private:
+    std::vector<char> last_winner_;
     std::vector<char> last_training_decoy_;  ///< per row of the last rescore(): decoy used for training (not for the estimate)
     Timing timing_;
     std::size_t accepted_ = 0;
