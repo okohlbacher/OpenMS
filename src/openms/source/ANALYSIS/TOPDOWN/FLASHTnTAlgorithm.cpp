@@ -64,10 +64,12 @@ const char* const fdr_class_names[] = {"determined; 0 blind", "determined; 1 bli
                                        "undetermined, open terminus", "precursor ladder", "residual 1", "residual 2"};
 static_assert(std::size(fdr_class_names) == (Size)fdr_class_count, "one label per FDR class");
 // proteoform classes (a partition of the proteoforms; the FDR below): the determined PrSM classes are one, the undetermined ones and the
-// residual rounds as for PrSMs
-constexpr int pf_class_determined = 0, pf_class_both_termini = 1, pf_class_open_terminus = 2, pf_class_precursor_ladder = 3, pf_class_residual = 4;
+// residual rounds as for PrSMs; with second_ranked "class", the proteoforms of second-ranked PrSMs only are one more
+constexpr int pf_class_determined = 0, pf_class_both_termini = 1, pf_class_open_terminus = 2, pf_class_precursor_ladder = 3, pf_class_second_ranked = 4,
+              pf_class_residual = 5;
 constexpr int pf_class_count = pf_class_residual + max_chimeric_rounds;
-const char* const pf_class_names[] = {"determined", "undetermined, both termini", "undetermined, open terminus", "precursor ladder", "residual 1", "residual 2"};
+const char* const pf_class_names[] = {"determined", "undetermined, both termini", "undetermined, open terminus", "precursor ladder", "second-ranked",
+                                      "residual 1", "residual 2"};
 static_assert(std::size(pf_class_names) == (Size)pf_class_count, "one label per proteoform class");
 // chimeric search: with a mass matched by the best PrSM, the masses within the spectrum's tolerance of it moved by up to this many isotope
 // spacings are removed as well (FLASHDeconv's monoisotopic errors of the same fragment). On the 20 native spectra of the prototype, the
@@ -315,6 +317,12 @@ void FLASHTnTAlgorithm::setDefaultParams_()
   defaults_.setValue("keep_decoy", "false", "Retains decoy hits in the results.");
   defaults_.setValidStrings("keep_decoy", {"true", "false"});
 
+  defaults_.setValue("second_ranked", "keep",
+                     "Proteoforms whose PrSMs of the main search are all second-ranked, i.e. in spectra whose best-scoring PrSM is of another "
+                     "protein or a decoy (targets and decoys alike): keep (counted with their proteoform class), class (a proteoform class of "
+                     "their own) or drop (in no proteoform class: no proteoform q-value, so not reported at a pro_fdr below 1).");
+  defaults_.setValidStrings("second_ranked", {"keep", "class", "drop"});
+
   defaults_.setValue("protein_level_only", "false",
                      "Stops after the protein-level search, skipping proteoform characterization. The candidate proteins "
                      "and their scores are still reported, so this can be used to shortlist proteins cheaply.");
@@ -532,6 +540,7 @@ void FLASHTnTAlgorithm::updateMembers_()
   pro_fdr_ = param_.getValue("pro_fdr");
   keep_decoy_ = param_.getValue("keep_decoy").toString() == "true";
   keep_underdetermined_ = param_.getValue("discard_underdetermined").toString() == "false";
+  second_ranked_ = param_.getValue("second_ranked").toString();
   multiple_hits_per_spec_ = param_.getValue("only_single_hit").toString() == "false";
 
   // the largest total mass shift of the blind modifications of a proteoform (+ 1 Da): the bound of the tag flanking masses and of the
@@ -2723,18 +2732,52 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       // residual-round PrSMs only is "residual r" (its lowest round). A proteoform is ranked by the best score of the PrSMs that decide its
       // class, and its row (Representative) is one of them: of a determined or precursor-ladder proteoform the PrSM passing rep_q with the
       // fewest blind modifications, else the best scoring one. Every PrSM carries the proteoform's q-value and class (ProteoformFDRClass).
+      // second_ranked: a PrSM of the main search is second-ranked when its spectrum's best-scoring PrSM of the main search is of another
+      // protein (a decoy precursor counts apart from the target protein it carries), targets and decoys alike; only the other PrSMs decide a
+      // proteoform's class. A proteoform of second-ranked PrSMs only is "second-ranked" (class) or in no class (drop). Benchmark (shuffled
+      // entrapment of 10 PRIDE datasets, FLASHTnT dd8eb5d at 1%): proteoforms 1.2% entrapment (lower bound), second-ranked ones 3.6%, the
+      // others 0.4%; most second-ranked entrapment proteoforms sat in spectra the search without entrapment identified as another protein.
+      std::vector<bool> top_hit(hit_count, true);
+      if (second_ranked_ != "keep")
+      {
+        auto keyOf = [](const ProteinHit& hit) { return hit.getAccession() + (hit.metaValueExists("DecoyPrecursor") ? "\tdecoy precursor" : ""); };
+        std::map<int, std::pair<double, std::set<String>>> best_of_scan; // best score and the proteins that reach it
+        for (Size i = 0; i < hit_count; i++)
+        {
+          if (hit_class[i] < 0 || hit_class[i] >= fdr_class_residual) continue;
+          const auto& hit = proteoform_hits_[i];
+          const auto [it, fresh] = best_of_scan.try_emplace((int)hit.getMetaValue("Scan"), hit.getScore(), std::set<String> {keyOf(hit)});
+          if (fresh) continue;
+          if (hit.getScore() > it->second.first) it->second = {hit.getScore(), {keyOf(hit)}};
+          else if (hit.getScore() == it->second.first) it->second.second.insert(keyOf(hit));
+        }
+        Size second_targets = 0, second_decoys = 0;
+        for (Size i = 0; i < hit_count; i++)
+        {
+          if (hit_class[i] < 0 || hit_class[i] >= fdr_class_residual) continue;
+          top_hit[i] = best_of_scan[(int)proteoform_hits_[i].getMetaValue("Scan")].second.count(keyOf(proteoform_hits_[i])) > 0;
+          if (! top_hit[i]) (decoys[i] ? second_decoys : second_targets)++;
+        }
+        if (log)
+        {
+          OPENMS_LOG_INFO << "Second-ranked PrSMs (the best PrSM of their spectrum is of another protein): " << second_targets << " target and "
+                          << second_decoys << " decoy PrSMs; their proteoforms: " << (second_ranked_ == "class" ? "a class of their own" : "dropped")
+                          << std::endl;
+        }
+      }
       std::vector<int> cluster_class(clusters.size(), -1);
       std::vector<double> cluster_score(clusters.size(), 0.0);
       for (Size k = 0; k < clusters.size(); k++)
       {
         auto& members = clusters[k];
-        std::vector<Size> main_members, defining;
+        std::vector<Size> main_members, second_members, defining;
         int lowest_round = max_chimeric_rounds;
         for (Size i : members)
         {
           if (hit_class[i] < 0) continue;
-          if (hit_class[i] < fdr_class_residual) main_members.push_back(i);
-          else lowest_round = std::min(lowest_round, hit_class[i] - fdr_class_residual + 1);
+          if (hit_class[i] >= fdr_class_residual) lowest_round = std::min(lowest_round, hit_class[i] - fdr_class_residual + 1);
+          else if (top_hit[i]) main_members.push_back(i);
+          else second_members.push_back(i);
         }
         if (! main_members.empty())
         {
@@ -2759,10 +2802,15 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
             cluster_class[k] = pf_class_open_terminus;
           }
         }
+        else if (! second_members.empty() && second_ranked_ == "class")
+        {
+          defining = second_members;
+          cluster_class[k] = pf_class_second_ranked;
+        }
         else
         {
-          for (Size i : members) { if (hit_class[i] >= 0) defining.push_back(i); }
-          if (defining.empty()) continue; // in no class
+          for (Size i : members) { if (hit_class[i] >= fdr_class_residual) defining.push_back(i); }
+          if (defining.empty()) continue; // in no class (or second-ranked PrSMs only, with second_ranked "drop")
           cluster_class[k] = pf_class_residual + lowest_round - 1;
         }
         Size row = defining[0];
