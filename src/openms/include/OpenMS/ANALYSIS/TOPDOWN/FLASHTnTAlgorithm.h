@@ -189,6 +189,19 @@ private:
   String second_ranked_ = "keep";
   /// rescoring of the PrSMs before the FDR: none or percolator
   String rescore_ = "none";
+  /// rescoring features (names in FLASHTnTAlgorithm.cpp's rescore_feature_names) and the file to dump all of them to ("": none)
+  std::vector<std::string> rescore_features_;
+  String rescore_dump_;
+  /// a Percolator model file applied instead of training ("": train on the run)
+  String rescore_model_;
+  /// terminal-ladder PrSMs as an FDR and proteoform class of their own
+  bool terminal_ladder_class_ = false;
+  /// PrSMs with a blind shift and no determined mass: keep or drop
+  String undetermined_blind_ = "keep";
+  /// target-decoy FDR as (D + 1) / T
+  bool fdr_pseudocount_ = false;
+  /// proteoform classes with few targets counted together with the next ones
+  bool merge_small_classes_ = true;
   bool multiple_hits_per_spec_ = false;
   bool protein_level_only_ = false;
   int max_protein_hits_ = 50;
