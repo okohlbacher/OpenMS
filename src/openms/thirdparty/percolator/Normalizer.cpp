@@ -1,0 +1,134 @@
+/*******************************************************************************
+ Copyright 2006-2012 Lukas Käll <lukas.kall@scilifelab.se>
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+
+ *******************************************************************************/
+#include <assert.h>
+#include <iostream>
+#include <vector>
+#include <set>
+#include <string>
+#include "Normalizer.h"
+#include "StdvNormalizer.h"
+#include "UniNormalizer.h"
+#include "NoNormalizer.h"
+#include "FeatureNames.h"
+#include "Globals.h"
+
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
+namespace OpenMS { namespace Internal { namespace Percolator {
+
+using namespace std;
+
+int Normalizer::subclass_type = STDV;
+Normalizer* Normalizer::theNormalizer = NULL;
+
+Normalizer::Normalizer() {
+}
+
+Normalizer::~Normalizer() {
+}
+
+void Normalizer::normalizeSet(vector<double*>& featuresV,
+                              vector<double*>& rtFeaturesV) {
+  normalizeSet(featuresV, 0, numFeatures);
+  normalizeSet(rtFeaturesV, numFeatures, numRetentionFeatures);
+}
+
+void Normalizer::normalizeSet(vector<double*>& featuresV,
+                              size_t offset, size_t numFeatures) {
+  double* features;
+  vector<double*>::iterator it = featuresV.begin();
+  for (; it != featuresV.end(); ++it) {
+    features = *it;
+    normalize(features, features, offset, numFeatures);
+  }
+}
+
+/**
+ * OpenMS: normalizeSet(featuresV, rtFeaturesV) for DISTINCT rows that do not overlap (the feature
+ * rows of the PSMs of a SetHandler: each PSM has its own row of a FeatureMemoryPool), on large
+ * sets without retention features by static blocks of rows on all threads: each value is
+ * normalized as by normalize(), so the rows get the same values. A row that occurs twice would be
+ * normalized by two threads at once (int14 review r3): the pool never gives a row to two PSMs.
+ */
+void Normalizer::normalizeRowsByFeature(vector<double*>& featuresV,
+                                        vector<double*>& rtFeaturesV) {
+#ifdef _OPENMP
+  // (with a team of one thread, the row-major loop of normalizeSet below, which is faster then)
+  bool byFeature = false;
+  if (rtFeaturesV.empty() && numRetentionFeatures == 0 && featuresV.size() >= 4096 &&
+      numFeatures >= 2 && omp_get_max_threads() > 1 && !omp_in_parallel()) {
+    const std::ptrdiff_t nf = static_cast<std::ptrdiff_t>(numFeatures);
+#pragma omp parallel
+    if (omp_get_num_threads() > 1) {
+#pragma omp single
+      byFeature = true;
+      // OpenMS: by blocks of rows (each row's features in a row: one pass over the rows, all threads), the same
+      // expression for every value as by feature
+      const std::ptrdiff_t numRows = static_cast<std::ptrdiff_t>(featuresV.size());
+#pragma omp for schedule(static)
+      for (std::ptrdiff_t r = 0; r < numRows; ++r) {
+        double* features = featuresV[static_cast<std::size_t>(r)];
+        for (std::ptrdiff_t ix = 0; ix < nf; ++ix) {
+          features[ix] = (features[ix] - sub[static_cast<std::size_t>(ix)]) / div[static_cast<std::size_t>(ix)];
+        }
+      }
+    }
+  }
+  if (byFeature) return;
+#endif
+  normalizeSet(featuresV, rtFeaturesV);
+}
+
+void Normalizer::normalize(const double* in, double* out, size_t offset,
+                           size_t numFeatures) {
+  for (unsigned int ix = 0; ix < numFeatures; ++ix) {
+    out[ix] = (in[ix] - sub[offset + ix]) / div[offset + ix];
+  }
+}
+
+Normalizer* Normalizer::getNormalizer() {
+  if (theNormalizer == NULL) {
+    if (subclass_type == UNI) {
+      theNormalizer = new UniNormalizer();
+    } else if (subclass_type == STDV) {
+      theNormalizer = new StdvNormalizer();
+    } else {
+     theNormalizer = new NoNormalizer();
+    }
+  }
+  return theNormalizer;
+}
+
+void Normalizer::setType(int type) {
+  assert(type == UNI || type == STDV || type == NONORM);
+  subclass_type = type;
+}
+
+// Before merging cross validation bins, the scores are renormalized to an uniform range.
+// This function is designed to transform weights so that they give scores in that range.
+void Normalizer::endScoreNormalizeWeights(const std::vector<double>& in, 
+    std::vector<double>& out, double subScore, double scale) {
+  size_t i = 0;
+  for (; i < FeatureNames::getNumFeatures(); i++) {
+    out[i] = in[i] / scale;
+  }
+  out[i] = (in[i] - subScore) / scale; // update the intercept m0
+}
+
+}}}  // namespace OpenMS::Internal::Percolator

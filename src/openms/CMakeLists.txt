@@ -40,6 +40,11 @@ set(CF_OPENMS_ASSERTIONS ${CF_OPENMS_ASSERTIONS} CACHE INTERNAL "Enables debug m
 add_subdirectory(extern)
 
 #------------------------------------------------------------------------------
+# Vendored, namespace-isolated Percolator subtree (in-process rescoring, from ProSE): a static library with its own
+# compile flags, linked PRIVATE into libOpenMS below (see thirdparty/percolator/CMakeLists.txt).
+add_subdirectory(thirdparty/percolator)
+
+#------------------------------------------------------------------------------
 # external libs (contrib or system)
 #------------------------------------------------------------------------------
 #include(${PROJECT_SOURCE_DIR}/cmake_findExternalLibs.cmake)
@@ -74,6 +79,7 @@ set(OPENMS_DEP_PRIVATE_LIBRARIES
   SQLiteCpp
   ZLIB::ZLIB
   nlohmann_json::nlohmann_json
+  OpenMS_Percolator
   )
 if (ENABLE_TDL)
 set(OPENMS_DEP_PRIVATE_LIBRARIES
