@@ -187,6 +187,8 @@ private:
   bool keep_underdetermined_ = true;
   /// proteoforms of second-ranked PrSMs only (their spectrum's best PrSM is of another protein): keep, class (their own proteoform class) or drop
   String second_ranked_ = "keep";
+  /// rescoring of the PrSMs before the FDR: none or percolator
+  String rescore_ = "none";
   bool multiple_hits_per_spec_ = false;
   bool protein_level_only_ = false;
   int max_protein_hits_ = 50;

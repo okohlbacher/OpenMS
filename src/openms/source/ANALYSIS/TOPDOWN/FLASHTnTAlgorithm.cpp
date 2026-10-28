@@ -7,6 +7,7 @@
 // --------------------------------------------------------------------------
 
 #include <OpenMS/ANALYSIS/ID/AhoCorasickAmbiguous.h>
+#include <OpenMS/ANALYSIS/ID/Percolator.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/DeconvolvedSpectrum.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/FLASHAnnotatorAlgorithm.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/FLASHExtenderAlgorithm.h>
@@ -323,6 +324,12 @@ void FLASHTnTAlgorithm::setDefaultParams_()
                      "their own) or drop (in no proteoform class: no proteoform q-value, so not reported at a pro_fdr below 1).");
   defaults_.setValidStrings("second_ranked", {"keep", "class", "drop"});
 
+  defaults_.setValue("rescore", "none",
+                     "Rescoring of the PrSMs before the FDR: none, or percolator (in-process Percolator: a linear SVM trained on the target "
+                     "and decoy PrSMs with cross-validation by spectrum; its score replaces the PrSM score at every FDR level). With too few "
+                     "decoys or no separation the scores are kept.");
+  defaults_.setValidStrings("rescore", {"none", "percolator"});
+
   defaults_.setValue("protein_level_only", "false",
                      "Stops after the protein-level search, skipping proteoform characterization. The candidate proteins "
                      "and their scores are still reported, so this can be used to shortlist proteins cheaply.");
@@ -541,6 +548,7 @@ void FLASHTnTAlgorithm::updateMembers_()
   keep_decoy_ = param_.getValue("keep_decoy").toString() == "true";
   keep_underdetermined_ = param_.getValue("discard_underdetermined").toString() == "false";
   second_ranked_ = param_.getValue("second_ranked").toString();
+  rescore_ = param_.getValue("rescore").toString();
   multiple_hits_per_spec_ = param_.getValue("only_single_hit").toString() == "false";
 
   // the largest total mass shift of the blind modifications of a proteoform (+ 1 Da): the bound of the tag flanking masses and of the
@@ -4138,6 +4146,105 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
     }
     OPENMS_LOG_INFO << "One proteoform per MS1 feature: " << groups_with_conflict << " masses claimed by PrSMs of several proteins; " << demoted
                     << " PrSMs of the other proteins lost the mass" << std::endl;
+  }
+
+  // Rescoring (rescore "percolator"): the in-process Percolator (ANALYSIS/ID/Percolator, taken over from ProSE) trains a linear SVM on
+  // the target and decoy PrSMs with three-fold cross-validation, the PrSMs of one spectrum in one fold, and its score replaces the PrSM
+  // score in every FDR level below (shifted to be positive: a proteoform's score is the best of its PrSMs, counted from 0). Features: the
+  // score and its parts (raw score, extension score, coverage, matched fragments over hypotheses), tags, blind modifications, whether mass
+  // and termini are determined, the candidate source, precursor quality, the protein length and coverage, and the PrSM's standing in its
+  // spectrum (the gap to the best PrSM of another protein, the best one or not, how many proteins). Percolator's target-decoy competition
+  // is off: a spectrum keeps PrSMs of several proteins, as without rescoring. Too few decoys or no separation (Percolator's sanity
+  // check): the scores are kept.
+  if (rescore_ == "percolator" && use_fdr && ! native_rule && ! proteoform_hits_.empty())
+  {
+    auto num = [](const ProteinHit& h, const char* key, double fallback) -> double {
+      if (! h.metaValueExists(key)) return fallback;
+      const DataValue& v = h.getMetaValue(key);
+      switch (v.valueType())
+      {
+        case DataValue::INT_VALUE:
+        case DataValue::DOUBLE_VALUE: return (double)v;
+        case DataValue::INT_LIST: return (double)v.toIntList().size();
+        case DataValue::DOUBLE_LIST: return (double)v.toDoubleList().size();
+        case DataValue::STRING_LIST: return (double)v.toStringList().size();
+        default: return fallback;
+      }
+    };
+    // a decoy precursor carries the target accession: it counts apart from the target protein
+    auto keyOf = [](const ProteinHit& h) { return h.getAccession() + (h.metaValueExists("DecoyPrecursor") ? "\tdecoy precursor" : ""); };
+    std::map<int, std::map<String, double>> best_of_protein; // per spectrum: the best score of each protein
+    for (const auto& h : proteoform_hits_)
+    {
+      auto [it, fresh] = best_of_protein[(int)h.getMetaValue("Scan")].try_emplace(keyOf(h), h.getScore());
+      if (! fresh) it->second = std::max(it->second, h.getScore());
+    }
+    RescoreInput in;
+    in.feature_names = {"Score", "RawScore", "ExtensionScore", "Coverage", "RawCoverage", "LogMatchedFragments", "MatchedFraction",
+                        "LogTags", "BlindMods", "Determined", "HasMass", "BothTermini", "PrecursorLadder", "TerminalLadder", "SlidingLadder",
+                        "GappedTag", "PrecursorScore", "LogPrecursorSNR", "LogProteinLength", "ProteinFraction", "GapToOtherProtein",
+                        "BestInSpectrum", "LogProteinsInSpectrum"};
+    const Size nf = in.feature_names.size(), n = proteoform_hits_.size();
+    in.feature_matrix.reserve(n * nf);
+    Size decoy_count = 0;
+    for (const auto& h : proteoform_hits_)
+    {
+      const int scan = h.getMetaValue("Scan");
+      const auto& proteins = best_of_protein[scan];
+      const String key = keyOf(h);
+      double best_other = -std::numeric_limits<double>::infinity();
+      for (const auto& [k, s] : proteins) { if (k != key) best_other = std::max(best_other, s); }
+      const double score = h.getScore(), mass = num(h, "Mass", -1.0), len = (double)h.getSequence().size();
+      const int start = h.getMetaValue("StartPosition"), end = h.getMetaValue("EndPosition");
+      const double matched = num(h, "RawMatchedFragments", 0.0), hypotheses = num(h, "RawFragmentHypotheses", 0.0);
+      const double row[] = {score, num(h, "RawScore", 0.0), num(h, "ExtensionScore", score), h.getCoverage(), num(h, "RawCoverage", 0.0),
+                            std::log1p(std::max(0.0, matched)), hypotheses > 0 ? matched / hypotheses : 0.0,
+                            std::log1p(num(h, "TagIndices", 0.0)), (double)blindModCount_(h), isDetermined(h) ? 1.0 : 0.0,
+                            mass > 0 ? 1.0 : 0.0, start > 0 && end > 0 ? 1.0 : 0.0, h.metaValueExists(mi_precursor_ladder) ? 1.0 : 0.0,
+                            h.metaValueExists("TerminalLadder") ? 1.0 : 0.0, h.metaValueExists("SlidingLadder") ? 1.0 : 0.0,
+                            h.metaValueExists("GappedTag") ? 1.0 : 0.0, num(h, "PrecursorScore", 0.0),
+                            std::log1p(std::max(0.0, num(h, "PrecursorSNR", 0.0))), std::log(std::max(1.0, len)),
+                            start > 0 && end > 0 && len > 0 ? (end - start + 1) / len : 0.0,
+                            std::isfinite(best_other) ? std::clamp(score - best_other, -50.0, 50.0) : 50.0,
+                            score >= best_other ? 1.0 : 0.0, std::log((double)proteins.size())};
+      static_assert(std::size(row) == 23, "one value per feature name");
+      for (double v : row) in.feature_matrix.push_back(std::isfinite(v) ? v : 0.0);
+      const bool decoy = is_decoy(h);
+      decoy_count += decoy;
+      in.is_decoy.push_back(decoy);
+      in.cv_group_keys.push_back(scan);
+      in.scan_numbers.push_back(scan);
+    }
+    Percolator percolator;
+    Param p = percolator.getParameters();
+    p.setValue("post_processing_tdc", "false");
+#ifdef _OPENMP
+    p.setValue("num_threads", std::max(1, omp_get_max_threads()));
+#endif
+    percolator.setParameters(p);
+    try
+    {
+      const RescoreOutput out = percolator.rescore(in);
+      if (out.scores.size() != n) throw Exception::InvalidValue(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "rows", String(out.scores.size()));
+      const double lowest = *std::min_element(out.scores.begin(), out.scores.end());
+      for (Size i = 0; i < n; i++)
+      {
+        auto& h = proteoform_hits_[i];
+        h.setMetaValue("ScoreBeforeRescoring", h.getScore());
+        h.setMetaValue("PercolatorScore", out.scores[i]);
+        h.setScore(out.scores[i] - lowest + 1.0);
+      }
+      std::sort(proteoform_hits_.begin(), proteoform_hits_.end(), byScore);
+      String weights;
+      const auto& w = percolator.getSvmWeights();
+      for (Size j = 0; ! w.empty() && j < nf && j < w.front().size(); j++) weights += " " + in.feature_names[j] + " " + String(w.front()[j], false);
+      OPENMS_LOG_INFO << "Percolator rescoring: " << n - decoy_count << " target and " << decoy_count << " decoy PrSMs, " << nf
+                      << " features; weights:" << weights << std::endl;
+    }
+    catch (const Exception::BaseException& e)
+    {
+      OPENMS_LOG_WARN << "Percolator rescoring skipped, the scores are kept: " << e.what() << std::endl;
+    }
   }
 
   // FDR by target-decoy counting (targetDecoyQvalues, no pseudo-count) at three levels:
