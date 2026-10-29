@@ -402,7 +402,7 @@ void FLASHTnTAlgorithm::setDefaultParams_()
   defaults_.setValue("protein_evidence", "none",
                      "What identifies a protein at the protein level. none: any proteoform in a class. prsms: at least two PrSMs over its "
                      "proteoforms; proteoforms: at least two distinct proteoforms; both also accept one PrSM of a determined proteoform (mass "
-                     "and both termini known, from the tag search) without modifications of at least protein_evidence_min_mass Da. A protein "
+                     "and both termini known, from the tag search) without blind modifications (variable and annotated ones allowed) of at least protein_evidence_min_mass Da. A protein "
                      "with less (target or decoy alike) takes no part in the protein ranking and gets the protein q-value 1. The PrSM and "
                      "proteoform levels are unchanged. In a shuffled entrapment of ten datasets (38 runs) the proteins of one PrSM were 10% "
                      "entrapment at a nominal 1% (61 of 1206) while their decoys were rare (a chance PrSM of a decoy wins its spectrum less "
@@ -2542,7 +2542,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
   };
 
   // Search cascade (search_cascade): stage 1 searches every spectrum with sequence tags and the ladders, stage 2 with gapped tags only the
-  // spectra stage 1 did not identify (a target PrSM whose proteoform passes rep_q, see identifiedSoFar below). Without the cascade, one
+  // spectra stage 1 did not identify (a PrSM, target or decoy, whose proteoform passes rep_q, see identifiedSoFar below). Without the cascade, one
   // stage (0) searches every spectrum with every source. The stages are decided by the target-decoy FDR, so the cascade needs decoys.
   const bool cascade = search_cascade_ && gapped_mode_ != "off" && ! native_rule && ! protein_level_only_ && decoy_factor_ > 0;
   std::vector<int> stages {0};
@@ -3820,9 +3820,11 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       {
         const auto& hit = proteoform_hits_[i];
         const auto it = spectrum_of_scan_number.find((int)hit.getMetaValue(mi_scan));
-        // the spectrum's best PrSM only (proteoform_hits_ is in byScore order here)
-        if (it == spectrum_of_scan_number.end() || ! seen.insert(it->second).second) continue;
-        if (decoys[i] || hit_class[i] < 0 || (double)hit.getMetaValue("proqvalue", 1.0) > rep_q) continue;
+        // the spectrum's best PrSM only (proteoform_hits_ is in byScore order here); targets and decoys alike: a spectrum whose best
+        // PrSM is a decoy passing rep_q was searched again by the next stage while one won by a target was not, so a chance decoy
+        // PrSM met more competition than a chance target one and won its spectrum less often (38 runs, shuffled entrapment: at the
+        // top of the protein ranking 20 entrapment proteins against 1 decoy protein in three runs)
+        if (hit_class[i] < 0 || (double)hit.getMetaValue("proqvalue", 1.0) > rep_q) continue;
         identified.insert(it->second);
       }
       proteoform_hits_.swap(kept);
@@ -4566,7 +4568,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       bool internal = false;
       Size prsms = 0; // over all proteoforms of the protein (option protein_support_class)
       Size proteoforms = 0; // clusters in a class (option protein_evidence)
-      bool strong = false;  // a determined (tag search), unmodified proteoform of protein_evidence_min_mass (option protein_evidence)
+      bool strong = false;  // a determined (tag search) proteoform without blind modifications of protein_evidence_min_mass (option protein_evidence)
     };
     std::map<String, ProteinBest> best_of;
     for (const auto& members : clusters)
@@ -4581,7 +4583,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
         const auto& h = proteoform_hits_[i];
         // the determined classes of the tag search (not a ladder window, which fits any precursor mass somewhere)
         if (hit_class[i] >= 0 && hit_class[i] <= fdr_class_max_blind && (double)h.getMetaValue("Mass") >= protein_evidence_min_mass_
-            && h.getMetaValue("Modifications").toDoubleList().empty())
+            && blindModCount_(h) == 0)
         {
           best_of[rep.getAccession()].strong = true;
           break;
@@ -4625,7 +4627,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
     if (need_support)
     {
       OPENMS_LOG_INFO << "Protein evidence (option protein_evidence " << protein_evidence_ << "): " << unsupported_targets << " target and "
-                      << unsupported_decoys << " decoy proteins without two " << protein_evidence_ << " or a determined, unmodified proteoform of "
+                      << unsupported_decoys << " decoy proteins without two " << protein_evidence_ << " or a determined proteoform without blind modifications of "
                       << protein_evidence_min_mass_ << " Da are not ranked" << std::endl;
     }
     for (Size sc = 0; sc < support_classes; sc++)
