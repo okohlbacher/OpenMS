@@ -409,6 +409,15 @@ void FLASHTnTAlgorithm::setDefaultParams_()
   defaults_.setValue("fdr_pseudocount", "false",
                      "Target-decoy FDR as (D + 1) / T instead of D / (D + T) at every level: conservative for classes with few decoys.");
   defaults_.setValidStrings("fdr_pseudocount", {"true", "false"});
+  defaults_.setValue("protein_pseudocount", "false",
+                     "Protein q-values with a pseudo-count, (D + 1) / T, so that the top of the protein ranking is not passed on the absence of "
+                     "decoys alone (the other levels as fdr_pseudocount says).");
+  defaults_.setValidStrings("protein_pseudocount", {"true", "false"});
+  defaults_.setValue("merge_small_prsm_classes", "false",
+                     "PrSM-level FDR classes with fewer than 100 PrSMs (targets and decoys: the rule reads no label) are merged within their kind "
+                     "(the determined classes among themselves, the others among themselves), as merge_small_classes does at the proteoform "
+                     "level, so that a small class is not passed above its best decoy on few decoys.");
+  defaults_.setValidStrings("merge_small_prsm_classes", {"true", "false"});
   defaults_.setValue("merge_small_classes", "kind",
                      "Proteoform classes with fewer than 100 proteoforms (targets and decoys) are counted together with the next ones (true); "
                      "false: every class on its own; kind: the determined class stays on its own and the ladder and undetermined classes are "
@@ -690,6 +699,8 @@ void FLASHTnTAlgorithm::updateMembers_()
   terminal_ladder_blind_class_ = param_.getValue("terminal_ladder_blind_class").toString() == "true";
   undetermined_blind_ = param_.getValue("undetermined_blind").toString();
   fdr_pseudocount_ = param_.getValue("fdr_pseudocount").toString() == "true";
+  protein_pseudocount_ = param_.getValue("protein_pseudocount").toString() == "true";
+  merge_small_prsm_classes_ = param_.getValue("merge_small_prsm_classes").toString() == "true";
   merge_small_classes_ = param_.getValue("merge_small_classes").toString() != "false";
   merge_by_kind_ = param_.getValue("merge_small_classes").toString() == "kind";
   undetermined_open_ = param_.getValue("undetermined_open").toString();
@@ -1126,7 +1137,7 @@ void FLASHTnTAlgorithm::setProteinQvalues_(const std::vector<int>& hit_class, co
   items.reserve(ranked.size());
   const double protein_decoy_weight = 1.0 / std::max(decoy_factor_, 1e-9);
   for (const auto& [key, acc] : ranked) items.push_back({key, acc.hasPrefix("DECOY"), protein_decoy_weight});
-  const auto protein_qvalues = targetDecoyQvalues(items, fdr_pseudocount_);
+  const auto protein_qvalues = targetDecoyQvalues(items, fdr_pseudocount_ || protein_pseudocount_);
   std::map<String, double> protein_q;
   for (Size k = 0; k < ranked.size(); k++) protein_q[ranked[k].second] = protein_qvalues[k];
   for (auto& hit : proteoform_hits_)
@@ -2937,11 +2948,35 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       }
       const UInt mi_search_stage = registry.registerName("SearchStage");
       std::map<int, std::pair<Size, Size>> stage_counts; // search cascade: target and decoy PrSMs in a class per stage
-      for (int c = 0; c < fdr_class_count; c++)
+      // option merge_small_prsm_classes: classes of fewer than 100 PrSMs (targets and decoys) merged within their kind (groupClasses);
+      // each group gets one competition and the joined name. Without the option every class is a group of its own.
+      std::vector<std::vector<int>> prsm_groups;
+      if (merge_small_prsm_classes_)
       {
-        // the class's PrSMs by stage (0: no search cascade, or a residual round), each in the order above
+        std::vector<int> order;
+        std::vector<Size> sizes(fdr_class_count, 0);
+        for (int c = 0; c < fdr_class_count; c++)
+        {
+          order.push_back(c);
+          sizes[c] = class_hits[c].size();
+        }
+        prsm_groups = groupClasses(order, sizes, 100, true, [](int c) { return c <= fdr_class_max_blind ? 0 : 1; });
+      }
+      else
+      {
+        for (int c = 0; c < fdr_class_count; c++) prsm_groups.push_back({c});
+      }
+      for (const auto& group : prsm_groups)
+      {
+        String group_name;
+        for (int c : group) group_name += (group_name.empty() ? "" : " + ") + String(fdr_class_names[c]);
+        // the group's PrSMs by stage (0: no search cascade, or a residual round), in the order above: class_hits lists indices into
+        // proteoform_hits_, which is sorted by byScore, so the merged index list sorted ascending keeps that order
+        std::vector<Size> members;
+        for (int c : group) members.insert(members.end(), class_hits[c].begin(), class_hits[c].end());
+        if (group.size() > 1) std::sort(members.begin(), members.end());
         std::map<int, std::vector<Size>> by_stage;
-        for (Size i : class_hits[c])
+        for (Size i : members)
         {
           const int stage = proteoform_hits_[i].metaValueExists(mi_search_stage) ? (int)proteoform_hits_[i].getMetaValue(mi_search_stage) : 0;
           by_stage[stage].push_back(i);
@@ -2958,7 +2993,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
             const Size i = hits[k];
             qvalues[i] = class_qvalues[k];
             proteoform_hits_[i].setMetaValue("qvalue", qvalues[i]);
-            proteoform_hits_[i].setMetaValue("FDRClass", fdr_class_names[c]);
+            proteoform_hits_[i].setMetaValue("FDRClass", group_name);
           }
         }
       }
@@ -4933,7 +4968,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       std::vector<RankedItem<std::pair<double, double>>> items;
       items.reserve(ranked_proteins.size());
       for (const auto& [key, acc] : ranked_proteins) items.push_back({key, acc.hasPrefix("DECOY"), protein_decoy_weight});
-      const auto protein_qvalues = targetDecoyQvalues(items, fdr_pseudocount_);
+      const auto protein_qvalues = targetDecoyQvalues(items, fdr_pseudocount_ || protein_pseudocount_);
       Size targets = 0, decoy_count = 0, passing = 0;
       for (Size k = 0; k < ranked_proteins.size(); k++)
       {

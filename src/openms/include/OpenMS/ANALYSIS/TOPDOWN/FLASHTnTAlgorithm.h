@@ -188,6 +188,10 @@ private:
   bool decoy_precursor_ = false;
   /// option precursor_reselect: a spectrum whose best PrSM has no mass is searched again with the other masses of its isolation window
   bool precursor_reselect_ = false;
+  /// option protein_pseudocount: protein q-values with (D + 1) / T
+  bool protein_pseudocount_ = false;
+  /// option merge_small_prsm_classes: PrSM-level FDR classes under 100 PrSMs merged within their kind, as at the proteoform level
+  bool merge_small_prsm_classes_ = false;
   /// option terminal_ladder_undetermined: terminal-ladder PrSMs without a mass in the undetermined classes (by termini)
   bool terminal_ladder_undetermined_ = false;
   /// option one_proteoform_per_feature fitted: a PrSM whose mass needs no blind modification keeps it
