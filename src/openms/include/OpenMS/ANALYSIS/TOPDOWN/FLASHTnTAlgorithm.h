@@ -206,6 +206,8 @@ private:
   String undetermined_open_ = "keep";
   /// proteins with at most this many PrSMs in classes of their own (0: off)
   int protein_support_class_ = 0;
+  String protein_evidence_ = "none";
+  double protein_evidence_min_mass_ = 3000;
   bool multiple_hits_per_spec_ = false;
   bool protein_level_only_ = false;
   int max_protein_hits_ = 50;
