@@ -3824,6 +3824,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
         // PrSM is a decoy passing rep_q was searched again by the next stage while one won by a target was not, so a chance decoy
         // PrSM met more competition than a chance target one and won its spectrum less often (38 runs, shuffled entrapment: at the
         // top of the protein ranking 20 entrapment proteins against 1 decoy protein in three runs)
+        if (it == spectrum_of_scan_number.end() || ! seen.insert(it->second).second) continue;
         if (hit_class[i] < 0 || (double)hit.getMetaValue("proqvalue", 1.0) > rep_q) continue;
         identified.insert(it->second);
       }
@@ -3859,7 +3860,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       }
       OPENMS_LOG_INFO << "Search cascade stage " << stage << " (" << (stage == 1 ? "sequence tags and ladders" : "gapped tags") << "): " << stage_spectra.size()
                       << " spectra searched, " << proteoform_hits_.size() - from << " PrSMs, " << stage_spectra.size() - rest.size()
-                      << " of the spectra identified (a target PrSM at proteoform q-value <= " << rep_q << "); the next stage searches the other "
+                      << " of the spectra identified (a PrSM, target or decoy, at proteoform q-value <= " << rep_q << "); the next stage searches the other "
                       << rest.size() << std::endl;
       stage_spectra.swap(rest);
     }
