@@ -202,6 +202,10 @@ private:
   bool fdr_pseudocount_ = false;
   /// proteoform classes with few targets counted together with the next ones
   bool merge_small_classes_ = true;
+  /// undetermined PrSMs with an open terminus: keep or drop
+  String undetermined_open_ = "keep";
+  /// proteins with at most this many PrSMs in classes of their own (0: off)
+  int protein_support_class_ = 0;
   bool multiple_hits_per_spec_ = false;
   bool protein_level_only_ = false;
   int max_protein_hits_ = 50;
