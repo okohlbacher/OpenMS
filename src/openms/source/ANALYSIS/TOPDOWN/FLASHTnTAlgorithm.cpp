@@ -397,8 +397,13 @@ void FLASHTnTAlgorithm::setDefaultParams_()
                      "Target-decoy FDR as (D + 1) / T instead of D / (D + T) at every level: conservative for classes with few decoys.");
   defaults_.setValidStrings("fdr_pseudocount", {"true", "false"});
   defaults_.setValue("merge_small_classes", "true",
-                     "Proteoform classes with fewer than 100 proteoforms (targets and decoys) are counted together with the next ones; false: every class on its own.");
-  defaults_.setValidStrings("merge_small_classes", {"true", "false"});
+                     "Proteoform classes with fewer than 100 proteoforms (targets and decoys) are counted together with the next ones (true); "
+                     "false: every class on its own; kind: the determined class stays on its own and the ladder and undetermined classes are "
+                     "merged among themselves in the order precursor ladder, terminal ladder, mass closed, undetermined (both termini, open "
+                     "terminus), so that a small undetermined group joins the terminal-ladder class and never pulls the precursor-ladder or the "
+                     "determined class under its cutoff (on 38 runs the undetermined group absorbed the precursor-ladder class of a run and cost "
+                     "it 11 of 152 proteoforms; merging the precursor-ladder class with the determined one instead cost plasma 40 of 130).");
+  defaults_.setValidStrings("merge_small_classes", {"true", "false", "kind"});
   defaults_.setValue("undetermined_open", "keep",
                      "Undetermined PrSMs with an open terminus (neither mass nor both termini known): keep, or drop (in no FDR class). "
                      "Their class ran at 9-19% error at every cutoff in a shuffled entrapment of ten datasets (148 of 13,790 proteoforms).");
@@ -570,6 +575,13 @@ void FLASHTnTAlgorithm::setDefaultParams_()
                      "proteoform level only against proteoforms whose mass came from MS1. Controls wrong MS1 precursor masses; PrSMs with masses "
                      "from fragment pairs or without a mass are not affected.");
   defaults_.setValidStrings("decoy_precursor", {"true", "false"});
+  defaults_.setValue("precursor_reselect", "false",
+                     "A spectrum whose best PrSM has no proteoform mass although the spectrum has an MS1 precursor mass is searched again with each "
+                     "other target mass of its isolation window (the survey spectrum's masses FLASHDeconv registered with the precursor). The "
+                     "alternative mass whose search gives the best PrSM with a determined mass takes the spectrum, PrSMs and precursor, when that "
+                     "PrSM scores at least as high as the spectrum's best PrSM less one truncation penalty. Targets and decoys get the same tries. "
+                     "On ten datasets a fifth of the PrSMs passing 1% had no mass, and a quarter of those spectra had a precursor of low quality.");
+  defaults_.setValidStrings("precursor_reselect", {"true", "false"});
   defaults_.setValue("chimeric_rounds", 0,
                      "Residual search of chimeric spectra: rounds after the first search (0: off). In each round, every spectrum with a PrSM (target or "
                      "decoy alike) loses the deconvolved masses its best PrSM matched (the masses on the path, also those one or two isotope "
@@ -641,6 +653,7 @@ void FLASHTnTAlgorithm::updateMembers_()
   search_cascade_ = param_.getValue("search_cascade").toString() == "true";
   learn_var_mod_penalty_ = param_.getValue("learn_var_mod_penalty").toString() == "true";
   decoy_precursor_ = param_.getValue("decoy_precursor").toString() == "true";
+  precursor_reselect_ = param_.getValue("precursor_reselect").toString() == "true";
   one_proteoform_per_feature_ = param_.getValue("one_proteoform_per_feature").toString() == "true";
   chimeric_rounds_ = param_.getValue("chimeric_rounds");
   pro_fdr_ = param_.getValue("pro_fdr");
@@ -655,7 +668,8 @@ void FLASHTnTAlgorithm::updateMembers_()
   terminal_ladder_blind_class_ = param_.getValue("terminal_ladder_blind_class").toString() == "true";
   undetermined_blind_ = param_.getValue("undetermined_blind").toString();
   fdr_pseudocount_ = param_.getValue("fdr_pseudocount").toString() == "true";
-  merge_small_classes_ = param_.getValue("merge_small_classes").toString() == "true";
+  merge_small_classes_ = param_.getValue("merge_small_classes").toString() != "false";
+  merge_by_kind_ = param_.getValue("merge_small_classes").toString() == "kind";
   undetermined_open_ = param_.getValue("undetermined_open").toString();
   protein_support_class_ = param_.getValue("protein_support_class");
   protein_evidence_ = param_.getValue("protein_evidence").toString();
@@ -1376,6 +1390,28 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       }
 
       dspec.setPrecursorPeakGroup(pg);
+    }
+    // the target masses of the isolation window (option precursor_reselect)
+    if (deconv_meta_str.hasSubstring("windowmasses="))
+    {
+      const int w_s = (int)deconv_meta_str.find("windowmasses=") + 13;
+      const int w_e = (int)deconv_meta_str.find(";", w_s);
+      const String w_str = deconv_meta_str.substr(w_s, w_e == (int)String::npos ? String::npos : w_e - w_s);
+      std::vector<std::tuple<double, double>> window;
+      Size wpos = 0;
+      while (wpos < w_str.size())
+      {
+        Size wnext = w_str.find(",", wpos);
+        if (wnext == String::npos) wnext = w_str.size();
+        const String token = w_str.substr(wpos, wnext - wpos);
+        const Size colon = token.find(":");
+        if (colon != String::npos && colon > 0)
+        {
+          window.emplace_back(stod(token.substr(0, colon)), stod(token.substr(colon + 1)));
+        }
+        wpos = wnext + 1;
+      }
+      dspec.setPrecursorMassIntensityMap(window);
     }
     for (Size i = 0; i < spec.size(); i++)
     {
@@ -3022,23 +3058,73 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
         class_size[cluster_class[k]]++;
         class_targets[cluster_class[k]] += decoys[clusters[k][0]] ? 0 : 1;
       }
-      std::vector<std::vector<int>> groups;
-      Size group_targets = 0;
-      for (int c = 0; c < pf_class_count; c++)
+      // Option merge_small_classes kind: the grouping runs within two kinds of classes, those with a determined mass (determined,
+      // precursor ladder, mass closed) and the undetermined and ladder classes, so that a small undetermined group cannot absorb a
+      // large determined class (and its few decoys set the cutoff of hundreds of determined proteoforms). A kind whose only group stays
+      // below min_class_targets joins the other kind's first group, as without the option.
+      const auto kind_of = [&](int c) { return c == pf_class_determined ? 0 : 1; };
+      // the classes in the order the grouping walks them: with the option, the ladder classes first and the undetermined ones last, so that
+      // a small undetermined group is the last group and joins the (ladder) group before it
+      std::vector<int> class_order;
+      if (merge_by_kind_)
       {
-        if (class_size[c] == 0) continue;
-        if (groups.empty() || group_targets >= min_class_targets)
-        {
-          groups.push_back({});
-          group_targets = 0;
-        }
-        groups.back().push_back(c);
-        group_targets += class_size[c];
+        class_order = {pf_class_determined, pf_class_precursor_ladder, pf_class_terminal_ladder, pf_class_mass_closed, pf_class_both_termini,
+                       pf_class_open_terminus, pf_class_second_ranked};
+        for (int c = pf_class_residual; c < pf_class_count; c++) class_order.push_back(c);
       }
-      if (groups.size() > 1 && group_targets < min_class_targets)
+      else
       {
-        groups[groups.size() - 2].insert(groups[groups.size() - 2].end(), groups.back().begin(), groups.back().end());
-        groups.pop_back();
+        for (int c = 0; c < pf_class_count; c++) class_order.push_back(c);
+      }
+      std::vector<std::vector<int>> groups;
+      std::vector<Size> group_total;
+      for (int kind = 0; kind < (merge_by_kind_ ? 2 : 1); kind++)
+      {
+        std::vector<std::vector<int>> kind_groups;
+        std::vector<Size> kind_totals;
+        Size group_targets = 0;
+        for (int c : class_order)
+        {
+          if (class_size[c] == 0 || (merge_by_kind_ && kind_of(c) != kind)) continue;
+          if (kind_groups.empty() || group_targets >= min_class_targets)
+          {
+            kind_groups.push_back({});
+            kind_totals.push_back(0);
+            group_targets = 0;
+          }
+          kind_groups.back().push_back(c);
+          group_targets += class_size[c];
+          kind_totals.back() += class_size[c];
+        }
+        if (kind_groups.size() > 1 && group_targets < min_class_targets)
+        {
+          kind_groups[kind_groups.size() - 2].insert(kind_groups[kind_groups.size() - 2].end(), kind_groups.back().begin(), kind_groups.back().end());
+          kind_totals[kind_totals.size() - 2] += kind_totals.back();
+          kind_groups.pop_back();
+          kind_totals.pop_back();
+        }
+        for (Size gi = 0; gi < kind_groups.size(); gi++)
+        {
+          groups.push_back(kind_groups[gi]);
+          group_total.push_back(kind_totals[gi]);
+        }
+      }
+      if (merge_by_kind_ && groups.size() > 1)
+      {
+        // a kind that is one small group joins the other kind's first group
+        for (Size gi = groups.size(); gi-- > 0;)
+        {
+          if (group_total[gi] >= min_class_targets || groups.size() == 1) continue;
+          const int kind = kind_of(groups[gi][0]);
+          bool alone = true;
+          for (Size gj = 0; gj < groups.size() && alone; gj++) alone = gj == gi || kind_of(groups[gj][0]) != kind;
+          if (! alone) continue;
+          Size target = gi == 0 ? 1 : 0;
+          groups[target].insert(groups[target].end(), groups[gi].begin(), groups[gi].end());
+          group_total[target] += group_total[gi];
+          groups.erase(groups.begin() + gi);
+          group_total.erase(group_total.begin() + gi);
+        }
       }
       std::vector<int> group_of(pf_class_count, -1);
       std::vector<String> group_names;
@@ -3741,6 +3827,85 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
                         << " at both window ends, " << pl_at_start.load() << " at the window start only, " << pl_at_end.load()
                         << " at the window end only), " << pl_duplicates.load() << " dropped as the same proteoform as a determined PrSM of another source, "
                         << pl_undetermined.load() << " undetermined dropped" << std::endl;
+      }
+      // Option precursor_reselect. A spectrum whose best PrSM has no proteoform mass although the spectrum has an MS1 precursor mass is
+      // searched again with each other target mass of its isolation window (the survey spectrum's masses FLASHDeconv registered with the
+      // precursor, getPrecursorMassIntensityMap). The alternative whose search gives the best PrSM with a determined mass taken from it
+      // replaces the spectrum's PrSMs and becomes its precursor, when that PrSM scores at least as high as the spectrum's best PrSM less one
+      // truncation penalty (a precursor-mass path pays for its truncations, a terminal result does not). Targets and decoys get the same
+      // tries, so the FDR classes stay label-blind. On ten datasets (38 runs) 21% of the PrSMs passing 1% had no mass although 99% of
+      // their spectra had a precursor mass, and 27% of those precursors had a Qscore below 0.5 (determined: 2%).
+      if (precursor_reselect_)
+      {
+        const double iso = Constants::C13C12_MASSDIFF_U;
+        const Param& eparam_now = eparam_in_use;
+        std::vector<int> todo;
+        for (int d : spectra)
+        {
+          if (dspecs[d].getPrecursorPeakGroup().getMonoMass() <= 0 || spec_proteoforms[d].empty()) continue;
+          const ProteinHit* best = nullptr;
+          for (const auto& h : spec_proteoforms[d])
+          {
+            if (best == nullptr || h.getScore() > best->getScore()) best = &h;
+          }
+          if ((double)best->getMetaValue("Mass") > 0) continue;
+          const double own = dspecs[d].getPrecursorPeakGroup().getMonoMass();
+          int others = 0;
+          for (const auto& [m, j] : dspecs[d].getPrecursorMassIntensityMap())
+          {
+            if (m > 0 && std::abs(m - own) > 0.01) others++;
+          }
+          if (others > 0) todo.push_back(d);
+        }
+        std::vector<std::vector<ProteinHit>> chosen(dspecs.size());
+        std::vector<double> chosen_mass(dspecs.size(), -1.0);
+        std::atomic<int> tries {0};
+  #pragma omp parallel for schedule(dynamic) if (extend_over_spectra)
+        for (int k = 0; k < (int)todo.size(); k++)
+        {
+          const int d = todo[k];
+          const double own = dspecs[d].getPrecursorPeakGroup().getMonoMass();
+          double best_own = -1e10;
+          for (const auto& h : spec_proteoforms[d]) best_own = std::max(best_own, h.getScore());
+          double best_alt = best_own - 20.0; // one truncation penalty (FLASHExtenderAlgorithm truncation_penalty, 19) of slack
+          for (const auto& [m, j] : dspecs[d].getPrecursorMassIntensityMap())
+          {
+            if (m <= 0 || std::abs(m - own) <= 0.01) continue;
+            tries++;
+            DeconvolvedSpectrum alt_spec = dspecs[d];
+            auto pg = alt_spec.getPrecursorPeakGroup();
+            pg.setMonoisotopicMass(m);
+            alt_spec.setPrecursorPeakGroup(pg);
+            std::vector<ProteinHit> out;
+            extendSpectrumInto(d, eparam_now, alt_spec, out, false);
+            double top = -1e10;
+            for (const auto& h : out)
+            {
+              if ((double)h.getMetaValue("Mass") <= 0 || (int)h.getMetaValue("ProteoformMassByFragmentMass") != 0) continue;
+              if (std::abs((double)h.getMetaValue("Mass") - m) > 3 * iso + 0.1) continue; // a mass taken from this precursor, up to isotope errors
+              top = std::max(top, h.getScore());
+            }
+            if (top > -1e9 && top >= best_alt)
+            {
+              best_alt = top;
+              chosen_mass[d] = m;
+              chosen[d].swap(out);
+            }
+          }
+        }
+        int reselected = 0;
+        for (int d : todo)
+        {
+          if (chosen_mass[d] <= 0) continue;
+          reselected++;
+          for (auto& h : chosen[d]) h.setMetaValue("PrecursorReselected", chosen_mass[d]);
+          spec_proteoforms[d].swap(chosen[d]);
+          auto pg = dspecs[d].getPrecursorPeakGroup(); // the spectrum's precursor from here on (reported mass, feature and decoy rules)
+          pg.setMonoisotopicMass(chosen_mass[d]);
+          dspecs[d].setPrecursorPeakGroup(pg);
+        }
+        OPENMS_LOG_INFO << "Precursor re-selection (option precursor_reselect): " << todo.size() << " spectra whose best PrSM has no mass and whose isolation window holds other masses, "
+                        << tries.load() << " alternative masses tried, " << reselected << " spectra re-selected" << std::endl;
       }
       // Decoy precursors: a spectrum whose PrSM took its mass from MS1 is searched again as a decoy spectrum whose precursor mass is the
       // decoy precursor mass (noise or signal decoy) of its isolation window, as FLASHDeconv chose it with report_FDR. A PrSM of that copy

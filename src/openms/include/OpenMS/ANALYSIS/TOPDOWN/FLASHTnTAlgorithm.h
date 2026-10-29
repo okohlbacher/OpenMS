@@ -181,6 +181,8 @@ private:
   bool learn_var_mod_penalty_ = false;
   /// search spectra with MS1-based PrSMs again with decoy precursor masses, as decoys of the precursor in the FDR
   bool decoy_precursor_ = false;
+  /// option precursor_reselect: a spectrum whose best PrSM has no mass is searched again with the other masses of its isolation window
+  bool precursor_reselect_ = false;
   /// co-isolation: an MS1 mass reported by PrSMs of different proteins stays with the protein that explains it best
   bool one_proteoform_per_feature_ = true;
   /// native and targeted runs: candidates of every source chosen by the decoy margin of their spectrum, every candidate's PrSM reported
@@ -213,6 +215,7 @@ private:
   /// target-decoy FDR as (D + 1) / T
   bool fdr_pseudocount_ = false;
   /// proteoform classes with few targets counted together with the next ones
+  bool merge_by_kind_ = false; ///< option merge_small_classes kind: small classes merge within their kind only
   bool merge_small_classes_ = true;
   /// undetermined PrSMs with an open terminus: keep or drop
   String undetermined_open_ = "keep";

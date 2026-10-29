@@ -50,6 +50,18 @@ namespace OpenMS
     {
       val << ";precursorscan=0;precursormass=0;precursorQscore=0;precursorSNR=0";
     }
+    // the target masses of the isolation window (with their intensities), for FLASHTnT's precursor re-selection
+    if (! precursor_mass_intensity_map_.empty())
+    {
+      val << ";windowmasses=";
+      bool first = true;
+      for (const auto& [m, it] : precursor_mass_intensity_map_)
+      {
+        if (m <= 0) continue;
+        val << (first ? "" : ",") << std::to_string(m) << ":" << std::to_string(it);
+        first = false;
+      }
+    }
     if (decoy_precursor_mass_ > 0)
     {
       val << ";decoyprecursormass=" << std::to_string(decoy_precursor_mass_) << ";decoyprecursorweight=" << std::to_string(decoy_precursor_weight_)
