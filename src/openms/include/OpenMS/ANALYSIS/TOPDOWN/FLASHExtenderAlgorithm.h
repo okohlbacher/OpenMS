@@ -220,6 +220,24 @@ private:
   };
 
   /// Protein hit information that should be retained throughout the run.
+public:
+  /// penalty of a terminal truncation in a precursor-mass path (equals the base blind-modification penalty of
+  /// findSubPathsBetweenTagEndPoints); public so that FLASHTnT's precursor re-selection can allow for it
+  static constexpr int truncation_penalty = 19;
+
+  /** Mass closure (option mass_closure): the stretch [a, b) of a protein that explains the precursor mass when one terminus is kept.
+      @p pro residue masses from the N-terminus with the fixed modifications (pro[i]: the first i residues), @p seq the sequence,
+      @p start / @p end the terminal result's stretch (0-based start, exclusive end; -1 unknown), @p keep_start whether the start is
+      kept (else the end), @p kept_positions the cleavage positions the kept terminal ladder read (they stay inside the stretch),
+      the blind and variable modifications of the terminal result by position and mass (those inside the stretch count), the
+      precursor mass, its absolute tolerance and the largest blind shift. Tried in this order: no shift, +1, -1, +2 isotopes (an
+      error of the precursor mass), N-terminal acetylation (at the protein N-terminus only), methionine oxidation (with a methionine
+      inside). Returns false when no stretch fits; else a, b, the shift mass and its name. */
+  static bool closeMass(const std::vector<double>& pro, const String& seq, int start, int end, bool keep_start, const std::set<int>& kept_positions,
+                        const std::vector<int>& mod_starts, const std::vector<int>& mod_ends, const std::vector<double>& mod_masses, double precursor,
+                        double tol, double max_mod_mass, int& a, int& b, double& shift, const char*& shift_name);
+
+private:
   struct OPENMS_DLLAPI HitInformation
   {
   public:

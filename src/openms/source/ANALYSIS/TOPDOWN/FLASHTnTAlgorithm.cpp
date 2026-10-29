@@ -396,7 +396,7 @@ void FLASHTnTAlgorithm::setDefaultParams_()
   defaults_.setValue("fdr_pseudocount", "false",
                      "Target-decoy FDR as (D + 1) / T instead of D / (D + T) at every level: conservative for classes with few decoys.");
   defaults_.setValidStrings("fdr_pseudocount", {"true", "false"});
-  defaults_.setValue("merge_small_classes", "true",
+  defaults_.setValue("merge_small_classes", "kind",
                      "Proteoform classes with fewer than 100 proteoforms (targets and decoys) are counted together with the next ones (true); "
                      "false: every class on its own; kind: the determined class stays on its own and the ladder and undetermined classes are "
                      "merged among themselves in the order precursor ladder, terminal ladder, mass closed, undetermined (both termini, open "
@@ -780,6 +780,62 @@ Size FLASHTnTAlgorithm::blindModCount_(const ProteinHit& hit)
     return (Size)std::count(variable.begin(), variable.end(), 0);
   }
   return hit.getMetaValue("Modifications").toDoubleList().size();
+}
+
+std::vector<std::vector<int>> FLASHTnTAlgorithm::groupClasses(const std::vector<int>& class_order, const std::vector<Size>& class_size, Size min_targets,
+                                                             bool by_kind, const std::function<int(int)>& kind_of)
+{
+  std::vector<std::vector<int>> groups;
+  std::vector<Size> group_total;
+  for (int kind = 0; kind < (by_kind ? 2 : 1); kind++)
+  {
+    std::vector<std::vector<int>> kind_groups;
+    std::vector<Size> kind_totals;
+    Size group_targets = 0;
+    for (int c : class_order)
+    {
+      if (class_size[c] == 0 || (by_kind && kind_of(c) != kind)) continue;
+      if (kind_groups.empty() || group_targets >= min_targets)
+      {
+        kind_groups.push_back({});
+        kind_totals.push_back(0);
+        group_targets = 0;
+      }
+      kind_groups.back().push_back(c);
+      group_targets += class_size[c];
+      kind_totals.back() += class_size[c];
+    }
+    if (kind_groups.size() > 1 && group_targets < min_targets)
+    {
+      kind_groups[kind_groups.size() - 2].insert(kind_groups[kind_groups.size() - 2].end(), kind_groups.back().begin(), kind_groups.back().end());
+      kind_totals[kind_totals.size() - 2] += kind_totals.back();
+      kind_groups.pop_back();
+      kind_totals.pop_back();
+    }
+    for (Size gi = 0; gi < kind_groups.size(); gi++)
+    {
+      groups.push_back(kind_groups[gi]);
+      group_total.push_back(kind_totals[gi]);
+    }
+  }
+  if (by_kind && groups.size() > 1)
+  {
+    // a kind that is one small group joins the other kind's first group
+    for (Size gi = groups.size(); gi-- > 0;)
+    {
+      if (group_total[gi] >= min_targets || groups.size() == 1) continue;
+      const int kind = kind_of(groups[gi][0]);
+      bool alone = true;
+      for (Size gj = 0; gj < groups.size() && alone; gj++) alone = gj == gi || kind_of(groups[gj][0]) != kind;
+      if (! alone) continue;
+      const Size target = gi == 0 ? 1 : 0;
+      groups[target].insert(groups[target].end(), groups[gi].begin(), groups[gi].end());
+      group_total[target] += group_total[gi];
+      groups.erase(groups.begin() + gi);
+      group_total.erase(group_total.begin() + gi);
+    }
+  }
+  return groups;
 }
 
 bool FLASHTnTAlgorithm::proteinEvidenceSupported(const String& protein_evidence, Size prsms, Size proteoforms, bool strong)
@@ -1397,21 +1453,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       const int w_s = (int)deconv_meta_str.find("windowmasses=") + 13;
       const int w_e = (int)deconv_meta_str.find(";", w_s);
       const String w_str = deconv_meta_str.substr(w_s, w_e == (int)String::npos ? String::npos : w_e - w_s);
-      std::vector<std::tuple<double, double>> window;
-      Size wpos = 0;
-      while (wpos < w_str.size())
-      {
-        Size wnext = w_str.find(",", wpos);
-        if (wnext == String::npos) wnext = w_str.size();
-        const String token = w_str.substr(wpos, wnext - wpos);
-        const Size colon = token.find(":");
-        if (colon != String::npos && colon > 0)
-        {
-          window.emplace_back(stod(token.substr(0, colon)), stod(token.substr(colon + 1)));
-        }
-        wpos = wnext + 1;
-      }
-      dspec.setPrecursorMassIntensityMap(window);
+      dspec.setPrecursorMassIntensityMap(DeconvolvedSpectrum::parseWindowMasses(w_str));
     }
     for (Size i = 0; i < spec.size(); i++)
     {
@@ -3076,56 +3118,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       {
         for (int c = 0; c < pf_class_count; c++) class_order.push_back(c);
       }
-      std::vector<std::vector<int>> groups;
-      std::vector<Size> group_total;
-      for (int kind = 0; kind < (merge_by_kind_ ? 2 : 1); kind++)
-      {
-        std::vector<std::vector<int>> kind_groups;
-        std::vector<Size> kind_totals;
-        Size group_targets = 0;
-        for (int c : class_order)
-        {
-          if (class_size[c] == 0 || (merge_by_kind_ && kind_of(c) != kind)) continue;
-          if (kind_groups.empty() || group_targets >= min_class_targets)
-          {
-            kind_groups.push_back({});
-            kind_totals.push_back(0);
-            group_targets = 0;
-          }
-          kind_groups.back().push_back(c);
-          group_targets += class_size[c];
-          kind_totals.back() += class_size[c];
-        }
-        if (kind_groups.size() > 1 && group_targets < min_class_targets)
-        {
-          kind_groups[kind_groups.size() - 2].insert(kind_groups[kind_groups.size() - 2].end(), kind_groups.back().begin(), kind_groups.back().end());
-          kind_totals[kind_totals.size() - 2] += kind_totals.back();
-          kind_groups.pop_back();
-          kind_totals.pop_back();
-        }
-        for (Size gi = 0; gi < kind_groups.size(); gi++)
-        {
-          groups.push_back(kind_groups[gi]);
-          group_total.push_back(kind_totals[gi]);
-        }
-      }
-      if (merge_by_kind_ && groups.size() > 1)
-      {
-        // a kind that is one small group joins the other kind's first group
-        for (Size gi = groups.size(); gi-- > 0;)
-        {
-          if (group_total[gi] >= min_class_targets || groups.size() == 1) continue;
-          const int kind = kind_of(groups[gi][0]);
-          bool alone = true;
-          for (Size gj = 0; gj < groups.size() && alone; gj++) alone = gj == gi || kind_of(groups[gj][0]) != kind;
-          if (! alone) continue;
-          Size target = gi == 0 ? 1 : 0;
-          groups[target].insert(groups[target].end(), groups[gi].begin(), groups[gi].end());
-          group_total[target] += group_total[gi];
-          groups.erase(groups.begin() + gi);
-          group_total.erase(group_total.begin() + gi);
-        }
-      }
+      const std::vector<std::vector<int>> groups = groupClasses(class_order, class_size, min_class_targets, merge_by_kind_, kind_of);
       std::vector<int> group_of(pf_class_count, -1);
       std::vector<String> group_names;
       for (Size g = 0; g < groups.size(); g++)
@@ -3260,7 +3253,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
     const bool keep_all_candidates = (bool)raw_loader_;
     // precursor-ladder PrSMs of the extension that is kept: kept (determined; of them at both window ends, at the window start only, at the
     // window end only), dropped as the same proteoform as a determined PrSM of another source, dropped as undetermined
-    std::atomic<Size> pl_determined {0}, pl_at_both_ends {0}, pl_at_start {0}, pl_at_end {0}, pl_duplicates {0}, pl_undetermined {0};
+    std::atomic<Size> pl_determined {0}, pl_at_both_ends {0}, pl_at_start {0}, pl_at_end {0}, pl_duplicates {0}, pl_undetermined {0}, tl_duplicates {0};
     // A PrSM of a database entry (by_entry) is decoded to its protein right after the extension: its positions (and TagPositions) moved to
     // the full-length protein, the entry's fixed modifications inside the proteoform merged into its modifications by position
     // (ModificationVariable 2; BlindModCount and VariableModifications stay those of the search), the sequence the full-length protein, and
@@ -3513,11 +3506,26 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
         std::vector<ProteinHit> ladder_out;
         extend(ladder_hits, ladder_out);
         std::vector<ProteinHit> determined, undetermined;
+        Size duplicates = 0;
         for (auto& h : ladder_out)
         {
           h.setMetaValue(native_rule ? mi_sliding : mi_terminal, 1);
+          // A determined ladder PrSM (its mass found by the extension or closed) that is the same proteoform as a determined PrSM another
+          // source found in this spectrum is dropped, as a precursor-ladder one is (below): it adds nothing the spectrum does not have, and
+          // kept it would count twice and pad the terminal-ladder class with sure targets (harness, E. coli 10_LC_PBS: 767 of the 1,416
+          // terminal-ladder targets at 1% were such duplicates, none of them an entrapment; all 5 entrapments were among the other 649).
+          // The rule reads no label.
+          if (! native_rule && is_determined(h)
+              && std::any_of(out.begin(), out.end(), [&](const ProteinHit& o) {
+                   return is_determined(o) && o.getAccession() == h.getAccession() && areConsistent_(o, h, pl_precursor_tol);
+                 }))
+          {
+            duplicates++;
+            continue;
+          }
           (is_determined(h) ? determined : undetermined).push_back(h);
         }
+        tl_duplicates += duplicates;
         const bool fill = out.empty();
         if (native_rule)
         {
@@ -3815,6 +3823,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
           pl_at_end = 0;
           pl_duplicates = 0;
           pl_undetermined = 0;
+          tl_duplicates = 0;
         }
         const std::vector<int>& main_spectra = penalties_learned ? all_spectra : not_extended;
         startProgress(0, (SignedSize)main_spectra.size(), "Running extension algorithm ...");
@@ -3828,6 +3837,9 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
                         << " at the window end only), " << pl_duplicates.load() << " dropped as the same proteoform as a determined PrSM of another source, "
                         << pl_undetermined.load() << " undetermined dropped" << std::endl;
       }
+      if (tl_duplicates.load() > 0)
+        OPENMS_LOG_INFO << "Terminal-ladder PrSMs: " << tl_duplicates.load() << " dropped as the same proteoform as a determined PrSM of another source"
+                        << std::endl;
       // Option precursor_reselect. A spectrum whose best PrSM has no proteoform mass although the spectrum has an MS1 precursor mass is
       // searched again with each other target mass of its isolation window (the survey spectrum's masses FLASHDeconv registered with the
       // precursor, getPrecursorMassIntensityMap). The alternative whose search gives the best PrSM with a determined mass taken from it
@@ -3867,7 +3879,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
           const double own = dspecs[d].getPrecursorPeakGroup().getMonoMass();
           double best_own = -1e10;
           for (const auto& h : spec_proteoforms[d]) best_own = std::max(best_own, h.getScore());
-          double best_alt = best_own - 20.0; // one truncation penalty (FLASHExtenderAlgorithm truncation_penalty, 19) of slack
+          double best_alt = best_own - FLASHExtenderAlgorithm::truncation_penalty; // the penalty a precursor-mass path pays for a truncation
           for (const auto& [m, j] : dspecs[d].getPrecursorMassIntensityMap())
           {
             if (m <= 0 || std::abs(m - own) <= 0.01) continue;

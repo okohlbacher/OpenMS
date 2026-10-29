@@ -18,6 +18,7 @@
 #else
   #define omp_in_parallel() 0
 #endif
+#include <cstdlib>
 #include <queue>
 #include <utility>
 
@@ -29,7 +30,8 @@ namespace OpenMS
   inline const double c13_spacing = Constants::C13C12_MASSDIFF_U; // one isotope (shared by name in the parallel extension loop)
   // Base penalty for a terminal truncation, equivalent to the base blind-modification (mass-shift)
   // penalty applied in findSubPathsBetweenTagEndPoints. Equals 19.
-  inline const int truncation_penalty = 1 + 2 * (multi_ion_score + FLASHTaggerAlgorithm::max_node_score);
+  static_assert(FLASHExtenderAlgorithm::truncation_penalty == 1 + 2 * (multi_ion_score + FLASHTaggerAlgorithm::max_node_score),
+                "the truncation penalty equals the base blind-modification penalty");
   // Minimum number of unshifted suffix fragment masses from the protein C-terminus against which a precursor-mass path ending before
   // the C-terminus is not accepted. Set from an empirical null on Eclip_1480: ladders read from a wrong C-terminus of the right protein
   // (78,686 internal positions of 1% PrSMs) reach k >= 4 at a rate of 7.6e-5 (shuffled decoys: 1.6e-5 of 378,800), so the about 200
@@ -653,6 +655,62 @@ namespace OpenMS
       }
     }
     if (hi.calculated_precursor_mass_ > 0) hi.calculated_precursor_mass_ += i2f_mass;
+  }
+
+  bool FLASHExtenderAlgorithm::closeMass(const std::vector<double>& pro, const String& seq, int start, int end, bool keep_start,
+                                         const std::set<int>& kept_positions, const std::vector<int>& mod_starts, const std::vector<int>& mod_ends,
+                                         const std::vector<double>& mod_masses, double precursor, double tol, double max_mod_mass, int& a, int& b,
+                                         double& shift, const char*& shift_name)
+  {
+    const int len = (int)seq.size();
+    if ((int)pro.size() != len + 1 || precursor <= 0) return false;
+    if (keep_start ? (start < 0 || start >= len) : (end <= 0 || end > len)) return false;
+    const double water = Residue::getInternalToFull().getMonoWeight();
+    const auto mods_in = [&](int from, int to) {
+      double m = 0;
+      for (Size k = 0; k < mod_masses.size(); k++)
+      {
+        if (mod_starts[k] >= from && mod_ends[k] <= to) m += mod_masses[k];
+      }
+      return m;
+    };
+    struct KnownShift { double mass; const char* name; int need; }; // need 0: anywhere; 1: the protein N-terminus; 2: a methionine inside
+    static const KnownShift known[] = {{0.0, "none", 0}, {Constants::C13C12_MASSDIFF_U, "+1 isotope", 0}, {-Constants::C13C12_MASSDIFF_U, "-1 isotope", 0},
+                                       {2 * Constants::C13C12_MASSDIFF_U, "+2 isotopes", 0}, {42.010565, "acetyl", 1}, {15.994915, "oxidation", 2}};
+    const auto fits = [&](int from, int to, const KnownShift& sh) {
+      const double m = pro[to] - pro[from] + water + mods_in(from, to) + sh.mass;
+      if (m > precursor + tol + max_mod_mass) return 1; // beyond: stop this direction
+      if (std::abs(m - precursor) > tol) return 0;
+      if (sh.need == 1 && from > 1) return 0;
+      if (sh.need == 2 && seq.substr(from, to - from).find('M') == String::npos) return 0;
+      return 2;
+    };
+    for (const auto& sh : known)
+    {
+      if (keep_start)
+      {
+        int bmin = start + 1;
+        for (int p : kept_positions) bmin = std::max(bmin, p); // the kept prefix ladder stays inside
+        for (int to = bmin; to <= len; to++)
+        {
+          const int r = fits(start, to, sh);
+          if (r == 1) break;
+          if (r == 2) { a = start; b = to; shift = sh.mass; shift_name = sh.name; return true; }
+        }
+      }
+      else
+      {
+        int amax = end - 1;
+        for (int p : kept_positions) amax = std::min(amax, p); // the kept suffix ladder stays inside
+        for (int from = amax; from >= 0; from--)
+        {
+          const int r = fits(from, end, sh);
+          if (r == 1) break;
+          if (r == 2) { a = from; b = end; shift = sh.mass; shift_name = sh.name; return true; }
+        }
+      }
+    }
+    return false;
   }
 
   void FLASHExtenderAlgorithm::getProMasses_(const ProteinHit& hit, std::vector<double>& pro_masses, int mode,
@@ -1334,6 +1392,8 @@ namespace OpenMS
     const UInt mi_given_mass = registry.registerName("GivenMass");
     const UInt mi_mass = registry.registerName("Mass");
     const UInt mi_mass_closure = registry.registerName("MassClosure");
+    const char* trace_env = std::getenv("FLASHTNT_TRACE_SCAN"); // one scan whose precursor-mass decisions are traced to stderr
+    const int trace_scan = trace_env != nullptr ? atoi(trace_env) : -1;
     const UInt mi_precursor_ladder_source = registry.registerName("PrecursorLadder"); // candidates from the precursor ladders: no mass closure
     const UInt mi_rt = registry.registerName("RT");
     const UInt mi_num_mass = registry.registerName("NumMass");
@@ -1350,7 +1410,7 @@ namespace OpenMS
     for (const auto& pg : dspec) sorted_masses.push_back(pg.getMonoMass());
     std::sort(sorted_masses.begin(), sorted_masses.end());
 
-  #pragma omp parallel for default(none) schedule(dynamic) if (! omp_in_parallel()) shared(hits, tags, dspec, multiple_hits_per_spec, i2f_mass, c13_spacing, mi_mass_closure, mi_precursor_ladder_source, spec_vec, sorted_masses, vec_pro, rev_vec_pro, std::cout, found, mi_tag_indices, mi_fasta_index, mi_modification_ids, mi_modification_accs, mi_modifications, mi_modification_starts, mi_modification_ends, mi_blind_mod_count, mi_variable_modifications, mi_modification_variable, mi_matched_aa, mi_start_position, mi_end_position, mi_given_mass, mi_mass, mi_rt, mi_num_mass, mi_precursor_score, mi_precursor_snr, mi_mass_by_fragments, mi_matched_mass_indices)
+  #pragma omp parallel for default(none) schedule(dynamic) if (! omp_in_parallel()) shared(hits, tags, dspec, multiple_hits_per_spec, i2f_mass, c13_spacing, mi_mass_closure, mi_precursor_ladder_source, trace_scan, std::cerr, spec_vec, sorted_masses, vec_pro, rev_vec_pro, std::cout, found, mi_tag_indices, mi_fasta_index, mi_modification_ids, mi_modification_accs, mi_modifications, mi_modification_starts, mi_modification_ends, mi_blind_mod_count, mi_variable_modifications, mi_modification_variable, mi_matched_aa, mi_start_position, mi_end_position, mi_given_mass, mi_mass, mi_rt, mi_num_mass, mi_precursor_score, mi_precursor_snr, mi_mass_by_fragments, mi_matched_mass_indices)
     for (int i = 0; i < ((int)hits.size()); i++)
     {
       nextProgress();
@@ -1802,6 +1862,15 @@ namespace OpenMS
           // Any precursor mass is also given up when the proteoform needs a blind modification beyond max_mod_mass. A rejected inferred
           // mass is replaced by the MS1 precursor mass if there is one; otherwise the terminal result is kept with an undetermined mass.
           bool reject_mass = false;
+          const bool trace = trace_scan >= 0 && dspec.getScanNumber() == trace_scan;
+          if (trace)
+          {
+  #pragma omp critical(flashtnt_trace)
+            std::cerr << "TRACE scan " << trace_scan << " " << hit.getAccession() << " mode " << hi.mode_ << " score " << total_score << " terminal " << terminal_score
+                      << " calc_mass " << hi.calculated_precursor_mass_ << " given " << given_precursor_mass_ << " by_fragment " << precursor_by_fragment
+                      << " as_given " << hi.precursor_as_given_ << " start " << hi.protein_start_position_ << " end " << hi.protein_end_position_
+                      << " retried_given " << retried_with_given_mass << " retried_iso " << retried_with_isotopes << std::endl;
+          }
           if (hi.mode_ == 2 && total_score > 0)
           {
             // a blind modification beyond max_mod_mass is outside the search's own condition
@@ -1826,6 +1895,13 @@ namespace OpenMS
           const bool moved = hi.mode_ == 2 && given_precursor_mass_ > 0 && ! retried_with_given_mass
                              && (precursor_by_fragment || std::abs(hi.calculated_precursor_mass_ - given_precursor_mass_) > tol_ * given_precursor_mass_);
           if (moved && total_score <= 0) reject_mass = true;
+          if (trace && hi.mode_ == 2)
+          {
+  #pragma omp critical(flashtnt_trace)
+            std::cerr << "TRACE scan " << trace_scan << " " << hit.getAccession() << " mode 2 decision: reject_mass " << reject_mass << " moved " << moved
+                      << " (precursor_by_fragment " << precursor_by_fragment << ", |calc - given| " << std::abs(hi.calculated_precursor_mass_ - given_precursor_mass_)
+                      << ")" << std::endl;
+          }
           // The MS1 mass taken as given (no isotope offsets) after a rejected inferred mass can be one isotope off and then give no path that
           // scores above 0: it is tried once more as a mass that was never inferred is, with its isotope offsets (Eclip_1480 scan 5579: YEGP
           // 2-110 at the MS1 mass one isotope high stayed without a mass).
@@ -1891,34 +1967,21 @@ namespace OpenMS
           precursor_by_fragment = false;
         }
         // Option mass_closure. A terminal result kept without a mass (mode 2 found no path for the precursor mass) is closed on the MS1
-        // precursor mass: the terminus whose terminal mode matched more fragment positions is kept, the other is moved to where the residue
-        // masses (with the entry's fixed modifications and the blind and variable modifications inside the stretch) sum to the precursor
-        // mass, without a shift or with one known one. On ten datasets (38 runs) 21% of the PrSMs passing 1% had no mass although 99% had a
-        // precursor mass; their stretch ran to the protein ends and the precursor was a piece of it (median difference 4.3 kDa). The kept
-        // ladder stays inside the new stretch. The PrSM is marked (MassClosure) and FLASHTnT puts it in an FDR class of its own.
-        // Not for candidates from the precursor ladders: they were found as stretches that fit the precursor mass, so closing them on
-        // it again is circular (and their undetermined results are dropped later anyway; with closure they flooded the class 1:1 with decoys).
+        // precursor mass (closeMass): the terminus whose terminal mode matched more fragment positions is kept, the other is moved to
+        // where the residue masses with the modifications inside sum to the precursor mass, without a shift or with one known one. On
+        // ten datasets (38 runs) 21% of the PrSMs passing 1% had no mass although 99% had a precursor mass; their stretch ran to the
+        // protein ends and the precursor was a piece of it. Not for candidates from the precursor ladders: they were found as stretches
+        // that fit the precursor mass, so closing them on it again is circular (and their undetermined results are dropped later anyway;
+        // with closure they flooded the class 1:1 with decoys). The PrSM is marked (MassClosure) and FLASHTnT puts it in an FDR class of
+        // its own.
         if (mass_closure_ && hi.calculated_precursor_mass_ <= 0 && given_precursor_mass_ > 0 && ! used_mode.empty() && used_mode.back() != 2
             && (hi.protein_start_position_ >= 0 || hi.protein_end_position_ >= 0) && ! hit.metaValueExists(mi_precursor_ladder_source))
         {
-          const int len = (int)hit.getSequence().size();
           std::vector<double> pro; // residue masses from the N-terminus, with the entry's fixed modifications
           getProMasses_(hit, pro, 1, hi.fixed_);
-          const auto mods_in = [&](int a, int b) {
-            double m = 0;
-            for (Size k = 0; k < mod_masses.size(); k++)
-            {
-              if (mod_starts[k] >= a && mod_ends[k] <= b) m += mod_masses[k];
-            }
-            return m;
-          };
           const auto& npos = matched_position_map[1]; // cleavage positions (residues before the cleavage) read by the prefix mode
           const auto& cpos = matched_position_map[0]; // ... by the suffix mode
           const bool start_first = hi.protein_start_position_ >= 0 && (hi.protein_end_position_ < 0 || npos.size() >= cpos.size());
-          const double tol = tol_ * given_precursor_mass_;
-          struct KnownShift { double mass; const char* name; int need; }; // need 0: anywhere; 1: the protein N-terminus; 2: a methionine
-          const KnownShift known[] = {{0.0, "none", 0}, {c13_spacing, "+1 isotope", 0}, {-c13_spacing, "-1 isotope", 0}, {2 * c13_spacing, "+2 isotopes", 0},
-                                      {42.010565, "acetyl", 1}, {15.994915, "oxidation", 2}};
           int found_a = -1, found_b = -1;
           double found_shift = 0;
           const char* found_name = nullptr;
@@ -1927,54 +1990,31 @@ namespace OpenMS
           {
             const bool keep_start = pass == 0 ? start_first : ! start_first;
             if (keep_start ? hi.protein_start_position_ < 0 : hi.protein_end_position_ < 0) continue;
-            for (const auto& sh : known)
+            if (closeMass(pro, hit.getSequence(), hi.protein_start_position_, hi.protein_end_position_, keep_start, keep_start ? npos : cpos, mod_starts,
+                          mod_ends, mod_masses, given_precursor_mass_, tol_ * given_precursor_mass_, max_mod_mass_, found_a, found_b, found_shift, found_name))
             {
-              if (keep_start)
-              {
-                const int a = hi.protein_start_position_;
-                int bmin = a + 1;
-                for (int p : npos) bmin = std::max(bmin, p);
-                for (int b = bmin; b <= len && found_a < 0; b++)
-                {
-                  const double m = pro[b] - pro[a] + i2f_mass + mods_in(a, b) + sh.mass;
-                  if (m > given_precursor_mass_ + tol + max_mod_mass_) break;
-                  if (std::abs(m - given_precursor_mass_) <= tol && (sh.need != 1 || a <= 1) && (sh.need != 2 || hit.getSequence().substr(a, b - a).has('M')))
-                  {
-                    found_a = a; found_b = b; found_shift = sh.mass; found_name = sh.name; found_keep_start = true;
-                  }
-                }
-              }
-              else
-              {
-                const int b = hi.protein_end_position_;
-                int amax = b - 1;
-                for (int p : cpos) amax = std::min(amax, p);
-                for (int a = amax; a >= 0 && found_a < 0; a--)
-                {
-                  const double m = pro[b] - pro[a] + i2f_mass + mods_in(a, b) + sh.mass;
-                  if (m > given_precursor_mass_ + tol + max_mod_mass_) break;
-                  if (std::abs(m - given_precursor_mass_) <= tol && (sh.need != 1 || a <= 1) && (sh.need != 2 || hit.getSequence().substr(a, b - a).has('M')))
-                  {
-                    found_a = a; found_b = b; found_shift = sh.mass; found_name = sh.name; found_keep_start = false;
-                  }
-                }
-              }
-              if (found_a >= 0) break;
+              found_keep_start = keep_start;
             }
           }
           if (found_a >= 0 && found_b > found_a)
           {
+            const int len = (int)hit.getSequence().size();
+            double mods = 0;
+            for (Size k = 0; k < mod_masses.size(); k++)
+            {
+              if (mod_starts[k] >= found_a && mod_ends[k] <= found_b) mods += mod_masses[k];
+            }
             hi.protein_start_position_ = found_a;
             hi.protein_end_position_ = found_b;
             // the proteoform mass: the residue masses with the modifications inside; a known modification becomes a blind modification of
             // the stretch (annotated by mass below); an isotope error of the precursor is no part of the proteoform
-            hi.calculated_precursor_mass_ = pro[found_b] - pro[found_a] + i2f_mass + mods_in(found_a, found_b);
+            hi.calculated_precursor_mass_ = pro[found_b] - pro[found_a] + i2f_mass + mods;
             if (std::abs(found_shift) > 3.0)
             {
               mod_masses.push_back(found_shift);
               mod_starts.push_back(found_a);
               mod_ends.push_back(found_b - 1);
-              mod_tols.push_back(tol);
+              mod_tols.push_back(tol_ * given_precursor_mass_);
               mod_vars.push_back(0);
               mod_var_names.push_back("");
               mod_var_accs.push_back("");

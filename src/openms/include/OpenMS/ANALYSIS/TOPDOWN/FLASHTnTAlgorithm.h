@@ -40,6 +40,11 @@ public:
   /// run-level protein FDR (@p passing) and, with @p paired, its target-decoy partner (@p partner; -1: none) is a candidate of the
   /// same source in that spectrum (@p partner_is_candidate)
   static bool characterizeBeyondTop(bool passing, bool paired, long partner, bool partner_is_candidate);
+  /// the grouping of the proteoform classes for the FDR (option merge_small_classes): in @p class_order, a group takes classes until it
+  /// holds @p min_targets proteoforms (targets and decoys) and a last smaller group joins the one before; with @p by_kind within the two
+  /// kinds @p kind_of gives (0, 1) separately, a kind that is one small group joining the other kind's first group
+  static std::vector<std::vector<int>> groupClasses(const std::vector<int>& class_order, const std::vector<Size>& class_size, Size min_targets,
+                                                    bool by_kind, const std::function<int(int)>& kind_of);
   /// the fixed pseudo-random order of the database entries (splitmix64 of the index) that breaks the ties of the candidate cuts
   static std::uint64_t entryOrder(std::uint64_t index);
   /// the blind modifications of a PrSM: its BlindModCount, else the ModificationVariable entries of kind 0, else all its Modifications
