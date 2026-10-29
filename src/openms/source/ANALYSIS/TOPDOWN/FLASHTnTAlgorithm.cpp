@@ -400,14 +400,15 @@ void FLASHTnTAlgorithm::setDefaultParams_()
                      "of 2 PrSMs, the targets of the same score 21: the weakly supported class holds most of the decoys and gets its own cutoff.");
   defaults_.setMinInt("protein_support_class", 0);
   defaults_.setValue("protein_evidence", "none",
-                     "What identifies a protein at the protein level. none: any proteoform in a class. support: at least two PrSMs over its "
-                     "proteoforms, or one PrSM of a determined proteoform (mass and both termini) without modifications of at least "
-                     "protein_evidence_min_mass Da; a protein with less (target or decoy alike) takes no part in the protein ranking and gets "
-                     "the protein q-value 1. The PrSM and proteoform levels are unchanged. In a shuffled entrapment of ten datasets (38 runs) the "
-                     "proteins of one PrSM were 10% entrapment at a nominal 1% (61 of 1206) while their decoys were rare (chance PrSMs of a "
-                     "decoy win their spectrum less often than those of an entrapment protein; cause open), and the proteins of two or more "
-                     "PrSMs 0.4% (3 of 1667): the rule keeps 72% of the proteins at an entrapment FDP of 0.5%.");
-  defaults_.setValidStrings("protein_evidence", {"none", "support"});
+                     "What identifies a protein at the protein level. none: any proteoform in a class. prsms: at least two PrSMs over its "
+                     "proteoforms; proteoforms: at least two distinct proteoforms; both also accept one PrSM of a determined proteoform (mass "
+                     "and both termini known, from the tag search) without modifications of at least protein_evidence_min_mass Da. A protein "
+                     "with less (target or decoy alike) takes no part in the protein ranking and gets the protein q-value 1. The PrSM and "
+                     "proteoform levels are unchanged. In a shuffled entrapment of ten datasets (38 runs) the proteins of one PrSM were 10% "
+                     "entrapment at a nominal 1% (61 of 1206) while their decoys were rare (a chance PrSM of a decoy wins its spectrum less "
+                     "often than one of an entrapment protein; cause open): prsms keeps 86% of the proteins at an entrapment FDP of 1.9%, "
+                     "proteoforms 72% at 0.5%.");
+  defaults_.setValidStrings("protein_evidence", {"none", "prsms", "proteoforms"});
   defaults_.setValue("protein_evidence_min_mass", 3000.0, "protein_evidence support: the mass (Da) a single determined, unmodified proteoform needs to identify a protein.");
   defaults_.setMinFloat("protein_evidence_min_mass", 0.0);
   defaults_.setValue("rescore_dump", "", "File (TSV) for every rescoring feature of every PrSM, its label (1 target, -1 decoy) and Percolator "
@@ -4564,7 +4565,8 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       std::pair<double, double> key {2.0, 0.0}; // lowest proteoform q-value, -best score
       bool internal = false;
       Size prsms = 0; // over all proteoforms of the protein (option protein_support_class)
-      bool strong = false; // a determined, unmodified proteoform of protein_evidence_min_mass (option protein_evidence)
+      Size proteoforms = 0; // clusters in a class (option protein_evidence)
+      bool strong = false;  // a determined (tag search), unmodified proteoform of protein_evidence_min_mass (option protein_evidence)
     };
     std::map<String, ProteinBest> best_of;
     for (const auto& members : clusters)
@@ -4573,10 +4575,13 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       if (rep.metaValueExists("DecoyPrecursor") && ! rep.getAccession().hasPrefix("DECOY")) continue;
       if (! rep.metaValueExists("proqvalue")) continue; // in no proteoform class (second_ranked drop): no protein evidence
       best_of[rep.getAccession()].prsms += members.size();
+      best_of[rep.getAccession()].proteoforms++;
       for (Size i : members)
       {
         const auto& h = proteoform_hits_[i];
-        if (isDetermined(h) && (double)h.getMetaValue("Mass") >= protein_evidence_min_mass_ && h.getMetaValue("Modifications").toDoubleList().empty())
+        // the determined classes of the tag search (not a ladder window, which fits any precursor mass somewhere)
+        if (hit_class[i] >= 0 && hit_class[i] <= fdr_class_max_blind && (double)h.getMetaValue("Mass") >= protein_evidence_min_mass_
+            && h.getMetaValue("Modifications").toDoubleList().empty())
         {
           best_of[rep.getAccession()].strong = true;
           break;
@@ -4606,19 +4611,22 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
     // option protein_support_class: the proteins with few PrSMs apart (a weakly supported protein, target or decoy, is a chance
     // match far more often); without the option one group per terminus class
     const Size support_classes = protein_support_class_ > 0 ? 2 : 1;
-    // option protein_evidence support: a protein of one PrSM whose proteoform is not determined, unmodified and of
-    // protein_evidence_min_mass takes no part (targets and decoys alike; q-value 1)
-    const bool need_support = protein_evidence_ == "support";
+    // option protein_evidence: a protein of one PrSM (prsms) or one proteoform (proteoforms) without a determined, unmodified
+    // proteoform of protein_evidence_min_mass takes no part (targets and decoys alike; q-value 1)
+    const bool need_support = protein_evidence_ != "none";
+    auto supported = [&](const ProteinBest& b) {
+      return ! need_support || b.strong || (protein_evidence_ == "prsms" ? b.prsms >= 2 : b.proteoforms >= 2);
+    };
     Size unsupported_targets = 0, unsupported_decoys = 0;
     for (const auto& [acc, b] : best_of)
     {
-      if (need_support && b.prsms < 2 && ! b.strong) (acc.hasPrefix("DECOY") ? unsupported_decoys : unsupported_targets)++;
+      if (! supported(b)) (acc.hasPrefix("DECOY") ? unsupported_decoys : unsupported_targets)++;
     }
     if (need_support)
     {
-      OPENMS_LOG_INFO << "Protein evidence (option protein_evidence support): " << unsupported_targets << " target and " << unsupported_decoys
-                      << " decoy proteins of one PrSM without a determined, unmodified proteoform of " << protein_evidence_min_mass_
-                      << " Da are not ranked" << std::endl;
+      OPENMS_LOG_INFO << "Protein evidence (option protein_evidence " << protein_evidence_ << "): " << unsupported_targets << " target and "
+                      << unsupported_decoys << " decoy proteins without two " << protein_evidence_ << " or a determined, unmodified proteoform of "
+                      << protein_evidence_min_mass_ << " Da are not ranked" << std::endl;
     }
     for (Size sc = 0; sc < support_classes; sc++)
     for (const bool internal : {false, true})
@@ -4627,7 +4635,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       std::vector<std::pair<std::pair<double, double>, String>> ranked_proteins;
       for (const auto& [acc, b] : best_of)
       {
-        if (need_support && b.prsms < 2 && ! b.strong) continue;
+        if (! supported(b)) continue;
         if (b.internal == internal && (support_classes == 1 || (b.prsms <= (Size)protein_support_class_) == weak)) ranked_proteins.emplace_back(b.key, acc);
       }
       if (ranked_proteins.empty()) continue;
