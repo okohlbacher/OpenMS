@@ -188,6 +188,12 @@ private:
   bool decoy_precursor_ = false;
   /// option precursor_reselect: a spectrum whose best PrSM has no mass is searched again with the other masses of its isolation window
   bool precursor_reselect_ = false;
+  /// option precursor_reselect charges: also the precursor mass under a charge-state error (charge +-1, doubled, halved)
+  bool precursor_reselect_charges_ = false;
+  /// option terminal_ladder_undetermined: terminal-ladder PrSMs without a mass in the undetermined classes (by termini)
+  bool terminal_ladder_undetermined_ = false;
+  /// option one_proteoform_per_feature fitted: a PrSM whose mass needs no blind modification keeps it
+  bool one_proteoform_per_feature_fitted_ = false;
   /// co-isolation: an MS1 mass reported by PrSMs of different proteins stays with the protein that explains it best
   bool one_proteoform_per_feature_ = true;
   /// native and targeted runs: candidates of every source chosen by the decoy margin of their spectrum, every candidate's PrSM reported

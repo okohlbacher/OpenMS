@@ -551,8 +551,10 @@ void FLASHTnTAlgorithm::setDefaultParams_()
                      "Co-isolation: when PrSMs of different proteins report the same mass taken from MS1 (within twice the precursor tolerance, "
                      "one isotope apart allowed) within 2 min, the mass is one MS1 feature of one proteoform, and only the protein that explains it "
                      "best keeps it (by its best PrSM score, which already prices blind shifts, then fewer blind modifications, then more PrSMs at that mass); the "
-                     "other proteins' PrSMs are reported without a mass. Masses from fragment pairs and decoy precursors are not affected.");
-  defaults_.setValidStrings("one_proteoform_per_feature", {"true", "false"});
+                     "other proteins' PrSMs are reported without a mass. Masses from fragment pairs and decoy precursors are not affected. "
+                     "fitted: as true, but a PrSM whose mass needs no blind modification keeps it (only masses reached with a blind shift are "
+                     "given up).");
+  defaults_.setValidStrings("one_proteoform_per_feature", {"true", "false", "fitted"});
   defaults_.setValue("native", "false",
                      "Native and targeted top-down (one or a few spectra, often several proteins per spectrum, no MS1 survey): the candidate "
                      "proteins of each source (sequence tags; sliding ladders, i.e. masses read as residue sums from any start or to any end of a "
@@ -580,8 +582,15 @@ void FLASHTnTAlgorithm::setDefaultParams_()
                      "other target mass of its isolation window (the survey spectrum's masses FLASHDeconv registered with the precursor). The "
                      "alternative mass whose search gives the best PrSM with a determined mass takes the spectrum, PrSMs and precursor, when that "
                      "PrSM scores at least as high as the spectrum's best PrSM less one truncation penalty. Targets and decoys get the same tries. "
-                     "On ten datasets a fifth of the PrSMs passing 1% had no mass, and a quarter of those spectra had a precursor of low quality.");
-  defaults_.setValidStrings("precursor_reselect", {"true", "false"});
+                     "On ten datasets a fifth of the PrSMs passing 1% had no mass, and a quarter of those spectra had a precursor of low quality. "
+                     "charges: also the spectrum's own precursor mass under a charge-state error of its deconvolution (charge one higher or lower, "
+                     "doubled, halved), tried like the window masses.");
+  defaults_.setValidStrings("precursor_reselect", {"true", "false", "charges"});
+  defaults_.setValue("terminal_ladder_undetermined", "class",
+                     "With terminal_ladder_class: class keeps the terminal-ladder PrSMs without a mass in the terminal-ladder class; undetermined "
+                     "puts them in the undetermined classes (by termini), as the PrSMs of the other sources without a mass, so that the "
+                     "terminal-ladder class holds determined PrSMs only.");
+  defaults_.setValidStrings("terminal_ladder_undetermined", {"class", "undetermined"});
   defaults_.setValue("chimeric_rounds", 0,
                      "Residual search of chimeric spectra: rounds after the first search (0: off). In each round, every spectrum with a PrSM (target or "
                      "decoy alike) loses the deconvolved masses its best PrSM matched (the masses on the path, also those one or two isotope "
@@ -653,8 +662,11 @@ void FLASHTnTAlgorithm::updateMembers_()
   search_cascade_ = param_.getValue("search_cascade").toString() == "true";
   learn_var_mod_penalty_ = param_.getValue("learn_var_mod_penalty").toString() == "true";
   decoy_precursor_ = param_.getValue("decoy_precursor").toString() == "true";
-  precursor_reselect_ = param_.getValue("precursor_reselect").toString() == "true";
-  one_proteoform_per_feature_ = param_.getValue("one_proteoform_per_feature").toString() == "true";
+  precursor_reselect_ = param_.getValue("precursor_reselect").toString() != "false";
+  precursor_reselect_charges_ = param_.getValue("precursor_reselect").toString() == "charges";
+  terminal_ladder_undetermined_ = param_.getValue("terminal_ladder_undetermined").toString() == "undetermined";
+  one_proteoform_per_feature_ = param_.getValue("one_proteoform_per_feature").toString() != "false";
+  one_proteoform_per_feature_fitted_ = param_.getValue("one_proteoform_per_feature").toString() == "fitted";
   chimeric_rounds_ = param_.getValue("chimeric_rounds");
   pro_fdr_ = param_.getValue("pro_fdr");
   keep_decoy_ = param_.getValue("keep_decoy").toString() == "true";
@@ -1443,6 +1455,12 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
         int s_loc_pres_e = deconv_meta_str.find(";", s_loc_pres_s);
         double precursor_snr = stod(deconv_meta_str.substr(s_loc_pres_s, s_loc_pres_e - s_loc_pres_s));
         pg.setSNR(precursor_snr);
+      }
+      if (deconv_meta_str.hasSubstring("precursorcharge="))
+      {
+        const int c_s = (int)deconv_meta_str.find("precursorcharge=") + 16;
+        const int c_e = (int)deconv_meta_str.find(";", c_s);
+        pg.setRepAbsCharge(std::stoi(deconv_meta_str.substr(c_s, c_e == (int)String::npos ? String::npos : c_e - c_s)));
       }
 
       dspec.setPrecursorPeakGroup(pg);
@@ -2826,8 +2844,8 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
     }
     if (hit.metaValueExists(mi_mass_closure)) return (int)fdr_class_mass_closed; // option ex:mass_closure: closed on the precursor mass
     if (hit.metaValueExists(mi_precursor_ladder)) return (int)fdr_class_precursor_ladder; // by source; all of them are determined
-    if (terminal_ladder_class_ && hit.metaValueExists(mi_terminal)) // by source as well; undetermined ones only with keep_underdetermined_
-    {
+    if (terminal_ladder_class_ && hit.metaValueExists(mi_terminal) && ! (terminal_ladder_undetermined_ && ! isDetermined(hit)))
+    { // by source as well; undetermined ones only with keep_underdetermined_ (with terminal_ladder_undetermined: in the classes below)
       if (! (isDetermined(hit) || keep_underdetermined_)) return -1;
       // option terminal_ladder_blind_class: the ones with a blind modification apart, as the determined classes are by blind count
       return (int)(terminal_ladder_blind_class_ && blindModCount_(hit) > 0 ? fdr_class_terminal_ladder_blind : fdr_class_terminal_ladder);
@@ -3867,7 +3885,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
           {
             if (m > 0 && std::abs(m - own) > 0.01) others++;
           }
-          if (others > 0) todo.push_back(d);
+          if (others > 0 || (precursor_reselect_charges_ && dspecs[d].getPrecursorPeakGroup().getRepAbsCharge() > 1)) todo.push_back(d);
         }
         std::vector<std::vector<ProteinHit>> chosen(dspecs.size());
         std::vector<double> chosen_mass(dspecs.size(), -1.0);
@@ -3880,7 +3898,19 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
           double best_own = -1e10;
           for (const auto& h : spec_proteoforms[d]) best_own = std::max(best_own, h.getScore());
           double best_alt = best_own - FLASHExtenderAlgorithm::truncation_penalty; // the penalty a precursor-mass path pays for a truncation
-          for (const auto& [m, j] : dspecs[d].getPrecursorMassIntensityMap())
+          std::vector<double> alternatives;
+          for (const auto& [m, j] : dspecs[d].getPrecursorMassIntensityMap()) alternatives.push_back(m);
+          // option charges: the own precursor under a charge-state error of the deconvolution. A mass deconvolved at charge z' whose true
+          // charge is z is z'/z times the true mass (the same m/z), so the true mass is own * z / z' for z = z' - 1, z' + 1, 2 z', z' / 2.
+          const int z = dspecs[d].getPrecursorPeakGroup().getRepAbsCharge(); // the charge FLASHDeconv assigned to the precursor
+          if (precursor_reselect_charges_ && z > 1)
+          {
+            for (double r : {(z - 1.0) / z, (z + 1.0) / z, 2.0, z % 2 == 0 ? 0.5 : 0.0})
+            {
+              if (r > 0) alternatives.push_back(own * r);
+            }
+          }
+          for (double m : alternatives)
           {
             if (m <= 0 || std::abs(m - own) <= 0.01) continue;
             tries++;
@@ -4504,6 +4534,10 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       {
         auto& h = proteoform_hits_[idx[a]];
         if (h.getAccession() == owner) continue;
+        // option fitted: a mass that needs no blind shift is explained by the PrSM's own stretch and modifications; it is not one that
+        // a truncation and a shift fitted to another protein's feature (ten datasets: 183 spectra lost such a mass, TopPIC assigned the
+        // loser's protein to most of them and agreed with the winner on 12)
+        if (one_proteoform_per_feature_fitted_ && blindModCount_(h) == 0) continue;
         h.setMetaValue(tntKey("Mass"), -1.0);
         h.setMetaValue(tntKey("MassLostToFeatureOwner"), owner);
         demoted++;

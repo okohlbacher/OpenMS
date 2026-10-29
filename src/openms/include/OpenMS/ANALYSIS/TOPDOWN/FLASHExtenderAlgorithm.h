@@ -237,6 +237,22 @@ public:
                         const std::vector<int>& mod_starts, const std::vector<int>& mod_ends, const std::vector<double>& mod_masses, double precursor,
                         double tol, double max_mod_mass, int& a, int& b, double& shift, const char*& shift_name);
 
+  /** Mass anchoring (option mass_closure anchored): the stretch [a, b) of a protein whose mass, with the modifications inside it and
+      optionally the acetylation of a protein N-terminus (start 0, or 1 after an initiator methionine), equals the precursor mass within
+      the relative tolerance @p tol, or one 13C isotope above or below it (an error of the precursor mass, not a modification). The
+      stretch contains [core_from, core_to) (the residues the terminal paths read). Both of its ends must be read by an observed
+      fragment mass: a prefix fragment (residue sum from a plus a prefix ion offset) and a suffix fragment (residue sum to b plus a
+      suffix ion offset) within @p tol of a mass in @p fragments (sorted ascending). Of the stretches that fit, the one with the most
+      such fragments wins; ties go to fewer moved termini (against @p start / @p end; -1 unknown), then to no isotope error, then to
+      the stretch nearer the terminal result. A modification (0-based residue range [mod_starts, mod_ends], inclusive) that is
+      neither fully inside nor fully outside a stretch rules it out. @p pro: residue masses from the N-terminus with the fixed
+      modifications (pro[i]: the first i residues). Returns false when no stretch fits; else a, b, the isotope error of the precursor
+      (precursor - proteoform, in 13C spacings), whether the N-terminus is acetylated, and the number of supporting fragments. */
+  static bool anchorStretch(const std::vector<double>& pro, const String& seq, int start, int end, int core_from, int core_to,
+                            const std::vector<int>& mod_starts, const std::vector<int>& mod_ends, const std::vector<double>& mod_masses,
+                            const std::vector<double>& fragments, const std::vector<double>& prefix_shifts, const std::vector<double>& suffix_shifts,
+                            double tol, double precursor, int& a, int& b, int& isotope, bool& acetyl, int& support);
+
 private:
   struct OPENMS_DLLAPI HitInformation
   {
@@ -562,8 +578,12 @@ private:
   double tol_;
 
   bool skip_precursor_inference_ = true;
-  /// option mass_closure: a terminal result without a mass gets the stretch that explains the MS1 precursor mass
+  /// option skip_precursor_inference with_ms1: no mass from complementary fragment pairs when the spectrum has an MS1 precursor mass
+  bool skip_precursor_inference_with_ms1_ = false;
+  /// option mass_closure: a terminal result without a mass gets the stretch that explains the MS1 precursor mass (true: closeMass,
+  /// anchored: anchorStretch)
   bool mass_closure_ = false;
+  bool mass_anchor_ = false;
   /// set MatchedMassIndices on every proteoform hit (setReportMatchedMasses)
   bool report_matched_masses_ = false;
   /// setPathAlternatives
