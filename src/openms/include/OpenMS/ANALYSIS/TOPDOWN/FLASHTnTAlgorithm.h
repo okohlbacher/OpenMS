@@ -33,6 +33,17 @@ namespace OpenMS
 class OPENMS_DLLAPI FLASHTnTAlgorithm : public DefaultParamHandler, public ProgressLogger
 {
 public:
+  /// option protein_evidence: whether a protein of @p prsms PrSMs over @p proteoforms proteoforms takes part in the protein ranking;
+  /// @p strong: one of them is a determined tag-search proteoform without blind modifications of protein_evidence_min_mass
+  static bool proteinEvidenceSupported(const String& protein_evidence, Size prsms, Size proteoforms, bool strong);
+  /// option protein_fdr_paired: whether a candidate beyond the best ones of a spectrum is characterized: its protein passes the
+  /// run-level protein FDR (@p passing) and, with @p paired, its target-decoy partner (@p partner; -1: none) is a candidate of the
+  /// same source in that spectrum (@p partner_is_candidate)
+  static bool characterizeBeyondTop(bool passing, bool paired, long partner, bool partner_is_candidate);
+  /// the fixed pseudo-random order of the database entries (splitmix64 of the index) that breaks the ties of the candidate cuts
+  static std::uint64_t entryOrder(std::uint64_t index);
+  /// the blind modifications of a PrSM: its BlindModCount, else the ModificationVariable entries of kind 0, else all its Modifications
+  static Size blindModCount(const ProteinHit& hit);
   /// constructor
   FLASHTnTAlgorithm();
 
@@ -196,6 +207,7 @@ private:
   String rescore_model_;
   /// terminal-ladder PrSMs as an FDR and proteoform class of their own
   bool terminal_ladder_class_ = false;
+  bool terminal_ladder_blind_class_ = false;
   /// PrSMs with a blind shift and no determined mass: keep or drop
   String undetermined_blind_ = "keep";
   /// target-decoy FDR as (D + 1) / T
@@ -215,6 +227,7 @@ private:
   double protein_tol_ = 0;
   int min_protein_hits_ = 5;
   double protein_fdr_ = 0.1;
+  bool protein_fdr_paired_ = false;
   std::vector<ProteinHit> proteoform_hits_;
   std::vector<ProteinHit> protein_hits_;
   std::vector<FLASHHelperClasses::Tag> tags_;

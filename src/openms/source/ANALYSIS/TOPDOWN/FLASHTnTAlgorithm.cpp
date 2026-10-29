@@ -62,12 +62,14 @@ constexpr int fdr_class_open_terminus = fdr_class_both_termini + 1;
 constexpr int fdr_class_precursor_ladder = fdr_class_open_terminus + 1;
 // option terminal_ladder_class: the PrSMs of terminal-ladder candidates, by source as well (determined or not)
 constexpr int fdr_class_terminal_ladder = fdr_class_precursor_ladder + 1;
+// option terminal_ladder_blind_class: the terminal-ladder PrSMs with a blind modification
+constexpr int fdr_class_terminal_ladder_blind = fdr_class_terminal_ladder + 1;
 // the residual rounds of the chimeric search: round r is class fdr_class_residual + r - 1
 constexpr int max_chimeric_rounds = 2;
-constexpr int fdr_class_residual = fdr_class_terminal_ladder + 1;
+constexpr int fdr_class_residual = fdr_class_terminal_ladder_blind + 1;
 constexpr int fdr_class_count = fdr_class_residual + max_chimeric_rounds;
 const char* const fdr_class_names[] = {"determined; 0 blind", "determined; 1 blind", "determined; 2 blind", "undetermined, both termini",
-                                       "undetermined, open terminus", "precursor ladder", "terminal ladder", "residual 1", "residual 2"};
+                                       "undetermined, open terminus", "precursor ladder", "terminal ladder", "terminal ladder; blind", "residual 1", "residual 2"};
 static_assert(std::size(fdr_class_names) == (Size)fdr_class_count, "one label per FDR class");
 // proteoform classes (a partition of the proteoforms; the FDR below): the determined PrSM classes are one, the undetermined ones and the
 // residual rounds as for PrSMs; with second_ranked "class", the proteoforms of second-ranked PrSMs only are one more
@@ -380,6 +382,11 @@ void FLASHTnTAlgorithm::setDefaultParams_()
                      "proteoform class of their own, as the precursor-ladder ones do: in a shuffled entrapment of ten datasets, 73% of the "
                      "entrapment proteoforms passing 1% came from this source, against 51% of the target proteoforms of the same score.");
   defaults_.setValidStrings("terminal_ladder_class", {"true", "false"});
+  defaults_.setValue("terminal_ladder_blind_class", "false",
+                     "With terminal_ladder_class: the terminal-ladder PrSMs with a blind modification form an FDR class of their own, apart "
+                     "from the unmodified ones, as the determined PrSMs are classed by blind count. Of the spectra the terminal-ladder class "
+                     "loses against the pooled determined class on ten datasets, most are unmodified determined PrSMs.");
+  defaults_.setValidStrings("terminal_ladder_blind_class", {"true", "false"});
   defaults_.setValue("undetermined_blind", "keep",
                      "PrSMs with a blind modification and no determined proteoform mass: keep, or drop (in no FDR class). Without a mass "
                      "nothing constrains the shift; the entrapment proteoforms that outscored the true protein of their spectrum were of this kind.");
@@ -441,6 +448,12 @@ void FLASHTnTAlgorithm::setDefaultParams_()
                      "database. 1 characterizes all candidates kept by max_protein_hits.");
   defaults_.setMinFloat("protein_fdr", 0.0);
   defaults_.setMaxFloat("protein_fdr", 1.0);
+  defaults_.setValue("protein_fdr_paired", "false",
+                     "With protein_fdr: a candidate beyond min_protein_hits is characterized only where its target-decoy partner is a "
+                     "candidate of the same spectrum and source too (both or neither), so that every such characterization of a target is "
+                     "mirrored by one of a decoy. Without it a passing target is characterized wherever it is a candidate, while its partner "
+                     "(a shuffled decoy is rarely a candidate beyond the best ones) is not: unmirrored chances of a false match.");
+  defaults_.setValidStrings("protein_fdr_paired", {"true", "false"});
 
   defaults_.setValue("ion_type", std::vector<std::string> {"b", "y"}, "Specifies ion types to consider.");
   defaults_.setValidStrings("ion_type", {"b", "c", "a", "y", "z", "x", "zp1", "zp2"});
@@ -637,6 +650,7 @@ void FLASHTnTAlgorithm::updateMembers_()
   rescore_dump_ = param_.getValue("rescore_dump").toString();
   rescore_model_ = param_.getValue("rescore_model").toString();
   terminal_ladder_class_ = param_.getValue("terminal_ladder_class").toString() == "true";
+  terminal_ladder_blind_class_ = param_.getValue("terminal_ladder_blind_class").toString() == "true";
   undetermined_blind_ = param_.getValue("undetermined_blind").toString();
   fdr_pseudocount_ = param_.getValue("fdr_pseudocount").toString() == "true";
   merge_small_classes_ = param_.getValue("merge_small_classes").toString() == "true";
@@ -655,6 +669,7 @@ void FLASHTnTAlgorithm::updateMembers_()
   protein_tol_ = param_.getValue("protein_tol");
   min_protein_hits_ = param_.getValue("min_protein_hits");
   protein_fdr_ = param_.getValue("protein_fdr");
+  protein_fdr_paired_ = param_.getValue("protein_fdr_paired").toString() == "true";
   native_ = param_.getValue("native").toString() == "true";
   path_alternatives_ = param_.getValue("path_alternatives");
   if (path_alternatives_ < 0) path_alternatives_ = native_ ? 2 : 0;
@@ -749,6 +764,28 @@ Size FLASHTnTAlgorithm::blindModCount_(const ProteinHit& hit)
     return (Size)std::count(variable.begin(), variable.end(), 0);
   }
   return hit.getMetaValue("Modifications").toDoubleList().size();
+}
+
+bool FLASHTnTAlgorithm::proteinEvidenceSupported(const String& protein_evidence, Size prsms, Size proteoforms, bool strong)
+{
+  if (protein_evidence == "none" || strong) return true;
+  return protein_evidence == "prsms" ? prsms >= 2 : proteoforms >= 2;
+}
+
+bool FLASHTnTAlgorithm::characterizeBeyondTop(bool passing, bool paired, long partner, bool partner_is_candidate)
+{
+  if (! passing) return false;
+  return ! paired || (partner >= 0 && partner_is_candidate);
+}
+
+std::uint64_t FLASHTnTAlgorithm::entryOrder(std::uint64_t index)
+{
+  return scrambledIndex(index);
+}
+
+Size FLASHTnTAlgorithm::blindModCount(const ProteinHit& hit)
+{
+  return blindModCount_(hit);
 }
 
 bool FLASHTnTAlgorithm::areConsistent_(const ProteinHit& a, const ProteinHit& b, double tol)
@@ -898,7 +935,7 @@ void FLASHTnTAlgorithm::setProteinQvalues_(const std::vector<int>& hit_class, co
         if (end == form_end && (start == form_start || (form_start == 1 && start == 2))) whole_protein = isDetermined(hit);
       }
     }
-    protein_class[i] = (c == fdr_class_precursor_ladder || c == fdr_class_terminal_ladder || (c <= fdr_class_max_blind && ! whole_protein)) ? c3_model : c;
+    protein_class[i] = (c == fdr_class_precursor_ladder || c == fdr_class_terminal_ladder || c == fdr_class_terminal_ladder_blind || (c <= fdr_class_max_blind && ! whole_protein)) ? c3_model : c;
   }
 
   // null of the PrSM score per class
@@ -2710,7 +2747,9 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
     if (hit.metaValueExists(mi_precursor_ladder)) return (int)fdr_class_precursor_ladder; // by source; all of them are determined
     if (terminal_ladder_class_ && hit.metaValueExists(mi_terminal)) // by source as well; undetermined ones only with keep_underdetermined_
     {
-      return isDetermined(hit) || keep_underdetermined_ ? (int)fdr_class_terminal_ladder : -1;
+      if (! (isDetermined(hit) || keep_underdetermined_)) return -1;
+      // option terminal_ladder_blind_class: the ones with a blind modification apart, as the determined classes are by blind count
+      return (int)(terminal_ladder_blind_class_ && blindModCount_(hit) > 0 ? fdr_class_terminal_ladder_blind : fdr_class_terminal_ladder);
     }
     if (isDetermined(hit)) return (int)std::min(blindModCount_(hit), (Size)fdr_class_max_blind);
     if (! keep_underdetermined_) return -1;
@@ -3227,12 +3266,32 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       // add chances without taking the places of sequence-tag candidates
       int rank_tag = 0, rank_gapped = 0;
       bool top = false; // of the protein of the last counted candidate: the other entries of a kept protein follow it (by_entry)
+      // option protein_fdr_paired: the proteins of this spectrum's candidates by source, for the partner condition
+      std::set<std::pair<Size, bool>> candidate_proteins;
+      if (use_protein_fdr && protein_fdr_paired_)
+      {
+        for (Size i = first; i < second; i++)
+        {
+          candidate_proteins.emplace(protein_of[(Size)(int)tag_candidates[i].getMetaValue(mi_fasta_index)], tag_candidates[i].metaValueExists(mi_gapped));
+        }
+      }
       for (Size i = first; i < second; i++)
       {
         const bool gapped = tag_candidates[i].metaValueExists(mi_gapped);
         // native: the decoy margin chose the candidates
         if (! tag_candidates[i].metaValueExists(mi_entry_of_kept)) top = (gapped ? rank_gapped++ : rank_tag++) < min_protein_hits_ || native_rule;
-        if (use_protein_fdr && ! top && passing_proteins.count(protein_of[(Size)(int)tag_candidates[i].getMetaValue(mi_fasta_index)]) == 0) continue;
+        if (use_protein_fdr && ! top)
+        {
+          // beyond the best candidates (option protein_fdr_paired: both partners or neither, so the partner must be a candidate of
+          // the same source here)
+          const Size protein = protein_of[(Size)(int)tag_candidates[i].getMetaValue(mi_fasta_index)];
+          const long partner = db->proteins[protein].partner;
+          if (! characterizeBeyondTop(passing_proteins.count(protein) > 0, protein_fdr_paired_, partner,
+                                      partner >= 0 && candidate_proteins.count(std::make_pair((Size)partner, gapped)) > 0))
+          {
+            continue;
+          }
+        }
         hits.push_back(tag_candidates[i]);
       }
 
@@ -4617,9 +4676,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
     // option protein_evidence: a protein of one PrSM (prsms) or one proteoform (proteoforms) without a determined, unmodified
     // proteoform of protein_evidence_min_mass takes no part (targets and decoys alike; q-value 1)
     const bool need_support = protein_evidence_ != "none";
-    auto supported = [&](const ProteinBest& b) {
-      return ! need_support || b.strong || (protein_evidence_ == "prsms" ? b.prsms >= 2 : b.proteoforms >= 2);
-    };
+    auto supported = [&](const ProteinBest& b) { return proteinEvidenceSupported(protein_evidence_, b.prsms, b.proteoforms, b.strong); };
     Size unsupported_targets = 0, unsupported_decoys = 0;
     for (const auto& [acc, b] : best_of)
     {
