@@ -544,6 +544,8 @@ private:
   double tol_;
 
   bool skip_precursor_inference_ = true;
+  /// option mass_closure: a terminal result without a mass gets the stretch that explains the MS1 precursor mass
+  bool mass_closure_ = false;
   /// set MatchedMassIndices on every proteoform hit (setReportMatchedMasses)
   bool report_matched_masses_ = false;
   /// setPathAlternatives

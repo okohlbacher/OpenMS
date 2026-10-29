@@ -66,18 +66,20 @@ constexpr int fdr_class_terminal_ladder = fdr_class_precursor_ladder + 1;
 constexpr int fdr_class_terminal_ladder_blind = fdr_class_terminal_ladder + 1;
 // the residual rounds of the chimeric search: round r is class fdr_class_residual + r - 1
 constexpr int max_chimeric_rounds = 2;
-constexpr int fdr_class_residual = fdr_class_terminal_ladder_blind + 1;
+// option ex:mass_closure: PrSMs whose stretch was closed on the precursor mass (MassClosure)
+constexpr int fdr_class_mass_closed = fdr_class_terminal_ladder_blind + 1;
+constexpr int fdr_class_residual = fdr_class_mass_closed + 1;
 constexpr int fdr_class_count = fdr_class_residual + max_chimeric_rounds;
 const char* const fdr_class_names[] = {"determined; 0 blind", "determined; 1 blind", "determined; 2 blind", "undetermined, both termini",
-                                       "undetermined, open terminus", "precursor ladder", "terminal ladder", "terminal ladder; blind", "residual 1", "residual 2"};
+                                       "undetermined, open terminus", "precursor ladder", "terminal ladder", "terminal ladder; blind", "mass closed", "residual 1", "residual 2"};
 static_assert(std::size(fdr_class_names) == (Size)fdr_class_count, "one label per FDR class");
 // proteoform classes (a partition of the proteoforms; the FDR below): the determined PrSM classes are one, the undetermined ones and the
 // residual rounds as for PrSMs; with second_ranked "class", the proteoforms of second-ranked PrSMs only are one more
 constexpr int pf_class_determined = 0, pf_class_both_termini = 1, pf_class_open_terminus = 2, pf_class_precursor_ladder = 3, pf_class_second_ranked = 4,
-              pf_class_terminal_ladder = 5, pf_class_residual = 6;
+              pf_class_terminal_ladder = 5, pf_class_mass_closed = 6, pf_class_residual = 7;
 constexpr int pf_class_count = pf_class_residual + max_chimeric_rounds;
 const char* const pf_class_names[] = {"determined", "undetermined, both termini", "undetermined, open terminus", "precursor ladder", "second-ranked",
-                                      "terminal ladder", "residual 1", "residual 2"};
+                                      "terminal ladder", "mass closed", "residual 1", "residual 2"};
 static_assert(std::size(pf_class_names) == (Size)pf_class_count, "one label per proteoform class");
 // rescore: the features of a PrSM, in the order FLASHTnTAlgorithm::run computes them (rescore_features chooses among them)
 const std::vector<std::string> rescore_feature_names = {"Score", "RawScore", "ExtensionScore", "Coverage", "RawCoverage", "LogMatchedFragments",
@@ -935,7 +937,7 @@ void FLASHTnTAlgorithm::setProteinQvalues_(const std::vector<int>& hit_class, co
         if (end == form_end && (start == form_start || (form_start == 1 && start == 2))) whole_protein = isDetermined(hit);
       }
     }
-    protein_class[i] = (c == fdr_class_precursor_ladder || c == fdr_class_terminal_ladder || c == fdr_class_terminal_ladder_blind || (c <= fdr_class_max_blind && ! whole_protein)) ? c3_model : c;
+    protein_class[i] = (c == fdr_class_precursor_ladder || c == fdr_class_terminal_ladder || c == fdr_class_terminal_ladder_blind || c == fdr_class_mass_closed || (c <= fdr_class_max_blind && ! whole_protein)) ? c3_model : c;
   }
 
   // null of the PrSM score per class
@@ -1725,7 +1727,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
              mi_fasta_index = registry.registerName("FastaIndex"), mi_protein_rank = registry.registerName("ProteinRank"),
              mi_gapped = registry.registerName("GappedTag"), mi_terminal = registry.registerName("TerminalLadder"),
              mi_sliding = registry.registerName("SlidingLadder"),
-             mi_precursor_ladder = registry.registerName("PrecursorLadder"),
+             mi_precursor_ladder = registry.registerName("PrecursorLadder"), mi_mass_closure = registry.registerName("MassClosure"),
              mi_pl_start = registry.registerName("PrecursorLadderStart"), mi_pl_end = registry.registerName("PrecursorLadderEnd"),
              mi_pl_isotope = registry.registerName("PrecursorLadderIsotope"), mi_entry_of_kept = registry.registerName("EntryOfKeptProtein"),
              mi_description = registry.registerName("Description");
@@ -2744,6 +2746,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       if (! isDetermined(hit) && ! keep_underdetermined_) return -1;
       return fdr_class_residual + std::min(chimeric_round, max_chimeric_rounds) - 1;
     }
+    if (hit.metaValueExists(mi_mass_closure)) return (int)fdr_class_mass_closed; // option ex:mass_closure: closed on the precursor mass
     if (hit.metaValueExists(mi_precursor_ladder)) return (int)fdr_class_precursor_ladder; // by source; all of them are determined
     if (terminal_ladder_class_ && hit.metaValueExists(mi_terminal)) // by source as well; undetermined ones only with keep_underdetermined_
     {
@@ -2937,7 +2940,9 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
         {
           for (Size i : main_members)
           {
-            if (isDetermined(proteoform_hits_[i]) && hit_class[i] != fdr_class_precursor_ladder && hit_class[i] != fdr_class_terminal_ladder) defining.push_back(i);
+            if (isDetermined(proteoform_hits_[i]) && hit_class[i] != fdr_class_precursor_ladder && hit_class[i] != fdr_class_terminal_ladder
+                && hit_class[i] != fdr_class_terminal_ladder_blind && hit_class[i] != fdr_class_mass_closed)
+              defining.push_back(i);
           }
           cluster_class[k] = pf_class_determined;
           if (defining.empty())
@@ -2947,8 +2952,13 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
           }
           if (defining.empty())
           {
-            for (Size i : main_members) { if (hit_class[i] == fdr_class_terminal_ladder) defining.push_back(i); }
+            for (Size i : main_members) { if (hit_class[i] == fdr_class_terminal_ladder || hit_class[i] == fdr_class_terminal_ladder_blind) defining.push_back(i); }
             cluster_class[k] = pf_class_terminal_ladder;
+          }
+          if (defining.empty())
+          {
+            for (Size i : main_members) { if (hit_class[i] == fdr_class_mass_closed) defining.push_back(i); }
+            cluster_class[k] = pf_class_mass_closed;
           }
           if (defining.empty())
           {
@@ -2979,7 +2989,8 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
         for (Size i : defining)
         {
           cluster_score[k] = std::max(cluster_score[k], proteoform_hits_[i].getScore());
-          if (cluster_class[k] == pf_class_determined || cluster_class[k] == pf_class_precursor_ladder || cluster_class[k] == pf_class_terminal_ladder)
+          if (cluster_class[k] == pf_class_determined || cluster_class[k] == pf_class_precursor_ladder || cluster_class[k] == pf_class_terminal_ladder
+              || cluster_class[k] == pf_class_mass_closed)
           {
             // passing first, then fewer blind modifications, then the higher score
             const bool pass_i = qvalues[i] <= rep_q, pass_row = qvalues[row] <= rep_q;
