@@ -69,7 +69,7 @@ END_SECTION
 
 START_SECTION((static bool anchorStretch(...)))
 {
-  const String seq = "MKAAGGLSVPKTEEFRDDMNPQRWYHAACKKGSLTV"; // 35 residues
+  const String seq = "MKAAGGLSVPKTEEFRDDMNPQRWYHAACKKGSLTV"; // 36 residues
   std::vector<double> pro = {0.0};
   for (char aa : seq) pro.push_back(pro.back() + ResidueDB::getInstance()->getResidue(aa)->getMonoWeight(Residue::Internal));
   const double water = Residue::getInternalToFull().getMonoWeight(), iso = Constants::C13C12_MASSDIFF_U;
@@ -85,7 +85,7 @@ START_SECTION((static bool anchorStretch(...)))
   std::vector<double> mm;
   int a = -1, b = -1, k = 9, support = 0;
   bool acetyl = true;
-  // a terminal result 0..35 (both ends at the protein ends) and a precursor of 6..24: both ends move to the fragment-supported stretch
+  // a terminal result 0..35 and a precursor of 6..24: both ends move to the fragment-supported stretch
   bool ok = FLASHExtenderAlgorithm::anchorStretch(pro, seq, 0, 35, 10, 18, ms, me, mm, frags_of(6, 24), pre, suf, 10e-6, mass_of(6, 24), a, b, k, acetyl, support);
   TEST_EQUAL(ok, true)
   TEST_EQUAL(a, 6)
@@ -124,6 +124,30 @@ START_SECTION((static bool anchorStretch(...)))
   TEST_EQUAL(b, 24)
   ms = {5}; me = {7}; mm = {79.966331}; // a range [5, 7] that the start 6 would cut
   ok = FLASHExtenderAlgorithm::anchorStretch(pro, seq, 0, 35, 10, 18, ms, me, mm, frags_of(6, 24), pre, suf, 10e-6, mass_of(6, 24), a, b, k, acetyl, support);
+  TEST_EQUAL(ok, false)
+  ms.clear(); me.clear(); mm.clear();
+  // a frozen start (a terminus a ladder reads) stays: from 0, the precursor of 6..24 fits no stretch
+  ok = FLASHExtenderAlgorithm::anchorStretch(pro, seq, 0, 35, 10, 18, ms, me, mm, frags_of(6, 24), pre, suf, 10e-6, mass_of(6, 24), a, b, k, acetyl, support, true, false);
+  TEST_EQUAL(ok, false)
+  // ... and a frozen end that fits is kept: start 6 found, end 24 as given
+  ok = FLASHExtenderAlgorithm::anchorStretch(pro, seq, 0, 24, 10, 18, ms, me, mm, frags_of(6, 24), pre, suf, 10e-6, mass_of(6, 24), a, b, k, acetyl, support, false, true);
+  TEST_EQUAL(ok, true)
+  TEST_EQUAL(a, 6)
+  TEST_EQUAL(b, 24)
+  // the chance control: three fragments (b3, b5, y4) beat 200 moved precursor masses in a sparse spectrum ...
+  ok = FLASHExtenderAlgorithm::anchorStretch(pro, seq, 0, 35, 10, 18, ms, me, mm, frags_of(6, 24), pre, suf, 10e-6, mass_of(6, 24), a, b, k, acetyl, support, false, false, 200);
+  TEST_EQUAL(ok, true)
+  TEST_EQUAL(support, 3)
+  // ... but not in a spectrum crowded with masses, where moved precursors find as many chance fragments (every residue sum of the protein)
+  std::vector<double> crowded;
+  for (int i = 0; i < 36; i++)
+    for (int j = i + 1; j <= 36; j++)
+    {
+      crowded.push_back(pro[j] - pro[i] + pre[0]);
+      crowded.push_back(pro[j] - pro[i] + suf[0]);
+    }
+  std::sort(crowded.begin(), crowded.end());
+  ok = FLASHExtenderAlgorithm::anchorStretch(pro, seq, 0, 35, 10, 18, ms, me, mm, crowded, pre, suf, 10e-6, mass_of(6, 24), a, b, k, acetyl, support, false, false, 200);
   TEST_EQUAL(ok, false)
 }
 END_SECTION

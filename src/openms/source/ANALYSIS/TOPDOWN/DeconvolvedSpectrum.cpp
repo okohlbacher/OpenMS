@@ -45,9 +45,7 @@ namespace OpenMS
     {
       val << ";precursorscan=" << precursor_scan_number_ << ";precursormass=" << std::to_string(precursor_peak_group_.getMonoMass())
           << ";precursorQscore=" << std::to_string(precursor_peak_group_.getQscore2D())  << ";precursorSNR=" << std::to_string(precursor_peak_group_.getChargeSNR(precursor_peak_.getCharge()))
-          << ";precursorQscore1D=" << std::to_string(precursor_peak_group_.getQscore())
-          // the precursor's charge as the deconvolution assigned it (FLASHTnT's precursor re-selection tries charge-state errors)
-          << ";precursorcharge=" << (precursor_peak_.getCharge() != 0 ? std::abs(precursor_peak_.getCharge()) : precursor_peak_group_.getRepAbsCharge());
+          << ";precursorQscore1D=" << std::to_string(precursor_peak_group_.getQscore());
     }
     else
     {

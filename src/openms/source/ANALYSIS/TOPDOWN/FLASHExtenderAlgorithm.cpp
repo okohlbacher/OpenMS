@@ -105,7 +105,14 @@ namespace OpenMS
     defaults_.setValue("ion_type", std::vector<std::string> {"b", "y"}, "Specifies ion types to consider");
     defaults_.setValidStrings("ion_type", {"b", "c", "a", "y", "z", "x", "zp1", "zp2"});
     defaults_.setValue("skip_precursor_inference", "false", "Set to skip precursor mass inference with complimentary fragment ion pairs. Precursor masses inferred from MSn-1 will be used in MSn");
-    defaults_.setValidStrings("skip_precursor_inference", {"true", "false", "with_ms1"}); // with_ms1: only when the spectrum has an MS1 precursor mass
+    // with_ms1: only when the spectrum has an MS1 precursor mass; corroborated: a mass from fragment pairs that differs from the MS1
+    // precursor mass is kept only when it also is a mass of the isolation window (and the complementary pairs support it)
+    defaults_.setValidStrings("skip_precursor_inference", {"true", "false", "with_ms1", "corroborated"});
+    defaults_.setValue("ladder_end_penalty", "true",
+                       "A precursor-mass path pays the truncation penalty for an internal C-terminal end. false: not for an end the suffix "
+                       "ladder of the terminal paths reads (at least as many fragments as a terminal ladder needs), as its start is taken "
+                       "from a prefix ladder that reads it.");
+    defaults_.setValidStrings("ladder_end_penalty", {"true", "false"});
     defaults_.addTag("skip_precursor_inference", "advanced");
     defaults_.setValue("mass_closure", "false",
                        "A proteoform whose precursor-mass path failed (reported with an undetermined mass) gets the stretch that explains the "
@@ -127,6 +134,8 @@ namespace OpenMS
     max_mod_mass_ = param_.getValue("max_mod_mass");
     skip_precursor_inference_ = param_.getValue("skip_precursor_inference") == "true";
     skip_precursor_inference_with_ms1_ = param_.getValue("skip_precursor_inference") == "with_ms1";
+    precursor_inference_corroborated_ = param_.getValue("skip_precursor_inference") == "corroborated";
+    ladder_end_penalty_ = param_.getValue("ladder_end_penalty").toString() == "true";
     mass_closure_ = param_.getValue("mass_closure").toString() == "true";
     mass_anchor_ = param_.getValue("mass_closure").toString() == "anchored";
     loadVariableModifications_();
@@ -722,10 +731,11 @@ namespace OpenMS
                                              const std::vector<int>& mod_starts, const std::vector<int>& mod_ends, const std::vector<double>& mod_masses,
                                              const std::vector<double>& fragments, const std::vector<double>& prefix_shifts,
                                              const std::vector<double>& suffix_shifts, double tol, double precursor, int& a, int& b, int& isotope,
-                                             bool& acetyl, int& support)
+                                             bool& acetyl, int& support, bool freeze_start, bool freeze_end, int controls)
   {
     const int len = (int)seq.size();
     if ((int)pro.size() != len + 1 || precursor <= 0 || fragments.empty() || core_from < 0 || core_to > len || core_from >= core_to) return false;
+    if ((freeze_start && (start < 0 || start > core_from)) || (freeze_end && (end < core_to || end > len))) return false;
     const double water = Residue::getInternalToFull().getMonoWeight(), iso = Constants::C13C12_MASSDIFF_U, acetyl_mass = 42.010565;
     double negative = 0; // the most the modifications can lower a mass: bounds the search for each start
     for (double m : mod_masses) negative += std::min(0.0, m);
@@ -748,67 +758,99 @@ namespace OpenMS
       }
       return false;
     };
+    // the index of an observed mass within tol of the residue sum plus an ion offset, or -1
     const auto observed = [&](double residues, const std::vector<double>& offsets) {
       for (double o : offsets)
       {
         const double m = residues + o, margin = tol * m;
         auto it = std::lower_bound(fragments.begin(), fragments.end(), m - margin);
-        if (it != fragments.end() && *it <= m + margin) return true;
+        if (it != fragments.end() && *it <= m + margin) return (int)(it - fragments.begin());
       }
-      return false;
+      return -1;
     };
-    int best_support = 0, best_moved = 3, best_iso = 9, best_distance = 0;
-    bool found = false;
-    for (int from = 0; from <= core_from; from++)
-    {
-      const bool nterm = from == 0 || (from == 1 && seq[0] == 'M');
-      bool has_nterm_mod = false;
-      for (Size k = 0; k < mod_masses.size(); k++) has_nterm_mod = has_nterm_mod || mod_starts[k] == from;
-      for (int ac = 0; ac <= (nterm && ! has_nterm_mod ? 1 : 0); ac++)
+    // the best stretch for precursor mass p (its supporting fragments; 0: none)
+    const auto search = [&](double p, int& ra, int& rb, int& riso, bool& racetyl) {
+      int best_support = 0, best_moved = 3, best_iso = 9, best_distance = 0;
+      const int from_lo = freeze_start ? start : 0, from_hi = freeze_start ? start : core_from;
+      for (int from = from_lo; from <= from_hi; from++)
       {
-        const double extra = ac ? acetyl_mass : 0.0;
-        for (int to = std::max(from + 1, core_to); to <= len; to++)
+        const bool nterm = from == 0 || (from == 1 && seq[0] == 'M');
+        bool has_nterm_mod = false; // an acetylation the terminal paths already placed there (a side-chain modification does not block it)
+        for (Size k = 0; k < mod_masses.size(); k++) has_nterm_mod = has_nterm_mod || (mod_starts[k] == from && std::abs(mod_masses[k] - acetyl_mass) < 0.02);
+        for (int ac = 0; ac <= (nterm && ! has_nterm_mod ? 1 : 0); ac++)
         {
-          const double bare = pro[to] - pro[from] + water + extra;
-          if (bare + negative > precursor + iso + tol * precursor) break;
-          const double mods = mods_in(from, to);
-          if (mods < -1e99) continue;
-          const double mass = bare + mods;
-          int k_iso = 9;
-          for (int k : {0, 1, -1})
+          const double extra = ac ? acetyl_mass : 0.0;
+          for (int to = freeze_end ? end : std::max(from + 1, core_to); to <= (freeze_end ? end : len); to++)
           {
-            if (std::abs(precursor - k * iso - mass) <= tol * precursor) { k_iso = k; break; }
+            const double bare = pro[to] - pro[from] + water + extra;
+            if (bare + negative > p + iso + tol * p) break;
+            const double mods = mods_in(from, to);
+            if (mods < -1e99) continue;
+            const double mass = bare + mods;
+            int k_iso = 9;
+            for (int k : {0, 1, -1})
+            {
+              if (std::abs(p - k * iso - mass) <= tol * p) { k_iso = k; break; }
+            }
+            if (k_iso == 9) continue;
+            // the observed masses that read the two ends (distinct masses: one mass supports one end once)
+            std::set<int> prefix_set, suffix_set;
+            for (int j = from + 1; j < to; j++)
+            {
+              if (cut_at(j)) continue;
+              const int pi = observed(pro[j] - pro[from] + extra + mods_in(from, j), prefix_shifts);
+              if (pi >= 0) prefix_set.insert(pi);
+              const int si = observed(pro[to] - pro[j] + mods_in(j, to), suffix_shifts);
+              if (si >= 0) suffix_set.insert(si);
+            }
+            std::set<int> both = prefix_set;
+            both.insert(suffix_set.begin(), suffix_set.end());
+            if (prefix_set.empty() || suffix_set.empty() || both.size() < 2) continue;
+            const int total = (int)both.size(); // the support: distinct observed masses
+            const int moved = (start < 0 || from != start) + (end < 0 || to != end);
+            const int distance = (start < 0 ? 0 : std::abs(from - start)) + (end < 0 ? 0 : std::abs(to - end));
+            const bool better = best_support == 0 || total > best_support
+                                || (total == best_support
+                                    && (moved < best_moved || (moved == best_moved && (std::abs(k_iso) < std::abs(best_iso) || (std::abs(k_iso) == std::abs(best_iso) && distance < best_distance)))));
+            if (! better) continue;
+            best_support = total;
+            best_moved = moved;
+            best_iso = k_iso;
+            best_distance = distance;
+            ra = from;
+            rb = to;
+            riso = k_iso;
+            racetyl = ac == 1;
           }
-          if (k_iso == 9) continue;
-          // the fragments that read the two ends
-          int prefix = 0, suffix = 0;
-          for (int j = from + 1; j < to; j++)
-          {
-            if (cut_at(j)) continue;
-            if (observed(pro[j] - pro[from] + extra + mods_in(from, j), prefix_shifts)) prefix++;
-            if (observed(pro[to] - pro[j] + mods_in(j, to), suffix_shifts)) suffix++;
-          }
-          if (prefix == 0 || suffix == 0) continue;
-          const int moved = (start < 0 || from != start) + (end < 0 || to != end);
-          const int distance = (start < 0 ? 0 : std::abs(from - start)) + (end < 0 ? 0 : std::abs(to - end));
-          const bool better = ! found || prefix + suffix > best_support
-                              || (prefix + suffix == best_support
-                                  && (moved < best_moved || (moved == best_moved && (std::abs(k_iso) < std::abs(best_iso) || (std::abs(k_iso) == std::abs(best_iso) && distance < best_distance)))));
-          if (! better) continue;
-          found = true;
-          best_support = prefix + suffix;
-          best_moved = moved;
-          best_iso = k_iso;
-          best_distance = distance;
-          a = from;
-          b = to;
-          isotope = k_iso;
-          acetyl = ac == 1;
-          support = prefix + suffix;
         }
       }
+      return best_support;
+    };
+    int sa = -1, sb = -1, si = 0;
+    bool sac = false;
+    const int observed_support = search(precursor, sa, sb, si, sac);
+    if (observed_support == 0) return false;
+    // chance: the same search at moved precursor masses must not find as well supported a stretch. Moves that refit the same stretch
+    // (isotope multiples, acetylation with or without an isotope) are left out; moves by residue masses stay, as the null of a moved end.
+    for (int k = 0; k < controls; k++)
+    {
+      const double shift = -300.0 + k * (600.0 / controls) + 0.0157 * (k % 7);
+      bool refit = false;
+      for (int n = -4; n <= 4 && ! refit; n++)
+      {
+        refit = std::abs(shift - n * iso) < 0.3 || (std::abs(n) <= 1 && (std::abs(shift - acetyl_mass - n * iso) < 0.3 || std::abs(shift + acetyl_mass - n * iso) < 0.3));
+      }
+      if (refit) continue;
+      int ta, tb, ti;
+      bool tac;
+      if (search(precursor + shift, ta, tb, ti, tac) >= observed_support) return false;
     }
-    return found;
+    a = sa;
+    b = sb;
+    isotope = si;
+    acetyl = sac;
+    support = observed_support;
+    return true;
   }
 
   void FLASHExtenderAlgorithm::getProMasses_(const ProteinHit& hit, std::vector<double>& pro_masses, int mode,
@@ -1923,8 +1965,13 @@ namespace OpenMS
             }
             if (debug) { std::cout << std::endl; }
             int mode_score = getScore_(best_path[0]);
-            if (m == 2 && hi.protein_end_position_ >= 0 && hi.protein_end_position_ < (int)hit.getSequence().size())
-              mode_score -= truncation_penalty; // penalize C-terminal truncation in the both-termini path
+            // penalize C-terminal truncation in the both-termini path; with ladder_end_penalty false, not an end the suffix ladder of
+            // the terminal paths reads (as the start is taken from a prefix ladder that reads it, start_prior_): on ten datasets 112
+            // spectra kept no mass although their terminal stretch fit the precursor exactly, mode 2 scoring it at 0 after this
+            // penalty (Rieske presequence 1-78 in mouse brain: 19 - 19 against 72 for the terminal paths)
+            if (m == 2 && hi.protein_end_position_ >= 0 && hi.protein_end_position_ < (int)hit.getSequence().size()
+                && ! (! ladder_end_penalty_ && hi.protein_end_position_ == terminal_end && terminal_c_ladder >= min_c_term_ladder))
+              mode_score -= truncation_penalty;
             if (m == 1 && hi.protein_start_position_ >= 0 && hi.protein_end_position_ >= 0 && hi.protein_start_position_ >= hi.protein_end_position_)
             {
               // the N- and C-terminal paths overlap: keep one of them, and drop the modifications and matched positions of the other
@@ -1979,6 +2026,19 @@ namespace OpenMS
               = given_precursor_mass_ > 0 && std::abs(given_precursor_mass_ - hi.calculated_precursor_mass_) <= tol_ * given_precursor_mass_;
             if (! reject_mass && precursor_by_fragment && ! given_mass_agrees) // the MS1 precursor mass confirms it
               reject_mass = ! hasComplementaryPairSupport_(sorted_masses, hi.calculated_precursor_mass_, hi.inferred_suffix_node_, hi.inferred_prefix_node_);
+            // option skip_precursor_inference corroborated: against an MS1 precursor mass, a mass from fragment pairs must also be a mass
+            // of the isolation window (a co-isolated species; one isotope off allowed). On ten datasets 1,215 such masses (4% of the
+            // spectra with a mass) agreed with TopPIC's in 13%.
+            if (! reject_mass && precursor_by_fragment && ! given_mass_agrees && precursor_inference_corroborated_ && given_precursor_mass_ > 0)
+            {
+              bool in_window = false;
+              for (const auto& [wm, wi] : dspec.getPrecursorMassIntensityMap())
+              {
+                for (int k = -1; k <= 1 && ! in_window; k++)
+                  in_window = wm > 0 && std::abs(wm + k * c13_spacing - hi.calculated_precursor_mass_) <= tol_ * hi.calculated_precursor_mass_;
+              }
+              reject_mass = ! in_window;
+            }
             // Unshifted suffix fragment masses measured from the C-terminus cannot come from a proteoform that ends before it. A precursor
             // mass of a co-isolated species makes the path end where that mass fits and absorb the rest with blind shifts: on Eclip_1480
             // scan 8324, YCII 1-76 [+28.0, -484.8] scored 37, the terminal result 1-98 with 21 y ions 228.
@@ -2133,8 +2193,13 @@ namespace OpenMS
         // against 72 for the terminal paths), an open terminus that closes on the precursor (85), and a doubly truncated form whose
         // terminal paths ran to the protein ends (part of 1,598 with a precursor lighter than the stretch). A moved internal terminus
         // pays the truncation penalty, as a precursor-mass path does. Not for precursor-ladder candidates (circular, as above).
+        // Not for a terminal result with a blind shift: the terminal paths fitted that shift without a mass constraint, and anchoring would
+        // fit the stretch on top of it. A terminus any fragment of the terminal paths was read from stays where it is;
+        // the stretch must beat the same search at 200 moved precursor masses (anchorStretch's controls). A moved terminus pays the
+        // truncation penalty once: not when the terminal paths already paid it for an internal terminus. If the score would fall to 0,
+        // the result stays without a mass.
         if (mass_anchor_ && hi.calculated_precursor_mass_ <= 0 && given_precursor_mass_ > 0 && ! used_mode.empty() && used_mode.back() != 2
-            && ! hit.metaValueExists(mi_precursor_ladder_source))
+            && ! hit.metaValueExists(mi_precursor_ladder_source) && std::find(mod_vars.begin(), mod_vars.end(), 0) == mod_vars.end())
         {
           std::vector<double> pro; // residue masses from the N-terminus, with the entry's fixed modifications
           getProMasses_(hit, pro, 1, hi.fixed_);
@@ -2153,42 +2218,54 @@ namespace OpenMS
             core_from = std::min(core_from, mod_starts[k]);
             core_to = std::max(core_to, mod_ends[k] + 1);
           }
+          // a terminus that any fragment of the terminal paths was read from stays: those fragments are in the score, which would no longer
+          // describe the reported proteoform if that terminus moved
+          const bool freeze_start = hi.protein_start_position_ >= 0 && terminal_n_ladder > 0;
+          const bool freeze_end = hi.protein_end_position_ >= 0 && terminal_c_ladder > 0;
           int found_a = -1, found_b = -1, found_iso = 0, found_support = 0;
           bool found_acetyl = false;
           if (core_from < core_to && core_from >= 0 && core_to <= len
               && anchorStretch(pro, hit.getSequence(), hi.protein_start_position_, hi.protein_end_position_, core_from, core_to, mod_starts, mod_ends,
                                mod_masses, sorted_masses, prefix_shifts_, suffix_shifts_, tol_, given_precursor_mass_, found_a, found_b, found_iso,
-                               found_acetyl, found_support))
+                               found_acetyl, found_support, freeze_start, freeze_end, 200))
           {
+            const auto internal_start = [&](int p) { return p > 0 && ! (p == 1 && hit.getSequence()[0] == 'M'); };
             const bool moved_start = hi.protein_start_position_ < 0 || found_a != hi.protein_start_position_;
             const bool moved_end = hi.protein_end_position_ < 0 || found_b != hi.protein_end_position_;
-            const bool internal_start = found_a > 0 && ! (found_a == 1 && hit.getSequence()[0] == 'M');
-            double mods = 0;
-            for (Size k = 0; k < mod_masses.size(); k++)
+            int penalty = 0;
+            if (moved_start && internal_start(found_a) && ! (hi.protein_start_position_ >= 0 && internal_start(hi.protein_start_position_))) penalty += truncation_penalty;
+            if (moved_end && found_b < len && ! (hi.protein_end_position_ >= 0 && hi.protein_end_position_ < len)) penalty += truncation_penalty;
+            if (total_score - penalty > 0)
             {
-              if (mod_starts[k] >= found_a && mod_ends[k] < found_b) mods += mod_masses[k];
+              double mods = 0;
+              for (Size k = 0; k < mod_masses.size(); k++)
+              {
+                if (mod_starts[k] >= found_a && mod_ends[k] < found_b) mods += mod_masses[k];
+              }
+              if (found_acetyl)
+              {
+                mod_masses.push_back(42.010565);
+                mod_starts.push_back(found_a);
+                mod_ends.push_back(found_a);
+                mod_tols.push_back(tol_ * given_precursor_mass_);
+                mod_vars.push_back(1);
+                mod_var_names.push_back("Acetyl,");
+                mod_var_accs.push_back("1,");
+                mods += 42.010565;
+              }
+              const bool open_terminus = hi.protein_start_position_ < 0 || hi.protein_end_position_ < 0;
+              hi.protein_start_position_ = found_a;
+              hi.protein_end_position_ = found_b;
+              // the proteoform mass: residues and modifications; an isotope error of the precursor is no part of the proteoform
+              hi.calculated_precursor_mass_ = pro[found_b] - pro[found_a] + i2f_mass + mods;
+              total_score -= penalty;
+              String name = moved_start || moved_end ? "anchored" : "anchored, unmoved";
+              // the terminal result had an open terminus: FLASHTnT keeps the PrSM in that FDR class (the class it has without the mass)
+              if (open_terminus) name += ", open terminus";
+              if (found_iso != 0) name += found_iso > 0 ? ", +1 isotope" : ", -1 isotope";
+              if (found_acetyl) name += ", acetyl";
+              hit.setMetaValue(mi_mass_closure, name);
             }
-            if (found_acetyl)
-            {
-              mod_masses.push_back(42.010565);
-              mod_starts.push_back(found_a);
-              mod_ends.push_back(found_a);
-              mod_tols.push_back(tol_ * given_precursor_mass_);
-              mod_vars.push_back(1);
-              mod_var_names.push_back("Acetyl,");
-              mod_var_accs.push_back("1,");
-              mods += 42.010565;
-            }
-            hi.protein_start_position_ = found_a;
-            hi.protein_end_position_ = found_b;
-            // the proteoform mass: residues and modifications; an isotope error of the precursor is no part of the proteoform
-            hi.calculated_precursor_mass_ = pro[found_b] - pro[found_a] + i2f_mass + mods;
-            if (moved_start && internal_start) total_score -= truncation_penalty;
-            if (moved_end && found_b < len) total_score -= truncation_penalty;
-            String name = moved_start || moved_end ? "anchored" : "anchored, unmoved";
-            if (found_iso != 0) name += found_iso > 0 ? ", +1 isotope" : ", -1 isotope";
-            if (found_acetyl) name += ", acetyl";
-            hit.setMetaValue(mi_mass_closure, name);
           }
         }
         if (hi.protein_start_position_ >= 0 && hi.protein_end_position_ >= 0 && hi.protein_start_position_ >= hi.protein_end_position_) { continue; }

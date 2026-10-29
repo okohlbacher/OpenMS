@@ -129,7 +129,7 @@ UInt tntKey(const char* name)
   static const std::unordered_map<std::string, UInt> keys = [] {
     auto& registry = MetaInfoInterface::metaRegistry();
     std::unordered_map<std::string, UInt> k;
-    for (const char* n : {"BlindModCount", "DeconvMassInfo", "DecoyPrecursor", "EndPosition", "ExtensionScore", "FDRClass", "FastaIndex", "GivenMass", "Index", "Mass", "MassLostToFeatureOwner", "ModificationEnds", "ModificationStarts", "Modifications", "PrSMIndices", "ProteinQvalue", "ProteoformIndex", "ProteoformMassByFragmentMass", "RT", "RawCoverage", "RawFragmentHypotheses", "RawMatchedFragments", "RawScore", "Representative", "Scan", "StartPosition", "TagIndices", "proqvalue", "qvalue"})
+    for (const char* n : {"BlindModCount", "DeconvMassInfo", "DecoyPrecursor", "EndPosition", "ExtensionScore", "FDRClass", "FastaIndex", "GivenMass", "Index", "Mass", "MassClosure", "MassLostToFeatureOwner", "ModificationEnds", "ModificationStarts", "Modifications", "PrSMIndices", "ProteinQvalue", "ProteoformIndex", "ProteoformMassByFragmentMass", "RT", "RawCoverage", "RawFragmentHypotheses", "RawMatchedFragments", "RawScore", "Representative", "Scan", "StartPosition", "TagIndices", "proqvalue", "qvalue"})
       k.emplace(n, registry.registerName(n));
     return k;
   }();
@@ -178,6 +178,19 @@ inline std::uint64_t scrambledIndex(std::uint64_t x)
 bool isDetermined(const ProteinHit& hit)
 {
   return ! ((double)hit.getMetaValue(tntKey("Mass")) < 0 || (int)hit.getMetaValue(tntKey("StartPosition")) < 0 || (int)hit.getMetaValue(tntKey("EndPosition")) < 0);
+}
+
+// A mass anchored after the identification (option ex:mass_closure anchored, MassClosure "anchored..."): the PrSM keeps the FDR class and the
+// rank among the PrSMs of its spectrum that it had without the mass; its score is the terminal paths' score, no evidence for the mass.
+bool isAnchored(const ProteinHit& hit)
+{
+  return hit.metaValueExists(tntKey("MassClosure")) && hit.getMetaValue(tntKey("MassClosure")).toString().hasPrefix("anchored");
+}
+
+// determined by a path the precursor mass constrained (not anchored afterwards)
+bool isPathDetermined(const ProteinHit& hit)
+{
+  return isDetermined(hit) && ! isAnchored(hit);
 }
 
 // The better of two PrSMs of a spectrum, as the best PrSM per spectrum is chosen after raw-spectrum scoring: the higher score, then a
@@ -582,10 +595,8 @@ void FLASHTnTAlgorithm::setDefaultParams_()
                      "other target mass of its isolation window (the survey spectrum's masses FLASHDeconv registered with the precursor). The "
                      "alternative mass whose search gives the best PrSM with a determined mass takes the spectrum, PrSMs and precursor, when that "
                      "PrSM scores at least as high as the spectrum's best PrSM less one truncation penalty. Targets and decoys get the same tries. "
-                     "On ten datasets a fifth of the PrSMs passing 1% had no mass, and a quarter of those spectra had a precursor of low quality. "
-                     "charges: also the spectrum's own precursor mass under a charge-state error of its deconvolution (charge one higher or lower, "
-                     "doubled, halved), tried like the window masses.");
-  defaults_.setValidStrings("precursor_reselect", {"true", "false", "charges"});
+                     "On ten datasets a fifth of the PrSMs passing 1% had no mass, and a quarter of those spectra had a precursor of low quality.");
+  defaults_.setValidStrings("precursor_reselect", {"true", "false"});
   defaults_.setValue("terminal_ladder_undetermined", "class",
                      "With terminal_ladder_class: class keeps the terminal-ladder PrSMs without a mass in the terminal-ladder class; undetermined "
                      "puts them in the undetermined classes (by termini), as the PrSMs of the other sources without a mass, so that the "
@@ -662,8 +673,7 @@ void FLASHTnTAlgorithm::updateMembers_()
   search_cascade_ = param_.getValue("search_cascade").toString() == "true";
   learn_var_mod_penalty_ = param_.getValue("learn_var_mod_penalty").toString() == "true";
   decoy_precursor_ = param_.getValue("decoy_precursor").toString() == "true";
-  precursor_reselect_ = param_.getValue("precursor_reselect").toString() != "false";
-  precursor_reselect_charges_ = param_.getValue("precursor_reselect").toString() == "charges";
+  precursor_reselect_ = param_.getValue("precursor_reselect").toString() == "true";
   terminal_ladder_undetermined_ = param_.getValue("terminal_ladder_undetermined").toString() == "undetermined";
   one_proteoform_per_feature_ = param_.getValue("one_proteoform_per_feature").toString() != "false";
   one_proteoform_per_feature_fitted_ = param_.getValue("one_proteoform_per_feature").toString() == "fitted";
@@ -1455,12 +1465,6 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
         int s_loc_pres_e = deconv_meta_str.find(";", s_loc_pres_s);
         double precursor_snr = stod(deconv_meta_str.substr(s_loc_pres_s, s_loc_pres_e - s_loc_pres_s));
         pg.setSNR(precursor_snr);
-      }
-      if (deconv_meta_str.hasSubstring("precursorcharge="))
-      {
-        const int c_s = (int)deconv_meta_str.find("precursorcharge=") + 16;
-        const int c_e = (int)deconv_meta_str.find(";", c_s);
-        pg.setRepAbsCharge(std::stoi(deconv_meta_str.substr(c_s, c_e == (int)String::npos ? String::npos : c_e - c_s)));
       }
 
       dspec.setPrecursorPeakGroup(pg);
@@ -2842,17 +2846,20 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       if (! isDetermined(hit) && ! keep_underdetermined_) return -1;
       return fdr_class_residual + std::min(chimeric_round, max_chimeric_rounds) - 1;
     }
-    if (hit.metaValueExists(mi_mass_closure)) return (int)fdr_class_mass_closed; // option ex:mass_closure: closed on the precursor mass
+    // option ex:mass_closure true: closed on the precursor mass, a class of its own; anchored: the class the PrSM has without the mass
+    const bool determined = isPathDetermined(hit);
+    if (hit.metaValueExists(mi_mass_closure) && ! isAnchored(hit) && isDetermined(hit)) return (int)fdr_class_mass_closed;
     if (hit.metaValueExists(mi_precursor_ladder)) return (int)fdr_class_precursor_ladder; // by source; all of them are determined
-    if (terminal_ladder_class_ && hit.metaValueExists(mi_terminal) && ! (terminal_ladder_undetermined_ && ! isDetermined(hit)))
+    if (terminal_ladder_class_ && hit.metaValueExists(mi_terminal) && ! (terminal_ladder_undetermined_ && ! determined))
     { // by source as well; undetermined ones only with keep_underdetermined_ (with terminal_ladder_undetermined: in the classes below)
-      if (! (isDetermined(hit) || keep_underdetermined_)) return -1;
+      if (! (determined || keep_underdetermined_)) return -1;
       // option terminal_ladder_blind_class: the ones with a blind modification apart, as the determined classes are by blind count
       return (int)(terminal_ladder_blind_class_ && blindModCount_(hit) > 0 ? fdr_class_terminal_ladder_blind : fdr_class_terminal_ladder);
     }
-    if (isDetermined(hit)) return (int)std::min(blindModCount_(hit), (Size)fdr_class_max_blind);
+    if (determined) return (int)std::min(blindModCount_(hit), (Size)fdr_class_max_blind);
     if (! keep_underdetermined_) return -1;
-    const bool both_termini = (int)hit.getMetaValue("StartPosition") > 0 && (int)hit.getMetaValue("EndPosition") > 0;
+    const bool both_termini = (int)hit.getMetaValue("StartPosition") > 0 && (int)hit.getMetaValue("EndPosition") > 0
+                              && ! (isAnchored(hit) && hit.getMetaValue(mi_mass_closure).toString().hasSubstring("open terminus"));
     return (int)(both_termini ? fdr_class_both_termini : fdr_class_open_terminus);
   };
 
@@ -3036,7 +3043,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
         {
           for (Size i : main_members)
           {
-            if (isDetermined(proteoform_hits_[i]) && hit_class[i] != fdr_class_precursor_ladder && hit_class[i] != fdr_class_terminal_ladder
+            if (isPathDetermined(proteoform_hits_[i]) && hit_class[i] != fdr_class_precursor_ladder && hit_class[i] != fdr_class_terminal_ladder
                 && hit_class[i] != fdr_class_terminal_ladder_blind && hit_class[i] != fdr_class_mass_closed)
               defining.push_back(i);
           }
@@ -3878,14 +3885,14 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
           {
             if (best == nullptr || h.getScore() > best->getScore()) best = &h;
           }
-          if ((double)best->getMetaValue("Mass") > 0) continue;
+          if ((double)best->getMetaValue("Mass") > 0 && ! isAnchored(*best)) continue; // an anchored mass does not pre-empt re-selection
           const double own = dspecs[d].getPrecursorPeakGroup().getMonoMass();
           int others = 0;
           for (const auto& [m, j] : dspecs[d].getPrecursorMassIntensityMap())
           {
             if (m > 0 && std::abs(m - own) > 0.01) others++;
           }
-          if (others > 0 || (precursor_reselect_charges_ && dspecs[d].getPrecursorPeakGroup().getRepAbsCharge() > 1)) todo.push_back(d);
+          if (others > 0) todo.push_back(d);
         }
         std::vector<std::vector<ProteinHit>> chosen(dspecs.size());
         std::vector<double> chosen_mass(dspecs.size(), -1.0);
@@ -3898,18 +3905,12 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
           double best_own = -1e10;
           for (const auto& h : spec_proteoforms[d]) best_own = std::max(best_own, h.getScore());
           double best_alt = best_own - FLASHExtenderAlgorithm::truncation_penalty; // the penalty a precursor-mass path pays for a truncation
+          // the window masses by decreasing intensity: of alternatives whose PrSMs score equally, the more intense mass takes the spectrum
+          std::vector<std::pair<double, double>> by_intensity;
+          for (const auto& [m, j] : dspecs[d].getPrecursorMassIntensityMap()) by_intensity.emplace_back(j, m);
+          std::stable_sort(by_intensity.begin(), by_intensity.end(), [](const auto& l, const auto& r) { return l.first > r.first; });
           std::vector<double> alternatives;
-          for (const auto& [m, j] : dspecs[d].getPrecursorMassIntensityMap()) alternatives.push_back(m);
-          // option charges: the own precursor under a charge-state error of the deconvolution. A mass deconvolved at charge z' whose true
-          // charge is z is z'/z times the true mass (the same m/z), so the true mass is own * z / z' for z = z' - 1, z' + 1, 2 z', z' / 2.
-          const int z = dspecs[d].getPrecursorPeakGroup().getRepAbsCharge(); // the charge FLASHDeconv assigned to the precursor
-          if (precursor_reselect_charges_ && z > 1)
-          {
-            for (double r : {(z - 1.0) / z, (z + 1.0) / z, 2.0, z % 2 == 0 ? 0.5 : 0.0})
-            {
-              if (r > 0) alternatives.push_back(own * r);
-            }
-          }
+          for (const auto& [j, m] : by_intensity) alternatives.push_back(m);
           for (double m : alternatives)
           {
             if (m <= 0 || std::abs(m - own) <= 0.01) continue;
@@ -3920,14 +3921,18 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
             alt_spec.setPrecursorPeakGroup(pg);
             std::vector<ProteinHit> out;
             extendSpectrumInto(d, eparam_now, alt_spec, out, false);
-            double top = -1e10;
+            // the alternative's best PrSM must have a mass a precursor-mass path took from it (not anchored afterwards, not from fragment
+            // pairs): an alternative whose best PrSM still has no mass would change the precursor without giving the spectrum a mass
+            double top = -1e10, best_any = -1e10;
             for (const auto& h : out)
             {
-              if ((double)h.getMetaValue("Mass") <= 0 || (int)h.getMetaValue("ProteoformMassByFragmentMass") != 0) continue;
+              best_any = std::max(best_any, h.getScore());
+              if ((double)h.getMetaValue("Mass") <= 0 || (int)h.getMetaValue("ProteoformMassByFragmentMass") != 0 || isAnchored(h)) continue;
               if (std::abs((double)h.getMetaValue("Mass") - m) > 3 * iso + 0.1) continue; // a mass taken from this precursor, up to isotope errors
               top = std::max(top, h.getScore());
             }
-            if (top > -1e9 && top >= best_alt)
+            if (top < best_any) top = -1e10;
+            if (top > -1e9 && (chosen_mass[d] <= 0 ? top >= best_alt : top > best_alt))
             {
               best_alt = top;
               chosen_mass[d] = m;
@@ -4470,6 +4475,9 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
     {
       const auto& h = proteoform_hits_[i];
       if ((double)h.getMetaValue(tntKey("Mass")) <= 0 || (int)h.getMetaValue(tntKey("ProteoformMassByFragmentMass"), 0) != 0 || h.metaValueExists(tntKey("DecoyPrecursor"))) continue;
+      // an anchored mass (ex:mass_closure anchored) neither owns a feature nor loses it: its score is the terminal paths' score, no evidence
+      // for the mass, so it must not take another protein's mass; and its ends are read by fragments beyond chance, so it keeps its own
+      if (one_proteoform_per_feature_fitted_ && h.metaValueExists(tntKey("MassClosure"))) continue;
       idx.push_back(i);
     }
     std::sort(idx.begin(), idx.end(), [&](Size l, Size r) { return (double)proteoform_hits_[l].getMetaValue(tntKey("Mass")) < (double)proteoform_hits_[r].getMetaValue(tntKey("Mass")); });
@@ -5212,7 +5220,7 @@ void FLASHTnTAlgorithm::keepBestPerSpectrum_(std::vector<ProteinHit>& hits, cons
   // reports only the former: a free blind shift on a PrSM without a mass took up the sequence differences of a similar protein and outscored
   // the right one (B. theta entrapment, Eclip_1480 scan 9171: KPRS_ECOLI 243-315 at the MS1 mass 78, Q8A535_BACTN 1-799 without a mass 112).
   const auto better = [](const ProteinHit& a, const ProteinHit& b) {
-    if (isDetermined(a) != isDetermined(b)) return isDetermined(a);
+    if (isPathDetermined(a) != isPathDetermined(b)) return isPathDetermined(a); // an anchored mass wins no spectrum by itself
     return isBetterPrSM(a, b);
   };
   std::map<int, Size> best;

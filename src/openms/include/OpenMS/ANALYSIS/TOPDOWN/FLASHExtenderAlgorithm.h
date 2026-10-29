@@ -243,15 +243,20 @@ public:
       stretch contains [core_from, core_to) (the residues the terminal paths read). Both of its ends must be read by an observed
       fragment mass: a prefix fragment (residue sum from a plus a prefix ion offset) and a suffix fragment (residue sum to b plus a
       suffix ion offset) within @p tol of a mass in @p fragments (sorted ascending). Of the stretches that fit, the one with the most
-      such fragments wins; ties go to fewer moved termini (against @p start / @p end; -1 unknown), then to no isotope error, then to
+      such fragments (distinct observed masses, at least two) wins; ties go to fewer moved termini (against @p start / @p end; -1 unknown), then to no isotope error, then to
       the stretch nearer the terminal result. A modification (0-based residue range [mod_starts, mod_ends], inclusive) that is
       neither fully inside nor fully outside a stretch rules it out. @p pro: residue masses from the N-terminus with the fixed
       modifications (pro[i]: the first i residues). Returns false when no stretch fits; else a, b, the isotope error of the precursor
-      (precursor - proteoform, in 13C spacings), whether the N-terminus is acetylated, and the number of supporting fragments. */
+      (precursor - proteoform, in 13C spacings), whether the N-terminus is acetylated, and the number of supporting fragments.
+      @p freeze_start / @p freeze_end keep that terminus where the terminal result has it (a terminus a fragment ladder reads).
+      With @p controls > 0, the stretch must also beat chance: the same search at @p controls precursor masses moved by -300 to
+      +300 Da (except moves that refit the same stretch: isotope multiples, acetylation) must not reach its number of supporting
+      fragments, as hasComplementaryPairSupport_ tests an inferred precursor mass. */
   static bool anchorStretch(const std::vector<double>& pro, const String& seq, int start, int end, int core_from, int core_to,
                             const std::vector<int>& mod_starts, const std::vector<int>& mod_ends, const std::vector<double>& mod_masses,
                             const std::vector<double>& fragments, const std::vector<double>& prefix_shifts, const std::vector<double>& suffix_shifts,
-                            double tol, double precursor, int& a, int& b, int& isotope, bool& acetyl, int& support);
+                            double tol, double precursor, int& a, int& b, int& isotope, bool& acetyl, int& support, bool freeze_start = false,
+                            bool freeze_end = false, int controls = 0);
 
 private:
   struct OPENMS_DLLAPI HitInformation
@@ -580,6 +585,11 @@ private:
   bool skip_precursor_inference_ = true;
   /// option skip_precursor_inference with_ms1: no mass from complementary fragment pairs when the spectrum has an MS1 precursor mass
   bool skip_precursor_inference_with_ms1_ = false;
+  /// option skip_precursor_inference corroborated: a mass from fragment pairs that differs from the MS1 precursor mass is kept only if
+  /// it also is a mass of the isolation window (one isotope off allowed)
+  bool precursor_inference_corroborated_ = false;
+  /// option ladder_end_penalty false: a precursor-mass path pays no truncation penalty for an end a suffix ladder reads
+  bool ladder_end_penalty_ = true;
   /// option mass_closure: a terminal result without a mass gets the stretch that explains the MS1 precursor mass (true: closeMass,
   /// anchored: anchorStretch)
   bool mass_closure_ = false;
