@@ -585,8 +585,10 @@ void FLASHTnTAlgorithm::setDefaultParams_()
                      "best keeps it (by its best PrSM score, which already prices blind shifts, then fewer blind modifications, then more PrSMs at that mass); the "
                      "other proteins' PrSMs are reported without a mass. Masses from fragment pairs and decoy precursors are not affected. "
                      "fitted: as true, but a PrSM whose mass needs no blind modification keeps it (only masses reached with a blind shift are "
-                     "given up).");
-  defaults_.setValidStrings("one_proteoform_per_feature", {"true", "false", "fitted"});
+                     "given up). fitted_top: as fitted, but only when that PrSM is also the best PrSM of its spectrum (a second PrSM of the "
+                     "owner's own spectrum gives the mass up). shift_free_owner: as true, but the owner is the protein of the best-scoring "
+                     "PrSM that needs no blind modification and is the best PrSM of its spectrum, if the feature has one.");
+  defaults_.setValidStrings("one_proteoform_per_feature", {"true", "false", "fitted", "fitted_top", "shift_free_owner"});
   defaults_.setValue("native", "false",
                      "Native and targeted top-down (one or a few spectra, often several proteins per spectrum, no MS1 survey): the candidate "
                      "proteins of each source (sequence tags; sliding ladders, i.e. masses read as residue sums from any start or to any end of a "
@@ -694,8 +696,11 @@ void FLASHTnTAlgorithm::updateMembers_()
   decoy_precursor_ = param_.getValue("decoy_precursor").toString() == "true";
   precursor_reselect_ = param_.getValue("precursor_reselect").toString() == "true";
   terminal_ladder_undetermined_ = param_.getValue("terminal_ladder_undetermined").toString() == "undetermined";
-  one_proteoform_per_feature_ = param_.getValue("one_proteoform_per_feature").toString() != "false";
-  one_proteoform_per_feature_fitted_ = param_.getValue("one_proteoform_per_feature").toString() == "fitted";
+  const String opf = param_.getValue("one_proteoform_per_feature").toString();
+  one_proteoform_per_feature_ = opf != "false";
+  one_proteoform_per_feature_fitted_ = opf == "fitted" || opf == "fitted_top";
+  one_proteoform_per_feature_top_ = opf == "fitted_top";
+  one_proteoform_per_feature_shift_free_owner_ = opf == "shift_free_owner";
   chimeric_rounds_ = param_.getValue("chimeric_rounds");
   pro_fdr_ = param_.getValue("pro_fdr");
   keep_decoy_ = param_.getValue("keep_decoy").toString() == "true";
@@ -4520,9 +4525,26 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       if ((double)h.getMetaValue(tntKey("Mass")) <= 0 || (int)h.getMetaValue(tntKey("ProteoformMassByFragmentMass"), 0) != 0 || h.metaValueExists(tntKey("DecoyPrecursor"))) continue;
       // an anchored mass (ex:mass_closure anchored) neither owns a feature nor loses it: its score is the terminal paths' score, no evidence
       // for the mass, so it must not take another protein's mass; and its ends are read by fragments beyond chance, so it keeps its own
-      if (one_proteoform_per_feature_fitted_ && isAnchored(h)) continue;
+      if ((one_proteoform_per_feature_fitted_ || one_proteoform_per_feature_shift_free_owner_) && isAnchored(h)) continue;
       idx.push_back(i);
     }
+    // options fitted_top and shift_free_owner: the best PrSM of each spectrum (targets and decoys alike, as the spectrum's PrSM is chosen)
+    std::map<int, Size> best_of_scan;
+    if (one_proteoform_per_feature_top_ || one_proteoform_per_feature_shift_free_owner_)
+    {
+      for (Size i = 0; i < proteoform_hits_.size(); i++)
+      {
+        const int scan = proteoform_hits_[i].getMetaValue(tntKey("Scan"));
+        auto it = best_of_scan.find(scan);
+        if (it == best_of_scan.end()) best_of_scan[scan] = i;
+        else if (isBetterPrSM(proteoform_hits_[i], proteoform_hits_[it->second])) it->second = i;
+      }
+    }
+    // the hit's protein is the protein of its spectrum's best PrSM
+    const auto top_of_scan = [&](const ProteinHit& h) {
+      const auto it = best_of_scan.find((int)h.getMetaValue(tntKey("Scan")));
+      return it != best_of_scan.end() && proteoform_hits_[it->second].getAccession() == h.getAccession();
+    };
     std::sort(idx.begin(), idx.end(), [&](Size l, Size r) { return (double)proteoform_hits_[l].getMetaValue(tntKey("Mass")) < (double)proteoform_hits_[r].getMetaValue(tntKey("Mass")); });
     // conflicts: pairs of PrSMs of different proteins at the same mass (or one isotope apart) and elution; union-find over them
     std::vector<Size> parent(idx.size());
@@ -4581,6 +4603,20 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
           first = false;
         }
       }
+      // option shift_free_owner: the protein of the best shift-free PrSM that is the best of its spectrum owns the feature
+      if (one_proteoform_per_feature_shift_free_owner_)
+      {
+        double best_shift_free = -std::numeric_limits<double>::infinity();
+        for (Size a : members)
+        {
+          const auto& h = proteoform_hits_[idx[a]];
+          if (blindModCount_(h) == 0 && top_of_scan(h) && h.getScore() > best_shift_free)
+          {
+            best_shift_free = h.getScore();
+            owner = h.getAccession();
+          }
+        }
+      }
       for (Size a : members)
       {
         auto& h = proteoform_hits_[idx[a]];
@@ -4588,7 +4624,10 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
         // option fitted: a mass that needs no blind shift is explained by the PrSM's own stretch and modifications; it is not one that
         // a truncation and a shift fitted to another protein's feature (ten datasets: 183 spectra lost such a mass, TopPIC assigned the
         // loser's protein to most of them and agreed with the winner on 12)
-        if (one_proteoform_per_feature_fitted_ && blindModCount_(h) == 0) continue;
+        // option fitted_top: only when the PrSM is also its spectrum's best; a second PrSM of the owner's spectrum that fits the same mass
+        // shift-free is a competing reading of that spectrum, not a second proteoform (ten datasets: of the masses fitted keeps beyond
+        // the owner's, two thirds of those TopPIC identified were another protein, and they doubled the entrapment PrSMs with a mass)
+        if (one_proteoform_per_feature_fitted_ && blindModCount_(h) == 0 && (! one_proteoform_per_feature_top_ || top_of_scan(h))) continue;
         h.setMetaValue(tntKey("Mass"), -1.0);
         h.setMetaValue(tntKey("MassLostToFeatureOwner"), owner);
         demoted++;

@@ -196,6 +196,10 @@ private:
   bool terminal_ladder_undetermined_ = false;
   /// option one_proteoform_per_feature fitted: a PrSM whose mass needs no blind modification keeps it
   bool one_proteoform_per_feature_fitted_ = false;
+  /// option one_proteoform_per_feature fitted_top: as fitted, but only a PrSM that is also the best PrSM of its spectrum keeps it
+  bool one_proteoform_per_feature_top_ = false;
+  /// option one_proteoform_per_feature shift_free_owner: the best shift-free PrSM that is the best of its spectrum makes its protein the owner
+  bool one_proteoform_per_feature_shift_free_owner_ = false;
   /// co-isolation: an MS1 mass reported by PrSMs of different proteins stays with the protein that explains it best
   bool one_proteoform_per_feature_ = true;
   /// native and targeted runs: candidates of every source chosen by the decoy margin of their spectrum, every candidate's PrSM reported
