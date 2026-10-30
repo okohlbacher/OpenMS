@@ -193,12 +193,21 @@ bool isPathDetermined(const ProteinHit& hit)
   return isDetermined(hit) && ! isAnchored(hit);
 }
 
+// both termini known from the search: an anchored PrSM whose terminal result had an open terminus counts as open (the class it has
+// without the mass, at the PrSM and the proteoform level)
+bool bothTerminiFound(const ProteinHit& hit)
+{
+  return (int)hit.getMetaValue(tntKey("StartPosition")) > 0 && (int)hit.getMetaValue(tntKey("EndPosition")) > 0
+         && ! (isAnchored(hit) && hit.getMetaValue(tntKey("MassClosure")).toString().hasSubstring("open terminus"));
+}
+
 // The better of two PrSMs of a spectrum, as the best PrSM per spectrum is chosen after raw-spectrum scoring: the higher score, then a
-// determined mass and termini, then the higher coverage (an exact tie keeps the earlier one).
+// determined mass and termini (not anchored afterwards), then the higher coverage (an exact tie keeps the earlier one).
 bool isBetterPrSM(const ProteinHit& a, const ProteinHit& b)
 {
   auto is_determined = [](const ProteinHit& h) {
-    return (double)h.getMetaValue(tntKey("Mass")) > 0 && (int)h.getMetaValue(tntKey("StartPosition")) > 0 && (int)h.getMetaValue(tntKey("EndPosition")) > 0;
+    return (double)h.getMetaValue(tntKey("Mass")) > 0 && (int)h.getMetaValue(tntKey("StartPosition")) > 0 && (int)h.getMetaValue(tntKey("EndPosition")) > 0
+           && ! isAnchored(h);
   };
   if (a.getScore() != b.getScore()) return a.getScore() > b.getScore();
   if (is_determined(a) != is_determined(b)) return is_determined(a);
@@ -415,8 +424,9 @@ void FLASHTnTAlgorithm::setDefaultParams_()
   defaults_.setValidStrings("protein_pseudocount", {"true", "false"});
   defaults_.setValue("merge_small_prsm_classes", "false",
                      "PrSM-level FDR classes with fewer than 100 PrSMs (targets and decoys: the rule reads no label) are merged within their kind "
-                     "(the determined classes among themselves, the others among themselves), as merge_small_classes does at the proteoform "
-                     "level, so that a small class is not passed above its best decoy on few decoys.");
+                     "(the determined classes among themselves, the others among themselves; a kind whose classes together stay under 100 joins "
+                     "the other kind's first group), as merge_small_classes does at the proteoform level, so that a small class is not passed "
+                     "above its best decoy on few decoys.");
   defaults_.setValidStrings("merge_small_prsm_classes", {"true", "false"});
   defaults_.setValue("merge_small_classes", "kind",
                      "Proteoform classes with fewer than 100 proteoforms (targets and decoys) are counted together with the next ones (true); "
@@ -2869,9 +2879,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
     }
     if (determined) return (int)std::min(blindModCount_(hit), (Size)fdr_class_max_blind);
     if (! keep_underdetermined_) return -1;
-    const bool both_termini = (int)hit.getMetaValue("StartPosition") > 0 && (int)hit.getMetaValue("EndPosition") > 0
-                              && ! (isAnchored(hit) && hit.getMetaValue(mi_mass_closure).toString().hasSubstring("open terminus"));
-    return (int)(both_termini ? fdr_class_both_termini : fdr_class_open_terminus);
+    return (int)(bothTerminiFound(hit) ? fdr_class_both_termini : fdr_class_open_terminus);
   };
 
   // the order of the PrSMs for the FDR: best score first, then the higher coverage, then the higher scan number
@@ -3102,7 +3110,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
           {
             for (Size i : main_members)
             {
-              if ((int)proteoform_hits_[i].getMetaValue("StartPosition") > 0 && (int)proteoform_hits_[i].getMetaValue("EndPosition") > 0) defining.push_back(i);
+              if (bothTerminiFound(proteoform_hits_[i])) defining.push_back(i);
             }
             cluster_class[k] = pf_class_both_termini;
           }
@@ -3956,13 +3964,13 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
             alt_spec.setPrecursorPeakGroup(pg);
             std::vector<ProteinHit> out;
             extendSpectrumInto(d, eparam_now, alt_spec, out, false);
-            // the alternative's best PrSM must have a mass a precursor-mass path took from it (not anchored afterwards, not from fragment
-            // pairs): an alternative whose best PrSM still has no mass would change the precursor without giving the spectrum a mass
+            // the alternative's best PrSM must have a mass a precursor-mass path took from it (not closed or anchored afterwards, not from
+            // fragment pairs): an alternative whose best PrSM still has no mass would change the precursor without giving the spectrum a mass
             double top = -1e10, best_any = -1e10;
             for (const auto& h : out)
             {
               best_any = std::max(best_any, h.getScore());
-              if ((double)h.getMetaValue("Mass") <= 0 || (int)h.getMetaValue("ProteoformMassByFragmentMass") != 0 || isAnchored(h)) continue;
+              if ((double)h.getMetaValue("Mass") <= 0 || (int)h.getMetaValue("ProteoformMassByFragmentMass") != 0 || h.metaValueExists("MassClosure")) continue;
               if (std::abs((double)h.getMetaValue("Mass") - m) > 3 * iso + 0.1) continue; // a mass taken from this precursor, up to isotope errors
               top = std::max(top, h.getScore());
             }
@@ -4512,7 +4520,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       if ((double)h.getMetaValue(tntKey("Mass")) <= 0 || (int)h.getMetaValue(tntKey("ProteoformMassByFragmentMass"), 0) != 0 || h.metaValueExists(tntKey("DecoyPrecursor"))) continue;
       // an anchored mass (ex:mass_closure anchored) neither owns a feature nor loses it: its score is the terminal paths' score, no evidence
       // for the mass, so it must not take another protein's mass; and its ends are read by fragments beyond chance, so it keeps its own
-      if (one_proteoform_per_feature_fitted_ && h.metaValueExists(tntKey("MassClosure"))) continue;
+      if (one_proteoform_per_feature_fitted_ && isAnchored(h)) continue;
       idx.push_back(i);
     }
     std::sort(idx.begin(), idx.end(), [&](Size l, Size r) { return (double)proteoform_hits_[l].getMetaValue(tntKey("Mass")) < (double)proteoform_hits_[r].getMetaValue(tntKey("Mass")); });
@@ -5277,7 +5285,7 @@ void FLASHTnTAlgorithm::keepBestPerSpectrum_(std::vector<ProteinHit>& hits, cons
       const auto& h = hits[i];
       const int scan = h.getMetaValue(tntKey("Scan"));
       const auto& b = hits[best[scan]];
-      if ((double)b.getMetaValue(tntKey("Mass")) > 0 || (double)h.getMetaValue(tntKey("Mass")) <= 0 || ! isDetermined(h)) continue;
+      if ((double)b.getMetaValue(tntKey("Mass")) > 0 || (double)h.getMetaValue(tntKey("Mass")) <= 0 || ! isPathDetermined(h)) continue;
       if (h.getAccession() != b.getAccession() || h.metaValueExists(tntKey("DecoyPrecursor")) != b.metaValueExists(tntKey("DecoyPrecursor"))) continue;
       const int bs = b.getMetaValue(tntKey("StartPosition")), be = b.getMetaValue(tntKey("EndPosition"));
       if ((bs >= 0 && bs != (int)h.getMetaValue(tntKey("StartPosition"))) || (be >= 0 && be != (int)h.getMetaValue(tntKey("EndPosition")))) continue;
