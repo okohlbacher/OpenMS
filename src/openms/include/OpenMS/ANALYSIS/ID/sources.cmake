@@ -40,10 +40,7 @@ NeighborSeq.h
 OpenSearchModificationAnalysis.h
 PeptideIndexing.h
 PeptideProteinResolution.h
-Percolator.h
-PercolatorReset.h
 PercolatorFeatureSetHelper.h
-PercolatorTypes.h
 PrecursorPurity.h
 PScore.h
 SimpleSearchEngineAlgorithm.h

@@ -17,36 +17,18 @@
 
 using namespace OpenMS;
 
-// The decisions of the FDR rules added for the entrapment benchmark: the protein evidence rule (option protein_evidence), the
-// pair-wise protein-FDR gate (option protein_fdr_paired), the entry order that breaks candidate-cut ties, and the blind
-// modification count the evidence rule reads.
+// The decisions of the FDR rules: the protein evidence rule (option protein_evidence), the entry order that breaks candidate-cut
+// ties, the blind modification count the evidence rule reads, the grouping of small proteoform classes (option merge_small_classes),
+// the window masses of DeconvMassInfo (option precursor_reselect), and the defaults of the options.
 START_TEST(FLASHTnTAlgorithm, "$Id$")
 
-START_SECTION((static bool proteinEvidenceSupported(const String& protein_evidence, Size prsms, Size proteoforms, bool strong)))
+START_SECTION((static bool proteinEvidenceSupported(Size proteoforms, bool strong)))
 {
-  // none: every protein takes part
-  TEST_EQUAL(FLASHTnTAlgorithm::proteinEvidenceSupported("none", 1, 1, false), true)
-  // prsms: two PrSMs, or one strong proteoform
-  TEST_EQUAL(FLASHTnTAlgorithm::proteinEvidenceSupported("prsms", 1, 1, false), false)
-  TEST_EQUAL(FLASHTnTAlgorithm::proteinEvidenceSupported("prsms", 2, 1, false), true)
-  TEST_EQUAL(FLASHTnTAlgorithm::proteinEvidenceSupported("prsms", 1, 1, true), true)
-  // proteoforms: two distinct proteoforms; two PrSMs of one proteoform are not enough
-  TEST_EQUAL(FLASHTnTAlgorithm::proteinEvidenceSupported("proteoforms", 2, 1, false), false)
-  TEST_EQUAL(FLASHTnTAlgorithm::proteinEvidenceSupported("proteoforms", 2, 2, false), true)
-  TEST_EQUAL(FLASHTnTAlgorithm::proteinEvidenceSupported("proteoforms", 1, 1, true), true)
-  TEST_EQUAL(FLASHTnTAlgorithm::proteinEvidenceSupported("proteoforms", 0, 0, false), false)
-}
-END_SECTION
-
-START_SECTION((static bool characterizeBeyondTop(bool passing, bool paired, long partner, bool partner_is_candidate)))
-{
-  TEST_EQUAL(FLASHTnTAlgorithm::characterizeBeyondTop(false, false, 3, true), false) // not passing the protein FDR: never
-  TEST_EQUAL(FLASHTnTAlgorithm::characterizeBeyondTop(false, true, 3, true), false)
-  TEST_EQUAL(FLASHTnTAlgorithm::characterizeBeyondTop(true, false, -1, false), true) // unpaired: passing suffices
-  TEST_EQUAL(FLASHTnTAlgorithm::characterizeBeyondTop(true, false, 3, false), true)
-  TEST_EQUAL(FLASHTnTAlgorithm::characterizeBeyondTop(true, true, 3, true), true)   // paired: the partner is a candidate too
-  TEST_EQUAL(FLASHTnTAlgorithm::characterizeBeyondTop(true, true, 3, false), false) // paired: the partner is no candidate
-  TEST_EQUAL(FLASHTnTAlgorithm::characterizeBeyondTop(true, true, -1, true), false) // paired: no partner at all
+  // two distinct proteoforms, or one strong proteoform
+  TEST_EQUAL(FLASHTnTAlgorithm::proteinEvidenceSupported(1, false), false)
+  TEST_EQUAL(FLASHTnTAlgorithm::proteinEvidenceSupported(2, false), true)
+  TEST_EQUAL(FLASHTnTAlgorithm::proteinEvidenceSupported(1, true), true)
+  TEST_EQUAL(FLASHTnTAlgorithm::proteinEvidenceSupported(0, false), false)
 }
 END_SECTION
 
@@ -83,44 +65,41 @@ END_SECTION
 
 START_SECTION((static std::vector<std::vector<int>> groupClasses(const std::vector<int>& class_order, const std::vector<Size>& class_size, Size min_targets, bool by_kind, const std::function<int(int)>& kind_of)))
 {
-  // classes as in FLASHTnT: 0 determined, 1 both termini, 2 open terminus, 3 precursor ladder, 4 second-ranked, 5 terminal ladder, 6 mass closed
-  const std::vector<int> legacy = {0, 1, 2, 3, 4, 5, 6};
-  const std::vector<int> kind_order = {0, 3, 5, 6, 1, 2, 4};
+  // classes as in FLASHTnT: 0 determined, 1 both termini, 2 open terminus, 3 precursor ladder, 4 terminal ladder
+  const std::vector<int> class_order = {0, 1, 2, 3, 4};
+  const std::vector<int> kind_order = {0, 3, 4, 1, 2};
   const auto kind_of = [](int c) { return c == 0 ? 0 : 1; };
   // E. coli-like run: a small undetermined group (93 + 5 < 100) before a large precursor-ladder class
-  std::vector<Size> size = {760, 93, 5, 156, 0, 577, 0};
-  auto g = FLASHTnTAlgorithm::groupClasses(legacy, size, 100, false, kind_of);
+  std::vector<Size> size = {760, 93, 5, 156, 577};
+  auto g = FLASHTnTAlgorithm::groupClasses(class_order, size, 100, false, kind_of);
   TEST_EQUAL(g.size(), 3)
-  TEST_EQUAL(g[1].size(), 3) // the undetermined group absorbs the precursor-ladder class (the legacy rule)
+  TEST_EQUAL(g[1].size(), 3) // true: the undetermined group absorbs the precursor-ladder class
   TEST_EQUAL(g[1][2], 3)
   g = FLASHTnTAlgorithm::groupClasses(kind_order, size, 100, true, kind_of);
-  TEST_EQUAL(g.size(), 3) // determined | precursor ladder | terminal ladder + the small undetermined group (last, joins the group before it)
+  TEST_EQUAL(g.size(), 3) // kind: determined | precursor ladder | terminal ladder + the small undetermined group (last, joins the group before it)
   TEST_EQUAL(g[1].size(), 1)
   TEST_EQUAL(g[1][0], 3)
   TEST_EQUAL(g[2].size(), 3)
-  TEST_EQUAL(g[2][0], 5)
+  TEST_EQUAL(g[2][0], 4)
   // an undetermined group of at least 100 stays its own group, in both walks
-  size = {760, 93, 10, 156, 0, 577, 0};
-  g = FLASHTnTAlgorithm::groupClasses(legacy, size, 100, false, kind_of);
+  size = {760, 93, 10, 156, 577};
+  g = FLASHTnTAlgorithm::groupClasses(class_order, size, 100, false, kind_of);
   TEST_EQUAL(g.size(), 4)
   g = FLASHTnTAlgorithm::groupClasses(kind_order, size, 100, true, kind_of);
   TEST_EQUAL(g.size(), 4) // determined | precursor ladder | terminal ladder | undetermined
   TEST_EQUAL(g[3].size(), 2)
   TEST_EQUAL(g[3][0], 1)
-  // with a small mass-closed class: it joins the undetermined ones, not the precursor ladder
-  size = {760, 93, 10, 156, 0, 577, 40};
+  // empty classes take no part
+  size = {760, 93, 10, 0, 577};
   g = FLASHTnTAlgorithm::groupClasses(kind_order, size, 100, true, kind_of);
-  TEST_EQUAL(g.size(), 4)
-  TEST_EQUAL(g[3].size(), 3)
-  TEST_EQUAL(g[3][0], 6)
+  TEST_EQUAL(g.size(), 3)
+  TEST_EQUAL(g[1].size(), 1)
+  TEST_EQUAL(g[1][0], 4)
   // a tiny run: the determined class alone is small and joins the other kind's first group
-  size = {30, 20, 5, 10, 0, 50, 0};
+  size = {30, 20, 5, 10, 50};
   g = FLASHTnTAlgorithm::groupClasses(kind_order, size, 100, true, kind_of);
   TEST_EQUAL(g.size(), 1)
   TEST_EQUAL(g[0].size(), 5)
-  // no merging: every class on its own
-  g = FLASHTnTAlgorithm::groupClasses(legacy, size, 0, false, kind_of);
-  TEST_EQUAL(g.size(), 5)
 }
 END_SECTION
 
@@ -136,6 +115,30 @@ START_SECTION((static String DeconvolvedSpectrum::formatWindowMasses(const std::
   TEST_REAL_SIMILAR(std::get<1>(back[1]), 99.0)
   TEST_EQUAL(DeconvolvedSpectrum::parseWindowMasses("").size(), 0)
   TEST_EQUAL(DeconvolvedSpectrum::parseWindowMasses("garbage,1:2").size(), 1)
+}
+END_SECTION
+
+START_SECTION((FLASHTnTAlgorithm()))
+{
+  // the defaults of the FDR and mass options, and the values each of them takes
+  const Param p = FLASHTnTAlgorithm().getDefaults();
+  TEST_STRING_EQUAL(p.getValue("second_ranked").toString(), "drop")
+  TEST_EQUAL(p.getValidStrings("second_ranked").size(), 2)
+  TEST_STRING_EQUAL(p.getValue("terminal_ladder_class").toString(), "true")
+  TEST_STRING_EQUAL(p.getValue("merge_small_classes").toString(), "kind")
+  TEST_EQUAL(p.getValidStrings("merge_small_classes").size(), 2)
+  TEST_STRING_EQUAL(p.getValue("protein_evidence").toString(), "proteoforms")
+  TEST_EQUAL(p.getValidStrings("protein_evidence").size(), 2)
+  TEST_REAL_SIMILAR((double)p.getValue("protein_evidence_min_mass"), 3000.0)
+  TEST_STRING_EQUAL(p.getValue("precursor_reselect").toString(), "true")
+  TEST_STRING_EQUAL(p.getValue("one_proteoform_per_feature").toString(), "fitted")
+  TEST_EQUAL(p.getValidStrings("one_proteoform_per_feature").size(), 3)
+  TEST_STRING_EQUAL(p.getValue("ex:skip_precursor_inference").toString(), "corroborated")
+  TEST_EQUAL(p.getValidStrings("ex:skip_precursor_inference").size(), 3)
+  TEST_STRING_EQUAL(p.getValue("ex:ladder_end_penalty").toString(), "false")
+  TEST_EQUAL(p.getValidStrings("ex:ladder_end_penalty").size(), 2)
+  TEST_EQUAL(p.exists("rescore"), false)
+  TEST_EQUAL(p.exists("ex:mass_closure"), false)
 }
 END_SECTION
 

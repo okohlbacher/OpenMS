@@ -279,13 +279,12 @@ namespace
   }
 
   /// The evidence behind the reported proteoform mass (column MassEvidence): "exact" when the residues and the annotated (variable, fixed)
-  /// modifications give the mass, "blind shift" when it needs an unexplained mass shift the path fitted, "anchored" when it was assigned
-  /// after the identification (ex:mass_closure anchored), "none" without a mass. On ten datasets FLASHTnT's exact masses agreed with
-  /// TopPIC's in 93% of the scans both identified as the same protein, masses with a blind shift in 47-58%.
+  /// modifications give the mass, "blind shift" when it needs an unexplained mass shift the path fitted, "none" without a mass. On ten
+  /// datasets FLASHTnT's exact masses agreed with TopPIC's in 93% of the scans both identified as the same protein, masses with a blind
+  /// shift in 47-58%.
   OpenMS::String massEvidence(const OpenMS::ProteinHit& hit)
   {
     if (! hit.metaValueExists(prsmKey("Mass")) || (double)hit.getMetaValue(prsmKey("Mass")) <= 0) return "none";
-    if (hit.metaValueExists("MassClosure") && hit.getMetaValue("MassClosure").toString().hasPrefix("anchored")) return "anchored";
     if (hit.metaValueExists(prsmKey("ModificationVariable")))
     {
       for (int v : hit.getMetaValue(prsmKey("ModificationVariable")).toIntList())

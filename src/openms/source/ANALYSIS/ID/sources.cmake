@@ -40,8 +40,6 @@ OpenSearchModificationAnalysis.cpp
 PeptideProteinResolution.cpp
 PeptideSearchEngineFIAlgorithm.cpp
 PeptideIndexing.cpp
-Percolator.cpp
-PercolatorReset.cpp
 PercolatorFeatureSetHelper.cpp
 PrecursorPurity.cpp
 PScore.cpp

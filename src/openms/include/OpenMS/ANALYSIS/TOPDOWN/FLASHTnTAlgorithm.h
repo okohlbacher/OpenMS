@@ -33,16 +33,12 @@ namespace OpenMS
 class OPENMS_DLLAPI FLASHTnTAlgorithm : public DefaultParamHandler, public ProgressLogger
 {
 public:
-  /// option protein_evidence: whether a protein of @p prsms PrSMs over @p proteoforms proteoforms takes part in the protein ranking;
-  /// @p strong: one of them is a determined tag-search proteoform without blind modifications of protein_evidence_min_mass
-  static bool proteinEvidenceSupported(const String& protein_evidence, Size prsms, Size proteoforms, bool strong);
-  /// option protein_fdr_paired: whether a candidate beyond the best ones of a spectrum is characterized: its protein passes the
-  /// run-level protein FDR (@p passing) and, with @p paired, its target-decoy partner (@p partner; -1: none) is a candidate of the
-  /// same source in that spectrum (@p partner_is_candidate)
-  static bool characterizeBeyondTop(bool passing, bool paired, long partner, bool partner_is_candidate);
+  /// option protein_evidence proteoforms: whether a protein of @p proteoforms proteoforms takes part in the protein ranking (two or more,
+  /// or @p strong: one of them is a determined tag-search proteoform without blind modifications of protein_evidence_min_mass)
+  static bool proteinEvidenceSupported(Size proteoforms, bool strong);
   /// the grouping of the proteoform classes for the FDR (option merge_small_classes): in @p class_order, a group takes classes until it
-  /// holds @p min_targets proteoforms (targets and decoys) and a last smaller group joins the one before; with @p by_kind within the two
-  /// kinds @p kind_of gives (0, 1) separately, a kind that is one small group joining the other kind's first group
+  /// holds @p min_targets proteoforms (targets and decoys) and a last smaller group joins the one before; with @p by_kind (kind) within
+  /// the two kinds @p kind_of gives (0, 1) separately, a kind that is one small group joining the other kind's first group
   static std::vector<std::vector<int>> groupClasses(const std::vector<int>& class_order, const std::vector<Size>& class_size, Size min_targets,
                                                     bool by_kind, const std::function<int(int)>& kind_of);
   /// the fixed pseudo-random order of the database entries (splitmix64 of the index) that breaks the ties of the candidate cuts
@@ -186,16 +182,10 @@ private:
   bool learn_var_mod_penalty_ = false;
   /// search spectra with MS1-based PrSMs again with decoy precursor masses, as decoys of the precursor in the FDR
   bool decoy_precursor_ = false;
-  /// option precursor_reselect: a spectrum whose best PrSM has no mass is searched again with the other masses of its isolation window
-  bool precursor_reselect_ = false;
-  /// option protein_pseudocount: protein q-values with (D + 1) / T
-  bool protein_pseudocount_ = false;
-  /// option merge_small_prsm_classes: PrSM-level FDR classes under 100 PrSMs merged within their kind, as at the proteoform level
-  bool merge_small_prsm_classes_ = false;
-  /// option terminal_ladder_undetermined: terminal-ladder PrSMs without a mass in the undetermined classes (by termini)
-  bool terminal_ladder_undetermined_ = false;
-  /// option one_proteoform_per_feature fitted: a PrSM whose mass needs no blind modification keeps it
-  bool one_proteoform_per_feature_fitted_ = false;
+  /// a spectrum whose best PrSM has no mass is searched again with the other masses of its isolation window
+  bool precursor_reselect_ = true;
+  /// with one_proteoform_per_feature_: a PrSM whose mass needs no blind modification keeps it (fitted)
+  bool one_proteoform_per_feature_fitted_ = true;
   /// co-isolation: an MS1 mass reported by PrSMs of different proteins stays with the protein that explains it best
   bool one_proteoform_per_feature_ = true;
   /// native and targeted runs: candidates of every source chosen by the decoy margin of their spectrum, every candidate's PrSM reported
@@ -211,30 +201,14 @@ private:
 
   bool keep_decoy_ = false;
   bool keep_underdetermined_ = true;
-  /// proteoforms of second-ranked PrSMs only (their spectrum's best PrSM is of another protein): keep, class (their own proteoform class) or drop
-  String second_ranked_ = "keep";
-  /// rescoring of the PrSMs before the FDR: none or percolator
-  String rescore_ = "none";
-  /// rescoring features (names in FLASHTnTAlgorithm.cpp's rescore_feature_names) and the file to dump all of them to ("": none)
-  std::vector<std::string> rescore_features_;
-  String rescore_dump_;
-  /// a Percolator model file applied instead of training ("": train on the run)
-  String rescore_model_;
+  /// proteoforms of second-ranked PrSMs only (their spectrum's best PrSM is of another protein) are in no proteoform class (drop)
+  bool drop_second_ranked_ = true;
   /// terminal-ladder PrSMs as an FDR and proteoform class of their own
-  bool terminal_ladder_class_ = false;
-  bool terminal_ladder_blind_class_ = false;
-  /// PrSMs with a blind shift and no determined mass: keep or drop
-  String undetermined_blind_ = "keep";
-  /// target-decoy FDR as (D + 1) / T
-  bool fdr_pseudocount_ = false;
-  /// proteoform classes with few targets counted together with the next ones
-  bool merge_by_kind_ = false; ///< option merge_small_classes kind: small classes merge within their kind only
-  bool merge_small_classes_ = true;
-  /// undetermined PrSMs with an open terminus: keep or drop
-  String undetermined_open_ = "keep";
-  /// proteins with at most this many PrSMs in classes of their own (0: off)
-  int protein_support_class_ = 0;
-  String protein_evidence_ = "none";
+  bool terminal_ladder_class_ = true;
+  /// proteoform classes with few proteoforms counted together with the next ones within their kind (kind) or in class order (true)
+  bool merge_by_kind_ = true;
+  /// a protein takes part in the protein ranking with two proteoforms or one strong one (proteoforms), or with any (none)
+  bool protein_evidence_ = true;
   double protein_evidence_min_mass_ = 3000;
   bool multiple_hits_per_spec_ = false;
   bool protein_level_only_ = false;
@@ -243,7 +217,6 @@ private:
   double protein_tol_ = 0;
   int min_protein_hits_ = 5;
   double protein_fdr_ = 0.1;
-  bool protein_fdr_paired_ = false;
   std::vector<ProteinHit> proteoform_hits_;
   std::vector<ProteinHit> protein_hits_;
   std::vector<FLASHHelperClasses::Tag> tags_;

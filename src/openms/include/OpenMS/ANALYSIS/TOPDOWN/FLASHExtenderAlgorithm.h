@@ -219,46 +219,13 @@ private:
     }
   };
 
-  /// Protein hit information that should be retained throughout the run.
 public:
   /// penalty of a terminal truncation in a precursor-mass path (equals the base blind-modification penalty of
   /// findSubPathsBetweenTagEndPoints); public so that FLASHTnT's precursor re-selection can allow for it
   static constexpr int truncation_penalty = 19;
 
-  /** Mass closure (option mass_closure): the stretch [a, b) of a protein that explains the precursor mass when one terminus is kept.
-      @p pro residue masses from the N-terminus with the fixed modifications (pro[i]: the first i residues), @p seq the sequence,
-      @p start / @p end the terminal result's stretch (0-based start, exclusive end; -1 unknown), @p keep_start whether the start is
-      kept (else the end), @p kept_positions the cleavage positions the kept terminal ladder read (they stay inside the stretch),
-      the blind and variable modifications of the terminal result by position and mass (those inside the stretch count), the
-      precursor mass, its absolute tolerance and the largest blind shift. Tried in this order: no shift, +1, -1, +2 isotopes (an
-      error of the precursor mass), N-terminal acetylation (at the protein N-terminus only), methionine oxidation (with a methionine
-      inside). Returns false when no stretch fits; else a, b, the shift mass and its name. */
-  static bool closeMass(const std::vector<double>& pro, const String& seq, int start, int end, bool keep_start, const std::set<int>& kept_positions,
-                        const std::vector<int>& mod_starts, const std::vector<int>& mod_ends, const std::vector<double>& mod_masses, double precursor,
-                        double tol, double max_mod_mass, int& a, int& b, double& shift, const char*& shift_name);
-
-  /** Mass anchoring (option mass_closure anchored): the stretch [a, b) of a protein whose mass, with the modifications inside it and
-      optionally the acetylation of a protein N-terminus (start 0, or 1 after an initiator methionine), equals the precursor mass within
-      the relative tolerance @p tol, or one 13C isotope above or below it (an error of the precursor mass, not a modification). The
-      stretch contains [core_from, core_to) (the residues the terminal paths read). Both of its ends must be read by an observed
-      fragment mass: a prefix fragment (residue sum from a plus a prefix ion offset) and a suffix fragment (residue sum to b plus a
-      suffix ion offset) within @p tol of a mass in @p fragments (sorted ascending). Of the stretches that fit, the one with the most
-      such fragments (distinct observed masses, at least two) wins; ties go to fewer moved termini (against @p start / @p end; -1 unknown), then to no isotope error, then to
-      the stretch nearer the terminal result. A modification (0-based residue range [mod_starts, mod_ends], inclusive) that is
-      neither fully inside nor fully outside a stretch rules it out. @p pro: residue masses from the N-terminus with the fixed
-      modifications (pro[i]: the first i residues). Returns false when no stretch fits; else a, b, the isotope error of the precursor
-      (precursor - proteoform, in 13C spacings), whether the N-terminus is acetylated, and the number of supporting fragments.
-      @p freeze_start / @p freeze_end keep that terminus where the terminal result has it (a terminus a fragment ladder reads).
-      With @p controls > 0, the stretch must also beat chance: the same search at @p controls precursor masses moved by -300 to
-      +300 Da (except moves that refit the same stretch: isotope multiples, acetylation) must not reach its number of supporting
-      fragments, as hasComplementaryPairSupport_ tests an inferred precursor mass. */
-  static bool anchorStretch(const std::vector<double>& pro, const String& seq, int start, int end, int core_from, int core_to,
-                            const std::vector<int>& mod_starts, const std::vector<int>& mod_ends, const std::vector<double>& mod_masses,
-                            const std::vector<double>& fragments, const std::vector<double>& prefix_shifts, const std::vector<double>& suffix_shifts,
-                            double tol, double precursor, int& a, int& b, int& isotope, bool& acetyl, int& support, bool freeze_start = false,
-                            bool freeze_end = false, int controls = 0);
-
 private:
+  /// Protein hit information that should be retained throughout the run.
   struct OPENMS_DLLAPI HitInformation
   {
   public:
@@ -583,19 +550,11 @@ private:
   double tol_;
 
   bool skip_precursor_inference_ = true;
-  /// option skip_precursor_inference with_ms1: no mass from complementary fragment pairs when the spectrum has an MS1 precursor mass
-  bool skip_precursor_inference_with_ms1_ = false;
   /// option skip_precursor_inference corroborated: a mass from fragment pairs that differs from the MS1 precursor mass is kept only if
   /// it also is a mass of the isolation window (one isotope off allowed)
-  bool precursor_inference_corroborated_ = false;
-  /// option ladder_end_penalty false: a precursor-mass path pays no truncation penalty for an end a suffix ladder reads
-  bool ladder_end_penalty_ = true;
-  /// with ladder_end_penalty false or read: the suffix-ladder fragments a free end needs
-  int ladder_end_min_fragments_ = 4;
-  /// option mass_closure: a terminal result without a mass gets the stretch that explains the MS1 precursor mass (true: closeMass,
-  /// anchored: anchorStretch)
-  bool mass_closure_ = false;
-  bool mass_anchor_ = false;
+  bool precursor_inference_corroborated_ = true;
+  /// option ladder_end_penalty: a precursor-mass path pays the truncation penalty also for an end the suffix ladder of the terminal paths reads
+  bool ladder_end_penalty_ = false;
   /// set MatchedMassIndices on every proteoform hit (setReportMatchedMasses)
   bool report_matched_masses_ = false;
   /// setPathAlternatives
