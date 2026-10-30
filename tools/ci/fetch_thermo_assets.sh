@@ -28,7 +28,7 @@
 # tag is checked against the FetchContent pin in cmake/cmake_findExternalLibs.cmake
 # so the two cannot drift apart silently.
 #
-# Usage: tools/ci/fetch_thermo_assets.sh <linux-x64|osx-arm64|win-x64> [dest-dir]
+# Usage: tools/ci/fetch_thermo_assets.sh <linux-x64|linux-arm64|osx-arm64|win-x64> [dest-dir]
 #   dest-dir defaults to the current directory; creates <dest-dir>/thermo-managed
 #   and <dest-dir>/thermo-testdata. Existing, verified files are reused, so the
 #   two directories can be put into a CI cache.
@@ -38,8 +38,8 @@ set -euo pipefail
 # Commit of openms-thermo-bridge; must equal the FetchContent GIT_TAG in
 # cmake/cmake_findExternalLibs.cmake (checked below). BRIDGE_TAG is the release tag
 # that points at this commit; the release assets are named after it.
-BRIDGE_COMMIT="2c66c9260ad78f499527c7d1c85a920afab9aa2d"
-BRIDGE_TAG="v0.3.0"
+BRIDGE_COMMIT="75849ecf6f600a3e52479823043842e571a774ae"
+BRIDGE_TAG="v1.0.0"
 RAW_URL="https://archive.openms.de/openms/testfiles/Angiotensin_AllScans.raw"
 RAW_SHA256="3a0236f719e7c91e3c958f57f4e66ae422803ec3e6a997b9af4d2af395332b9f"
 
@@ -51,11 +51,12 @@ dest="${2:-.}"
 # while no release asset exists for BRIDGE_TAG (the bridge then builds the managed
 # assemblies itself, see above).
 case "$platform" in
-  linux-x64) managed_sha256="a26d846a584d57bb0febab5f3552c34a4a2e6d4a29881f5ebe420166748814fd" ;;
-  osx-arm64) managed_sha256="402c927f2062cafa66ca67254203e265f769bb8f6d2845a0264a9167680ad924" ;;
-  win-x64)   managed_sha256="bbbebd847bbe08b3168aab63185a0b6950cb3fa8e4a4c150ed55672e586ac195" ;;
+  linux-x64)   managed_sha256="18e8c70a6d7dc49717fd543b03b2a53c681e6b56b9f97da9abf2e8b7c7d910e9" ;;
+  osx-arm64)   managed_sha256="56fc5b232a4856ece9e605fad6cf178749b6b356eeaa2cc0db1af0506660ca45" ;;
+  win-x64)     managed_sha256="c07c805865a755828f05833e24af95b2c1986fab66b220bdde1ff58532dacea5" ;;
+  linux-arm64) managed_sha256="3066896cde15eb1e953c971495854d0634958b9a3f9021c325c12cb0e4e75b83" ;;
   *)
-    echo "usage: $0 <linux-x64|osx-arm64|win-x64> [dest-dir]" >&2
+    echo "usage: $0 <linux-x64|linux-arm64|osx-arm64|win-x64> [dest-dir]" >&2
     exit 2
     ;;
 esac

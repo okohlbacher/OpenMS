@@ -25,6 +25,7 @@ Instrument.cpp
 InstrumentSettings.cpp
 IonDetector.cpp
 IonSource.cpp
+MS1LabelState.cpp
 MassAnalyzer.cpp
 MetaInfo.cpp
 MetaInfoDescription.cpp
@@ -40,6 +41,7 @@ Product.cpp
 ProteinHit.cpp
 ProteinIdentification.cpp
 ProteinModificationSummary.cpp
+ProteinRunReferences.cpp
 Sample.cpp
 ScanWindow.cpp
 Software.cpp

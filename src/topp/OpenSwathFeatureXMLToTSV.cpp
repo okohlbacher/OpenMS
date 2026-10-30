@@ -6,6 +6,7 @@
 // $Authors: Hannes Roest $
 // --------------------------------------------------------------------------
 
+#include <OpenMS/CONCEPT/CheckedCast.h>
 #include <OpenMS/APPLICATIONS/TOPPBase.h>
 #include <OpenMS/ANALYSIS/TARGETED/TargetedExperiment.h>
 #include <OpenMS/CONCEPT/Types.h>
@@ -336,7 +337,7 @@ class TOPPOpenSwathFeatureXMLToTSV
 public:
 
   TOPPOpenSwathFeatureXMLToTSV() :
-    TOPPBase("OpenSwathFeatureXMLToTSV", "Converts a featureXML to a mProphet tsv.", true)
+    TOPPBase("OpenSwathFeatureXMLToTSV", "Converts a featureXML to a mProphet tsv.")
   {
   }
 
@@ -473,11 +474,11 @@ protected:
 
       if (best_scoring.empty())
       {
-        write_out_body(os, feature_map, transition_exp, meta_value_names, boost::numeric_cast<int>(i), short_format, filename);
+        write_out_body(os, feature_map, transition_exp, meta_value_names, checkedCast<int>(i), short_format, filename);
       }
       else
       {
-        write_out_body_best_score(os, feature_map, transition_exp, meta_value_names, boost::numeric_cast<int>(i), short_format, best_scoring, filename);
+        write_out_body_best_score(os, feature_map, transition_exp, meta_value_names, checkedCast<int>(i), short_format, best_scoring, filename);
       }
     }
 

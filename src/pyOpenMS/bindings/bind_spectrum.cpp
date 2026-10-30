@@ -166,9 +166,6 @@ NB_MODULE(_pyopenms_spectrum, m) {
     // -----------------------------------------------------------------------
     auto msspectrum_class = nb::class_<OpenMS::MSSpectrum>(m, "MSSpectrum",
         R"doc(
-SpectrumSettings
-RangeManagerMzInt
-
 The representation of a 1D spectrum.
 Raw data access is proved by `get_peaks` and `set_peaks`, which yields numpy arrays
 Indexing and iteration yield copies of the peaks; write changes back with spec[i] = peak
@@ -217,7 +214,6 @@ Usage:
   MzMLFile().store("testfile.mzML", exp)
 )doc")
         .def(nb::init<>())
-        .def(nb::init<std::initializer_list<OpenMS::Peak1D>>())
         .def(nb::init<const OpenMS::MSSpectrum &>())
         .def("__copy__", [](const OpenMS::MSSpectrum& self) { return OpenMS::MSSpectrum(self); })
         .def("__deepcopy__", [](const OpenMS::MSSpectrum& self, nb::dict) { return OpenMS::MSSpectrum(self); }, "memo"_a)

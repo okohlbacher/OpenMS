@@ -6,6 +6,11 @@ on:
         description: "Name to publish the containers under in ghcr.io (e.g. 3.6.0-rc1, my-test). Run the workflow from the branch/commit you want to package. Leave empty to auto-derive (develop/nightly -> latest)."
         required: false
         default: ""
+      run_tests:
+        description: "Build the 'test' stage and run ctest before publishing. Disable only for test images."
+        type: boolean
+        required: false
+        default: true
   push:
     branches:
       - nightly
@@ -60,9 +65,13 @@ jobs:
               ## Manual run: publish under the user-provided name
               TAG="$INPUT_TAG"
             elif [[ "$REF" == refs/tags/* ]]; then
-              ## Release tag (e.g. Release3.6.0 or Release/3.6.0) -> 3.6.0
+              ## Release tag (e.g. v3.6.0, Release3.6.0 or Release/3.6.0) -> 3.6.0,
+              ## the name the installation pages give (docker pull ...:<version>)
               TAG="${REF_NAME#Release}"
               TAG="${TAG#/}"
+              if [[ "$TAG" =~ ^v[0-9] ]]; then
+                TAG="${TAG#v}"
+              fi
             elif [[ "$REF_NAME" == "develop" || "$REF_NAME" == "nightly" || "$REF_NAME" == "feat/singularity" ]]; then
               ## use latest to follow docker conventions
               TAG="latest"
@@ -97,6 +106,8 @@ jobs:
           # and push Docker images. Avoid leaving the token in the workspace.
           persist-credentials: false
       - name: Test docker build in runtime base
+        # Always on for pushes; manual runs may skip it (inputs.run_tests is empty on push events)
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.run_tests }}
         uses: docker/build-push-action@v7
         with:
           load: true # so other build steps can make use of cache layers from this build

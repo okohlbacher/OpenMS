@@ -343,6 +343,24 @@ START_SECTION((EmpiricalFormula getFormula(Residue::ResidueType type = Residue::
   TEST_EQUAL(seq.getFormula(), EmpiricalFormula("O10SH33N5C24"))
   TEST_EQUAL(seq.getFormula(Residue::Full, 1), EmpiricalFormula("O10SH33N5C24+"))
   TEST_EQUAL(seq.getFormula(Residue::BIon, 0), EmpiricalFormula("O9SH31N5C24"))
+  // z+1 ("z-dot", the main electron-transfer fragment) and z+2 carry one and two extra hydrogens
+  TEST_EQUAL(seq.getFormula(Residue::Zp1Ion, 0), seq.getFormula(Residue::ZIon, 0) + EmpiricalFormula("H"))
+  TEST_EQUAL(seq.getFormula(Residue::Zp2Ion, 0), seq.getFormula(Residue::ZIon, 0) + EmpiricalFormula("H2"))
+  // ... and, being C-terminal fragments, they carry a C-terminal modification like the z ion does
+  AASequence seq_c_term = AASequence::fromString("ACDEF");
+  seq_c_term.setCTerminalModification("Amidated (C-term)");
+  TEST_EQUAL(seq_c_term.getFormula(Residue::Zp1Ion, 0), seq_c_term.getFormula(Residue::ZIon, 0) + EmpiricalFormula("H"))
+  TEST_EQUAL(seq_c_term.getFormula(Residue::Zp1Ion, 0) - seq.getFormula(Residue::Zp1Ion, 0),
+             seq_c_term.getFormula(Residue::ZIon, 0) - seq.getFormula(Residue::ZIon, 0))
+
+  // Absolute-mass regression: the w ion is formed by satellite side-chain loss from the
+  // radical z+1 (z-dot) ion, not from the even-electron z ion, which is one H short.
+  // AAAACAK / w3 (suffix "CAK", satellite loss HS from Cys) from Kempkes et al. 2018
+  // (DOI: 10.1002/jms.4298), where w3 is observed at nominal m/z 272.
+  AASequence w3_suffix = AASequence::fromString("AAAACAK").getSuffix(3);
+  TEST_EQUAL(w3_suffix.toString(), "CAK")
+  TEST_EQUAL(w3_suffix.getFormula(Residue::WIon, 0), EmpiricalFormula("C12H21N3O4"))
+  TEST_NOT_EQUAL(w3_suffix.getFormula(Residue::WIon, 0), EmpiricalFormula("C12H20N3O4"))
 END_SECTION
 
 START_SECTION((double getAverageWeight(Residue::ResidueType type = Residue::Full, Int charge=0) const))
@@ -380,6 +398,35 @@ START_SECTION((double getMonoWeight(Residue::ResidueType type = Residue::Full, I
   TEST_REAL_SIMILAR(AASequence::fromString("A").getMonoWeight(Residue::ZIon, 1), ala_z_neutral.getMonoWeight()+Constants::PROTON_MASS_U);
   //73.02900
 
+  EmpiricalFormula ala_zp1_neutral = ala_z_neutral+EmpiricalFormula("H");
+  TEST_REAL_SIMILAR(AASequence::fromString("A").getMonoWeight(Residue::Zp1Ion, 1), ala_zp1_neutral.getMonoWeight()+Constants::PROTON_MASS_U);
+  //74.03623
+
+  EmpiricalFormula ala_zp2_neutral = ala_z_neutral+EmpiricalFormula("H2");
+  TEST_REAL_SIMILAR(AASequence::fromString("A").getMonoWeight(Residue::Zp2Ion, 1), ala_zp2_neutral.getMonoWeight()+Constants::PROTON_MASS_U);
+  //75.04406
+
+  // direct calculation and calculation via the empirical formula must agree for the z+1/z+2 types too
+  TEST_REAL_SIMILAR(AASequence::fromString("DFPIANGER").getMonoWeight(Residue::Zp1Ion, 1),
+                    AASequence::fromString("DFPIANGER").getFormula(Residue::Zp1Ion, 1).getMonoWeight())
+  TEST_REAL_SIMILAR(AASequence::fromString("DFPIANGER").getMonoWeight(Residue::Zp2Ion, 1),
+                    AASequence::fromString("DFPIANGER").getFormula(Residue::Zp2Ion, 1).getMonoWeight())
+
+  // a C-terminal modification shifts the z+1/z+2 ions by the same amount as the z ion
+  AASequence amidated = AASequence::fromString("DFPIANGER");
+  amidated.setCTerminalModification("Amidated (C-term)");
+  const double c_term_shift = amidated.getMonoWeight(Residue::ZIon) - AASequence::fromString("DFPIANGER").getMonoWeight(Residue::ZIon);
+  TEST_REAL_SIMILAR(amidated.getMonoWeight(Residue::Zp1Ion) - AASequence::fromString("DFPIANGER").getMonoWeight(Residue::Zp1Ion), c_term_shift)
+  TEST_REAL_SIMILAR(amidated.getMonoWeight(Residue::Zp2Ion) - AASequence::fromString("DFPIANGER").getMonoWeight(Residue::Zp2Ion), c_term_shift)
+  TEST_REAL_SIMILAR(amidated.getMonoWeight(Residue::Zp1Ion), amidated.getMonoWeight(Residue::ZIon) + EmpiricalFormula("H").getMonoWeight())
+
+  // Absolute-mass regression for the w ion: AAAACAK / w3 (suffix "CAK") from
+  // Kempkes et al. 2018 (DOI: 10.1002/jms.4298); the published w3 peak is at
+  // nominal m/z 272, i.e. one H heavier than a (wrongly) z-ion-based calculation.
+  AASequence w3_suffix = AASequence::fromString("AAAACAK").getSuffix(3);
+  TEST_REAL_SIMILAR(w3_suffix.getMonoWeight(Residue::WIon, 1),
+                    EmpiricalFormula("C12H21N3O4").getMonoWeight() + Constants::PROTON_MASS_U)
+  TEST_REAL_SIMILAR(w3_suffix.getMonoWeight(Residue::WIon, 0), w3_suffix.getFormula(Residue::WIon, 0).getMonoWeight())
 
   TEST_REAL_SIMILAR(AASequence::fromString("DFPIANGER").getMonoWeight(), double(1017.48796))
 
@@ -1745,4 +1792,70 @@ END_SECTION
 
 /////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////
+START_SECTION((Satellite ion absolute formulas and unsupported cleavage residues))
+{
+  struct SatelliteCase
+  {
+    const char* sequence;
+    Residue::ResidueType type;
+    const char* formula;
+    double mz;
+  };
+  const vector<SatelliteCase> cases = {
+    {"AL", Residue::DIon, "C5H10N2O", 115.086589785771},
+    {"LA", Residue::VIon, "C5H8N2O3", 145.060769721971},
+    {"CAK", Residue::WIon, "C12H21N3O4", 272.160484136671}
+  };
+  TOLERANCE_ABSOLUTE(0.000001)
+  for (const auto& c : cases)
+  {
+    const AASequence seq = AASequence::fromString(c.sequence);
+    for (Int charge : {0, 1, 2, 3})
+    {
+      EmpiricalFormula expected(c.formula);
+      expected.setCharge(charge);
+      TEST_EQUAL(seq.getFormula(c.type, charge), expected)
+      TEST_REAL_SIMILAR(seq.getMonoWeight(c.type, charge), expected.getMonoWeight())
+      TEST_REAL_SIMILAR(seq.getAverageWeight(c.type, charge), expected.getAverageWeight())
+      if (charge > 0)
+      {
+        TEST_REAL_SIMILAR(seq.getMZ(charge, c.type), (c.mz + (charge - 1) * Constants::PROTON_MASS_U) / charge)
+      }
+    }
+  }
+  for (const auto type : {Residue::DIon, Residue::VIon, Residue::WIon})
+  {
+    for (const auto* residue : {"G", "M(Oxidation)"})
+    {
+      const AASequence seq = AASequence::fromString(type == Residue::DIon ? std::string("A") + residue : std::string(residue) + "A");
+      TEST_EXCEPTION(Exception::InvalidValue, seq.getFormula(type))
+      TEST_EXCEPTION(Exception::InvalidValue, seq.getMonoWeight(type))
+      TEST_EXCEPTION(Exception::InvalidValue, seq.getAverageWeight(type))
+      TEST_EXCEPTION(Exception::InvalidValue, seq.getMZ(2, type))
+    }
+  }
+  for (const auto type : {Residue::DIon, Residue::WIon})
+  {
+    for (const auto* residue : {"A", "P"})
+    {
+      const AASequence seq = AASequence::fromString(type == Residue::DIon ? std::string("L") + residue : std::string(residue) + "L");
+      TEST_EXCEPTION(Exception::InvalidValue, seq.getFormula(type))
+      TEST_EXCEPTION(Exception::InvalidValue, seq.getMonoWeight(type))
+      TEST_EXCEPTION(Exception::InvalidValue, seq.getAverageWeight(type))
+    }
+  }
+  // Modifications away from the cleavage residue remain supported.
+  const auto oxidized = AASequence::fromString("M(Oxidation)L");
+  TEST_REAL_SIMILAR(oxidized.getMonoWeight(Residue::DIon), oxidized.getFormula(Residue::DIon).getMonoWeight())
+  const auto acetylated = AASequence::fromString("(Acetyl)AL");
+  TEST_REAL_SIMILAR(acetylated.getMonoWeight(Residue::DIon) - AASequence::fromString("AL").getMonoWeight(Residue::DIon), EmpiricalFormula("C2H2O").getMonoWeight())
+  const auto amidated = AASequence::fromString("LA.(Amidated)");
+  for (const auto type : {Residue::VIon, Residue::WIon})
+  {
+    TEST_REAL_SIMILAR(amidated.getMonoWeight(type), amidated.getFormula(type).getMonoWeight())
+    TEST_REAL_SIMILAR(amidated.getMonoWeight(type) - AASequence::fromString("LA").getMonoWeight(type), EmpiricalFormula("HNO-1").getMonoWeight())
+  }
+}
+END_SECTION
+
 END_TEST

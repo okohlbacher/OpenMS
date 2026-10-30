@@ -6,6 +6,32 @@ import warnings
 from . import addon, register_element_views, string_dtype
 
 
+def _meta_value_columns(fixed_columns, meta_columns):
+    """Names the meta value columns of to_df() so that none repeats the name of another column.
+
+    A meta value can be named like a fixed column (MS-GF+ writes 'start' and 'end', for example)
+    or, once decoded, like another meta value. A numpy structured array refuses duplicate field
+    names, so such a column is prefixed with 'meta_' (and numbered if that is taken, too).
+    """
+    # names that collide with nothing are kept, and are reserved before any renamed column is named;
+    # numpy names a field without a name (the score of an empty score type) 'f<position>'
+    fixed = {name or f"f{i}" for i, name in enumerate(fixed_columns)}
+    kept = [name not in fixed and name not in meta_columns[:i] for i, name in enumerate(meta_columns)]
+    taken = fixed | {name for name, keep in zip(meta_columns, kept) if keep}
+    names = []
+    for name, keep in zip(meta_columns, kept):
+        unique = name
+        if not keep:
+            unique = "meta_" + name
+            number = 2
+            while unique in taken:
+                unique = f"meta_{name}_{number}"
+                number += 1
+            taken.add(unique)
+        names.append(unique)
+    return names
+
+
 @addon("PeptideIdentificationList")
 def to_df(self, decode_ontology=True, default_missing_values=None, export_unidentified=True, columns=None):
     """Converts peptide identifications to a pandas DataFrame.
@@ -14,7 +40,8 @@ def to_df(self, decode_ontology=True, default_missing_values=None, export_uniden
     :param default_missing_values: Default values for missing data by type.
     :param export_unidentified: Export PeptideIdentifications without PeptideHit.
     :param columns: List of column names to include. If None, includes all.
-    :return: DataFrame with peptide identification information.
+    :return: DataFrame with peptide identification information. A meta value named like another
+             column (e.g. the 'start' and 'end' of MS-GF+) is exported as 'meta_<name>'.
     """
     import pandas as pd
     import pyopenms
@@ -43,20 +70,19 @@ def to_df(self, decode_ontology=True, default_missing_values=None, export_uniden
             metavals += mvs
             mainscorename = pep.getScoreType()
 
-    metavals = list(set(metavals))
+    metavals = sorted(set(metavals))
 
     # get type of all metavalues
     for k in metavals:
-        k_str = k.decode('utf-8') if isinstance(k, bytes) else k
-        if k_str == "target_decoy":
+        if k == "target_decoy":
             types.append('?')
         else:
             found = False
             for p in self.iter_peptide_identification_views():
                 hits = p.getHits()
                 if len(hits) != 0:
-                    if hits[0].metaValueExists(k_str):
-                        mv = hits[0].getMetaValue(k_str)
+                    if hits[0].metaValueExists(k):
+                        mv = hits[0].getMetaValue(k)
                         types.append(switchDict[type(mv)])
                         found = True
                         break
@@ -71,18 +97,18 @@ def to_df(self, decode_ontology=True, default_missing_values=None, export_uniden
         return str
     dmv = [default_missing_values[get_key(t)] for t in types]
 
-    decodedMVs = [(m.decode("utf-8") if isinstance(m, bytes) else m) for m in metavals]
     if decode_ontology:
         try:
             cv = pyopenms.ControlledVocabulary()
             cv.loadFromOBO("psims", pyopenms.File.getOpenMSDataPath() + "/CV/psi-ms.obo")
-            clearMVs = [cv.getTerm(m).name if m.startswith("MS:") else m for m in decodedMVs]
+            clearMVs = [cv.getTerm(m).name if m.startswith("MS:") else m for m in metavals]
         except Exception:
-            clearMVs = decodedMVs
+            clearMVs = metavals
     else:
-        clearMVs = decodedMVs
+        clearMVs = metavals
 
-    clearcols = ["id", "rt", "mz", mainscorename, "charge", "protein_accession", "start", "end", "P_ID", "PSM_ID"] + clearMVs
+    fixedcols = ["id", "rt", "mz", mainscorename, "charge", "protein_accession", "start", "end", "P_ID", "PSM_ID"]
+    clearcols = fixedcols + _meta_value_columns(fixedcols, clearMVs)
     coltypes = [str_dtype, 'f', 'f', 'f', 'i', str_dtype, str_dtype, str_dtype, 'i', 'i'] + types
     # the fixed-width fields used to coerce every value to str; keep that for string columns
     # so a meta value whose type differs between hits cannot produce a mixed-type column
@@ -104,10 +130,9 @@ def to_df(self, decode_ontology=True, default_missing_values=None, export_uniden
         ret += [pep_idx, 0]
 
         for idx, k in enumerate(metavals):
-            k_str = k.decode('utf-8') if isinstance(k, bytes) else k
-            if besthit.metaValueExists(k_str):
-                val = besthit.getMetaValue(k_str)
-                if k_str == "target_decoy":
+            if besthit.metaValueExists(k):
+                val = besthit.getMetaValue(k)
+                if k == "target_decoy":
                     if isinstance(val, str) and val and val[0] == 't':
                         ret.append(True)
                     else:
@@ -160,21 +185,24 @@ def df_columns(self, decode_ontology=True):
             metavals += mvs
             mainscorename = pep.getScoreType()
 
-    metavals = list(set(metavals))
+    metavals = sorted(set(metavals))
 
     # Decode metavalue names if requested
-    decodedMVs = [(m.decode("utf-8") if isinstance(m, bytes) else m) for m in metavals]
     if decode_ontology:
         try:
             cv = pyopenms.ControlledVocabulary()
             cv.loadFromOBO("psims", pyopenms.File.getOpenMSDataPath() + "/CV/psi-ms.obo")
-            clearMVs = [cv.getTerm(m).name if m.startswith("MS:") else m for m in decodedMVs]
+            clearMVs = [cv.getTerm(m).name if m.startswith("MS:") else m for m in metavals]
         except Exception:
-            clearMVs = decodedMVs
+            clearMVs = metavals
     else:
-        clearMVs = decodedMVs
+        clearMVs = metavals
 
-    return ["id", "rt", "mz", mainscorename, "charge", "protein_accession", "start", "end", "P_ID", "PSM_ID"] + clearMVs
+    fixedcols = ["id", "rt", "mz", mainscorename, "charge", "protein_accession", "start", "end", "P_ID", "PSM_ID"]
+    cols = fixedcols + _meta_value_columns(fixedcols, clearMVs)
+    # to_df() builds a numpy structured array, which names a field without a name, such as
+    # the score of an empty score type, 'f<position>'
+    return [c or f"f{i}" for i, c in enumerate(cols)]
 
 
 @addon("PeptideIdentificationList")
@@ -397,8 +425,6 @@ def to_psm_arrow(self, export_all_hits=True, include_modifications=True,
         spec_ref = ""
         if pep_id.metaValueExists("spectrum_reference"):
             spec_ref = pep_id.getMetaValue("spectrum_reference")
-            if isinstance(spec_ref, bytes):
-                spec_ref = spec_ref.decode("utf-8")
 
         score_type = pep_id.getScoreType()
 
@@ -417,14 +443,11 @@ def to_psm_arrow(self, export_all_hits=True, include_modifications=True,
         pep_id_keys = []
         pep_id.getKeys(pep_id_keys)
         for key in pep_id_keys:
-            key_str = key.decode("utf-8") if isinstance(key, bytes) else str(key)
-            if key_str not in _excluded_spectrum_metavalues:
-                val = pep_id.getMetaValue(key_str)
+            if key not in _excluded_spectrum_metavalues:
+                val = pep_id.getMetaValue(key)
                 val_type = _get_value_type(val)
-                if isinstance(val, bytes):
-                    val = val.decode("utf-8")
                 spectrum_metavalues.append({
-                    "name": key_str,
+                    "name": key,
                     "value": val,
                     "value_type": val_type
                 })
@@ -490,10 +513,7 @@ def to_psm_arrow(self, export_all_hits=True, include_modifications=True,
             is_decoy = None
             if hit.metaValueExists("target_decoy"):
                 td = hit.getMetaValue("target_decoy")
-                if isinstance(td, bytes):
-                    is_decoy = 1 if td.startswith(b"decoy") else 0
-                else:
-                    is_decoy = 1 if str(td).startswith("decoy") else 0
+                is_decoy = 1 if str(td).startswith("decoy") else 0
 
             # Protein accessions
             evidences = hit.getPeptideEvidences()
@@ -505,29 +525,26 @@ def to_psm_arrow(self, export_all_hits=True, include_modifications=True,
             keys = []
             hit.getKeys(keys)
             for key in keys:
-                key_str = key.decode("utf-8") if isinstance(key, bytes) else str(key)
-                if key_str not in _excluded_psm_metavalues:
-                    val = hit.getMetaValue(key_str)
-                    is_known_score = _is_known_score(key_str)
+                if key not in _excluded_psm_metavalues:
+                    val = hit.getMetaValue(key)
+                    is_known_score = _is_known_score(key)
 
                     if isinstance(val, (int, float)) and is_known_score:
                         higher_better = None
                         try:
-                            score_type_enum = pyopenms.IDScoreSwitcherAlgorithm.toScoreTypeEnum(key_str)
+                            score_type_enum = pyopenms.IDScoreSwitcherAlgorithm.toScoreTypeEnum(key)
                             higher_better = idsa.isScoreTypeHigherBetter(score_type_enum)
                         except Exception:
                             pass
                         additional_scores.append({
-                            "score_name": key_str,
+                            "score_name": key,
                             "score_value": float(val),
                             "higher_better": higher_better
                         })
                     else:
                         val_type = _get_value_type(val)
-                        if isinstance(val, bytes):
-                            val = val.decode("utf-8")
                         psm_metavalues.append({
-                            "name": key_str,
+                            "name": key,
                             "value": val,
                             "value_type": val_type
                         })
@@ -594,13 +611,7 @@ def to_psm_arrow(self, export_all_hits=True, include_modifications=True,
                     all_mz_array.append([ann.mz for ann in peak_annotations])
                     all_intensity_array.append([ann.intensity for ann in peak_annotations])
                     all_charge_array.append([ann.charge for ann in peak_annotations])
-                    ion_types = []
-                    for ann in peak_annotations:
-                        if isinstance(ann.annotation, bytes):
-                            ion_types.append(ann.annotation.decode("utf-8"))
-                        else:
-                            ion_types.append(ann.annotation)
-                    all_ion_type_array.append(ion_types)
+                    all_ion_type_array.append([ann.annotation for ann in peak_annotations])
                     all_ion_mobility_array.append(None)
                 else:
                     all_number_peaks.append(0)

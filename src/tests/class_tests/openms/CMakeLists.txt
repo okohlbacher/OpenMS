@@ -42,11 +42,8 @@ endif()
 #------------------------------------------------------------------------------
 # Add the actual tests
 foreach(_class_test ${TEST_executables})
-  # OpenMSTestSupport.cpp registers libOpenMS behavior (unique-ID seeding, exception
-  # naming) with the std-only test framework. Removing it makes ID-bearing
-  # reference-file comparisons nondeterministic -- see the file's header comment.
-  add_executable(${_class_test} source/${_class_test}.cpp source/OpenMSTestSupport.cpp)
-  target_link_libraries(${_class_test} OpenMSTestFramework ${OpenMS_LIBRARIES})
+  add_executable(${_class_test} source/${_class_test}.cpp)
+  target_link_libraries(${_class_test} OpenMSTestSupport ${OpenMS_LIBRARIES})
   openms_add_executable_compiler_flags(${_class_test})
   add_test(${_class_test} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${_class_test})
   # only add OPENMP flags to gcc linker (except Mac OS X, due to compiler bug
@@ -58,6 +55,36 @@ endforeach(_class_test)
 
 #------------------------------------------------------------------------------
 # some tests need special treatment
+
+# Class tests of classes that live with a TOPP tool rather than in the library. A tool that
+# has a test/CMakeLists.txt gets it added here, and declares its tests with
+# openms_add_tool_class_test(), which cmake/class_test_macros.cmake defines. Adding a test/
+# folder to a tool is all it takes; nothing in this file changes.
+#
+# They are declared from this project rather than from the tool's own CMakeLists.txt because
+# src/topp is configured before src/tests: at that point OpenMS/test_config.h has not been
+# generated, the -O0 test flags and the test runtime output directory are unset, and the
+# ENABLE_CLASS_TESTING/PACKAGE_TYPE gating of src/tests/CMakeLists.txt does not exist yet.
+#
+# TOPP_TOOLS is empty when BUILD_TOPP_TOOLS is OFF, so a build that does not want the tools
+# does not compile their sources into test binaries either.
+
+include("${OPENMS_HOST_DIRECTORY}/cmake/class_test_macros.cmake")
+
+foreach(_topp_tool ${TOPP_TOOLS})
+  if(EXISTS "${OPENMS_HOST_DIRECTORY}/src/topp/${_topp_tool}/test/CMakeLists.txt")
+    add_subdirectory("${OPENMS_HOST_DIRECTORY}/src/topp/${_topp_tool}/test"
+                     "topp_${_topp_tool}_tests")
+  endif()
+endforeach()
+
+# FragmentIndex_test: its main() holds about a hundred FragmentIndex objects of 7 KB each, one or more per section.
+# MSVC does not share the stack slots of the sections, so the frame alone comes close to the 1 MB default stack of
+# Windows (938 KB without slot reuse at the time of writing), and the singletons initialised in the first section
+# overflowed it. Give the test the 8 MB of a Linux main thread.
+if (MSVC)
+  target_link_options(FragmentIndex_test PRIVATE "/STACK:8388608")
+endif()
 
 # StopWatch_test needs to be run alone to avoid timing errors
 set_tests_properties(StopWatch_test PROPERTIES RUN_SERIAL 1)
@@ -111,13 +138,7 @@ else()
 endif()
 
 #------------------------------------------------------------------------------
-# 2 - add link dependencies (TODO could be more finegrained for boost)
-foreach(t ${Boost_dependent_tests})
-  foreach(comp ${OpenMS_BOOST_COMPONENTS})
-    target_link_libraries(${t} Boost::${comp})
-  endforeach()
-endforeach()
-
+# 2 - add link dependencies
 target_link_libraries(Base64_test ZLIB::ZLIB)
 target_link_libraries(Libzip_test libzip::zip)
 # Xerces is a PRIVATE dependency of libOpenMS. These tests exercise the internal
@@ -129,16 +150,23 @@ target_link_libraries(Bzip2InputStream_test XercesC::XercesC)
 target_link_libraries(CompressedInputSource_test XercesC::XercesC)
 target_link_libraries(ZipRandomAccessFile_test libzip::zip)
 target_link_libraries(LPWrapper_test ${LPTARGET})
+target_link_libraries(UniqueIdGenerator_test Threads::Threads)
 target_link_libraries(SpectraSTSimilarityScore_test Eigen3::Eigen)
 target_link_libraries(BinnedSpectrum_test Eigen3::Eigen)
 target_link_libraries(BilinearInterpolation_test Eigen3::Eigen)
 target_link_libraries(MatrixEigen_test Eigen3::Eigen)
 target_link_libraries(MRMScoring_test Eigen3::Eigen)
+# The vendored Percolator is linked PRIVATE into libOpenMS with hidden symbols.
+# These tests call its classes directly, so they link the static library.
+target_link_libraries(PercolatorPosteriorEstimator_test OpenMS_Percolator)
+target_link_libraries(PercolatorScores_test OpenMS_Percolator)
 
 
 if (WITH_HDF5)
   target_link_libraries(HDF5_test HDF5::HDF5)
 endif()
+
+target_link_libraries(OSWParquetFile_test ${OPENMS_ARROW_TARGET})
 
 target_link_libraries(Arrow_test
   ${OPENMS_ARROW_TARGET}
@@ -157,6 +185,11 @@ target_link_libraries(ProteinGroupArrowExport_test
   ${OPENMS_PARQUET_TARGET}
 )
 target_link_libraries(QPXFile_test
+  ${OPENMS_ARROW_TARGET}
+  ${OPENMS_PARQUET_TARGET}
+)
+# Reads the mz view's schema and list columns with Arrow itself
+target_link_libraries(QPXDatasetExport_test
   ${OPENMS_ARROW_TARGET}
   ${OPENMS_PARQUET_TARGET}
 )
@@ -309,10 +342,15 @@ if (TARGET BrukerTimsFile_test AND OPENTIMS_DDA_TEST_DATA)
   set_tests_properties(BrukerTimsFile_test PROPERTIES TIMEOUT 3600)
 endif()
 
-if (TARGET ThermoRawFile_test AND WITH_THERMO_RAW AND THERMO_RAW_TEST_DATA)
-  target_compile_definitions(ThermoRawFile_test PRIVATE
-    THERMO_RAW_TEST_DATA="${THERMO_RAW_TEST_DATA}")
-endif()
+# Tests reading real Thermo .raw files: ThermoRawFile_test reads both fixtures, the
+# random-access tests only the small one.
+set(_thermo_raw_tests ThermoRawFile_test OnDiscThermoRawExperiment_test SpectrumAccessOnDisc_test)
+foreach(_thermo_test ${_thermo_raw_tests})
+  if (TARGET ${_thermo_test} AND WITH_THERMO_RAW AND THERMO_RAW_TEST_DATA)
+    target_compile_definitions(${_thermo_test} PRIVATE
+      THERMO_RAW_TEST_DATA="${THERMO_RAW_TEST_DATA}")
+  endif()
+endforeach()
 
 # Optional Thermo FAIMS-DIA integration fixture. It can be supplied explicitly via
 # THERMO_FAIMS_DIA_TEST_DATA or downloaded by ENABLE_THERMO_FAIMS_DIA_TESTS.
@@ -324,19 +362,21 @@ if (TARGET ThermoRawFile_test AND WITH_THERMO_RAW AND THERMO_FAIMS_DIA_TEST_DATA
     THERMO_FAIMS_DIA_TEST_DATA="${_thermo_faims_dia_test_data}")
 endif()
 
-if (TARGET ThermoRawFile_test AND WITH_THERMO_RAW AND
-    (THERMO_RAW_TEST_DATA OR THERMO_FAIMS_DIA_TEST_DATA))
-  set_tests_properties(ThermoRawFile_test PROPERTIES TIMEOUT 1200)
+foreach(_thermo_test ${_thermo_raw_tests})
+  if (TARGET ${_thermo_test} AND WITH_THERMO_RAW AND
+      (THERMO_RAW_TEST_DATA OR (_thermo_test STREQUAL "ThermoRawFile_test" AND THERMO_FAIMS_DIA_TEST_DATA)))
+    set_tests_properties(${_thermo_test} PROPERTIES TIMEOUT 1200)
 
-  # Copy the managed bridge runtime (.dll + .runtimeconfig.json) next to the
-  # test binary. The bridge looks first in the executable's own directory; on
-  # Windows the test exe is in src/tests/class_tests/bin (not next to
-  # libOpenMS), so the OpenMS-target POST_BUILD copy in src/openms/CMakeLists
-  # is in a different directory and would not be found at test runtime.
-  if (COMMAND openms_thermo_bridge_copy_runtime_files)
-    openms_thermo_bridge_copy_runtime_files(TARGET ThermoRawFile_test)
+    # Copy the managed bridge runtime (.dll + .runtimeconfig.json) next to the
+    # test binary. The bridge looks first in the executable's own directory; on
+    # Windows the test exe is in src/tests/class_tests/bin (not next to
+    # libOpenMS), so the OpenMS-target POST_BUILD copy in src/openms/CMakeLists
+    # is in a different directory and would not be found at test runtime.
+    if (COMMAND openms_thermo_bridge_copy_runtime_files)
+      openms_thermo_bridge_copy_runtime_files(TARGET ${_thermo_test})
+    endif()
   endif()
-endif()
+endforeach()
 
 #------------------------------------------------------------------------------
 # restore old compiler flags
@@ -373,3 +413,37 @@ if(WITH_ONNX)
     configure_file("${SOURCE_MODEL}" "${TEST_MODEL}" COPYONLY)
   endforeach()
 endif()
+
+# This test exercises the private Boost graph implementation.
+target_link_libraries(IDBoostGraph_test Boost::boost)
+
+# Boost used directly by these implementation/test translation units.
+foreach(_boost_consumer IN ITEMS
+  DBSuitability_test
+  EmgFitter1D_test
+  EmgModel_test
+  FastLowessSmoothing_test
+  HashGrid_test
+  LogConfigHandler_test
+  LogStream_test
+  LowessSmoothing_test
+  MRMAssay_test
+  MRMDecoy_test
+  MRMMapping_test
+  MRMTransitionGroupPicker_test
+  OpenSwathDataAccessHelper_test
+  OpenSwathHelper_test
+  OpenSwathMRMFeatureAccessOpenMS_test
+  OpenSwathSpectrumAccessOpenMS_test
+  PeakPickerChromatogram_test
+  PeakPickerMobilogram_test
+  StatisticFunctions_test
+  TransitionPQPFile_test
+  TransitionTSVFile_test
+  UniqueIdGenerator_test
+)
+  if(TARGET ${_boost_consumer})
+    target_link_libraries(${_boost_consumer} Boost::boost)
+  endif()
+endforeach()
+unset(_boost_consumer)

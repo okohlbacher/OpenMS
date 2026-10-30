@@ -1,6 +1,6 @@
 {
   "name": "openms",
-  "version-string": "3.6.0",
+  "version-string": "3.7.0",
   "dependencies": [
     {
       "name": "arrow",
@@ -43,20 +43,17 @@
     "boost-unordered",
     "boost-variant",
     "bzip2",
-    "coin-or-cbc",
-    "coin-or-cgl",
-    "coin-or-clp",
-    "coin-or-osi",
-    "coinutils",
     "curl",
     "eigen3",
+    "highs",
     "libsvm",
     "libxml2",
     "libzip",
     "xerces-c",
-    "zlib"
+    "zlib",
+    "zstd"
   ],
-  "overrides": [{ "name": "openssl", "version": "3.0.8" }],
+  "overrides": [{ "name": "openssl", "version": "3.6.5" }],
   "features": {
     "hdf5": {
       "description": "HDF5 C and C++ libraries for builds configured with -DWITH_HDF5=ON.",
@@ -141,13 +138,12 @@
       "description": "Enable native reading of Thermo Fisher RAW files via the openms-thermo-bridge C++/.NET library via -DWITH_THERMO_RAW=ON.",
       "dependencies": [
         {
-          "name": "openms-thermo-bridge",
-          "platform": "!(linux & arm64)"
+          "name": "openms-thermo-bridge"
         }
       ]
     },
     "lp-glpk": {
-      "description": "Select glpk as linear programming solver backend via -DLP_SOLVER=GLPK.",
+      "description": "Select GLPK (deprecated) as linear programming solver backend via -DLP_SOLVER=GLPK.",
       "dependencies": [
         {
           "name": "glpk",
@@ -156,8 +152,11 @@
       ]
     },
     "lp-highs": {
-      "description": "Select highs as linear programming solver backend via -DLP_SOLVER=HIGHS.",
-      "dependencies": ["highs"]
+      "description": "Deprecated no-op: HiGHS is now the default linear programming solver backend and a regular dependency."
+    },
+    "lp-coin": {
+      "description": "Select COIN-OR (deprecated) as linear programming solver backend via -DLP_SOLVER=COIN.",
+      "dependencies": ["coin-or-cbc", "coin-or-cgl", "coin-or-clp", "coin-or-osi", "coinutils"]
     }
   }
 }

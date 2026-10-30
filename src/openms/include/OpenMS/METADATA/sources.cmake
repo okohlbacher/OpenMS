@@ -25,13 +25,13 @@ Instrument.h
 InstrumentSettings.h
 IonDetector.h
 IonSource.h
+MS1LabelState.h
 MassAnalyzer.h
 MetaInfo.h
 MetaInfoDescription.h
 MetaInfoInterface.h
 MetaInfoInterfaceUtils.h
 MetaInfoRegistry.h
-CometNativeIDRemapper.h
 SpectrumNativeIDParser.h
 PeptideEvidence.h
 PeptideHit.h
@@ -42,6 +42,7 @@ Product.h
 ProteinHit.h
 ProteinIdentification.h
 ProteinModificationSummary.h
+ProteinRunReferences.h
 Sample.h
 ScanWindow.h
 Software.h

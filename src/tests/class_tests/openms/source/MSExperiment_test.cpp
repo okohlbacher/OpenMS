@@ -1043,6 +1043,45 @@ START_SECTION((void sortSpectra(bool sort_mz = true)))
 }
 END_SECTION
 
+START_SECTION([EXTRA] void sortSpectra() keeps spectra of equal retention time in their input order)
+{
+  // An ion mobility frame, a FAIMS split and Bruker TIMS data all produce many spectra with the
+  // same retention time. std::sort gives no guarantee for those, so they came out in an order that
+  // depends on the standard library, and consumers that walk the spectra in order saw them
+  // shuffled (#10054). Enough spectra to get past the insertion sort std::sort uses for short
+  // ranges, which is stable by accident.
+  PeakMap exp;
+  const Size frames = 4;
+  const Size per_frame = 250;
+  for (Size i = 0; i < frames * per_frame; ++i)
+  {
+    MSSpectrum s;
+    s.setRT(double(frames - 1 - (i % frames))); // frames arrive in reverse order
+    s.setNativeID("scan=" + std::to_string(i));
+    s.setMSLevel(1);
+    exp.addSpectrum(s);
+  }
+
+  exp.sortSpectra(false);
+
+  TEST_EQUAL(exp.size(), frames * per_frame)
+  TEST_EQUAL(exp.isSorted(false), true)
+  // inside each retention time the spectra must still be in the order they were added, i.e. their
+  // native IDs ascend
+  bool order_kept = true;
+  for (Size i = 1; i < exp.size(); ++i)
+  {
+    if (exp[i - 1].getRT() != exp[i].getRT()) continue;
+    const std::string id_before = exp[i - 1].getNativeID();
+    const std::string id_now = exp[i].getNativeID();
+    const Size before = std::stoul(id_before.substr(id_before.find('=') + 1));
+    const Size now = std::stoul(id_now.substr(id_now.find('=') + 1));
+    if (before > now) order_kept = false;
+  }
+  TEST_EQUAL(order_kept, true)
+}
+END_SECTION
+
 START_SECTION(bool isSorted(bool check_mz = true ) const)
 {
   //make test dataset
@@ -1175,6 +1214,31 @@ START_SECTION((ConstIterator getPrecursorSpectrum(ConstIterator iterator) const)
   TEST_EQUAL(exp.getPrecursorSpectrum(exp.begin()+3)==exp.end(),true)
   TEST_EQUAL(exp.getPrecursorSpectrum(exp.begin()+4)==exp.end(),true)
   TEST_EQUAL(exp.getPrecursorSpectrum(exp.end())==exp.end(),true)
+}
+END_SECTION
+
+START_SECTION(([EXTRA] ConstIterator getPrecursorSpectrum(ConstIterator iterator) const with FAIMS))
+{
+  // without a spectrum reference: the closest preceding MS1 of the same compensation voltage
+  auto faims = [](MSSpectrum& s, double cv) { s.setDriftTime(cv); s.setDriftTimeUnit(DriftTimeUnit::FAIMS_COMPENSATION_VOLTAGE); };
+  PeakMap exp;
+  exp.resize(5);
+  exp[0].setMSLevel(1); faims(exp[0], -40.0);
+  exp[1].setMSLevel(1); faims(exp[1], -60.0);
+  exp[2].setMSLevel(2); faims(exp[2], -40.0);
+  exp[3].setMSLevel(2); faims(exp[3], -59.995); // within the tolerance of -60
+  exp[4].setMSLevel(2); faims(exp[4], -80.0);  // no MS1 at this CV
+  TEST_EQUAL(exp.getPrecursorSpectrum(exp.begin() + 2) == exp.begin(), true)
+  TEST_EQUAL(exp.getPrecursorSpectrum(exp.begin() + 3) == exp.begin() + 1, true)
+  TEST_EQUAL(exp.getPrecursorSpectrum(exp.begin() + 4) == exp.end(), true)
+
+  // CV annotated on the MS2 spectra only: the preceding MS1 without a CV is taken
+  PeakMap ms2_cv_only;
+  ms2_cv_only.resize(3);
+  ms2_cv_only[0].setMSLevel(1);
+  ms2_cv_only[1].setMSLevel(1);
+  ms2_cv_only[2].setMSLevel(2); faims(ms2_cv_only[2], -40.0);
+  TEST_EQUAL(ms2_cv_only.getPrecursorSpectrum(ms2_cv_only.begin() + 2) == ms2_cv_only.begin() + 1, true)
 }
 END_SECTION
 

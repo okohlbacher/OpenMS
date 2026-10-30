@@ -39,7 +39,7 @@ set(CF_OPENMS_ASSERTIONS ${CF_OPENMS_ASSERTIONS} CACHE INTERNAL "Enables debug m
 add_subdirectory(extern)
 
 #------------------------------------------------------------------------------
-# external libs (contrib or system)
+# external libs (vcpkg or system)
 #------------------------------------------------------------------------------
 #include(${PROJECT_SOURCE_DIR}/cmake_findExternalLibs.cmake)
 
@@ -68,14 +68,8 @@ add_subdirectory(thirdparty/percolator)
 ## Xerces-free XMLHandler / XMLAttributes / StringManager public API and the
 ## internal SAX2HandlerAdapter, so it no longer appears in any installed header
 ## and downstream consumers neither include nor link it (see #8547).
-## Note: Boost::boost (header-only) is PUBLIC because the installed public header
-## config.h includes <boost/current_function.hpp> (via Macros.h), so consumers
-## (e.g. pyOpenMS) need Boost's include dir. Only the header-only target is
-## public — it propagates include dirs but no link libraries; the compiled Boost
-## components (date_time/iostreams/regex) stay PRIVATE below.
-set(OPENMS_DEP_LIBRARIES
-  Boost::boost
-)
+## Boost is an implementation dependency: no installed header includes it.
+set(OPENMS_DEP_LIBRARIES)
 
 ## setup the arguments to 'target_link_libraries(OpenMS PRIVATE ${OPENMS_DEP_PRIVATE_LIBRARIES})'
 ## Note: Eigen3::Eigen is PRIVATE because Eigen types are not exposed in the public API
@@ -83,14 +77,12 @@ set(OPENMS_DEP_LIBRARIES
 ## Note: LibSVM::LibSVM is PRIVATE because LIBSVM types are not exposed in the public API;
 ##       they are fully encapsulated by the SimpleSVM wrapper (Pimpl) (see #8547).
 set(OPENMS_DEP_PRIVATE_LIBRARIES
+  Boost::boost
   CURL::libcurl
   XercesC::XercesC
   $<$<BOOL:${WITH_HDF5}>:HDF5::HDF5>
   ${LPTARGET}
   BZip2::BZip2
-  Boost::date_time
-  Boost::iostreams
-  Boost::regex
   Eigen3::Eigen
   Evergreen
   GTE
@@ -98,16 +90,16 @@ set(OPENMS_DEP_PRIVATE_LIBRARIES
   Quadtree
   SIMDe
   SQLiteCpp
+  Threads::Threads
   ${OPENMS_SQLITECPP_EXTRA_LIBS}
   ZLIB::ZLIB
+  ${OPENMS_ZSTD_TARGET}
   libzip::zip
   nlohmann_json::nlohmann_json
   IsoSpec
   eol-bspline
   OpenMS_Percolator
   )
-
-option(WITH_ONNX "Build with ONNX Runtime support for PeptDeep ML bindings" OFF)
 
 if(WITH_ONNX)
   if(OPENMS_USE_VCPKG)
@@ -157,11 +149,28 @@ if(WITH_ONNX)
   endif()
 
   if(ORT_LIB_PATH)
-      # Safely install ONNX shared libraries based on the operating system
+      # Safely install ONNX shared libraries based on the operating system.
+      # Component Dependencies, as for the other runtime dependencies
+      # (cmake/package_general.cmake): the installers and the SDK select their
+      # components by name and never install the unnamed default component.
       if(WIN32)
-          install(PROGRAMS "${ORT_LIB_PATH}" DESTINATION "${INSTALL_BIN_DIR}")
+          install(PROGRAMS "${ORT_LIB_PATH}" DESTINATION "${INSTALL_BIN_DIR}" COMPONENT Dependencies)
       else()
-          install(PROGRAMS "${ORT_LIB_PATH}" DESTINATION "${INSTALL_LIB_DIR}")
+          # ORT_LIB_PATH is usually the unversioned symlink (libonnxruntime.so/.dylib), which
+          # install() copies as a symlink, i.e. dangling without its target; and libOpenMS records
+          # the SONAME/install name (libonnxruntime.so.1, libonnxruntime.1.dylib) anyway. Install
+          # the real library together with all its (relative) version symlinks from its directory.
+          file(REAL_PATH "${ORT_LIB_PATH}" _ort_real_lib)
+          get_filename_component(_ort_lib_dir "${_ort_real_lib}" DIRECTORY)
+          if(APPLE)
+            file(GLOB _ort_libs "${_ort_lib_dir}/libonnxruntime.*dylib")
+          else()
+            file(GLOB _ort_libs "${_ort_lib_dir}/libonnxruntime.so*")
+          endif()
+          install(FILES ${_ort_libs}
+                  DESTINATION "${INSTALL_LIB_DIR}"
+                  PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
+                  COMPONENT Dependencies)
       endif()
   endif()
 
@@ -241,9 +250,13 @@ if(WITH_ONNX)
     endif()
   endforeach()
 
-  # Ensure models are packaged during 'make install'.
+  # Ensure models are packaged during 'make install'. They are shared data the
+  # library loads at runtime, so they belong to the share component the
+  # installers and the SDK install (the unnamed default component is never
+  # selected by them).
   install(FILES ${OPENMS_PEPTDEEP_MODEL_FILES}
-          DESTINATION "share/OpenMS/models")
+          DESTINATION "${INSTALL_SHARE_DIR}/models"
+          COMPONENT share)
 
 endif()
 
@@ -254,12 +267,18 @@ list(APPEND OPENMS_DEP_PRIVATE_LIBRARIES
      ${OPENMS_PARQUET_TARGET})
 if (OPENMS_ARROW_DATASET_TARGET)
   list(APPEND OPENMS_DEP_PRIVATE_LIBRARIES ${OPENMS_ARROW_DATASET_TARGET})
-  # Dataset pushdown needs libxml2 when Arrow Dataset is linked statically.
-  list(APPEND OPENMS_DEP_PRIVATE_LIBRARIES LibXml2::LibXml2)
+  # libxml2 is needed by a statically linked Arrow, but listing it here put it
+  # ahead of the archive that references it. cmake_findExternalLibs.cmake now
+  # appends it to Arrow's own link interface instead, where the order is right.
 endif()
 
 if (WITH_OPENTIMS)
   list(APPEND OPENMS_DEP_PRIVATE_LIBRARIES opentims::opentims_cpp)
+endif()
+
+if (WITH_ARROW_S3 AND OPENMS_ARROW_S3_TARGET)
+  # S3 (S3InputSource): Arrow's S3 filesystem, a library of its own in newer Arrow releases
+  list(APPEND OPENMS_DEP_PRIVATE_LIBRARIES ${OPENMS_ARROW_S3_TARGET})
 endif()
 
 if (WITH_THERMO_RAW)
@@ -296,14 +315,18 @@ openms_add_library(TARGET_NAME  OpenMS
                    SOURCE_FILES  ${OpenMS_sources}
                    HEADER_FILES  ${OpenMS_sources_h}
                                  ${OpenMS_configured_headers}
-                   INTERNAL_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/include
-                                     ${CMAKE_CURRENT_BINARY_DIR}/include
+                   BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
+                             ${CMAKE_CURRENT_BINARY_DIR}/include
                    PRIVATE_INCLUDES ${OPENMS_ONNX_PRIVATE_INCLUDES}
                    EXTERNAL_INCLUDES
                    LINK_LIBRARIES OpenSwathAlgo
                                   ${OPENMS_DEP_LIBRARIES}
                    PRIVATE_LINK_LIBRARIES ${OPENMS_DEP_PRIVATE_LIBRARIES}
                    DLL_EXPORT_PATH "OpenMS/")
+
+target_sources(OpenMS PRIVATE FILE_SET private_headers TYPE HEADERS
+  BASE_DIRS source include
+  FILES ${OpenMS_private_headers})
 
 # The core library has no QObject classes, including in builds that also find Qt.
 set_target_properties(OpenMS PROPERTIES AUTOMOC OFF)
@@ -461,6 +484,12 @@ if (WITH_OPENTIMS)
     target_compile_definitions(OpenMS PUBLIC WITH_OPENTIMS=1)
 endif()
 
+if (WITH_ARROW_S3)
+    # only S3InputSource.cpp uses Arrow's S3 filesystem
+    set_property(SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/source/FORMAT/DATAACCESS/S3InputSource.cpp
+                 APPEND PROPERTY COMPILE_DEFINITIONS OPENMS_WITH_ARROW_S3)
+endif()
+
 if (WITH_THERMO_RAW)
     target_compile_definitions(OpenMS PUBLIC WITH_THERMO_RAW=1)
     # Copy the thermo bridge managed runtime files (.dll + .runtimeconfig.json)
@@ -475,17 +504,13 @@ if(WITH_WNETALIGN)
   target_compile_definitions(OpenMS PRIVATE LEMON_ONLY_TEMPLATES OPENMS_HAS_WNETALIGN)
 endif()
 
-## Enable test-only hooks when class tests are being built.
-if(ENABLE_CLASS_TESTING)
-  target_compile_definitions(OpenMS PRIVATE OPENMS_ENABLE_TESTING_HOOKS=1)
-endif()
-
 #------------------------------------------------------------------------------
 # since the share basically belongs to OpenMS core we control its installation
 # here
 # Note: that slash(/) is important here, otherwise the whole directory
 #       (not its content) will be copied!
 #install_directory(${OPENMS_HOST_DIRECTORY}/share/OpenMS/ ${INSTALL_SHARE_DIR} share)
+
 install(DIRECTORY ${OPENMS_HOST_DIRECTORY}/share/OpenMS/
   DESTINATION ${INSTALL_SHARE_DIR}
   COMPONENT share
@@ -499,6 +524,9 @@ install(DIRECTORY ${OPENMS_HOST_DIRECTORY}/share/OpenMS/
   REGEX ".*\\/\\..*" EXCLUDE ## Exclude hidden files in subdirectories
   REGEX "OpenMS/examples" EXCLUDE
 )
+
+## The TOPP tool registry is generated into the build tree rather than checked in
+## (cmake/topp_tool_macros.cmake) and installed from src/CMakeLists.txt, where it is written.
 install(FILES ${OPENMS_HOST_DIRECTORY}/License.txt
   DESTINATION ${INSTALL_SHARE_DIR}/LICENSES
   RENAME OpenMS-BSD-3-Clause.txt
@@ -507,10 +535,6 @@ install(FILES ${OPENMS_HOST_DIRECTORY}/License.txt
 if(INSTALL_OPENMS_EXAMPLES)
   install_directory(${OPENMS_HOST_DIRECTORY}/share/OpenMS/examples ${INSTALL_SHARE_DIR} examples)
 endif()
-
-# Devs also need our custom find modules
-install_directory(${OPENMS_HOST_DIRECTORY}/cmake/Modules/ ${INSTALL_CMAKE_DIR}/Modules cmake)
-file(COPY ${OPENMS_HOST_DIRECTORY}/cmake/Modules DESTINATION ${OPENMS_HOST_BINARY_DIRECTORY})
 
 openms_doc_path("${PROJECT_SOURCE_DIR}/include")
 
@@ -523,5 +547,9 @@ if(WITH_ONNX)
     source/ML/PEPTDEEP/PeptDeepInput.cpp
     source/ML/PEPTDEEP/PeptDeepRTInference.cpp
     source/ML/PEPTDEEP/PeptDeepMS2Inference.cpp
+    source/ANALYSIS/ID/PeptDeepRescoring.cpp
   )
+  # Lets dependent code (e.g. ProSEAlgorithm) compile out the PeptDeep calls when the
+  # runtime is absent, the same way WITH_OPENTIMS / WITH_THERMO_RAW are handled.
+  target_compile_definitions(OpenMS PUBLIC WITH_ONNX=1)
 endif()

@@ -52,11 +52,16 @@ namespace OpenMS
       absolute paths in archive entries. If the provided path already points to a
       directory it is returned unchanged and no TempDir is created.
 
+      Before writing anything, archives with more than 100000 entries, or whose declared
+      uncompressed size exceeds 90% of the free space of the temporary directory (or if that
+      free space cannot be determined), are rejected.
+      Extraction stops at an entry that inflates beyond its declared size.
+
       @param[in] input_path Path to the zip archive (or a directory).
       @param[out] temp_dir A unique_ptr which will be set to the owned TempDir when an archive is extracted. If input_path is a directory this will remain unchanged.
       @return The path where the archive was unpacked (or input_path if already a directory).
       @throws Exception::FileNotFound if the input archive is not readable.
-      @throws Exception::InvalidValue on archive extraction errors.
+      @throws Exception::InvalidValue on archive extraction errors, including an archive over these limits.
       @throws Exception::NotImplemented if libzip support is unavailable.
     */
     static std::string unzipDirectory(const std::string& input_path, std::unique_ptr<TempDir>& temp_dir);
@@ -88,6 +93,18 @@ namespace OpenMS
     static std::vector<std::string> listEntries(const std::string& archive_path);
 
     /**
+      @brief List entries in a zip archive, and tell whether the archive could be read
+
+      Unlike listEntries(const std::string&), this tells an archive without entries from one that
+      cannot be read.
+
+      @param[in] archive_path Path to the zip archive to inspect.
+      @param[out] entries The entry names contained in the archive (empty if it cannot be read).
+      @return false if the archive cannot be opened or libzip is unavailable.
+    */
+    static bool listEntries(const std::string& archive_path, std::vector<std::string>& entries);
+
+    /**
       @brief Write a small JSON sidecar index for the archive listing entries and sizes.
 
         For zip archives this helper will write the sidecar JSON as an entry inside
@@ -113,14 +130,35 @@ namespace OpenMS
       present in the entry name. This is a lightweight alternative to extracting
       the whole archive when only a few files are needed.
 
+      As in unzipDirectory(), an entry whose declared uncompressed size exceeds 90% of the
+      free space of the temporary directory (or if that free space cannot be determined) is
+      rejected before anything is written, and extraction stops if the entry inflates beyond
+      its declared size.
+
       @param[in] archive_path Path to the zip archive
       @param[in] entry_name Relative name of the entry to extract
       @param[out] temp_dir Unique pointer to a TempDir which will be created if null and will own the extracted file(s)
       @return The absolute path to the extracted file on disk
       @throws Exception::FileNotFound if the archive or entry is not found
-      @throws Exception::InvalidValue on extraction errors
+      @throws Exception::InvalidValue on extraction errors, including an entry over these limits
     */
     static std::string extractEntryToTempFile(const std::string& archive_path, const std::string& entry_name, std::unique_ptr<TempDir>& temp_dir);
+
+    /**
+      @brief Find the one file in a zip archive whose name ends with @p extension
+
+      For archives that wrap a single data file, e.g. 'run.raw.zip'. The extension is compared
+      case-insensitively and the file may be in a subdirectory of the archive. Directory entries,
+      files with other extensions and the AppleDouble files that macOS adds below '__MACOSX/'
+      are ignored.
+
+      @param[in] archive_path Path to the zip archive
+      @param[in] extension Extension including the dot, e.g. ".raw"
+      @return The entry name, to pass to extractEntryToTempFile()
+      @throws Exception::ParseError if the archive cannot be read, or holds no such file or more than one
+      @throws Exception::NotImplemented if libzip support is unavailable
+    */
+    static std::string findSingleEntry(const std::string& archive_path, const std::string& extension);
 
   };
 

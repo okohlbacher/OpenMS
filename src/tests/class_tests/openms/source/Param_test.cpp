@@ -15,7 +15,6 @@
 #include <OpenMS/DATASTRUCTURES/Param.h>
 #include <OpenMS/CONCEPT/LogStream.h>
 #include <OpenMS/DATASTRUCTURES/ListUtils.h>
-#include <OpenMS/APPLICATIONS/TOPPBase.h> // for "ParameterInformation"
 
 #include <type_traits>
 #include <iterator>
@@ -1261,7 +1260,32 @@ START_SECTION((void setDefaults(const Param& defaults, const std::string& prefix
 	TEST_EQUAL(p2.getValue("intlist2") == ListUtils::create<Int>("11,22,33"), true)
 	TEST_EQUAL(p2.getValue("doublelist2") == ListUtils::create<double>("11.22,22.33"), true)
 
-
+	// an existing string entry takes the defaults' string restrictions; its value is kept
+	{
+		Param restricted_defaults;
+		restricted_defaults.setValue("flag", "false");
+		restricted_defaults.setValidStrings("flag", {"true", "false"});
+		restricted_defaults.setValue("mode", "auto");
+		restricted_defaults.setValidStrings("mode", {"auto", "true", "false"});
+		restricted_defaults.setValue("free", "x");
+		restricted_defaults.setValue("number", 1);
+		Param given;
+		given.setValue("flag", "true", "", {"advanced"});           // no restrictions
+		given.setValue("mode", "true");
+		given.setValidStrings("mode", {"true", "false"});           // contradicting restrictions
+		given.setValue("free", "y");
+		given.setValidStrings("free", {"y", "z"});                  // defaults are unrestricted
+		given.setValue("number", "not a number");                   // type mismatch: untouched
+		given.setValidStrings("number", {"not a number"});
+		given.setDefaults(restricted_defaults);
+		TEST_EQUAL(given.getValue("flag").toString(), "true")
+		TEST_EQUAL(given.getValidStrings("flag") == std::vector<std::string>({"true", "false"}), true)
+		TEST_EQUAL(given.getTags("flag") == std::vector<std::string>({"advanced"}), true)
+		TEST_EQUAL(given.getValue("mode").toString(), "true")
+		TEST_EQUAL(given.getValidStrings("mode") == std::vector<std::string>({"auto", "true", "false"}), true)
+		TEST_EQUAL(given.getValidStrings("free").empty(), true)
+		TEST_EQUAL(given.getValidStrings("number") == std::vector<std::string>({"not a number"}), true)
+	}
 
 	p2.setDefaults(defaults,"PATH");
 
@@ -1803,6 +1827,39 @@ START_SECTION((void checkDefaults(const std::string &name, const Param &defaults
     p.clear();
     p.setValue("stringv",4.5);
     TEST_EXCEPTION(Exception::InvalidParameter,p.checkDefaults("Param_test",d,""))
+
+    // an invalid value is named by its full name, not by its leaf name, which other sections may share
+    Param sections;
+    sections.setValue("precursor:max_charge", 5);
+    sections.setMinInt("precursor:max_charge", 1);
+    sections.setMaxInt("precursor:max_charge", 20);
+    sections.setValue("fragment:max_charge", 2);
+    Param values = sections;
+    values.setValue("precursor:max_charge", 65536);
+    std::string message;
+    try
+    {
+      values.checkDefaults("Param_test", sections);
+    }
+    catch (const Exception::InvalidParameter& e)
+    {
+      message = e.what();
+    }
+    TEST_TRUE(message.find("parameter 'precursor:max_charge'") != std::string::npos)
+    // with a prefix (of the defaults too), the name below it
+    Param nested, nested_defaults;
+    nested.insert("algorithm:", values);
+    nested_defaults.insert("algorithm:", sections);
+    message.clear();
+    try
+    {
+      nested.checkDefaults("Param_test", nested_defaults, "algorithm");
+    }
+    catch (const Exception::InvalidParameter& e)
+    {
+      message = e.what();
+    }
+    TEST_TRUE(message.find("parameter 'precursor:max_charge'") != std::string::npos)
 END_SECTION
 
 START_SECTION((void update(const Param& old_version, const bool add_unknown = false)))
