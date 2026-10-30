@@ -1,0 +1,35 @@
+name: msvc-openmp-llvm-probe
+on:
+  push:
+    branches: [probe/msvc-openmp-llvm]
+jobs:
+  probe:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: compile and run each feature under three OpenMP modes
+        shell: pwsh
+        run: |
+          cl 2>&1 | Select-Object -First 1
+          $modes = @{ "openmp" = "/openmp"; "experimental" = "/openmp:experimental"; "llvm" = "/openmp:llvm"; "llvm+exp" = "/openmp:llvm /openmp:experimental" }
+          foreach ($m in $modes.Keys) {
+            Write-Host "===== $m ($($modes[$m]))"
+            foreach ($f in "version","task","taskgroup","taskloop") {
+              $exe = "$f-$m.exe" -replace '\+','_'
+              $out = cmd /c "cl /nologo /EHsc /O2 /std:c++20 $($modes[$m]) /W3 probe\$f.cpp /Fe:$exe 2>&1"
+              $warn = ($out | Select-String -Pattern "warning|error") -join " | "
+              if ($LASTEXITCODE -ne 0) { Write-Host "$f : COMPILE FAILED $warn"; continue }
+              if ($warn) { Write-Host "$f : compiler said: $warn" }
+              $env:OMP_NUM_THREADS = "4"
+              $run = cmd /c ".\$exe 2>&1"
+              Write-Host "$f : exit $LASTEXITCODE : $run"
+            }
+          }
+      - name: where is libomp140
+        shell: pwsh
+        run: |
+          Get-ChildItem -Recurse -ErrorAction SilentlyContinue "$env:VCToolsRedistDir" -Filter "libomp140*" | ForEach-Object { $_.FullName }
+          Write-Host "--- tools bin:"
+          Get-ChildItem -Recurse -ErrorAction SilentlyContinue "$env:VCToolsInstallDir\bin\Hostx64\x64" -Filter "libomp140*" | ForEach-Object { $_.FullName }
+          Get-ChildItem -Recurse -ErrorAction SilentlyContinue "$env:VCToolsRedistDir" -Filter "*.txt" | Select-Object -First 5 | ForEach-Object { $_.FullName }
