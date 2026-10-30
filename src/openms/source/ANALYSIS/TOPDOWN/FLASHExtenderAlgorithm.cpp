@@ -112,7 +112,7 @@ namespace OpenMS
                        "A precursor-mass path pays the truncation penalty for an internal C-terminal end. false: not for an end the suffix "
                        "ladder of the terminal paths reads (at least as many fragments as a terminal ladder needs), as its start is taken "
                        "from a prefix ladder that reads it.");
-    defaults_.setValidStrings("ladder_end_penalty", {"true", "false"});
+    defaults_.setValidStrings("ladder_end_penalty", {"true", "false", "read"}); // read: an end at least one suffix fragment reads
     defaults_.addTag("skip_precursor_inference", "advanced");
     defaults_.setValue("mass_closure", "false",
                        "A proteoform whose precursor-mass path failed (reported with an undetermined mass) gets the stretch that explains the "
@@ -136,6 +136,9 @@ namespace OpenMS
     skip_precursor_inference_with_ms1_ = param_.getValue("skip_precursor_inference") == "with_ms1";
     precursor_inference_corroborated_ = param_.getValue("skip_precursor_inference") == "corroborated";
     ladder_end_penalty_ = param_.getValue("ladder_end_penalty").toString() == "true";
+    // the fragments of the suffix ladder an end needs to be free of the penalty: as many as a terminal ladder needs (false), or one (read):
+    // the precursor mass that fits the stretch to that end exactly is the second, independent piece of evidence
+    ladder_end_min_fragments_ = param_.getValue("ladder_end_penalty").toString() == "read" ? 1 : min_c_term_ladder;
     mass_closure_ = param_.getValue("mass_closure").toString() == "true";
     mass_anchor_ = param_.getValue("mass_closure").toString() == "anchored";
     loadVariableModifications_();
@@ -1970,7 +1973,7 @@ namespace OpenMS
             // spectra kept no mass although their terminal stretch fit the precursor exactly, mode 2 scoring it at 0 after this
             // penalty (Rieske presequence 1-78 in mouse brain: 19 - 19 against 72 for the terminal paths)
             if (m == 2 && hi.protein_end_position_ >= 0 && hi.protein_end_position_ < (int)hit.getSequence().size()
-                && ! (! ladder_end_penalty_ && hi.protein_end_position_ == terminal_end && terminal_c_ladder >= min_c_term_ladder))
+                && ! (! ladder_end_penalty_ && hi.protein_end_position_ == terminal_end && terminal_c_ladder >= ladder_end_min_fragments_))
               mode_score -= truncation_penalty;
             if (m == 1 && hi.protein_start_position_ >= 0 && hi.protein_end_position_ >= 0 && hi.protein_start_position_ >= hi.protein_end_position_)
             {
@@ -2015,7 +2018,8 @@ namespace OpenMS
             std::cerr << "TRACE scan " << trace_scan << " " << hit.getAccession() << " mode " << hi.mode_ << " score " << total_score << " terminal " << terminal_score
                       << " calc_mass " << hi.calculated_precursor_mass_ << " given " << given_precursor_mass_ << " by_fragment " << precursor_by_fragment
                       << " as_given " << hi.precursor_as_given_ << " start " << hi.protein_start_position_ << " end " << hi.protein_end_position_
-                      << " retried_given " << retried_with_given_mass << " retried_iso " << retried_with_isotopes << std::endl;
+                      << " retried_given " << retried_with_given_mass << " retried_iso " << retried_with_isotopes << " n_ladder " << terminal_n_ladder
+                      << " c_ladder " << terminal_c_ladder << " terminal_end " << terminal_end << std::endl;
           }
           if (hi.mode_ == 2 && total_score > 0)
           {

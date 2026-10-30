@@ -590,6 +590,8 @@ private:
   bool precursor_inference_corroborated_ = false;
   /// option ladder_end_penalty false: a precursor-mass path pays no truncation penalty for an end a suffix ladder reads
   bool ladder_end_penalty_ = true;
+  /// with ladder_end_penalty false or read: the suffix-ladder fragments a free end needs
+  int ladder_end_min_fragments_ = 4;
   /// option mass_closure: a terminal result without a mass gets the stretch that explains the MS1 precursor mass (true: closeMass,
   /// anchored: anchorStretch)
   bool mass_closure_ = false;
