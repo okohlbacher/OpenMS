@@ -14,10 +14,10 @@
 
 #include <OpenMS/DATASTRUCTURES/StringUtils.h>
 #include <OpenMS/OpenMSConfig.h>
+#include <OpenMS/DATASTRUCTURES/Compomer.h>
 
 namespace OpenMS
 {
-  class Compomer;
 
   /**
     @brief Computes empirical formulas for given mass differences using a set of allowed elements

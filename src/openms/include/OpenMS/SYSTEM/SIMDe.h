@@ -22,7 +22,8 @@
 #include <simde/x86/ssse3.h> 
 
 // these operators are defined for GCC/clang, but not in MSVC (TODO: maybe use SFINAE, but that is overkill for the moment)
-#ifdef _MSC_VER
+// clang-cl: __m128i is a builtin vector type there, which has these operators natively and forbids overloading them
+#if defined(_MSC_VER) && !defined(__clang__)
 inline simde__m128i operator|(const simde__m128i& left, const simde__m128i& right)
 {
   return simde_mm_or_si128(left, right);
