@@ -157,61 +157,11 @@ def analyze(a, log=print):
           + chem.detect_cys_alkylation(run, hr2)
     timings["chemistry"] = round(time.time() - t, 1)
 
-    # mini-search hypotheses (DDA only: DIA spectra have no single precursor)
-    panel = ts.load_panel(a.panel) if a.panel else {}
-    if a.fasta:
-        panel = {**panel, os.path.splitext(os.path.basename(a.fasta))[0]: a.fasta}
-    h = None
-    if panel and not str(search_acq).startswith("DIA") and not a.no_search:
-        log(f"[5/7] mini-search on {min(a.spectra, len(run.ms2))} spectra against {len(panel)} database(s)")
-        t = time.time()
-        lab = _first([e for e in ev if e.parameter == "label" and e.source == "data"
-                      and e.value not in ("no isobaric label", "no SILAC", "unknown")], "label")
-        mods = ts.Mods()
-        if lab and str(lab.value).startswith("TMTpro"):
-            mods.k = mods.nterm = ts.LABEL_MASS["TMTpro"]
-        elif lab and str(lab.value).startswith("TMT"):
-            mods.k = mods.nterm = ts.LABEL_MASS["TMT"]
-        elif lab and str(lab.value).startswith("iTRAQ8"):
-            mods.k = mods.nterm = ts.LABEL_MASS["iTRAQ8plex"]
-        elif lab and str(lab.value).startswith("iTRAQ"):
-            mods.k = mods.nterm = ts.LABEL_MASS["iTRAQ4plex"]
-        frag_tol = 20.0 if hr2 else 0.4
-        h = HypothesisTester(run, frag_tol, hr2, prec_ppm=20.0 if hr1 else 500.0,
-                             n_spectra=a.spectra, mods=mods, log=log)
-        ev += h.organism(panel)
-        if h.best_db:
-            ev += h.accuracy() + h.alkylation()
-            if not a.skip_enzyme:
-                ev += h.enzyme()
-        timings["mini_search"] = round(time.time() - t, 1)
-    else:
-        log("[5/7] mini-search skipped" + (" (DIA without pseudo-spectra)" if str(search_acq).startswith("DIA") else
-                                           " (no --panel/--fasta)" if not panel else ""))
-    if a.fastag:
-        t = time.time()
-        ftol, funit = (20.0, "ppm") if hr2 else (0.3, "Da")
-        log("  FASTag: genus call from sequence tags")
-        try:
-            fev = ext.fastag_species(a.fastag, spectra_file, ftol, funit, threads=a.threads,
-                                     subsample=a.fastag_subsample, log=log, taxonomy_dir=a.fastag_taxonomy,
-                                     rank="species" if a.fastag_taxonomy else "genus")
-            if a.fastag_taxonomy and not hr2:  # ion-trap tags hit large proteomes by chance (wheat, salmon first)
-                for e in fev:
-                    e.confidence = min(e.confidence, 0.2)
-            ev += fev
-            db = (h.best_db[1] if h is not None and h.best_db else None) or a.fasta
-            if db:
-                log(f"  FASTag: mass-gap histogram against {os.path.basename(db)} without fixed modifications")
-                ev += ext.fastag_alkylation(a.fastag, spectra_file, db, ftol, funit, threads=a.threads, log=log)
-        except Exception as e:
-            log(f"  FASTag failed: {e}")
-        timings["fastag"] = round(time.time() - t, 1)
-
-    log("[6/7] repository records and text")
+    log("[5/7] repository records and text")
+    t = time.time()
     texts = {}
     if a.accession:
-        e, texts = repo.repository_evidence(a.accession, log=log, fetch_paper=not a.no_paper)
+        e, texts = repo.repository_evidence(a.accession, log=log, fetch_paper=not a.no_paper, sdrf_use=a.sdrf)
         ev += e
     desc = _arg_text(a.description)
     methods = _arg_text(a.methods)
@@ -247,12 +197,91 @@ def analyze(a, log=print):
         e, jev_report = J.read_study(jev, study, user=bool(desc))
         ev += e
 
+    timings["text"] = round(time.time() - t, 1)
+
+    # organism from the metadata instead of the data: the user's FASTA, else the most confident stated organism
+    # (user, repository record, SDRF, text, Jev); the hypotheses search only that proteome, FASTag makes no species
+    # call and there is no tier 2. Nothing stated: the organism stays unknown and the mini-search is skipped.
+    org_meta = a.organism_source == "metadata"
+    if org_meta:
+        panel = ts.load_panel(a.panel) if a.panel else {}
+        stated = [e for e in ev if e.parameter == "organism" and e.source in ("user", "repository", "text", "llm")
+                  and str(e.value) not in ("not in panel", "unknown")]
+        top = max(stated, key=lambda e: e.confidence) if stated else None
+        if a.fasta:
+            db = (os.path.splitext(os.path.basename(a.fasta))[0], a.fasta)
+            ev.append(Evidence("organism", db[0], 0.9, "user", "--fasta", f"the user's database {a.fasta}"))
+        elif top:
+            hit = _panel_match(top.value, panel)
+            db = (hit, panel[hit]) if hit else (fetch_proteome(top.value, os.path.join(a.panel, "extra"), log)
+                                                if a.panel else None)
+        else:
+            db = None
+        log(f"  organism from metadata: {db[0] if db else 'none stated'}")
+        org_panel = {db[0]: db[1]} if db else {}
+
+    # mini-search hypotheses (DDA only: DIA spectra have no single precursor)
+    if org_meta:
+        panel = org_panel
+    else:
+        panel = ts.load_panel(a.panel) if a.panel else {}
+        if a.fasta:
+            panel = {**panel, os.path.splitext(os.path.basename(a.fasta))[0]: a.fasta}
+    h = None
+    if panel and not str(search_acq).startswith("DIA") and not a.no_search:
+        log(f"[6/7] mini-search on {min(a.spectra, len(run.ms2))} spectra against {len(panel)} database(s)")
+        t = time.time()
+        lab = _first([e for e in ev if e.parameter == "label" and e.source == "data"
+                      and e.value not in ("no isobaric label", "no SILAC", "unknown")], "label")
+        mods = ts.Mods()
+        if lab and str(lab.value).startswith("TMTpro"):
+            mods.k = mods.nterm = ts.LABEL_MASS["TMTpro"]
+        elif lab and str(lab.value).startswith("TMT"):
+            mods.k = mods.nterm = ts.LABEL_MASS["TMT"]
+        elif lab and str(lab.value).startswith("iTRAQ8"):
+            mods.k = mods.nterm = ts.LABEL_MASS["iTRAQ8plex"]
+        elif lab and str(lab.value).startswith("iTRAQ"):
+            mods.k = mods.nterm = ts.LABEL_MASS["iTRAQ4plex"]
+        frag_tol = 20.0 if hr2 else 0.4
+        h = HypothesisTester(run, frag_tol, hr2, prec_ppm=20.0 if hr1 else 500.0,
+                             n_spectra=a.spectra, mods=mods, log=log)
+        oe = h.organism(panel)
+        ev += [] if org_meta else oe
+        if h.best_db:
+            ev += h.accuracy() + h.alkylation()
+            if not a.skip_enzyme:
+                ev += h.enzyme()
+        timings["mini_search"] = round(time.time() - t, 1)
+    else:
+        log("[6/7] mini-search skipped" + (" (DIA without pseudo-spectra)" if str(search_acq).startswith("DIA") else
+                                           " (no --panel/--fasta)" if not panel else ""))
+    if a.fastag:
+        t = time.time()
+        ftol, funit = (20.0, "ppm") if hr2 else (0.3, "Da")
+        log("  FASTag: genus call from sequence tags")
+        try:
+            fev = [] if org_meta else ext.fastag_species(
+                a.fastag, spectra_file, ftol, funit, threads=a.threads, subsample=a.fastag_subsample, log=log,
+                taxonomy_dir=a.fastag_taxonomy, rank="species" if a.fastag_taxonomy else "genus")
+            if a.fastag_taxonomy and not hr2:  # ion-trap tags hit large proteomes by chance (wheat, salmon first)
+                for e in fev:
+                    e.confidence = min(e.confidence, 0.2)
+            ev += fev
+            db = (h.best_db[1] if h is not None and h.best_db else None) or a.fasta
+            if db:
+                log(f"  FASTag: mass-gap histogram against {os.path.basename(db)} without fixed modifications")
+                ev += ext.fastag_alkylation(a.fastag, spectra_file, db, ftol, funit, threads=a.threads, log=log)
+        except Exception as e:
+            log(f"  FASTag failed: {e}")
+        timings["fastag"] = round(time.time() - t, 1)
+
     # Organism, tier 2: the FASTag species ranking (extended index) gives a top-3 shortlist; with the stated
     # organisms and confident FASTag calls the panel lacks, their reference proteomes are fetched (cached in
     # <panel>/extra) and searched against the panel winner, so the nearest panel organism does not win by default
     # ion-trap MS2: short tags match large (polyploid) proteomes by chance (wheat and salmon ranked first on mouse
     # and Arabidopsis LTQ runs), so the FASTag shortlist is used only with high-resolution MS2
-    shortlist = _organism_shortlist(ev, panel, ext.fastag_shortlist(ev) if a.fastag_taxonomy and hr2 else [])
+    shortlist = [] if org_meta else _organism_shortlist(ev, panel, ext.fastag_shortlist(ev)
+                                                        if a.fastag_taxonomy and hr2 else [])
     if shortlist and h is not None and a.panel:
         t = time.time()
         dbs = {}
@@ -490,6 +519,12 @@ def main(argv=None):
     an.add_argument("--spectra", type=int, default=2000, help="MS2 spectra for the mini-search")
     an.add_argument("--max-ms2", type=int, default=20000, help="MS2 spectra read for the detectors")
     an.add_argument("--no-search", action="store_true", help="skip the mini-search")
+    an.add_argument("--organism-source", choices=("data", "metadata"), default="data",
+                    help="data: organism from panel mini-search, FASTag and tier 2; metadata: from --fasta or the "
+                         "stated organism only (user, repository, SDRF, text, Jev)")
+    an.add_argument("--sdrf", choices=("use", "jev", "off"), default="use",
+                    help="curated SDRF (with --accession): use = evidence and reader input, jev = reader input "
+                         "only (Jev/LLM), off = not fetched")
     an.add_argument("--skip-enzyme", action="store_true", help="skip the protease competition")
     an.add_argument("-o", "--out", default="prose_auto_out")
     an.add_argument("--json", action="store_true", help="print the report JSON to stdout (for the GUI)")

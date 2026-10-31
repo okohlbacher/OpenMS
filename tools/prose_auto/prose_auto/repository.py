@@ -244,9 +244,10 @@ def methods_from_europepmc(pmid_or_doi, log=print):
     return "\n\n".join(out)
 
 
-def repository_evidence(acc, log=print, fetch_paper=True):
+def repository_evidence(acc, log=print, fetch_paper=True, sdrf_use="use"):
     """All repository evidence for a PXD/MSV accession, plus the texts
-    (protocols, methods) for text_extract / llm."""
+    (protocols, methods) for text_extract / llm. sdrf_use: "use" (SDRF columns are evidence and the SDRF goes to the
+    readers), "jev" (only the readers see it), "off" (not fetched)."""
     ev, texts = [], {}
     if acc.upper().startswith("PXD"):
         e, t = pride_evidence(acc, log)
@@ -256,9 +257,10 @@ def repository_evidence(acc, log=print, fetch_paper=True):
         e, t = proxi_evidence(acc, log)
         ev += e
         texts.update(t)
-    sdrf = fetch(SDRF.format(acc=acc.upper()), log)
+    sdrf = fetch(SDRF.format(acc=acc.upper()), log) if sdrf_use != "off" else None
     if sdrf:
-        ev += sdrf_evidence(sdrf, f"bigbio {acc}")
+        if sdrf_use == "use":
+            ev += sdrf_evidence(sdrf, f"bigbio {acc}")
         texts["sdrf"] = sdrf
     if fetch_paper:
         for ref in texts.get("references", []) or []:

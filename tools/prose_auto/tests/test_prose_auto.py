@@ -301,3 +301,17 @@ def test_bench_text_end_to_end(tmp_path, monkeypatch):
     assert "var:acetyl" in (tmp_path / "out" / "rows.tsv").read_text()
     assert "Jev calibration" in (tmp_path / "out" / "summary.md").read_text()
 
+
+
+def test_organism_from_metadata_searches_only_the_given_db(tmp_path):
+    from prose_auto import cli
+    mix = os.path.join(ROOT, "share", "OpenMS", "examples", "TOPPAS", "data", "BSA_Identification",
+                       "18Protein_SoCe_Tr_detergents_trace.fasta")
+    out = tmp_path / "out"
+    cli.main(["analyze", os.path.join(BSA, "BSA1.mzML"), "--fasta", mix, "--organism-source", "metadata",
+              "--spectra", "1200", "-o", str(out)])
+    rep = json.load(open(out / "BSA1.auto.json"))
+    org = rep["decisions"]["organism"]
+    assert org["value"] == "18Protein_SoCe_Tr_detergents_trace"
+    assert all(e["source"] != "search" for e in org["evidence"])     # no data-based organism call
+    assert rep["decisions"]["cys_alkylation"]["value"] == "Carbamidomethyl (C)"   # hypotheses ran on the given DB
