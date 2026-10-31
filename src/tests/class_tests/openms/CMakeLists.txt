@@ -163,6 +163,10 @@ target_link_libraries(MRMScoring_test Eigen3::Eigen)
 # These tests call its classes directly, so they link the static library.
 target_link_libraries(PercolatorPosteriorEstimator_test OpenMS_Percolator)
 target_link_libraries(PercolatorScores_test OpenMS_Percolator)
+target_link_libraries(PercolatorTron_test OpenMS_Percolator)
+target_link_libraries(PercolatorNewton_test OpenMS_Percolator)
+target_link_libraries(PercolatorSampler_test OpenMS_Percolator)
+target_link_libraries(PercolatorBestPositive_test OpenMS_Percolator)
 
 
 if (WITH_HDF5)
