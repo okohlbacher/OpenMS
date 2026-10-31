@@ -68,6 +68,32 @@ def _outside_panel(ev, panel, max_n=2):
     return out[:max_n]
 
 
+DATA_FEATURES = ("instrument", "ms1_analyzer", "ms2_analyzer", "fragmentation", "acquisition", "dia_windows",
+                 "ion_mobility", "charge_range", "precursor_tolerance", "fragment_tolerance", "label", "enrichment",
+                 "cys_alkylation")
+
+
+def _data_features(ev, digest_stats):
+    """What the spectra themselves show, as one text for Jev (a separate source, labelled as measured, so the
+    readers can weigh it against the authors' texts): the best data/metadata evidence per parameter with its
+    reason (reporter ions, SILAC pairs, neutral losses, oxonium and immonium ions, mass errors) and the precursor
+    mass and charge distribution."""
+    lines = []
+    for p in DATA_FEATURES:
+        c = [e for e in ev if e.parameter == p and e.source in ("data", "metadata")]
+        if c:
+            e = max(c, key=lambda e: e.confidence)
+            v = f"{e.value['value']} {e.value.get('unit', '')}" if isinstance(e.value, dict) and "value" in e.value \
+                else e.value
+            lines.append(f"{p}: {v} (confidence {e.confidence:.2f}; {e.method}{': ' + e.detail if e.detail else ''})")
+    if digest_stats:
+        lines.append(f"precursor neutral mass: median {digest_stats['median_mass']} Da, 90th percentile "
+                     f"{digest_stats['q90_mass']} Da; {digest_stats['charge_1']:.0%} singly charged "
+                     f"({digest_stats['spectra']} charged MS2 spectra); tryptic peptides: median about 1200-2500 Da, "
+                     "HLA class I ligands (8-12 residues): about 900-1200 Da")
+    return "Measured from the raw spectra by prose-auto (not stated by the authors):\n" + "\n".join(lines)[:4000]
+
+
 def _panel_match(name, panel):
     """the panel database of a species name (genus and species), if any"""
     key = " ".join(str(name).replace("_", " ").split()[:2]).lower()
@@ -88,6 +114,10 @@ def _organism_shortlist(ev, panel, fastag_top, max_n=5):
 def analyze(a, log=print):
     t0 = time.time()
     timings = {}
+    if not a.diaspextract:   # DIA pseudo-DDA spectra automatically when DIAspeXtract is installed
+        import shutil
+        a.diaspextract = (os.environ.get("PROSE_AUTO_DIASPEXTRACT") or shutil.which("DIAspeXtract")
+                          or shutil.which("diaspextract"))
     ev = []
     os.makedirs(a.out, exist_ok=True)
     base = os.path.join(a.out, os.path.splitext(os.path.basename(a.mzml.rstrip("/")))[0])
@@ -155,6 +185,7 @@ def analyze(a, log=print):
     t = time.time()
     ev += chem.detect_labels(run, hr2) + chem.detect_enrichment(run, hr2, dia=str(acq).startswith("DIA")) \
           + chem.detect_cys_alkylation(run, hr2)
+    hint, hint_stats = chem.digest_hint(run, hr2)
     timings["chemistry"] = round(time.time() - t, 1)
 
     log("[5/7] repository records and text")
@@ -192,9 +223,11 @@ def analyze(a, log=print):
 
     jev = J.Jev() if a.jev else None
     jev_report, jev_issues = {}, []
+    # Jev also sees what the spectra show (mass distribution, marker ions, mass errors) as a source of its own
+    jev_study = {**study, "measured from the spectra": _data_features(ev, hint_stats)} if study else {}
     if jev and study:
-        log(f"  Jev: {jev.name} (one multi-head request over {len(study)} texts)")
-        e, jev_report = J.read_study(jev, study, user=bool(desc))
+        log(f"  Jev: {jev.name} (one multi-head request over {len(jev_study)} sources, one of them the data)")
+        e, jev_report = J.read_study(jev, jev_study, user=bool(desc))
         ev += e
 
     timings["text"] = round(time.time() - t, 1)
@@ -220,8 +253,75 @@ def analyze(a, log=print):
         log(f"  organism from metadata: {db[0] if db else 'none stated'}")
         org_panel = {db[0]: db[1]} if db else {}
 
+    # HLA ligands (no protease): a hint from the precursor masses, or stated (SDRF "unspecific cleavage"); the ProSE
+    # organism search then tries the unspecific search first, and only its result sets the enzyme
+    stated_unspec = any(e.parameter == "enzyme" and e.value == "unspecific cleavage" and e.confidence >= 0.6
+                        for e in ev)
+    hla_first = bool(hint) or stated_unspec
+    if hla_first:
+        log(f"  HLA ligands? ({hint or 'stated'}; {hint_stats}): the unspecific search goes first")
+
+    # organism from one ProSE search: panel + stated organisms outside it + the FASTag shortlist, concatenated;
+    # the winner by discriminating PSMs (prose_runner.organism_with_prose). The hypotheses then search the winner.
+    org_prose = a.organism_source == "prose"
+    if org_prose and not str(search_acq).startswith("DIA"):
+        from .prose_runner import find_prose, load_signatures, organism_with_prose
+        t = time.time()
+        panel = ts.load_panel(a.panel) if a.panel else {}
+        if a.fasta:
+            panel[os.path.splitext(os.path.basename(a.fasta))[0]] = a.fasta
+        sig = a.organism_panel   # signature-protein panel: covers the whole reference set, no FASTag shortlist
+        if sig:
+            import csv as _csv
+            sig_species = {r["species"]: r["proteome"] for r in _csv.DictReader(open(os.path.join(sig, "species.tsv")),
+                                                                               delimiter="\t")}
+        if a.fastag and not sig:
+            ftol, funit = (20.0, "ppm") if hr2 else (0.3, "Da")
+            try:
+                fev = ext.fastag_species(a.fastag, spectra_file, ftol, funit, threads=a.threads,
+                                         subsample=a.fastag_subsample, log=log, taxonomy_dir=a.fastag_taxonomy,
+                                         rank="species" if a.fastag_taxonomy else "genus")
+                ev += [e for e in fev if hr2 or not a.fastag_taxonomy]  # ion-trap tags: large proteomes by chance
+            except Exception as e:
+                log(f"  FASTag failed: {e}")
+        cands = sig_species if sig else dict(panel)
+        for o in [] if sig else _organism_shortlist(ev, panel, ext.fastag_shortlist(ev)
+                                                    if a.fastag_taxonomy and hr2 else []):
+            if not _panel_match(o, panel) and a.panel:
+                got = fetch_proteome(o, os.path.join(a.panel, "extra"), log)
+                if got and os.path.getsize(got[1]) > 100000:   # tiny files are wrong (virus) proteomes
+                    cands[got[0]] = got[1]
+        lab = _first([e for e in ev if e.parameter == "label" and e.value not in ("no isobaric label", "no SILAC",
+                                                                                  "unknown", "label free")], "label")
+        enr = _first([e for e in ev if e.parameter == "enrichment" and e.confidence >= 0.5], "enrichment")
+        fixed = ["Carbamidomethyl (C)"] + pp.LABEL_MODS.get(lab.value if lab else "", [])
+        var = (["Oxidation (M)"] + pp.SILAC_VARIABLE.get(lab.value if lab else "", [])
+               + pp.ENRICHMENT_MODS.get(enr.value if enr else "", []))
+        log(f"  organism: one ProSE search against {len(cands)} proteomes")
+        try:
+            stated = [_panel_match(e.value, cands) or str(e.value).replace(" ", "_") for e in
+                      sorted((e for e in ev if e.parameter == "organism" and e.confidence >= 0.5),
+                             key=lambda e: -e.confidence)]
+            oe, win = organism_with_prose(find_prose(a.prose_bin), spectra_file, cands, fixed, var,
+                                          (20.0, "ppm") if hr1 else (1.0, "Da"), (20.0, "ppm") if hr2 else (0.4, "Da"),
+                                          contaminants=a.contaminants, threads=a.threads, hla_first=hla_first,
+                                          preferred=stated + ["Homo_sapiens", "Mus_musculus"],
+                                          panel_db=os.path.join(sig, "sigpanel.fasta") if sig else None,
+                                          signatures=load_signatures(os.path.join(sig, "signatures.tsv.gz"))
+                                          if sig else None, log=log)
+            ev += oe
+            org_panel = {win: cands[win]} if win else {}
+        except Exception as e:  # no ProSE: the panel mini-search decides
+            log(f"  ProSE organism search failed, panel mini-search instead: {str(e)[-300:]}")
+            org_prose = False
+        timings["organism_prose"] = round(time.time() - t, 1)
+    else:
+        org_prose = False
+
+    unspec = any(e.parameter == "enzyme" and e.value == "unspecific cleavage" and e.confidence >= 0.6 for e in ev)
+
     # mini-search hypotheses (DDA only: DIA spectra have no single precursor)
-    if org_meta:
+    if org_meta or org_prose:
         panel = org_panel
     else:
         panel = ts.load_panel(a.panel) if a.panel else {}
@@ -246,10 +346,10 @@ def analyze(a, log=print):
         h = HypothesisTester(run, frag_tol, hr2, prec_ppm=20.0 if hr1 else 500.0,
                              n_spectra=a.spectra, mods=mods, log=log)
         oe = h.organism(panel)
-        ev += [] if org_meta else oe
+        ev += [] if org_meta or org_prose else oe
         if h.best_db:
             ev += h.accuracy() + h.alkylation()
-            if not a.skip_enzyme:
+            if not a.skip_enzyme and not unspec:   # the protease competition knows no unspecific digest
                 ev += h.enzyme()
         timings["mini_search"] = round(time.time() - t, 1)
     else:
@@ -260,7 +360,7 @@ def analyze(a, log=print):
         ftol, funit = (20.0, "ppm") if hr2 else (0.3, "Da")
         log("  FASTag: genus call from sequence tags")
         try:
-            fev = [] if org_meta else ext.fastag_species(
+            fev = [] if org_meta or org_prose else ext.fastag_species(
                 a.fastag, spectra_file, ftol, funit, threads=a.threads, subsample=a.fastag_subsample, log=log,
                 taxonomy_dir=a.fastag_taxonomy, rank="species" if a.fastag_taxonomy else "genus")
             if a.fastag_taxonomy and not hr2:  # ion-trap tags hit large proteomes by chance (wheat, salmon first)
@@ -280,7 +380,7 @@ def analyze(a, log=print):
     # <panel>/extra) and searched against the panel winner, so the nearest panel organism does not win by default
     # ion-trap MS2: short tags match large (polyploid) proteomes by chance (wheat and salmon ranked first on mouse
     # and Arabidopsis LTQ runs), so the FASTag shortlist is used only with high-resolution MS2
-    shortlist = [] if org_meta else _organism_shortlist(ev, panel, ext.fastag_shortlist(ev)
+    shortlist = [] if org_meta or org_prose else _organism_shortlist(ev, panel, ext.fastag_shortlist(ev)
                                                         if a.fastag_taxonomy and hr2 else [])
     if shortlist and h is not None and a.panel:
         t = time.time()
@@ -300,7 +400,7 @@ def analyze(a, log=print):
             new = h.organism(dbs)
             if h.best_db and h.best_db[0] != prev:  # a new winner: redo the stages that used the old one
                 ev = [e for e in ev if not (e.source == "search" and e.parameter in redo)] + new
-                ev += h.accuracy() + h.alkylation() + ([] if a.skip_enzyme else h.enzyme())
+                ev += h.accuracy() + h.alkylation() + ([] if a.skip_enzyme or unspec else h.enzyme())
             else:  # the winner holds; the new search evidence records which candidates were tested
                 ev = [e for e in ev if not (e.source == "search" and e.parameter == "organism")] + new
         timings["organism_tier2"] = round(time.time() - t, 1)
@@ -323,7 +423,7 @@ def analyze(a, log=print):
                 log(f"  ProSE confirmation failed: {e}")
     review = L.review(backend, decisions) if backend and a.llm_review else []
     if jev and study:
-        jev_issues = J.cross_check(jev, study, decisions)
+        jev_issues = J.cross_check(jev, jev_study, decisions)
     consistency = J.consistency(decisions)
     timings["total"] = round(time.time() - t0, 1)
     return {
@@ -339,6 +439,7 @@ def analyze(a, log=print):
         "consistency": consistency,
         "text_conflicts": llm_text_conflicts + (jev_report.get("text_rules", []) if jev_report else []),
         "timings_s": timings,
+        "digest_hint": {"hint": hint, **hint_stats},
     }
 
 
@@ -514,14 +615,20 @@ def main(argv=None):
                     help="extended FASTag index directory (tax_k7.taxdb, nodes.dmp, names.dmp): species-rank "
                          "ranking and the two-tier organism test (default $PROSE_AUTO_FASTAG_TAXONOMY)")
     an.add_argument("--fastag-subsample", type=float, default=0.0, help="fraction of spectra FASTag tags (0 = all)")
-    an.add_argument("--diaspextract", help="DIAspeXtract executable: pseudo-MS/MS spectra for DIA / .d input")
+    an.add_argument("--diaspextract", help="DIAspeXtract executable: pseudo-MS/MS spectra for DIA / .d input "
+                    "(default: PROSE_AUTO_DIASPEXTRACT, else DIAspeXtract on PATH)")
     an.add_argument("--threads", type=int, default=0, help="threads for external tools (0 = their default)")
     an.add_argument("--spectra", type=int, default=2000, help="MS2 spectra for the mini-search")
     an.add_argument("--max-ms2", type=int, default=20000, help="MS2 spectra read for the detectors")
     an.add_argument("--no-search", action="store_true", help="skip the mini-search")
-    an.add_argument("--organism-source", choices=("data", "metadata"), default="data",
-                    help="data: organism from panel mini-search, FASTag and tier 2; metadata: from --fasta or the "
+    an.add_argument("--organism-source", choices=("data", "prose", "metadata"), default="data",
+                    help="data: organism from panel mini-search, FASTag and tier 2; prose: one ProSE search against "
+                         "panel + shortlist (ProSE from --prose-bin or PATH); metadata: from --fasta or the "
                          "stated organism only (user, repository, SDRF, text, Jev)")
+    an.add_argument("--prose-bin", help="ProSE executable for --organism-source prose (default: ProSE on PATH)")
+    an.add_argument("--organism-panel", help="signature-protein panel directory (build_sigpanel.py) for "
+                    "--organism-source prose: one search covers the whole reference set")
+    an.add_argument("--contaminants", help="contaminant FASTA (cRAP) for the ProSE organism search")
     an.add_argument("--sdrf", choices=("use", "jev", "off"), default="use",
                     help="curated SDRF (with --accession): use = evidence and reader input, jev = reader input "
                          "only (Jev/LLM), off = not fetched")

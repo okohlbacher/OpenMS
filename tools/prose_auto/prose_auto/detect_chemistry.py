@@ -15,6 +15,9 @@ called when the diagnostic ions are frequent and strongly enriched.
   phosphotyrosine immonium 216.0420.
 * Glyco: HexNAc oxonium ions 204.0867, 138.0545, 366.1395.
 * Acetyl-lysine: 126.0913 / 143.1179 immonium ions.
+* Digest (tryptic vs HLA ligands): the y1 ion of a C-terminal Lys/Arg (also isobaric-labelled Lys) is in most
+  HCD spectra of a tryptic digest and in few of an HLA immunopeptidome; class I ligands (8-12 residues) are short
+  and often singly charged, class II ligands (12-25 residues) are as heavy as tryptic peptides.
 * Cys alkylation: the cysteine immonium ion shifted by the alkylating group
   (CAM 133.0430, propionamide 147.0587, NEM 201.0692, MMTS 122.0093,
   carboxymethyl 134.0270, free Cys 76.0216). This is weak evidence (Cys
@@ -303,3 +306,27 @@ def detect_cys_alkylation(run, ms2_high_res=True) -> list:
                          {"immonium": res})]
     return [Evidence("cys_alkylation", "unknown", 0.15, "data", "Cys immonium",
                      "no Cys immonium ion above background", {"immonium": res})]
+
+
+PROTON = 1.007276
+# HLA class I ligands (8-12 residues) are short: on 8 class I runs of 5 studies the median neutral precursor mass was
+# 888-1185 Da and the 90th percentile 1219-2740 Da; 45 of 46 tryptic runs had a median >= 1191 Da (the exception, a
+# sea-urchin HILIC run at 911/1686 Da, would cost one extra search). The C-terminal K/R y1 share does not separate
+# them (HLA-A3/A11 ligands end in K/R: 0.07-0.52; SILAC and labels move y1; many HCD scans start above m/z 140),
+# and class II ligands (12-25 residues) are as heavy as tryptic peptides. So the data give a hint only: the ProSE
+# organism search tries the unspecific HLA class I search first, and the search decides.
+HLA_I_MEDIAN_MASS = 1100.0
+HLA_I_Q90_MASS = 1700.0
+
+
+def digest_hint(run, ms2_high_res=True):
+    """'HLA class I?' from the precursor mass distribution (high-res MS2, >= 200 charged spectra), else None;
+    returns (hint, stats)"""
+    ch = [s for s in run.ms2 if s.charge > 0 and s.precursor_mz > 0 and s.mz.size >= 10]
+    if not ms2_high_res or len(ch) < 200:
+        return None, {}
+    m = np.array([(s.precursor_mz - PROTON) * s.charge for s in ch])
+    med, q90 = float(np.median(m)), float(np.quantile(m, 0.9))
+    z1 = float(np.mean(np.array([s.charge for s in ch]) == 1))
+    stats = {"median_mass": round(med), "q90_mass": round(q90), "charge_1": round(z1, 3), "spectra": len(ch)}
+    return ("HLA class I?" if med < HLA_I_MEDIAN_MASS and q90 < HLA_I_Q90_MASS else None), stats

@@ -120,6 +120,9 @@ def to_prose(decisions: dict) -> dict:
         if enz == "Trypsin":
             enz = "Trypsin/P"
         P["Search:enzyme"] = enz
+    pl = v("peptide_length")
+    if pl:
+        P["Search:peptide:min_size"], P["Search:peptide:max_size"] = int(pl[0]), int(pl[1])
     ic = v("instrument_class")
     if ic and v("ms2_analyzer") not in ("IT", "LIT"):   # PeptDeep models high-res HCD-type spectra
         # ProSE accepts only these PeptDeep classes; free text from records ('TIMS quadrupole time-of-flight') is mapped

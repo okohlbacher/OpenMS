@@ -69,7 +69,21 @@ class Jev:
             return json.loads(r.read())
 
     def decide(self, state, questions):
-        out = self.transport({"model": self.model, "state": state, "questions": questions})
+        """PROSE_AUTO_JEV_CACHE=<dir>: answers are stored per request (model, state, questions; never the key), so
+        repeated runs and benchmark arms see the same answers"""
+        body = {"model": self.model, "state": state, "questions": questions}
+        cache = os.environ.get("PROSE_AUTO_JEV_CACHE")
+        if cache:
+            import hashlib
+            f = os.path.join(cache, hashlib.sha256(json.dumps(body, sort_keys=True).encode()).hexdigest() + ".json")
+            if os.path.exists(f):
+                return json.load(open(f)).get("answers", {})
+        out = self.transport(body)
+        if cache:
+            os.makedirs(cache, exist_ok=True)
+            with open(f + ".tmp", "w") as fh:
+                json.dump(out, fh)
+            os.replace(f + ".tmp", f)
         self.calls += 1
         u = out.get("usage") or {}
         self.cost_usd += float(u.get("cost_usd") or (u.get("input_tokens") or 0) * USD_PER_INPUT_TOKEN)

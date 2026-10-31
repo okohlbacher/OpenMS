@@ -201,3 +201,112 @@ def test_not_in_panel_does_not_outrank_a_species_call():
 def test_dia_spectra_do_not_test_enrichment():
     none = [e for e in chem.detect_enrichment(_ms2(400, 0.0), dia=True) if e.value == "none"]
     assert none and none[0].confidence < 0.6    # weak: records and text decide
+
+
+def test_prose_organism_search_counts_discriminating_psms(tmp_path, monkeypatch):
+    import pyopenms as oms
+    from prose_auto import prose_runner as pr
+    calls = []
+
+    def fake_run(args, log):   # ProSE stand-in: PSMs (accessions -> species) depend on the variable mods searched
+        calls.append(args)
+        phospho = "Phospho (S)" in args
+        hits = [["Mus_musculus|M1", "Homo_sapiens|H1"]] * 40 + [["Mus_musculus|M2"]] * 6 + [["CRAP|K1"]] * 30
+        if phospho:
+            hits += [["Homo_sapiens|H2"]] * 25
+        peps = []
+        for i, accs in enumerate(hits):
+            h = oms.PeptideHit()
+            h.setSequence(oms.AASequence.fromString("PEPTIDEK"))
+            h.setMetaValue("target_decoy", "target")
+            evs = []
+            for a in accs:
+                e = oms.PeptideEvidence()
+                e.setProteinAccession(a)
+                evs.append(e)
+            h.setPeptideEvidences(evs)
+            pid = oms.PeptideIdentification()
+            pid.setIdentifier("r")
+            pid.setHits([h])
+            peps.append(pid)
+        prot = oms.ProteinIdentification()
+        prot.setIdentifier("r")
+        ph = []
+        for a in sorted({a for accs in hits for a in accs}):
+            x = oms.ProteinHit()
+            x.setAccession(a)
+            ph.append(x)
+        prot.setHits(ph)
+        oms.IdXMLFile().store(args[args.index("-out_idxml") + 1], [prot], peps)
+
+    monkeypatch.setattr(pr, "_run", fake_run)
+    fa = tmp_path / "x.fasta"
+    fa.write_text(">sp|P1|X\nPEPTIDEK\n")
+    cands = {"Homo_sapiens": str(fa), "Mus_musculus": str(fa)}
+    ev, win = pr.organism_with_prose("ProSE", "x.mzML", cands, ["Carbamidomethyl (C)"], ["Oxidation (M)"],
+                                     (20, "ppm"), (20, "ppm"), contaminants=str(fa), log=lambda *a: None)
+    # shared peptides and keratin do not count; mouse has 6 < 10 discriminating PSMs, so phospho is tried next
+    assert win == "Homo_sapiens" and len(calls) == 2 and "Phospho (S)" in calls[1]
+    assert ev[0].stats["steps"]["as decided"]["discriminating"] == {"Mus_musculus": 6}
+
+
+def _digest_run(n, mass, charges, seed=4):
+    rng = np.random.default_rng(seed)
+    run = Run(path="synthetic")
+    for i in range(n):
+        z = int(rng.choice(charges))
+        mz = np.sort(rng.uniform(150, 1500, 60))
+        m = rng.normal(mass, 150)
+        run.ms2.append(Scan(f"d{i}", 2, float(i), mz, np.full(mz.size, 1e6), precursor_mz=(m + z * PROTON) / z,
+                            charge=z, scan_low=100, scan_high=2000))
+    return run
+
+
+def test_digest_hint_hla_class_i_only_from_short_precursors():
+    assert chem.digest_hint(_digest_run(400, 950, [1, 2]))[0] == "HLA class I?"
+    assert chem.digest_hint(_digest_run(400, 1700, [2, 3]))[0] is None          # tryptic
+    assert chem.digest_hint(_digest_run(400, 950, [1, 2]), ms2_high_res=False)[0] is None
+
+
+def test_prose_ladder_order_and_hla_evidence(tmp_path, monkeypatch):
+    from prose_auto import prose_runner as pr
+    seen = []
+
+    def fake_run(args, log):   # PSMs only in the unspecific class I search
+        seen.append(args[args.index("-Search:enzyme") + 1] + ("" if "-Search:peptide:max_size" not in args else
+                    ":" + args[args.index("-Search:peptide:max_size") + 1]))
+    monkeypatch.setattr(pr, "_run", fake_run)
+    from collections import Counter
+    monkeypatch.setattr(pr, "_species_counts", lambda out, sig=None: (
+        (30, Counter({"Homo_sapiens": 30}), Counter({"Homo_sapiens": 30}), 0) if seen[-1] == "unspecific cleavage:14"
+        else (0, Counter(), Counter(), 0)))
+    fa = tmp_path / "x.fasta"
+    fa.write_text(">sp|P1|X\nPEPTIDEK\n")
+    kw = dict(contaminants=None, log=lambda *a: None)
+    ev, win = pr.organism_with_prose("ProSE", "x", {"Homo_sapiens": str(fa)}, [], [], (20, "ppm"), (20, "ppm"), **kw)
+    assert seen == ["Trypsin/P"] * 3 + ["unspecific cleavage:14"] and win == "Homo_sapiens"
+    assert {e.parameter: e.value for e in ev if e.parameter != "organism"} == \
+        {"enzyme": "unspecific cleavage", "peptide_length": [8, 14]}
+    seen.clear()
+    pr.organism_with_prose("ProSE", "x", {"Homo_sapiens": str(fa)}, [], [], (20, "ppm"), (20, "ppm"), hla_first=True, **kw)
+    assert seen == ["unspecific cleavage:14"]     # the hint puts the HLA search first; it found the organism
+
+
+def test_jev_cache(tmp_path, monkeypatch):
+    from prose_auto import jev as J
+    n = []
+    monkeypatch.setenv("PROSE_AUTO_JEV_CACHE", str(tmp_path))
+    j = J.Jev(key="k", transport=lambda body: n.append(1) or {"answers": {"q": {"choice": "a"}}})
+    assert j.decide({"s": 1}, {"q": {}}) == j.decide({"s": 1}, {"q": {}}) == {"q": {"choice": "a"}}
+    assert len(n) == 1 and all("k" not in open(f).read() for f in tmp_path.glob("*.json"))
+
+
+def test_jev_sees_the_data_features():
+    from prose_auto import schema as S
+    from prose_auto.cli import _data_features
+    ev = [Evidence("label", "TMT10/11plex", 0.9, "data", "reporter ions", "126-131 reporters in 94% of MS2"),
+          Evidence("label", "TMT6plex", 0.6, "text", "keywords")]
+    txt = _data_features(ev, {"median_mass": 950, "q90_mass": 1260, "charge_1": 0.4, "spectra": 5000})
+    assert "TMT10/11plex" in txt and "reporters in 94%" in txt and "median 950 Da" in txt and "TMT6plex" not in txt
+    state = S.study_state({"PRIDE description": "x" * 70000, "measured from the spectra": txt})
+    assert state["measured from the spectra"] == txt          # never cut away by long texts

@@ -191,7 +191,7 @@ def reconcile(evidence: list) -> dict:
     for p in ("instrument", "instrument_class", "ms1_analyzer", "ms2_analyzer", "fragmentation",
               "collision_energy", "ion_mobility", "acquisition", "dia_windows", "charge_range",
               "precursor_offset", "fragment_offset", "enzyme", "cys_alkylation", "enrichment",
-              "variable_mods"):
+              "variable_mods", "peptide_length"):
         if p in by:
             # enrichment: when the spectra could test it (>= 100 charged DDA spectra, confidence >= 0.6) the
             # measurement wins; project texts mention phospho for atlases whose other runs were enriched

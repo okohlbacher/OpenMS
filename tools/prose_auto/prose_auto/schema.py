@@ -384,7 +384,7 @@ def decode(answers: dict, top=3, min_p=0.05):
 def study_state(texts: dict, limit=60_000) -> dict:
     """One structured state from all texts of a study, labelled by source, so a
     single request reads them together (Jev 'state', or the LLM prompt)."""
-    order = ["user's description", "SDRF", "PRIDE title", "PRIDE description", "PRIDE sample protocol",
+    order = ["user's description", "measured from the spectra", "SDRF", "PRIDE title", "PRIDE description", "PRIDE sample protocol",
              "PRIDE data protocol", "methods section", "paper methods"]
     state, used = {}, 0
     for k in order + [k for k in texts if k not in order]:

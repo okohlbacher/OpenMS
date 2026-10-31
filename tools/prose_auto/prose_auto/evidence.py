@@ -46,6 +46,7 @@ PARAMETERS = {
     "enrichment": "PTM enrichment",
     "variable_mods": "Variable modifications",
     "enzyme": "Protease",
+    "peptide_length": "Peptide length range (residues)",
     "organism": "Organism (database)",
 }
 

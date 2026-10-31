@@ -97,3 +97,146 @@ def confirm_with_prose(prose, mzml, fasta, cli_args, n_spectra=5000, open_search
                 ev.append(Evidence("variable_mods", [r for r in shifts], 0.5, "search", "ProSE open search",
                                    "most frequent mass shifts of the open search (see the table)"))
     return ev
+
+
+PHOSPHO = ["Phospho (S)", "Phospho (T)", "Phospho (Y)"]
+SILAC_HEAVY = ["Label:13C(6)15N(2) (K)", "Label:13C(6)15N(4) (R)"]
+
+
+def load_signatures(path):
+    """signatures.tsv.gz of build_sigpanel.py: peptide (I->L) -> species name or genus:<Genus>"""
+    import gzip
+    with gzip.open(path, "rt") as fh:
+        return dict(line.rstrip("\n").split("\t") for line in fh)
+
+
+def _species_counts(idxml, signatures=None):
+    """PSMs at the FDR cut per species: discriminating and all; contaminant hits (accession prefix CRAP) are counted
+    apart. Discriminating: the peptide is in one candidate species only, or, with signatures (a signature-protein
+    panel), it is a signature of that species in the whole reference set; a genus signature counts for every species
+    of the genus that matched (the species signatures then decide between them)."""
+    import pyopenms as oms
+    from collections import Counter
+    prots, peps = [], []
+    oms.IdXMLFile().load(idxml, prots, peps)
+    disc, allm, crap, n = Counter(), Counter(), 0, 0
+    for pid in peps:
+        hits = pid.getHits()
+        if not hits or hits[0].getMetaValue("target_decoy") == "decoy":
+            continue
+        n += 1
+        sp = {ev.getProteinAccession().split("|")[0] for ev in hits[0].getPeptideEvidences()}
+        if "CRAP" in sp:
+            crap += 1
+            continue
+        allm.update(sp)
+        if signatures is not None:
+            lab = signatures.get(hits[0].getSequence().toUnmodifiedString().replace("I", "L"))
+            if lab and lab.startswith("genus:"):
+                for x in sp:
+                    if x.split("_")[0] == lab[6:]:
+                        disc[x] += 1
+            elif lab in sp:
+                disc[lab] += 1
+        elif len(sp) == 1:
+            disc[next(iter(sp))] += 1
+    return n, disc, allm, crap
+
+
+HLA_CANDIDATES = {(8, 14): 4, (12, 25): 2}   # unspecific indexes of all panel proteomes are too large
+
+
+def organism_with_prose(prose, spectra, candidates, fixed, variable, prec, frag, contaminants=None, threads=0,
+                        min_psms=10, hla_first=False, preferred=(), panel_db=None, signatures=None, log=print):
+    """One ProSE search against all candidate proteomes (concatenated, accessions prefixed with the species) plus
+    contaminants. The winner has the most PSMs on peptides no other candidate has: shared peptides (36% of the
+    human tryptic peptides are also mouse peptides) and contaminants (keratin) do not count. No winner: search again
+    with variable phospho, then with variable SILAC heavy Lys/Arg, then unspecific HLA class I ligands (8-14), the
+    chemistry the panel mini-search cannot express (phospho, SILAC and HLA runs gave it 0-17 PSMs of 2000).
+    then HLA class II ligands (12-25). hla_first: the data or the texts suggest HLA class I ligands, so that search
+    goes first (the tryptic steps follow if it finds nothing). Unspecific searches use the HLA_CANDIDATES best
+    candidates (preferred first, then by matches so far, then the panel order).
+    The step that found the winner is returned as evidence too (enrichment, label, enzyme and length).
+    panel_db/signatures: a signature-protein panel (build_sigpanel.py) is searched instead of the concatenated
+    candidates in the tryptic steps; candidates then maps every panel species to its full proteome (unspecific steps).
+    Returns (evidence, winner name or None). prec/frag: (value, unit)."""
+    from collections import Counter
+    from .hypotheses import _margin_conf
+    ev = []
+    with tempfile.TemporaryDirectory(prefix="prose_auto_org_") as tmp:
+        def write_db(names, path):
+            with open(path, "w") as fh:
+                for name in list(names) + (["CRAP"] if contaminants else []):
+                    for line in open(contaminants if name == "CRAP" else candidates[name]):
+                        fh.write(f">{name}|{line[1:]}" if line.startswith(">") else line)
+            return path
+
+        db = write_db({} if panel_db else candidates, os.path.join(tmp, "candidates.fasta"))
+        if panel_db:  # the panel's accessions already carry the species prefix; contaminants appended
+            with open(db, "a") as fh:
+                fh.write(open(panel_db).read())
+        tryptic = [("as decided", [], None)]
+        if not any(m in variable for m in PHOSPHO):
+            tryptic.append(("+ variable phospho", PHOSPHO, None))
+        if not any(m in variable for m in SILAC_HEAVY):
+            tryptic.append(("+ variable SILAC heavy", SILAC_HEAVY, None))
+        hla1, hla2 = ("HLA class I ligands (unspecific)", [], (8, 14)), ("HLA class II ligands (unspecific)", [], (12, 25))
+        steps = [hla1] + tryptic + [hla2] if hla_first else tryptic + [hla1, hla2]
+        added, tried, seen = [], {}, Counter()
+        for label, extra, length in steps:
+            added += extra
+            out = os.path.join(tmp, "org.idXML")
+            dbi = db
+            if length:
+                order = [c for c in preferred if c in candidates] + [c for c, _ in seen.most_common()
+                                                                     if c in candidates] + list(candidates)
+                names = list(dict.fromkeys(order))[:HLA_CANDIDATES[length]]
+                dbi = write_db({n: candidates[n] for n in names}, os.path.join(tmp, "hla.fasta"))
+            extra_now = [] if length else added
+            args = [prose, "-in", spectra, "-database", dbi, "-out_idxml", out, "-no_summary",
+                    "-Search:enzyme", "unspecific cleavage" if length else "Trypsin/P", "-Search:decoys", "generate",
+                    "-Search:FDR:PSM", "0.01",
+                    "-Search:precursor:mass_tolerance_lower", str(prec[0]),
+                    "-Search:precursor:mass_tolerance_upper", str(prec[0]),
+                    "-Search:precursor:mass_tolerance_unit", prec[1],
+                    "-Search:fragment:mass_tolerance", str(frag[0]), "-Search:fragment:mass_tolerance_unit", frag[1],
+                    "-Search:modifications:fixed", *fixed, "-Search:modifications:variable", *variable,
+                    *extra_now]
+            if length:
+                args += ["-Search:peptide:min_size", str(length[0]), "-Search:peptide:max_size", str(length[1])]
+            if threads:
+                args += ["-threads", str(threads)]
+            _run(args, log)
+            n, disc, allm, crap = _species_counts(out, None if length else signatures)
+            seen.update(allm)
+            ranked = disc.most_common()
+            tried[label] = {"psms": n, "contaminant_psms": crap, "discriminating": dict(ranked[:6]),
+                            "all_matching": dict(allm.most_common(6))}
+            log(f"  organism (ProSE, {label}): {n} PSMs, discriminating {dict(ranked[:4])}")
+            if ranked and ranked[0][1] >= min_psms:
+                break
+    stats = {"steps": tried, "candidates": list(candidates)}
+    if not ranked or ranked[0][1] < min_psms:
+        ev.append(Evidence("organism", "not in panel", 0.5, "search", "ProSE organism search",
+                           f"no candidate proteome has {min_psms} discriminating PSMs at 1% FDR "
+                           f"({', '.join(tried)})", stats))
+        return ev, None
+    (best, top), second = ranked[0], (ranked[1][1] if len(ranked) > 1 else 0)
+    ev.append(Evidence("organism", best, _margin_conf(top, second), "search", "ProSE organism search",
+                       f"{best}: {top} PSMs on peptides no other candidate has; next "
+                       + (f"{ranked[1][0]} with {second}" if second else "none") + f" ({label})", stats))
+    for k, u in ranked[1:]:
+        if u >= max(min_psms, 0.2 * top):  # a second organism with many discriminating PSMs: mixed sample
+            ev.append(Evidence("organism", f"{best} + {k}", 0.5, "search", "ProSE organism search",
+                               f"{k} has {u} discriminating PSMs ({best}: {top}): mixed sample, spike-ins or "
+                               "xenograft?", stats))
+    # what the winning step says about the chemistry (only what the first search did not have)
+    why = f"the ProSE organism search found {top} discriminating PSMs only with: {label}"
+    if label == "+ variable phospho":
+        ev.append(Evidence("enrichment", "Phospho (STY)", 0.6, "search", "ProSE organism search", why))
+    elif label == "+ variable SILAC heavy":
+        ev.append(Evidence("label", "SILAC (Lys8/Arg10)", 0.6, "search", "ProSE organism search", why))
+    elif length:
+        ev.append(Evidence("enzyme", "unspecific cleavage", 0.7, "search", "ProSE organism search", why))
+        ev.append(Evidence("peptide_length", list(length), 0.7, "search", "ProSE organism search", why))
+    return ev, best
