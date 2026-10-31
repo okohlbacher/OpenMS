@@ -51,6 +51,8 @@ MODS = {
     "iTRAQ4plex": (144.102063, ["iTRAQ4plex (K)", "iTRAQ4plex (N-term)"], 0.5),
     "Label:13C(6)15N(2)": (8.014199, ["Label:13C(6)15N(2) (K)"], 0.5),
     "Label:13C(6)15N(4)": (10.008269, ["Label:13C(6)15N(4) (R)"], 0.5),
+    "Label:2H(4)": (4.025107, ["Label:2H(4) (K)"], 0.5),
+    "Label:13C(6)": (6.020129, ["Label:13C(6) (R)"], 0.5),
     "Met-loss": (-131.040485, ["Met-loss (Protein N-term M)"], 0.7),
     "Met-loss+Acetyl": (-89.02992, ["Met-loss+Acetyl (Protein N-term M)"], 0.7),
 }

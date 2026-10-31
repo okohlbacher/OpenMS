@@ -261,7 +261,9 @@ def detect_enrichment(run, ms2_high_res=True, dia=False) -> list:
         # HCD loses H3PO4 less often than CID (5% of the spectra of an enriched Orbitrap Elite run), but the
         # control losses stay near zero on high-res MS2; unenriched runs reach the same fraction only with an
         # equally high control (ion-trap MS2, 0.4 Da windows)
-        if f >= 0.03 and f >= 8 * max(b, 0.003):
+        # ion-trap CID with a high control: unenriched runs stay at f/b 0.2-2.4 (37 runs with control >= 1%), the
+        # enriched LTQ Orbitrap Velos run PXD002614 reaches 5.0 (15.8% vs 3.1%)
+        if f >= 0.03 and (f >= 8 * max(b, 0.003) or (f >= 0.10 and f >= 4 * b)):
             calls.append(("Phospho (STY)", min(0.9, 0.6 + 2 * f), f"{f:.1%} of MS2 spectra show a strong "
                           f"-98 Da neutral loss from the precursor (control {b:.2%})"))
     py = diag.get("pY_immonium")
