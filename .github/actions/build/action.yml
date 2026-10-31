@@ -60,6 +60,28 @@ runs:
       shell: bash
       run: |
         case ${compiler:-gcc} in
+        clang-cl)
+          # Prefer the clang-cl that ships with the runner's Visual Studio
+          # (VC\Tools\Llvm\x64\bin; the vs-shell step sets VCINSTALLDIR): the MSVC
+          # STL refuses Clang majors older than the one it was released with
+          # (STL1000), and the standalone LLVM in C:\Program Files, which comes
+          # first on PATH, can be older. OpenMP_ROOT is the LLVM of the chosen
+          # clang-cl, so that FindOpenMP takes its libomp.lib and libomp.dll
+          # (cmake/multithreading.cmake).
+          if [[ -n "${VCINSTALLDIR:-}" ]]; then
+            vs_llvm="$(cygpath -u "${VCINSTALLDIR%\\}")/Tools/Llvm/x64/bin"
+            if [[ -x "$vs_llvm/clang-cl.exe" ]]; then
+              cygpath -w "$vs_llvm" >>"$GITHUB_PATH"
+              PATH="$vs_llvm:$PATH"
+            fi
+          fi
+          ver=$(clang-cl --version | sed -En 's/.*clang version ([0-9.]+).*/\1/p' | head -n 1)
+          name=clang-cl
+          cc_name=clang-cl
+          echo "OpenMP_ROOT=$(cygpath -m "$(dirname "$(dirname "$(type -p clang-cl)")")")" >>"$GITHUB_ENV"
+          echo "clang-cl: $(type -p clang-cl), version $ver"
+          ;;
+
         clang*)
           ver=$(clang -dumpversion)
           name=$(type -p clang++)

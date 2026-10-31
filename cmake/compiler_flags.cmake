@@ -45,6 +45,13 @@ else()
   set(CMAKE_COMPILER_IS_INTELCXX true CACHE INTERNAL "Is Intel C++ compiler (icpc)")
 endif()
 
+# clang-cl (MSVC is TRUE for it too): without WIN32_LEAN_AND_MEAN, <windows.h> pulls in the
+# COM headers (unknwnbase.h, objidlbase.h, servprov.h), which clang-cl 23 with the 10.0.26100
+# SDK rejects under /std:c++20 and later. OpenMS uses nothing from behind that macro.
+if(MSVC AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  add_compile_definitions(WIN32_LEAN_AND_MEAN)
+endif()
+
 # Platform-dependent options
 include(CheckCXXCompilerFlag)
 if(NOT WIN32) # we only want fPIC on non-windows systems (fPIC is implicitly true there)

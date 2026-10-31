@@ -152,7 +152,9 @@ if(ENABLE_CWL_GENERATION AND NOT BUILD_TOPP_TOOLS)
     message(FATAL_ERROR "ENABLE_CWL_GENERATION requires BUILD_TOPP_TOOLS to be ON.")
 endif()
 
-if(MSVC)
+# Off for MSVC's own OpenMP runtime (vcomp, OpenMP 2.0). MSVC is also TRUE for clang-cl,
+# which links LLVM's libomp like Clang on the other platforms (cmake/multithreading.cmake).
+if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   option(MT_ENABLE_NESTED_OPENMP "Enable nested parallelism." OFF)
 else()
   option(MT_ENABLE_NESTED_OPENMP "Enable nested parallelism." ON)
@@ -628,6 +630,16 @@ set(INSTALL_PLUGIN_SUBDIR plugins CACHE PATH "Installation subdirectory under th
 set(INSTALL_PLUGIN_DIR ${INSTALL_LIB_DIR}/${INSTALL_PLUGIN_SUBDIR})
 file(RELATIVE_PATH INSTALL_LIB_PATH_REL_TO_BIN /${INSTALL_BIN_DIR} /${INSTALL_LIB_DIR})
 set(QT_PLUGIN_PATH_REL_TO_BIN ${INSTALL_LIB_PATH_REL_TO_BIN}/${INSTALL_PLUGIN_SUBDIR})
+
+#------------------------------------------------------------------------------
+# clang-cl links LLVM's OpenMP runtime (cmake/multithreading.cmake finds its libomp.dll). Copy
+# it next to the binaries of the build tree, so that the tests run without LLVM's bin on PATH,
+# and install it with the libraries: the installer and the pyOpenMS wheels take it from there,
+# as they take the vcomp140.dll of an MSVC build from InstallRequiredSystemLibraries.
+if (OpenMP_libomp_DLL)
+  file(COPY "${OpenMP_libomp_DLL}" DESTINATION "${OPENMS_WIN32_DLL_DIRECTORY}")
+  install(FILES "${OpenMP_libomp_DLL}" DESTINATION ${INSTALL_LIB_DIR} COMPONENT library)
+endif()
 
 
 if(UNIX)

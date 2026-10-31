@@ -44,7 +44,8 @@ endif()
 
 
 #### Install System runtime libraries into /bin, so NSIS picks them up; this saves us from shipping a VC-Redist.exe with the installer
-set(CMAKE_INSTALL_OPENMP_LIBRARIES TRUE)
+## CMAKE_INSTALL_OPENMP_LIBRARIES (vcomp140.dll) is set in cmake/multithreading.cmake: TRUE for
+## MSVC, FALSE for clang-cl, whose libomp.dll is installed with the libraries (CMakeLists.txt).
 set (CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION ${INSTALL_LIB_DIR})
 include(InstallRequiredSystemLibraries)
 

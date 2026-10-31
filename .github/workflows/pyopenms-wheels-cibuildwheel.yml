@@ -638,7 +638,9 @@ jobs:
       # delvewheel gets OpenMS's install directories and a copy of the MSVC runtime
       # of the toolset that built everything (msvcp140 and the vcomp140 OpenMP
       # runtime), and nothing else: every other library is linked statically, so a
-      # DLL found anywhere else would come from the runner's PATH.
+      # DLL found anywhere else would come from the runner's PATH. An OpenMS built with
+      # clang-cl installs LLVM's libomp.dll with its libraries in place of vcomp140
+      # (cmake/multithreading.cmake); the check below allows that one too.
       - name: Prepare the pyOpenMS build
         shell: bash
         run: |
@@ -717,7 +719,7 @@ jobs:
           mangled = r"(-[0-9a-f]+)?\.dll"
           allowed = re.compile(
               r"pyopenms\.libs/(OpenMS|OpenSwathAlgo|openms_thermo_bridge|nethost"
-              r"|msvcp140(_\w+)?|vcomp140|concrt140|vcruntime140(_1|_threads)?)" + mangled,
+              r"|msvcp140(_\w+)?|vcomp140|libomp|concrt140|vcruntime140(_1|_threads)?)" + mangled,
               re.IGNORECASE)
           for n in native:
               print("ok        " if allowed.fullmatch(n) else "UNEXPECTED", n)

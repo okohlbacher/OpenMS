@@ -61,16 +61,34 @@ if (MT_ENABLE_OPENMP)
 endif()
 
 if (OPENMP_FOUND)
-  set(CMAKE_INSTALL_OPENMP_LIBRARIES TRUE) # will install the MSVC OpenMP runtime libraries
-  
-  # MSVC requires /openmp:experimental to support #pragma omp simd directives.
-  # The /openmp:experimental flag is a superset of /openmp, so it replaces
-  # rather than appends to the standard OpenMP flag.
-  if (MSVC)
+  # MSVC is also TRUE for clang-cl, hence the compiler ID.
+  if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    set(CMAKE_INSTALL_OPENMP_LIBRARIES TRUE) # InstallRequiredSystemLibraries installs vcomp140.dll
+
+    # MSVC requires /openmp:experimental to support #pragma omp simd directives.
+    # The /openmp:experimental flag is a superset of /openmp, so it replaces
+    # rather than appends to the standard OpenMP flag.
     set(OpenMP_CXX_FLAGS "/openmp:experimental")
     # Update the imported target to use the experimental flag instead of /openmp
     if (TARGET OpenMP::OpenMP_CXX)
       set_property(TARGET OpenMP::OpenMP_CXX PROPERTY INTERFACE_COMPILE_OPTIONS "/openmp:experimental")
     endif()
+  elseif (WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # clang-cl: FindOpenMP found LLVM's OpenMP, -Xclang -fopenmp with libomp.lib
+    # (OpenMP_libomp_LIBRARY), OpenMP 5.x with tasks; /openmp:experimental would be
+    # vcomp140, OpenMP 2.0. The runtime is libomp.dll next to the import library, not an
+    # MSVC redistributable: the top-level CMakeLists.txt copies it into the build tree
+    # and installs it with the libraries.
+    set(CMAKE_INSTALL_OPENMP_LIBRARIES FALSE)
+    get_filename_component(_openms_libomp_lib_dir "${OpenMP_libomp_LIBRARY}" DIRECTORY)
+    find_file(OpenMP_libomp_DLL libomp.dll
+              HINTS "${_openms_libomp_lib_dir}/../bin" "${_openms_libomp_lib_dir}"
+              DOC "LLVM's OpenMP runtime DLL (clang-cl), shipped with the OpenMS binaries")
+    if (NOT OpenMP_libomp_DLL)
+      message(FATAL_ERROR
+        "clang-cl: OpenMP links ${OpenMP_libomp_LIBRARY}, but no libomp.dll was found next to it. "
+        "Pass -DOpenMP_libomp_DLL=<path to libomp.dll> (the bin directory of that LLVM).")
+    endif()
+    message(STATUS "OpenMP runtime for clang-cl: ${OpenMP_libomp_DLL}")
   endif()
 endif()

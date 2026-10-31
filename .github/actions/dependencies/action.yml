@@ -130,11 +130,14 @@ runs:
 
         echo "cmake_prefix=${cmake_prefix_s}" >> "$GITHUB_OUTPUT"
 
+    # vcpkg builds the ports in a clean environment with the triplet's toolchain, so on
+    # Windows cl.exe builds them whichever compiler builds OpenMS itself: the clang-cl
+    # job shares the cl.exe cache (same ABI hashes).
     - uses: OpenMS/ci-tools/actions/rsync-cache@b0622a9a8ecfe12fa6e896795f45fddad12faa6c
       with:
         name: vcpkg-cache
         path: ${{ github.workspace }}/.vcpkg-cache
-        key: ${{ runner.os }}-${{ runner.arch }}-${{ inputs.compiler }}-vcpkg-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+        key: ${{ runner.os }}-${{ runner.arch }}-${{ inputs.compiler == 'clang-cl' && 'cl.exe' || inputs.compiler }}-vcpkg-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
         ssh_key: ${{ inputs.ssh_key }}
         ssh_host: ${{ inputs.ssh_host }}
         ssh_port: ${{ inputs.ssh_port }}

@@ -45,6 +45,8 @@ jobs:
         include:
           - os: windows-2025
             compiler: cl.exe
+          - os: windows-2025
+            compiler: clang-cl
           - os: macos-15
             compiler: xcode
           - os: ubuntu-24.04

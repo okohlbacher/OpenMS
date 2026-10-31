@@ -97,6 +97,8 @@ if(WIN32)
                   ## exists in multiple search directories (e.g. a Conda env and another prefix's bin/). CMake 4.x
                   ## treats such conflicts as fatal errors.
                   "vcruntime" "msvcp" "concrt" "vccorlib" "ucrtbase"
+                  ## LLVM's OpenMP runtime of a clang-cl build is installed explicitly (CMakeLists.txt).
+                  "libomp"
                   )
   ## exclude every Dll from c:\Windows\System32
   ## Note: CMake extracts Dll names and will have a list like
