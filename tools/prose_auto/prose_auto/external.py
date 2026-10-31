@@ -186,6 +186,7 @@ def fastag_alkylation(fastag, mzml, fasta, frag_tol=20.0, frag_unit="ppm", threa
         delta = os.path.join(tmp, "delta.tsv")
         cmd = [fastag, "-in", mzml, "-out", out, "-tag_length", 4, "-extension", 6, "-threads", threads,
                "-recon_fasta", fasta, "-recon_out", os.path.join(tmp, "recon.tsv"), "-delta_out", delta,
+               "-recon_min_length", 5,   # the size-derived default (6-7 on a proteome) placed 2.5-14x fewer spectra
                "-fixed_modifications"] + _frag_args(frag_tol, frag_unit)
         _run(cmd, log)
         rows = _tsv(delta) if os.path.exists(delta) else []
@@ -200,7 +201,8 @@ def fastag_alkylation(fastag, mzml, fasta, frag_tol=20.0, frag_unit="ppm", threa
     counts = {name: sum(c for d, c, _ in hist if abs(d - m) <= tol) for name, m in DELTA_CANDIDATES.items()}
     zero = sum(c for d, c, _ in hist if abs(d) <= tol)
     stats = {"counts": counts, "zero_bin": zero, "spectra": total,
-             "top_bins": sorted(hist, key=lambda x: -x[1])[:15]}
+             "top_bins": sorted(hist, key=lambda x: -x[1])[:15],
+             "hist": [h[:2] for h in hist if h[1] >= 2]}   # for delta_combos; singletons are noise
     best = max(counts, key=counts.get)
     second = sorted(counts.values())[-2] if len(counts) > 1 else 0
     if counts[best] < 10:

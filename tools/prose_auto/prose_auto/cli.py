@@ -16,6 +16,7 @@ import os
 import sys
 import time
 
+from . import delta_combos as DC
 from . import detect_chemistry as chem
 from . import detect_instrument as inst
 from . import detect_tolerance as tol
@@ -69,6 +70,7 @@ def _outside_panel(ev, panel, max_n=2):
 
 
 DATA_FEATURES = ("instrument", "ms1_analyzer", "ms2_analyzer", "fragmentation", "acquisition", "dia_windows", "enzyme",
+                 "variable_mods",
                  "ion_mobility", "charge_range", "precursor_tolerance", "fragment_tolerance", "label", "enrichment",
                  "cys_alkylation")
 
@@ -387,7 +389,10 @@ def analyze(a, log=print):
             db = (h.best_db[1] if h is not None and h.best_db else None) or a.fasta
             if db:
                 log(f"  FASTag: mass-gap histogram against {os.path.basename(db)} without fixed modifications")
-                ev += ext.fastag_alkylation(a.fastag, spectra_file, db, ftol, funit, threads=a.threads, log=log)
+                alk = ext.fastag_alkylation(a.fastag, spectra_file, db, ftol, funit, threads=a.threads, log=log)
+                ev += alk
+                # the same gap histogram, explained as modification combinations (variable mods, enrichment)
+                ev += DC.detect(alk[0].stats.get("hist", []) if alk else [], 0.02 if funit == "ppm" else 0.5)
         except Exception as e:
             log(f"  FASTag failed: {e}")
         timings["fastag"] = round(time.time() - t, 1)

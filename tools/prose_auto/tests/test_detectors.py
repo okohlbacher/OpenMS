@@ -336,3 +336,20 @@ def test_fastag_termini_tryptic_tmt_and_hla(monkeypatch):
     ext = _fake_fastag(monkeypatch, [(300.1, L)] * 160 + [(250.2, K)] * 60)
     ev, st = ext.fastag_termini("FASTag", "x.mzML")
     assert ("enzyme", "unspecific cleavage") in {(e.parameter, e.value) for e in ev} and st["hla_hint"] == "HLA class I?"
+
+
+def test_delta_combinations_histone_and_phospho():
+    from prose_auto import delta_combos as DC
+    # 112.052 Da: two propionyls or acetyl + butyryl (isobaric, C6H8O2); the run's own peaks decide below
+    assert {("Propionyl", "Propionyl"), ("Acetyl", "Butyryl")} <= set(DC.explain(112.05243, 0.02)[:3])
+    assert DC.explain(98.03678, 0.02)[0] == ("Acetyl", "Propionyl")
+    assert DC.explain(42.04695, 0.02)[0] == ("Trimethyl",) and DC.explain(42.0106, 0.02)[0] == ("Acetyl",)
+    hist = [(56.0262, 900), (112.0524, 400), (98.0368, 150), (79.9663, 1200), (15.9949, 200), (0.0, 3000),
+            (137.3, 5)]
+    ev = DC.detect(hist, 0.02)
+    mods = next(e for e in ev if e.parameter == "variable_mods")
+    assert next(p for p in mods.stats["peaks"] if abs(p["delta"] - 112.0524) < 0.01)["explained_by"] == \
+        ["Propionyl", "Propionyl"] and "Butyryl (K)" not in mods.value
+    assert "Propionyl (K)" in mods.value and "Phospho (S)" in mods.value and "Oxidation (M)" in mods.value
+    assert any(e.parameter == "enrichment" and e.value == "Phospho (STY)" for e in ev)
+    assert DC.detect([(0.0, 500)], 0.02) == []                                  # nothing shifted: no call
