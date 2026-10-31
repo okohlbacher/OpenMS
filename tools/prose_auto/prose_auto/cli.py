@@ -68,12 +68,12 @@ def _outside_panel(ev, panel, max_n=2):
     return out[:max_n]
 
 
-DATA_FEATURES = ("instrument", "ms1_analyzer", "ms2_analyzer", "fragmentation", "acquisition", "dia_windows",
+DATA_FEATURES = ("instrument", "ms1_analyzer", "ms2_analyzer", "fragmentation", "acquisition", "dia_windows", "enzyme",
                  "ion_mobility", "charge_range", "precursor_tolerance", "fragment_tolerance", "label", "enrichment",
                  "cys_alkylation")
 
 
-def _data_features(ev, digest_stats):
+def _data_features(ev, digest_stats, term_stats=None):
     """What the spectra themselves show, as one text for Jev (a separate source, labelled as measured, so the
     readers can weigh it against the authors' texts): the best data/metadata evidence per parameter with its
     reason (reporter ions, SILAC pairs, neutral losses, oxonium and immonium ions, mass errors) and the precursor
@@ -91,6 +91,12 @@ def _data_features(ev, digest_stats):
                      f"{digest_stats['q90_mass']} Da; {digest_stats['charge_1']:.0%} singly charged "
                      f"({digest_stats['spectra']} charged MS2 spectra); tryptic peptides: median about 1200-2500 Da, "
                      "HLA class I ligands (8-12 residues): about 900-1200 Da")
+    if term_stats and term_stats.get("cterm_tags"):
+        lines.append(f"C-terminal residues of {term_stats['cterm_tags']} sequence tags: K/R {term_stats.get('cterm_KR')}"
+                     f" (tryptic digests >= 0.86, HLA ligands about 0.3), hydrophobic L/V/F/Y/M "
+                     f"{term_stats.get('cterm_anchors_LVFYM')} (HLA class I about 0.5, class II about 0.1); most frequent "
+                     f"{term_stats.get('cterm_top')}; heavy Lys8 {term_stats.get('heavy_K8')}, heavy Arg10 "
+                     f"{term_stats.get('heavy_R10')}")
     return "Measured from the raw spectra by prose-auto (not stated by the authors):\n" + "\n".join(lines)[:4000]
 
 
@@ -187,6 +193,15 @@ def analyze(a, log=print):
           + chem.detect_cys_alkylation(run, hr2)
     hint, hint_stats = chem.digest_hint(run, hr2)
     timings["chemistry"] = round(time.time() - t, 1)
+    term_stats = {}
+    if a.fastag and hr2:   # protease (C-terminal residues) and labels (N-terminal gaps) from FASTag k=4 tags
+        t = time.time()
+        try:
+            term_ev, term_stats = ext.fastag_termini(a.fastag, spectra_file, threads=a.threads, log=log)
+            ev += term_ev
+        except Exception as e:
+            log(f"  FASTag termini failed: {e}")
+        timings["termini"] = round(time.time() - t, 1)
 
     log("[5/7] repository records and text")
     t = time.time()
@@ -224,7 +239,7 @@ def analyze(a, log=print):
     jev = J.Jev() if a.jev else None
     jev_report, jev_issues = {}, []
     # Jev also sees what the spectra show (mass distribution, marker ions, mass errors) as a source of its own
-    jev_study = {**study, "measured from the spectra": _data_features(ev, hint_stats)} if study else {}
+    jev_study = {**study, "measured from the spectra": _data_features(ev, hint_stats, term_stats)} if study else {}
     if jev and study:
         log(f"  Jev: {jev.name} (one multi-head request over {len(jev_study)} sources, one of them the data)")
         e, jev_report = J.read_study(jev, jev_study, user=bool(desc))
@@ -257,9 +272,11 @@ def analyze(a, log=print):
     # organism search then tries the unspecific search first, and only its result sets the enzyme
     stated_unspec = any(e.parameter == "enzyme" and e.value == "unspecific cleavage" and e.confidence >= 0.6
                         for e in ev)
-    hla_first = bool(hint) or stated_unspec
+    hla_first = "II" if term_stats.get("hla_hint") == "HLA class II?" and not hint else \
+        "I" if hint or term_stats.get("hla_hint") or stated_unspec else None
     if hla_first:
-        log(f"  HLA ligands? ({hint or 'stated'}; {hint_stats}): the unspecific search goes first")
+        log(f"  HLA class {hla_first} ligands? ({hint or term_stats.get('hla_hint') or 'stated'}; {hint_stats}): "
+            "the unspecific search goes first")
 
     # organism from one ProSE search: panel + stated organisms outside it + the FASTag shortlist, concatenated;
     # the winner by discriminating PSMs (prose_runner.organism_with_prose). The hypotheses then search the winner.
@@ -439,7 +456,7 @@ def analyze(a, log=print):
         "consistency": consistency,
         "text_conflicts": llm_text_conflicts + (jev_report.get("text_rules", []) if jev_report else []),
         "timings_s": timings,
-        "digest_hint": {"hint": hint, **hint_stats},
+        "digest_hint": {"hint": hint, **hint_stats, "termini": term_stats},
     }
 
 

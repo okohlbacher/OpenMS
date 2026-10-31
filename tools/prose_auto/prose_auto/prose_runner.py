@@ -153,8 +153,8 @@ def organism_with_prose(prose, spectra, candidates, fixed, variable, prec, frag,
     human tryptic peptides are also mouse peptides) and contaminants (keratin) do not count. No winner: search again
     with variable phospho, then with variable SILAC heavy Lys/Arg, then unspecific HLA class I ligands (8-14), the
     chemistry the panel mini-search cannot express (phospho, SILAC and HLA runs gave it 0-17 PSMs of 2000).
-    then HLA class II ligands (12-25). hla_first: the data or the texts suggest HLA class I ligands, so that search
-    goes first (the tryptic steps follow if it finds nothing). Unspecific searches use the HLA_CANDIDATES best
+    then HLA class II ligands (12-25). hla_first: "I"/"II" (or True = I): the data or the texts suggest HLA ligands of that class, so
+    that search goes first (the tryptic steps follow if it finds nothing). Unspecific searches use the HLA_CANDIDATES best
     candidates (preferred first, then by matches so far, then the panel order).
     The step that found the winner is returned as evidence too (enrichment, label, enzyme and length).
     panel_db/signatures: a signature-protein panel (build_sigpanel.py) is searched instead of the concatenated
@@ -181,7 +181,8 @@ def organism_with_prose(prose, spectra, candidates, fixed, variable, prec, frag,
         if not any(m in variable for m in SILAC_HEAVY):
             tryptic.append(("+ variable SILAC heavy", SILAC_HEAVY, None))
         hla1, hla2 = ("HLA class I ligands (unspecific)", [], (8, 14)), ("HLA class II ligands (unspecific)", [], (12, 25))
-        steps = [hla1] + tryptic + [hla2] if hla_first else tryptic + [hla1, hla2]
+        steps = ([hla2] + tryptic + [hla1] if hla_first == "II" else [hla1] + tryptic + [hla2] if hla_first
+                 else tryptic + [hla1, hla2])
         added, tried, seen = [], {}, Counter()
         for label, extra, length in steps:
             added += extra

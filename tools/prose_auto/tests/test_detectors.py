@@ -310,3 +310,29 @@ def test_jev_sees_the_data_features():
     assert "TMT10/11plex" in txt and "reporters in 94%" in txt and "median 950 Da" in txt and "TMT6plex" not in txt
     state = S.study_state({"PRIDE description": "x" * 70000, "measured from the spectra": txt})
     assert state["measured from the spectra"] == txt          # never cut away by long texts
+
+
+def _fake_fastag(monkeypatch, rows):
+    from prose_auto import external as ext
+
+    def run(cmd, log):
+        out = cmd[cmd.index("-out") + 1]
+        with open(out, "w") as fh:
+            fh.write("spectrum\ttag\tlength\tcharge\tnterm_mass\tcterm_mass\textended\tgapped\tevalue\n")
+            for i, (nm, cm) in enumerate(rows):
+                fh.write(f"s{i}\tPEPT\t4\t2\t{nm}\t{cm}\t0\t0\t0.01\n")
+    monkeypatch.setattr(ext, "_run", run)
+    return ext
+
+
+def test_fastag_termini_tryptic_tmt_and_hla(monkeypatch):
+    K, R, TMT, L, H2O = 128.09496, 156.10111, 229.162932, 113.08406, 18.010565
+    # tryptic TMT: TMT-K or R one residue after the tag (y tags) or with water before it (reversed b tags)
+    ext = _fake_fastag(monkeypatch, [(TMT + 300.1, K + TMT)] * 150 + [(R + H2O, 412.2)] * 60 + [(TMT, 500.3)] * 40)
+    ev, st = ext.fastag_termini("FASTag", "x.mzML")
+    got = {(e.parameter, e.value) for e in ev}
+    assert ("enzyme", "Trypsin") in got and ("label", "TMT6/10/11plex") in got and st["cterm_KR"] >= 0.8
+    # HLA class I: hydrophobic C-termini (L), few K/R
+    ext = _fake_fastag(monkeypatch, [(300.1, L)] * 160 + [(250.2, K)] * 60)
+    ev, st = ext.fastag_termini("FASTag", "x.mzML")
+    assert ("enzyme", "unspecific cleavage") in {(e.parameter, e.value) for e in ev} and st["hla_hint"] == "HLA class I?"
