@@ -347,23 +347,36 @@ namespace OpenMS
       return data_ != other.data_;
     }
     
-    // Define operators only if underlying vector supports them
-    bool operator<(const ExposedVector& other) const requires LessThanComparable<VectorElement>
+    // Define operators only if underlying vector supports them. They are member templates
+    // (with VectorElement as the default argument) rather than constrained plain members:
+    // clang-cl instantiates every non-template member of a dllexported class and of its base
+    // class specializations, a requires-clause that is not satisfied notwithstanding, so
+    // PeptideIdentificationList (PeptideIdentification has no operator<) did not compile.
+    // Member templates are never instantiated that way; the constraint still applies.
+    template<typename T = VectorElement>
+      requires LessThanComparable<T>
+    bool operator<(const ExposedVector& other) const
     {
         return data_ < other.data_;
     }
 
-    bool operator<=(const ExposedVector& other) const requires LessThanComparable<VectorElement>
+    template<typename T = VectorElement>
+      requires LessThanComparable<T>
+    bool operator<=(const ExposedVector& other) const
     {
         return data_ <= other.data_;
     }
 
-    bool operator>(const ExposedVector& other) const requires LessThanComparable<VectorElement>
+    template<typename T = VectorElement>
+      requires LessThanComparable<T>
+    bool operator>(const ExposedVector& other) const
     {
         return data_ > other.data_;
     }
 
-    bool operator>=(const ExposedVector& other) const requires LessThanComparable<VectorElement>
+    template<typename T = VectorElement>
+      requires LessThanComparable<T>
+    bool operator>=(const ExposedVector& other) const
     {
         return data_ >= other.data_;
     }

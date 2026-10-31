@@ -259,7 +259,9 @@ runs:
           -DCMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH" \
           -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/install" \
 
-        cmake --build --preset "${{ steps.preset.outputs.name }}" --verbose
+        # clang-cl: keep going after a failed compile while the job is being brought up, so
+        # that one run lists every translation unit that breaks. Drop once the job is green.
+        cmake --build --preset "${{ steps.preset.outputs.name }}" --verbose ${{ inputs.compiler == 'clang-cl' && '-- -k 0' || '' }}
 
     - name: Verify public headers
       if: ${{ runner.os == 'Linux' && runner.arch == 'X64' }}

@@ -149,7 +149,7 @@ function(openms_add_compiler_flags target_name)
       /wd4661          # disable explicit template instantiation request warning
       /wd4503          # disable decorated name length exceeded warning9
       /bigobj          # for large object files
-      /MP              # use multiple CPU cores
+      $<$<CXX_COMPILER_ID:MSVC>:/MP>  # use multiple CPU cores (cl.exe only; clang-cl warns on it)
     )
     
     target_compile_definitions(${target_name} PRIVATE
