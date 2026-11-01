@@ -754,8 +754,15 @@ static Size count_annotations_(const PeptideHit& hit, const std::string& prefix)
 // ---------------------------------------------------------------------------
 // annotate:self_trained_ion_priors
 // ---------------------------------------------------------------------------
-static const std::vector<std::string> ion_prior_features_ = {
-  Constants::UserParam::ION_PRIOR_LLR, Constants::UserParam::ION_PRIOR_EXPLAINED, Constants::UserParam::ION_PRIOR_TOPK_OBSERVED};
+// A function-local static: clang-cl initialises the inline std::string constants of Constants.h in no fixed order
+// relative to the namespace-scope statics of this file (COFF puts each in its own .CRT$XCU entry), and a
+// namespace-scope list built from them held three empty strings.
+static const std::vector<std::string>& ion_prior_features_()
+{
+  static const std::vector<std::string> features = {
+    Constants::UserParam::ION_PRIOR_LLR, Constants::UserParam::ION_PRIOR_EXPLAINED, Constants::UserParam::ION_PRIOR_TOPK_OBSERVED};
+  return features;
+}
 
 // The synthetic protein-FDR problem (targets, generated decoys, decoy spectra) with ion priors on
 // and no PSM filtering, so every scored hit is reported.
@@ -775,7 +782,7 @@ static void configure_ion_prior_params_(ProSEAlgorithm& algo, Size min_psms, dou
   p.setValue("annotate:self_trained_ion_priors", "true");
   p.setValue("annotate:ion_prior_min_psms", static_cast<Int>(min_psms));
   p.setValue("annotate:ion_prior_train_fdr", train_fdr);
-  p.setValue("annotate:ion_prior_features", ion_prior_features_);
+  p.setValue("annotate:ion_prior_features", ion_prior_features_());
   p.setValue("rescore", "false"); // the native scores of every hit (Percolator keeps the best hit and replaces them)
   algo.setParameters(p);
 }
@@ -791,7 +798,7 @@ static std::pair<Size, Size> check_ion_prior_annotations_(const PeptideIdentific
     {
       ++hits;
       bool complete = true;
-      for (const std::string& feature : ion_prior_features_) complete = complete && hit.metaValueExists(feature);
+      for (const std::string& feature : ion_prior_features_()) complete = complete && hit.metaValueExists(feature);
       if (! complete)
       {
         ++violations;
@@ -831,7 +838,7 @@ static std::vector<std::string> ion_prior_rows_(const PeptideIdentificationList&
       std::ostringstream row;
       row << std::setprecision(17) << pid.getSpectrumReference() << ' ' << hit.getSequence().toString() << ' ' << hit.getCharge()
           << ' ' << hit.getScore();
-      for (const std::string& feature : ion_prior_features_)
+      for (const std::string& feature : ion_prior_features_())
       {
         row << ' ' << (hit.metaValueExists(feature) ? static_cast<double>(hit.getMetaValue(feature)) : std::nan(""));
       }
@@ -5234,7 +5241,7 @@ START_SECTION(([EXTRA] self-trained ion priors annotate every hit without changi
   {
     for (const auto& hit : pid.getHits())
     {
-      for (const std::string& feature : ion_prior_features_) if (hit.metaValueExists(feature)) ++plain_annotated;
+      for (const std::string& feature : ion_prior_features_()) if (hit.metaValueExists(feature)) ++plain_annotated;
     }
   }
   // switched off: no feature, nothing recorded
@@ -5267,7 +5274,7 @@ START_SECTION(([EXTRA] self-trained ion priors annotate every hit without changi
   TEST_EQUAL(fold_training_psms[0] + fold_training_psms[1], training_psms)
   TEST_TRUE(fold_training_psms[0] >= 5)
   TEST_TRUE(fold_training_psms[1] >= 5)
-  for (const std::string& feature : ion_prior_features_)
+  for (const std::string& feature : ion_prior_features_())
   {
     TEST_EQUAL(lists_feature_(prot_ids[0], feature), true)
   }
@@ -7943,7 +7950,7 @@ START_SECTION(([EXTRA] self-trained ion priors write zero features without enoug
     TEST_STRING_EQUAL(sp.getMetaValue("ion_prior:trained").toString(), "false")
     fold_training_psms = sp.getMetaValue("ion_prior:fold_training_psms");
     // the columns stay complete for Percolator
-    for (const std::string& feature : ion_prior_features_)
+    for (const std::string& feature : ion_prior_features_())
     {
       TEST_EQUAL(lists_feature_(prot_ids[0], feature), true)
     }
@@ -7991,7 +7998,7 @@ START_SECTION(([EXTRA] self-trained ion priors write zero features without enoug
   TEST_EQUAL(on_sp.metaValueExists("annotate:self_trained_ion_priors"), false)
   TEST_EQUAL(on_sp.metaValueExists("ion_prior:trained"), false)
   TEST_EQUAL(extra_features_(on_prot_ids[0]), extra_features_(off_prot_ids[0]))
-  for (const std::string& feature : ion_prior_features_)
+  for (const std::string& feature : ion_prior_features_())
   {
     TEST_EQUAL(lists_feature_(on_prot_ids[0], feature), false)
   }
@@ -8004,7 +8011,7 @@ START_SECTION(([EXTRA] self-trained ion priors write zero features without enoug
     for (Size h = 0; h < a.size(); ++h)
     {
       ++target_only_hits;
-      for (const std::string& feature : ion_prior_features_) if (a[h].metaValueExists(feature)) ++target_only_annotated;
+      for (const std::string& feature : ion_prior_features_()) if (a[h].metaValueExists(feature)) ++target_only_annotated;
       equal = equal && h < b.size() && a[h].getSequence() == b[h].getSequence() && a[h].getScore() == b[h].getScore();
     }
     if (equal) ++target_only_same;
@@ -8081,7 +8088,7 @@ START_SECTION(([EXTRA] self-trained ion priors are cross-fitted: the features of
       bool changed = false;
       for (Size h = 0; h < result[i].getHits().size(); ++h)
       {
-        for (const std::string& feature : ion_prior_features_)
+        for (const std::string& feature : ion_prior_features_())
         {
           changed = changed || static_cast<double>(result[i].getHits()[h].getMetaValue(feature))
                                  != static_cast<double>(reference[i].getHits()[h].getMetaValue(feature));
@@ -8149,7 +8156,7 @@ START_SECTION(([EXTRA] self-trained ion priors are cross-fitted: the features of
       bool differs = false;
       for (Size h = 0; h < flipped[i].getHits().size(); ++h)
       {
-        for (const std::string& feature : ion_prior_features_)
+        for (const std::string& feature : ion_prior_features_())
         {
           differs = differs || static_cast<double>(flipped[i].getHits()[h].getMetaValue(feature))
                                  != static_cast<double>(reference[i].getHits()[h].getMetaValue(feature));
