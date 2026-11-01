@@ -286,7 +286,7 @@ RULES = [
          lambda f: f.get("enzyme") == "unspecific cleavage" and f.get("sample_type") not in (None, "immunopeptidome", "body fluid"),
          "an unspecific search on a digested sample multiplies the search space"),
     Rule("diglycine_needs_trypsin", "soft", ("enrichment", "enzyme"),
-         lambda f: f.get("enrichment") == "GlyGly (K)" and f.get("enzyme") not in (None, "Trypsin", "Trypsin/P"),
+         lambda f: _has(f.get("enrichment"), "GlyGly") and f.get("enzyme") not in (None, "Trypsin", "Trypsin/P"),
          "the K-GG remnant is a tryptic product; another protease leaves a different remnant"),
     Rule("fragment_tol_it", "hard", ("ms2_analyzer", "fragment_tolerance"),
          lambda f: f.get("ms2_analyzer") == "IT" and (_ppm(f.get("fragment_tolerance")) or 1e9) < 100,

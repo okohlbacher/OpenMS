@@ -206,6 +206,24 @@ def _tolerance(kind, evs, offsets, instrument, ms_analyzer):
     return Decision(param, v, round(min(conf, 0.99), 3), "data", evs + [default, comb], conflicts, status)
 
 
+ENRICH_SEP = " + "
+
+
+def _co_enrichment(d, evs):
+    """TiO2 also takes sialylated glycopeptides (PXD003531: phospho neutral loss 10.7 %, HexNAc oxonium 59 %): every
+    other enrichment the spectra show strongly (data, >= 0.8, another family) joins the decision as 'A + B'"""
+    if d.value in ("none", "unknown"):
+        return d
+    fam = lambda v: str(v).split()[0].lower()
+    vals = [d.value]
+    for e in sorted(evs, key=lambda e: -e.confidence):
+        if (e.source == "data" and e.confidence >= 0.8 and e.value not in ("none", "unknown")
+                and fam(e.value) not in {fam(v) for v in vals}):
+            vals.append(e.value)
+    d.value = ENRICH_SEP.join(vals)
+    return d
+
+
 def reconcile(evidence: list) -> dict:
     by = {}
     for e in evidence:
@@ -222,7 +240,7 @@ def reconcile(evidence: list) -> dict:
             tested = p == "enrichment" and any(e.source == "data" and e.confidence >= 0.6 for e in by[p])
             d = _decide(p, by[p], ORDER_MEASURED if tested else None)
             if d:
-                out[p] = d
+                out[p] = _co_enrichment(d, by[p]) if p == "enrichment" else d
     if "label" in by:
         d = _label(by["label"])
         if d:

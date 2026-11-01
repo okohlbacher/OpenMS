@@ -102,11 +102,11 @@ def to_prose(decisions: dict) -> dict:
     elif lab in SILAC_VARIABLE:
         var += SILAC_VARIABLE[lab]
         notes.append("SILAC heavy labels are searched as variable modifications")
-    enr = v("enrichment")
-    if enr in ENRICHMENT_MODS:
-        var += ENRICHMENT_MODS[enr]
-    elif enr and str(enr).startswith("Glyco"):
-        notes.append("glycopeptides detected: ProSE has no glycan search; consider a glyco engine")
+    for enr in str(v("enrichment") or "").split(" + "):   # co-enrichment: 'Phospho (STY) + Glyco (HexNAc oxonium)'
+        if enr in ENRICHMENT_MODS:
+            var += [m for m in ENRICHMENT_MODS[enr] if m not in var]
+        elif enr.startswith("Glyco"):
+            notes.append("glycopeptides detected: ProSE has no glycan search; consider a glyco engine")
     for m in v("variable_mods") or []:
         if isinstance(m, str) and m not in var and m not in fixed and "(" in m and decisions["variable_mods"].confidence >= 0.5:
             var.append(m)

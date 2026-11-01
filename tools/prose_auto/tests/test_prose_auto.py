@@ -191,6 +191,19 @@ def test_reconcile_conflict_and_params():
     assert "<ITEMLIST" in pp.to_ini_snippet(P)
 
 
+def test_co_enrichment():
+    # PXD003531: TiO2 phospho enrichment that also took glycopeptides; a weaker third signal stays out
+    ev = [Evidence("enrichment", "Phospho (STY)", 0.814, "data", "diagnostic ions"),
+          Evidence("enrichment", "Glyco (HexNAc oxonium)", 0.9, "data", "diagnostic ions"),
+          Evidence("enrichment", "Phospho (STY)", 0.58, "data", "delta-mass combinations"),
+          Evidence("enrichment", "Acetyl (K)", 0.6, "data", "diagnostic ions")]
+    d = reconcile(ev)
+    assert d["enrichment"].value == "Glyco (HexNAc oxonium) + Phospho (STY)"
+    P = pp.to_prose(d)["params"]
+    assert "Phospho (S)" in P["Search:modifications:variable"] and "Acetyl (K)" not in P["Search:modifications:variable"]
+    assert reconcile(ev[:1])["enrichment"].value == "Phospho (STY)"
+
+
 def test_organism_data_chooses_among_named_species():
     def ev(searched):
         stats = {n: {"psms": c} for n, c in searched.items()}
