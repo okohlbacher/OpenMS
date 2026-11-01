@@ -156,6 +156,28 @@ def test_reconcile_conflict_and_params():
     assert "<ITEMLIST" in pp.to_ini_snippet(P)
 
 
+def test_organism_data_chooses_among_named_species():
+    def ev(searched):
+        stats = {n: {"psms": c} for n, c in searched.items()}
+        return [Evidence("organism", "Escherichia coli", 0.6, "repository", "pride", ""),
+                Evidence("organism", "Homo sapiens (human)", 0.6, "repository", "pride", ""),
+                Evidence("organism", "Homo sapiens", 0.66, "data", "FASTag species", ""),
+                Evidence("organism", "Homo_sapiens", 0.47, "search", "panel mini-search", "", stats)]
+    # the record's first pick (E. coli) was never searched; the mini-search and FASTag both find human, also named
+    d = reconcile(ev({"Homo_sapiens": 1129, "Chlorocebus_sabaeus": 923}))["organism"]
+    assert d.value == "Homo_sapiens" and d.status == "review" and "did not test" in d.conflicts[-1]
+    # a pick the mini-search did test keeps its place
+    assert reconcile(ev({"Homo_sapiens": 1129, "Escherichia_coli": 300}))["organism"].value == "Escherichia coli"
+    # FASTag disagreeing, or the data species not named by the metadata: no change
+    e = ev({"Homo_sapiens": 1129})
+    e[2] = Evidence("organism", "Mus musculus", 0.66, "data", "FASTag species", "")
+    assert reconcile(e)["organism"].value == "Escherichia coli"
+    e = ev({"Rattus_norvegicus": 900})
+    e[2] = Evidence("organism", "Rattus norvegicus", 0.66, "data", "FASTag species", "")
+    e[3] = Evidence("organism", "Rattus_norvegicus", 0.47, "search", "panel mini-search", "", {"Rattus_norvegicus": {"psms": 900}})
+    assert reconcile(e)["organism"].value == "Escherichia coli"
+
+
 def test_schema_rules_and_decode():
     from prose_auto import schema as S
     hard = S.check({"label": "TMT6plex", "ms2_analyzer": "IT", "fragmentation": "CID", "acquisition": "DDA"})

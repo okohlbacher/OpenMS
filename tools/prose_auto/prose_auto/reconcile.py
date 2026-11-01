@@ -70,6 +70,29 @@ def _stated_untested(d, evs):
     return Decision("organism", s.value, round(s.confidence * 0.9, 3), s.source, evs, d.conflicts + [note], "review")
 
 
+def _untested_pick(d, evs):
+    """Records and texts often name several species (host and sample, spike-in standards, the organism of an antibody).
+    When the metadata pick was never searched, the panel mini-search found another of the named species best, and
+    FASTag calls that species too, the data choose among the named species. A pick the mini-search did test keeps
+    its place: close relatives (mouse/human) can lose a head-to-head on homology alone."""
+    if d.source not in ("user", "repository", "text", "llm"):
+        return d
+    search = [e for e in evs if e.source == "search" and e.method == "panel mini-search" and e.stats]
+    if not search:
+        return d
+    psms = {_organism_key(k): v.get("psms", 0) for k, v in search[0].stats.items() if isinstance(v, dict)}
+    best = max(psms, key=psms.get) if psms else None
+    named = {_organism_key(e.value) for e in evs if e.source in ("user", "repository", "text", "llm")}
+    fastag = [e for e in evs if e.method == "FASTag species" and e.confidence >= 0.5]
+    if (not best or best == _organism_key(d.value) or _organism_key(d.value) in psms or best not in named
+            or not fastag or _organism_key(fastag[0].value) != best):
+        return d
+    note = (f"{d.source} picks {d.value}, which the mini-search did not test; of the species the records and texts "
+            f"name, the mini-search finds {search[0].value} best ({psms[best]} PSMs) and FASTag agrees")
+    conf, _ = _combine(search[0], evs)
+    return Decision("organism", search[0].value, round(conf * 0.85, 3), "search", evs, d.conflicts + [note], "review")
+
+
 def _combine(winner: Evidence, evs: list):
     agree = [e for e in evs if e is not winner and _same(e.value, winner.value) and e.source != winner.source]
     p = 1 - winner.confidence
@@ -213,7 +236,7 @@ def reconcile(evidence: list) -> dict:
             by["organism"] = [e for e in by["organism"] if e.value != "not in panel"]
         d = _decide("organism", by["organism"])
         if d:
-            out["organism"] = _stated_untested(d, by["organism"])
+            out["organism"] = _untested_pick(_stated_untested(d, by["organism"]), by["organism"])
     instrument = get("instrument") or ""
     for kind in ("precursor", "fragment"):
         param = f"{kind}_tolerance"
