@@ -253,7 +253,8 @@ jobs:
           # Install eigen from choco
           choco install eigen -y --no-progress
           echo "eigen_choco=C:\ProgramData\chocolatey\lib\eigen\share\cmake" >> $GITHUB_OUTPUT
-          choco install doxygen.portable ghostscript graphviz -y --no-progress
+          # no ghostscript or graphviz (as upstream develop): the ghostscript installer hangs on windows-2025-vs2026
+          choco install doxygen.portable -y --no-progress
           
           if [[ "${{ steps.set-vars.outputs.pkg_type }}" != "none" ]]; then
             # uses a custom NSIS, which provides 8-k string support and has UltraModernUI integrated already
