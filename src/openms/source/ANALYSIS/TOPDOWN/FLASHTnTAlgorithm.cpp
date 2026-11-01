@@ -3571,7 +3571,11 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
           auto pg = alt_spec.getPrecursorPeakGroup();
           pg.setMonoisotopicMass(alt.mass);
           alt_spec.setPrecursorPeakGroup(pg);
-          extendSpectrumInto(alt.d, extender_param_, alt_spec, alt.out, false);
+          // without the spectrum's precursor-ladder candidates: their windows fit its own precursor mass, not this one, and a PrSM from
+          // them would carry the precursor-ladder class without a window of its mass (the tag and terminal-ladder candidates do not
+          // depend on the precursor mass)
+          extendCandidatesInto(extender_param_, alt_spec, protein_hits_, candidate_ranges[alt.d], ladder_candidates, ladder_ranges[alt.d],
+                               pl_candidates, {0, 0}, alt.out, multiple_hits_per_spec_ || keep_all_candidates);
           // the alternative's best PrSM must have a mass a precursor-mass path took from it (not one from fragment pairs): an alternative
           // whose best PrSM still has no mass would change the precursor without giving the spectrum a mass
           double top = -1e10, best_any = -1e10;
