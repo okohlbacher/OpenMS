@@ -61,9 +61,11 @@ LABELS = {
     "TMT": r"\btmt\b|\btandem mass tag",
 }
 
+# enrichment-specific terms only: a phospho search setting, a phosphatase inhibitor or a mention of ubiquitination
+# is no enrichment (bare 'phospho' and 'KEGG' read as GlyGly gave 18 false calls on validation DIA runs, 24 held-out)
 ENRICHMENT = {
-    "Phospho (STY)": r"\bphospho|\btio2\b|\bimac\b|\bfe-?nta\b|\bti4\+",
-    "GlyGly (K)": r"\bk-?[eε]?-?gg\b|\bdi-?gly|\bubiquitin(ome|ation)\b",
+    "Phospho (STY)": r"\bphospho-?(peptide|proteom|enrich)|\btio2\b|\bimac\b|\bfe-?nta\b|\bti4\+",
+    "GlyGly (K)": r"\bk-?ε-?gg\b|\bk-gg\b|\bkgg\b|\bdi-?gly|\bglygly\b|\bubiquit(in|yl)ome\b",
     "Acetyl (K)": r"\bacetyl-?lysine\b|\bacetylome\b",
     "Glyco": r"\bglyco(peptide|proteom)",
 }

@@ -206,6 +206,14 @@ def test_variable_mods_and_stated_windows():
     assert vm.value == ["Oxidation (M)", "Phospho (S)"] and vm.confidence == 0.6
 
 
+def test_enrichment_keywords_need_enrichment_terms():
+    enr = lambda t: {e.value for e in tx.extract(t, "text") if e.parameter == "enrichment"}
+    assert enr("Phosphopeptides were enriched with TiO2 beads.") == {"Phospho (STY)"}
+    assert enr("Proteins were annotated with KEGG pathways; phosphatase inhibitors were added.") == set()
+    assert enr("Phospho (STY) was set as a variable modification.") == set()
+    assert enr("K-epsilon-GG peptides: anti-K-GG antibody enrichment of the ubiquitinome.") == {"GlyGly (K)"}
+
+
 def test_text_extract():
     ev = tx.extract("HeLa cells, alkylated with iodoacetamide, TMT10plex, Q Exactive HF, DIA", "user")
     vals = {e.parameter: e.value for e in ev}
