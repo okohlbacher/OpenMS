@@ -183,7 +183,7 @@ def fastag_shortlist(evs, n=3):
     return (real or names)[:n]
 
 
-def fastag_alkylation(fastag, mzml, fasta, frag_tol=20.0, frag_unit="ppm", threads=0, log=print):
+def fastag_alkylation(fastag, mzml, fasta, frag_tol=20.0, frag_unit="ppm", threads=0, log=print, subsample=0.0):
     """Cys alkylation from the FASTag mass-gap histogram without fixed mods."""
     with tempfile.TemporaryDirectory(prefix="fastag_") as tmp:
         out = os.path.join(tmp, "tags.tsv")
@@ -192,6 +192,8 @@ def fastag_alkylation(fastag, mzml, fasta, frag_tol=20.0, frag_unit="ppm", threa
                "-recon_fasta", fasta, "-recon_out", os.path.join(tmp, "recon.tsv"), "-delta_out", delta,
                "-recon_min_length", 5,   # the size-derived default (6-7 on a proteome) placed 2.5-14x fewer spectra
                "-fixed_modifications"] + _frag_args(frag_tol, frag_unit)
+        if subsample:
+            cmd += ["-subsample_fraction", subsample]
         _run(cmd, log)
         rows = _tsv(delta) if os.path.exists(delta) else []
     hist = []

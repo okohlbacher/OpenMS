@@ -190,9 +190,19 @@ def _timed(c, key):
     c.timings[key] = round(time.time() - t, 1)
 
 
+def _fastag_fraction(c):
+    """The fraction of the MS2 FASTag tags: --fastag-subsample if given, else at most --fastag-spectra spectra (0 =
+    all). Tagging the whole file took 25 min on a 77k-MS2 run (PXD028358)."""
+    a = c.a
+    if a.fastag_subsample:
+        return a.fastag_subsample
+    n = c.run.n_ms2_total
+    return round(a.fastag_spectra / n, 4) if a.fastag_spectra and n > a.fastag_spectra else 0.0
+
+
 def _fastag_species(c):
     a = c.a
-    return ext.fastag_species(a.fastag, c.spectra_file, *c.ftol, threads=a.threads, subsample=a.fastag_subsample,
+    return ext.fastag_species(a.fastag, c.spectra_file, *c.ftol, threads=a.threads, subsample=_fastag_fraction(c),
                               log=c.log, taxonomy_dir=a.fastag_taxonomy,
                               rank="species" if a.fastag_taxonomy else "genus")
 
@@ -441,7 +451,7 @@ def _mini_search(c, panel, org_fixed, unspec):
         if key:
             mods.k = mods.nterm = ts.LABEL_MASS[key]
         h = HypothesisTester(c.run, 20.0 if hr2 else 0.4, hr2, prec_ppm=20.0 if c.hr1 else 500.0,
-                             n_spectra=a.spectra, mods=mods, log=log)
+                             n_spectra=a.spectra, mods=mods, log=log, sample=a.sample)
         oe = h.organism(panel)
         if not org_fixed:
             c.ev += oe
@@ -468,7 +478,8 @@ def _fastag_stage(c, h, org_fixed):
             db = (h.best_db[1] if h is not None and h.best_db else None) or a.fasta
             if db:
                 log(f"  FASTag: mass-gap histogram against {os.path.basename(db)} without fixed modifications")
-                alk = ext.fastag_alkylation(a.fastag, c.spectra_file, db, ftol, funit, threads=a.threads, log=log)
+                alk = ext.fastag_alkylation(a.fastag, c.spectra_file, db, ftol, funit, threads=a.threads, log=log,
+                                            subsample=_fastag_fraction(c))
                 c.ev += alk
                 # the same gap histogram, explained as modification combinations (variable mods, enrichment)
                 c.ev += DC.detect(alk[0].stats.get("hist", []) if alk else [], 0.02 if funit == "ppm" else 0.5)
@@ -770,13 +781,19 @@ def main(argv=None):
     an.add_argument("--fastag-taxonomy", default=os.environ.get("PROSE_AUTO_FASTAG_TAXONOMY"),
                     help="extended FASTag index directory (tax_k7.taxdb, nodes.dmp, names.dmp): species-rank "
                          "ranking and the two-tier organism test (default $PROSE_AUTO_FASTAG_TAXONOMY)")
-    an.add_argument("--fastag-subsample", type=float, default=0.0, help="fraction of spectra FASTag tags (0 = all)")
+    an.add_argument("--fastag-subsample", type=float, default=0.0,
+                    help="fraction of the MS2 FASTag tags (0: --fastag-spectra decides)")
+    an.add_argument("--fastag-spectra", type=int, default=20000,
+                    help="at most this many MS2 for the FASTag species and mass-gap calls (0 = all)")
     an.add_argument("--diaspextract", help="DIAspeXtract executable: pseudo-MS/MS spectra for DIA / .d input "
                     "(default: PROSE_AUTO_DIASPEXTRACT, else DIAspeXtract on PATH)")
     an.add_argument("--fileconverter", help="OpenMS FileConverter with timsTOF support, for ddaPASEF .d input "
                     "(default: PROSE_AUTO_FILECONVERTER, else FileConverter on PATH)")
     an.add_argument("--threads", type=int, default=0, help="threads for external tools (0 = their default)")
     an.add_argument("--spectra", type=int, default=2000, help="MS2 spectra for the mini-search")
+    an.add_argument("--sample", choices=("random", "top"), default="random",
+                    help="mini-search spectra: a random sample (default; more correct organism calls in the sampling "
+                         "study) or the highest-TIC ones")
     an.add_argument("--max-ms2", type=int, default=20000, help="MS2 spectra read for the detectors")
     an.add_argument("--no-search", action="store_true", help="skip the mini-search")
     an.add_argument("--organism-source", choices=("data", "prose", "metadata"), default="data",
