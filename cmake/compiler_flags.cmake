@@ -106,7 +106,9 @@ function(openms_add_compiler_flags target_name)
   # AVX's 256-bit reductions change Eigen's floating-point evaluation order
   # vs the 128-bit paths used by GCC/Clang, causing cross-platform numeric
   # divergence in sensitive algorithms (e.g. normalizedCrossCorrelation).
-  if(NOT MSVC AND ${CMAKE_SYSTEM_PROCESSOR} MATCHES "${x64_CPU}")
+  # clang-cl is clang: without -mssse3 it has no __SSSE3__, SIMDe falls back to its scalar
+  # emulation of pshufb & co. (Base64, StringManager), and clang-cl binaries crashed there.
+  if((NOT MSVC OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang") AND ${CMAKE_SYSTEM_PROCESSOR} MATCHES "${x64_CPU}")
     target_compile_options(${target_name} PUBLIC -mssse3)
   endif()
 
