@@ -240,6 +240,34 @@ def with_constant_mobility(src, dst, k0=1.0):
     return dst
 
 
+# Bruker Frames.MsMsType: 0 MS1, 8 ddaPASEF MS/MS, 9 diaPASEF MS/MS, 10 prm-PASEF MS/MS
+TIMS_MODES = {8: "ddaPASEF", 9: "diaPASEF", 10: "prm-PASEF"}
+
+
+def tims_acquisition(d):
+    """Acquisition mode of a Bruker timsTOF .d from analysis.tdf: 'ddaPASEF', 'diaPASEF', 'prm-PASEF', 'MS1 only',
+    or None when the file is unreadable or mixes MS/MS types. The DIA window tables exist (empty) in ddaPASEF files
+    too, so the frame types decide."""
+    import sqlite3
+    tdf = os.path.join(d, "analysis.tdf")
+    if not os.path.exists(tdf):
+        return None
+    try:
+        db = sqlite3.connect(f"file:{tdf}?mode=ro", uri=True)
+        types = {t for (t,) in db.execute("SELECT DISTINCT MsMsType FROM Frames")} - {0}
+    except sqlite3.Error:
+        return None
+    if not types:
+        return "MS1 only"
+    return TIMS_MODES.get(types.pop()) if len(types) == 1 else None
+
+
+def fileconverter(exe, inp, out_mzml, threads=0, log=print):
+    """Bruker ddaPASEF .d -> mzML with OpenMS FileConverter (built-in timsTOF reader: one MS2 per precursor)."""
+    _run([exe, "-in", inp, "-out", out_mzml] + (["-threads", threads] if threads else []), log, timeout=6 * 3600)
+    return out_mzml
+
+
 def diaspextract(exe, inp, out_mzml, threads=0, extra=(), log=print):
     """diaPASEF .d (or DIA mzML) -> pseudo-MS/MS mzML."""
     cmd = [exe, "-in", inp, "-out", out_mzml] + (["-threads", threads] if threads else []) + list(extra)

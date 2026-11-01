@@ -178,6 +178,27 @@ def test_organism_data_chooses_among_named_species():
     assert reconcile(e)["organism"].value == "Escherichia coli"
 
 
+def test_tims_acquisition(tmp_path):
+    import sqlite3
+    from prose_auto import external as ext
+
+    def tdf(name, types):
+        d = tmp_path / f"{name}.d"
+        d.mkdir()
+        db = sqlite3.connect(d / "analysis.tdf")
+        db.execute("CREATE TABLE Frames (Id INTEGER PRIMARY KEY, MsMsType INTEGER)")
+        db.execute("CREATE TABLE DiaFrameMsMsWindows (WindowGroup, ScanNumBegin, ScanNumEnd, IsolationMz, IsolationWidth)")
+        db.executemany("INSERT INTO Frames (MsMsType) VALUES (?)", [(t,) for t in types])
+        db.commit()
+        return str(d)
+    # an empty DIA window table, as in every ddaPASEF file, must not make it DIA
+    assert ext.tims_acquisition(tdf("dda", [0, 8, 8, 0, 8])) == "ddaPASEF"
+    assert ext.tims_acquisition(tdf("dia", [0, 9, 9])) == "diaPASEF"
+    assert ext.tims_acquisition(tdf("ms1", [0, 0])) == "MS1 only"
+    assert ext.tims_acquisition(tdf("mixed", [0, 8, 9])) is None
+    assert ext.tims_acquisition(str(tmp_path)) is None
+
+
 def test_schema_rules_and_decode():
     from prose_auto import schema as S
     hard = S.check({"label": "TMT6plex", "ms2_analyzer": "IT", "fragmentation": "CID", "acquisition": "DDA"})

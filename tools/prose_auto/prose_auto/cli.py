@@ -126,22 +126,39 @@ def analyze(a, log=print):
         import shutil
         a.diaspextract = (os.environ.get("PROSE_AUTO_DIASPEXTRACT") or shutil.which("DIAspeXtract")
                           or shutil.which("diaspextract"))
+    if not getattr(a, "fileconverter", None):
+        import shutil
+        a.fileconverter = os.environ.get("PROSE_AUTO_FILECONVERTER") or shutil.which("FileConverter")
     ev = []
     os.makedirs(a.out, exist_ok=True)
     base = os.path.join(a.out, os.path.splitext(os.path.basename(a.mzml.rstrip("/")))[0])
     spectra_file = a.mzml          # the MS2 spectra the detectors and searches see
     if a.mzml.rstrip("/").lower().endswith(".d"):
-        # Bruker diaPASEF: pseudo-MS/MS spectra first (pyopenms cannot read .d)
-        if not a.diaspextract:
-            raise SystemExit("a Bruker .d input needs --diaspextract")
-        log(f"[0/7] DIAspeXtract: {a.mzml} -> pseudo-MS/MS spectra")
-        try:
-            spectra_file = ext.diaspextract(a.diaspextract, a.mzml, base + ".pseudo.mzML", a.threads, log=log)
-        except RuntimeError as e:
-            raise SystemExit(f"DIAspeXtract cannot read {a.mzml} (only diaPASEF .d is supported; "
-                             f"DDA-PASEF needs a conversion to mzML first): {str(e).strip()[-300:]}")
-        ev.append(Evidence("acquisition", "DIA (diaPASEF)", 0.9, "metadata", "Bruker .d input",
-                           "a Bruker .d run converted to pseudo-spectra by DIAspeXtract"))
+        # Bruker timsTOF (pyopenms cannot read .d): only DIA goes through DIAspeXtract; ddaPASEF is converted to
+        # mzML by OpenMS FileConverter (one MS2 per precursor)
+        mode = ext.tims_acquisition(a.mzml)
+        if mode == "diaPASEF":
+            if not a.diaspextract:
+                raise SystemExit("a diaPASEF .d input needs --diaspextract")
+            log(f"[0/7] diaPASEF: DIAspeXtract {a.mzml} -> pseudo-MS/MS spectra")
+            try:
+                spectra_file = ext.diaspextract(a.diaspextract, a.mzml, base + ".pseudo.mzML", a.threads, log=log)
+            except RuntimeError as e:
+                raise SystemExit(f"DIAspeXtract cannot read {a.mzml}: {str(e).strip()[-300:]}")
+            acq_ev = ("DIA (diaPASEF)", "analysis.tdf: diaPASEF frames; pseudo-spectra by DIAspeXtract")
+        elif mode == "ddaPASEF":
+            if not a.fileconverter:
+                raise SystemExit("a ddaPASEF .d input needs --fileconverter (OpenMS FileConverter with timsTOF support)")
+            log(f"[0/7] ddaPASEF: FileConverter {a.mzml} -> mzML")
+            try:
+                spectra_file = ext.fileconverter(a.fileconverter, a.mzml, base + ".mzML", a.threads, log=log)
+            except RuntimeError as e:
+                raise SystemExit(f"FileConverter cannot read {a.mzml}: {str(e).strip()[-300:]}")
+            acq_ev = ("DDA (ddaPASEF)", "analysis.tdf: ddaPASEF frames; converted by OpenMS FileConverter")
+        else:
+            raise SystemExit(f"{a.mzml}: timsTOF acquisition {mode or 'unknown or mixed'} is not supported "
+                             "(ddaPASEF and diaPASEF are)")
+        ev.append(Evidence("acquisition", acq_ev[0], 0.95, "metadata", "Bruker .d input", acq_ev[1]))
         ev.append(Evidence("ion_mobility", True, 0.95, "metadata", "Bruker .d input", "timsTOF data"))
     log(f"[1/7] reading {spectra_file}")
     run = load_mzml(spectra_file, max_ms2=a.max_ms2)
@@ -639,6 +656,8 @@ def main(argv=None):
     an.add_argument("--fastag-subsample", type=float, default=0.0, help="fraction of spectra FASTag tags (0 = all)")
     an.add_argument("--diaspextract", help="DIAspeXtract executable: pseudo-MS/MS spectra for DIA / .d input "
                     "(default: PROSE_AUTO_DIASPEXTRACT, else DIAspeXtract on PATH)")
+    an.add_argument("--fileconverter", help="OpenMS FileConverter with timsTOF support, for ddaPASEF .d input "
+                    "(default: PROSE_AUTO_FILECONVERTER, else FileConverter on PATH)")
     an.add_argument("--threads", type=int, default=0, help="threads for external tools (0 = their default)")
     an.add_argument("--spectra", type=int, default=2000, help="MS2 spectra for the mini-search")
     an.add_argument("--max-ms2", type=int, default=20000, help="MS2 spectra read for the detectors")
