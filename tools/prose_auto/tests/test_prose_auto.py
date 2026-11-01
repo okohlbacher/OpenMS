@@ -163,10 +163,10 @@ def test_organism_data_chooses_among_named_species():
                 Evidence("organism", "Homo sapiens (human)", 0.6, "repository", "pride", ""),
                 Evidence("organism", "Homo sapiens", 0.66, "data", "FASTag species", ""),
                 Evidence("organism", "Homo_sapiens", 0.47, "search", "panel mini-search", "", stats)]
-    # the record's first pick (E. coli) was never searched; the mini-search and FASTag both find human, also named
+    # the record's first pick (E. coli) is not on the data's shortlist; the mini-search and FASTag find human, also named
     d = reconcile(ev({"Homo_sapiens": 1129, "Chlorocebus_sabaeus": 923}))["organism"]
-    assert d.value == "Homo_sapiens" and d.status == "review" and "did not test" in d.conflicts[-1]
-    # a pick the mini-search did test keeps its place
+    assert d.value == "Homo_sapiens" and d.status == "review" and "not among the species the data shortlist" in d.conflicts[-1]
+    # a pick on the shortlist keeps its place
     assert reconcile(ev({"Homo_sapiens": 1129, "Escherichia_coli": 300}))["organism"].value == "Escherichia coli"
     # FASTag disagreeing, or the data species not named by the metadata: no change
     e = ev({"Homo_sapiens": 1129})

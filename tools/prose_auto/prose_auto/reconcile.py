@@ -72,9 +72,10 @@ def _stated_untested(d, evs):
 
 def _untested_pick(d, evs):
     """Records and texts often name several species (host and sample, spike-in standards, the organism of an antibody).
-    When the metadata pick was never searched, the panel mini-search found another of the named species best, and
-    FASTag calls that species too, the data choose among the named species. A pick the mini-search did test keeps
-    its place: close relatives (mouse/human) can lose a head-to-head on homology alone."""
+    The decisive mini-search tests the FASTag shortlist (the data's top species). When the metadata pick is not on
+    that shortlist, the mini-search finds another of the named species best, and FASTag calls that species too, the
+    data choose among the named species. A pick on the shortlist keeps its place: close relatives (mouse/human) can
+    lose a head-to-head on homology alone."""
     if d.source not in ("user", "repository", "text", "llm"):
         return d
     search = [e for e in evs if e.source == "search" and e.method == "panel mini-search" and e.stats]
@@ -87,8 +88,8 @@ def _untested_pick(d, evs):
     if (not best or best == _organism_key(d.value) or _organism_key(d.value) in psms or best not in named
             or not fastag or _organism_key(fastag[0].value) != best):
         return d
-    note = (f"{d.source} picks {d.value}, which the mini-search did not test; of the species the records and texts "
-            f"name, the mini-search finds {search[0].value} best ({psms[best]} PSMs) and FASTag agrees")
+    note = (f"{d.source} picks {d.value}, which is not among the species the data shortlist; of the species the "
+            f"records and texts name, the mini-search finds {search[0].value} best ({psms[best]} PSMs) and FASTag agrees")
     conf, _ = _combine(search[0], evs)
     return Decision("organism", search[0].value, round(conf * 0.85, 3), "search", evs, d.conflicts + [note], "review")
 
