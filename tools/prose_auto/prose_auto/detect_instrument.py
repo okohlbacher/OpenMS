@@ -135,6 +135,11 @@ def detect_acquisition(run) -> list:
         # older ion traps (LTQ, LTQ FT) isolate DDA precursors with 3-4 Th windows
         mode, conf, why = "DDA", 0.7, \
             f"wide windows (median {med_w:.1f} Th) on {n_unique} mostly distinct precursors"
+    elif med_w >= 4.0 and rep_med < 5:
+        # Q Exactive / Velos DDA with 4-Th isolation: 20-50 % distinct centres, each hit about twice (dynamic exclusion);
+        # DIA centres repeat once per cycle, hundreds of times (88-800 on the held-out and validation DIA runs)
+        mode, conf, why = "DDA", 0.85, \
+            f"wide windows (median {med_w:.1f} Th) on {n_unique} precursors, each hit only {rep_med:.0f}x"
     elif med_w >= 4.0:
         mode, conf, why = "DIA", 0.75, f"wide windows (median {med_w:.1f} Th), but many distinct centres"
     elif uniq_ratio < 0.05 and rep_med >= 5 and charged < 0.1 and n_unique * med_w >= 100:

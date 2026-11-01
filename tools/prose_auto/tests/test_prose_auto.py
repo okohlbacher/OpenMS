@@ -61,6 +61,18 @@ def test_narrow_window_dia_is_not_prm():
     assert first(inst.detect_acquisition(run(0, 20)), "acquisition").value == "PRM"      # 20 targets, 40 Th
 
 
+def test_wide_window_dda_is_not_dia():
+    from types import SimpleNamespace as S
+    # 4-Th DDA (PXD003531): 4000 precursors in 10000 MS2, most isolated twice; DIA: 40 centres, 400 cycles
+    dda = [S(iso_width=4.0, iso_center=400 + 0.37 * (i // 2), iso_lower=2.0, iso_upper=2.0, charge=2, ion_mobility=None)
+           for i in range(6000)] + [S(iso_width=4.0, iso_center=1600 + 0.3 * (i // 4), iso_lower=2.0, iso_upper=2.0,
+                                      charge=2, ion_mobility=None) for i in range(4000)]
+    dia = [S(iso_width=16.0, iso_center=400 + 16 * (i % 40) + 8, iso_lower=8.0, iso_upper=8.0, charge=0, ion_mobility=None)
+           for i in range(16000)]
+    assert first(inst.detect_acquisition(S(ms2=dda)), "acquisition").value == "DDA"
+    assert first(inst.detect_acquisition(S(ms2=dia)), "acquisition").value == "DIA"
+
+
 def test_itraq_reporters():
     run = load_mzml(os.path.join(TOPP, "IsobaricAnalyzer_input_1.mzML"))
     lab = [e for e in chem.detect_labels(run, True) if e.method == "reporter ions"][0]
