@@ -220,7 +220,15 @@ def _co_enrichment(d, evs):
         if (e.source == "data" and e.confidence >= 0.8 and e.value not in ("none", "unknown")
                 and fam(e.value) not in {fam(v) for v in vals}):
             vals.append(e.value)
+    if len(vals) == 1:
+        return d
     d.value = ENRICH_SEP.join(vals)
+    # evidence for a joined part agrees with the decision: drop it from the conflicts and undo their penalty
+    keep = [c for c in d.conflicts if not any(f" says {v}:" in c for v in vals)]
+    d.confidence = round(min(0.99, d.confidence / 0.85 ** (len(d.conflicts) - len(keep))), 3)
+    d.conflicts = keep
+    if not keep and d.confidence >= 0.7:
+        d.status = "auto"
     return d
 
 

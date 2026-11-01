@@ -199,6 +199,7 @@ def test_co_enrichment():
           Evidence("enrichment", "Acetyl (K)", 0.6, "data", "diagnostic ions")]
     d = reconcile(ev)
     assert d["enrichment"].value == "Glyco (HexNAc oxonium) + Phospho (STY)"
+    assert not any("Phospho" in c for c in d["enrichment"].conflicts) and d["enrichment"].confidence >= 0.7
     P = pp.to_prose(d)["params"]
     assert "Phospho (S)" in P["Search:modifications:variable"] and "Acetyl (K)" not in P["Search:modifications:variable"]
     assert reconcile(ev[:1])["enrichment"].value == "Phospho (STY)"
