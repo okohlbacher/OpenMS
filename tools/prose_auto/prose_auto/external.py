@@ -43,7 +43,9 @@ def _run(cmd, log, timeout=6 * 3600):
     log("  $ " + " ".join(str(c) for c in cmd))
     r = subprocess.run([str(c) for c in cmd], capture_output=True, text=True, timeout=timeout)
     if r.returncode != 0:
-        raise RuntimeError((r.stderr or r.stdout)[-1500:])
+        e = RuntimeError((r.stderr or r.stdout)[-1500:])
+        e.returncode = r.returncode
+        raise e
     return r
 
 
@@ -270,8 +272,12 @@ def fileconverter(exe, inp, out_mzml, threads=0, log=print):
     return out_mzml
 
 
+DIASPEXTRACT_DDA_INPUT = 11   # DIAspeXtract exit code: the input is DDA (ddaPASEF), not DIA
+
+
 def diaspextract(exe, inp, out_mzml, threads=0, extra=(), log=print):
-    """diaPASEF .d (or DIA mzML) -> pseudo-MS/MS mzML."""
+    """diaPASEF .d (or DIA mzML) -> pseudo-MS/MS mzML. A RuntimeError carries DIAspeXtract's exit code as
+    .returncode (DIASPEXTRACT_DDA_INPUT: the input is DDA)."""
     cmd = [exe, "-in", inp, "-out", out_mzml] + (["-threads", threads] if threads else []) + list(extra)
     _run(cmd, log, timeout=12 * 3600)
     return out_mzml

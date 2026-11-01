@@ -369,3 +369,29 @@ def test_organism_from_metadata_searches_only_the_given_db(tmp_path):
     assert org["value"] == "18Protein_SoCe_Tr_detergents_trace"
     assert all(e["source"] != "search" for e in org["evidence"])     # no data-based organism call
     assert rep["decisions"]["cys_alkylation"]["value"] == "Carbamidomethyl (C)"   # hypotheses ran on the given DB
+
+
+def test_diaspextract_exit_11_falls_back_to_dda(tmp_path):
+    """frames that look diaPASEF, a DIAspeXtract that answers 'this is DDA' (exit 11): FileConverter takes over"""
+    import sqlite3, stat
+    from prose_auto import cli
+    d = tmp_path / "run.d"
+    d.mkdir()
+    db = sqlite3.connect(d / "analysis.tdf")
+    db.execute("CREATE TABLE Frames (Id INTEGER PRIMARY KEY, MsMsType INTEGER)")
+    db.executemany("INSERT INTO Frames (MsMsType) VALUES (?)", [(0,), (9,)])
+    db.commit()
+    def tool(name, body):
+        f = tmp_path / name
+        f.write_text("#!/bin/sh\n" + body + "\n")
+        f.chmod(f.stat().st_mode | stat.S_IEXEC)
+        return str(f)
+    dia = tool("diaspextract", "echo 'input is ddaPASEF' >&2; exit 11")
+    fc = tool("FileConverter", f'cp "{os.path.join(BSA, "BSA1.mzML")}" "$4"')
+    mix = os.path.join(ROOT, "share", "OpenMS", "examples", "TOPPAS", "data", "BSA_Identification",
+                       "18Protein_SoCe_Tr_detergents_trace.fasta")
+    out = tmp_path / "out"
+    cli.main(["analyze", str(d), "--diaspextract", dia, "--fileconverter", fc, "--fasta", mix,
+              "--organism-source", "metadata", "--spectra", "600", "-o", str(out)])
+    rep = json.load(open(out / "run.auto.json"))
+    assert rep["decisions"]["acquisition"]["value"] == "DDA (ddaPASEF)"

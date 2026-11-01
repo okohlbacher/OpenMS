@@ -143,10 +143,13 @@ def analyze(a, log=print):
             log(f"[0/7] diaPASEF: DIAspeXtract {a.mzml} -> pseudo-MS/MS spectra")
             try:
                 spectra_file = ext.diaspextract(a.diaspextract, a.mzml, base + ".pseudo.mzML", a.threads, log=log)
+                acq_ev = ("DIA (diaPASEF)", "analysis.tdf: diaPASEF frames; pseudo-spectra by DIAspeXtract")
             except RuntimeError as e:
-                raise SystemExit(f"DIAspeXtract cannot read {a.mzml}: {str(e).strip()[-300:]}")
-            acq_ev = ("DIA (diaPASEF)", "analysis.tdf: diaPASEF frames; pseudo-spectra by DIAspeXtract")
-        elif mode == "ddaPASEF":
+                if getattr(e, "returncode", None) != ext.DIASPEXTRACT_DDA_INPUT:
+                    raise SystemExit(f"DIAspeXtract cannot read {a.mzml}: {str(e).strip()[-300:]}")
+                log("  DIAspeXtract: the input is ddaPASEF (exit 11); converting it as DDA")
+                mode = "ddaPASEF"
+        if mode == "ddaPASEF":
             if not a.fileconverter:
                 raise SystemExit("a ddaPASEF .d input needs --fileconverter (OpenMS FileConverter with timsTOF support)")
             log(f"[0/7] ddaPASEF: FileConverter {a.mzml} -> mzML")
@@ -155,7 +158,7 @@ def analyze(a, log=print):
             except RuntimeError as e:
                 raise SystemExit(f"FileConverter cannot read {a.mzml}: {str(e).strip()[-300:]}")
             acq_ev = ("DDA (ddaPASEF)", "analysis.tdf: ddaPASEF frames; converted by OpenMS FileConverter")
-        else:
+        elif mode != "diaPASEF":
             raise SystemExit(f"{a.mzml}: timsTOF acquisition {mode or 'unknown or mixed'} is not supported "
                              "(ddaPASEF and diaPASEF are)")
         ev.append(Evidence("acquisition", acq_ev[0], 0.95, "metadata", "Bruker .d input", acq_ev[1]))
@@ -177,7 +180,9 @@ def analyze(a, log=print):
             spectra_file = ext.diaspextract(a.diaspextract, a.mzml, base + ".pseudo.mzML", a.threads, log=log)
             run = load_mzml(spectra_file, max_ms2=a.max_ms2)
         except RuntimeError as e:
-            log(f"  DIAspeXtract failed, continuing without pseudo-spectra: {str(e).strip()[-300:]}")
+            log("  DIAspeXtract: the input is DDA (exit 11), continuing on the spectra as they are"
+                if getattr(e, "returncode", None) == ext.DIASPEXTRACT_DDA_INPUT else
+                f"  DIAspeXtract failed, continuing without pseudo-spectra: {str(e).strip()[-300:]}")
     elif str(acq).startswith("DIA") and a.diaspextract and spectra_file == a.mzml:
         # Orbitrap DIA: DIAspeXtract refuses data without ion mobility, so give it a constant 1/K0 and switch its
         # mobility steps off; it then traces precursors and fragments by retention time alone (PXD026600: 44k
@@ -190,7 +195,9 @@ def analyze(a, log=print):
             os.remove(im_copy)
             run = load_mzml(spectra_file, max_ms2=a.max_ms2)
         except RuntimeError as e:
-            log(f"  DIAspeXtract failed, continuing without pseudo-spectra: {str(e).strip()[-300:]}")
+            log("  DIAspeXtract: the input is DDA (exit 11), continuing on the spectra as they are"
+                if getattr(e, "returncode", None) == ext.DIASPEXTRACT_DDA_INPUT else
+                f"  DIAspeXtract failed, continuing without pseudo-spectra: {str(e).strip()[-300:]}")
     pseudo = spectra_file != a.mzml
     if pseudo:  # pseudo-spectra carry DIAspeXtract's charge calls: measure the range on them
         cr = inst.charge_range(run.ms2)
