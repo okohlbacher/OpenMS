@@ -165,7 +165,9 @@ def fastag_termini(fastag, mzml, frag_tol=20.0, frag_unit="ppm", subsample=0.25,
     hk, hr = share["K+8"] / max(share["K+8"] + share["K"], 1e-9), share["R+10"] / max(share["R+10"] + share["R"], 1e-9)
     stats.update({"heavy_K8": round(hk, 3), "heavy_R10": round(hr, 3)})
     if hk >= 0.2 and hr >= 0.2:
-        ev.append(Evidence("label", "SILAC (Lys8/Arg10)", 0.5, "data", "FASTag termini",
+        # both heavy shares >= 30% occurred only in SILAC runs (5 of 164, three of them annotated label free in the
+        # SDRF but SILAC by their text or file name); 20-30% stays a hint
+        ev.append(Evidence("label", "SILAC (Lys8/Arg10)", 0.7 if min(hk, hr) >= 0.3 else 0.5, "data", "FASTag termini",
                            f"heavy C-terminal Lys8 {hk:.0%} and Arg10 {hr:.0%} of the tryptic C-termini", stats))
     return ev, stats
 

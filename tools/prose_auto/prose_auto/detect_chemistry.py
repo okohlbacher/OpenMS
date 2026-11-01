@@ -226,10 +226,15 @@ def detect_silac(run) -> list:
     best = max(enr, key=enr.get)
     stats = {"pair_counts": counts, "control_mean": bg, "enrichment": enr, "distinct_light": distinct}
     # a real SILAC sample: the delta beats its own isotope-shifted neighbours, on many distinct peptides
-    if enr[best] >= 3 and counts[best] >= 50 and distinct[best] >= 30:
+    # 30-200 distinct precursors at 3x: label-free runs too (PXD024405, 95 at 3.1x); 3.0-3.5x on >= 1000 precursors
+    # occurs in label-free runs as well (PXD077447 3.4x), so only >= 3.5x on >= 1000 passes the label gate (0.6)
+    if enr[best] >= 3 and counts[best] >= 50 and distinct[best] >= 200:
         name = {"Lys8": "SILAC (Lys8/Arg10)", "Arg10": "SILAC (Lys8/Arg10)",
                 "Arg6": "SILAC (Arg6)", "Lys4/dimethyl-d4": "SILAC Lys4 or dimethyl (d4)"}[best]
-        return [Evidence("label", name, min(0.9, 0.5 + enr[best] / 40), "data", "MS1 heavy/light pairs",
+        conf = min(0.9, 0.5 + enr[best] / 40)
+        if enr[best] >= 3.5 and distinct[best] >= 1000:
+            conf = max(conf, 0.65)
+        return [Evidence("label", name, round(conf, 3), "data", "MS1 heavy/light pairs",
                          f"MS1 peak pairs {SILAC_DELTAS[best]:.4f} Da apart on {distinct[best]} precursors are "
                          f"{enr[best]}x more frequent than the same spacing shifted by whole 13C steps", stats)]
     return [Evidence("label", "no SILAC", 0.6, "data", "MS1 heavy/light pairs",
@@ -270,7 +275,9 @@ def detect_enrichment(run, ms2_high_res=True, dia=False) -> list:
     if py and py["fraction"] >= 0.1 and py["enrichment"] >= 5:
         calls.append(("Phospho (Y)", 0.6, f"pY immonium ion in {py['fraction']:.0%} of spectra"))
     g = diag.get("HexNAc_204") if not dia else None
-    if g and g["fraction"] >= 0.15 and g["enrichment"] >= 5:
+    # unenriched high-res DDA runs carry 204.087 in up to 29% of their spectra (serum PXD062749; plant, apoptosis and
+    # iTRAQ runs at 18-23%), always far above background: the fraction decides, 35% is above all of them
+    if g and g["fraction"] >= 0.35 and g["enrichment"] >= 5:
         calls.append(("Glyco (HexNAc oxonium)", min(0.9, 0.5 + g["fraction"]),
                       f"HexNAc oxonium 204.087 in {g['fraction']:.0%} of spectra ({g['enrichment']}x)"))
     a = diag.get("AcK_126") if ms2_high_res else None

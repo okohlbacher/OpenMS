@@ -137,6 +137,10 @@ def detect_acquisition(run) -> list:
             f"wide windows (median {med_w:.1f} Th) on {n_unique} mostly distinct precursors"
     elif med_w >= 4.0:
         mode, conf, why = "DIA", 0.75, f"wide windows (median {med_w:.1f} Th), but many distinct centres"
+    elif uniq_ratio < 0.05 and rep_med >= 5 and charged < 0.1 and n_unique * med_w >= 100:
+        # narrow-window DIA (Astral, 2-3 Th): uncharged windows that tile a wide m/z range; PRM targets carry a charge
+        mode, conf, why = "DIA", 0.9, (f"narrow uncharged windows (median {med_w:.1f} Th) on {n_unique} repeating "
+                                       f"centres tiling about {n_unique * med_w:.0f} Th")
     elif uniq_ratio < 0.05 and rep_med >= 5:
         mode, conf, why = "PRM", 0.8, f"narrow windows on {n_unique} repeating targets"
     else:

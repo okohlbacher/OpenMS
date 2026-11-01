@@ -50,6 +50,17 @@ def test_dia_windows():
     assert w["n_windows"] >= 4 and w["min_mz"] == 400.0
 
 
+def test_narrow_window_dia_is_not_prm():
+    from types import SimpleNamespace as S
+    def run(charge, n_centres):
+        ms2 = [S(iso_width=2.0, iso_center=400 + 2 * (i % n_centres) + 1, iso_lower=1.0, iso_upper=1.0, charge=charge,
+                 ion_mobility=None) for i in range(60 * n_centres)]
+        return S(ms2=ms2)
+    assert first(inst.detect_acquisition(run(0, 200)), "acquisition").value == "DIA"     # Astral 2 Th DIA, 400 Th
+    assert first(inst.detect_acquisition(run(2, 200)), "acquisition").value == "PRM"     # charged targets
+    assert first(inst.detect_acquisition(run(0, 20)), "acquisition").value == "PRM"      # 20 targets, 40 Th
+
+
 def test_itraq_reporters():
     run = load_mzml(os.path.join(TOPP, "IsobaricAnalyzer_input_1.mzML"))
     lab = [e for e in chem.detect_labels(run, True) if e.method == "reporter ions"][0]
