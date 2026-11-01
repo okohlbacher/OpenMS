@@ -154,7 +154,12 @@ def analyze(a, log=print):
                 raise SystemExit("a ddaPASEF .d input needs --fileconverter (OpenMS FileConverter with timsTOF support)")
             log(f"[0/7] ddaPASEF: FileConverter {a.mzml} -> mzML")
             try:
-                spectra_file = ext.fileconverter(a.fileconverter, a.mzml, base + ".mzML", a.threads, log=log)
+                # the converted mzML (6-23 GB with profile MS1) is only an input: keep it out of the results
+                import atexit, shutil, tempfile
+                tmp = tempfile.mkdtemp(prefix="prose_auto_ddapasef_")
+                atexit.register(shutil.rmtree, tmp, True)
+                spectra_file = ext.fileconverter(a.fileconverter, a.mzml, os.path.join(tmp, os.path.basename(base) + ".mzML"),
+                                                 a.threads, log=log)
             except RuntimeError as e:
                 raise SystemExit(f"FileConverter cannot read {a.mzml}: {str(e).strip()[-300:]}")
             acq_ev = ("DDA (ddaPASEF)", "analysis.tdf: ddaPASEF frames; converted by OpenMS FileConverter")
