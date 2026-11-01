@@ -245,7 +245,8 @@ class Rule:
 
 
 def _ppm(t):
-    """Tolerance dict -> ppm at m/z 1000 (rough, for rule checks only)."""
+    """Tolerance dict or Jev bucket ('20 ppm', '>=0.5 Da') -> ppm at m/z 1000 (rough, for rule checks only)."""
+    t = TOL_VALUE.get(t) if isinstance(t, str) else t
     if not isinstance(t, dict) or "value" not in t:
         return None
     return float(t["value"]) * (1.0 if t.get("unit", "ppm") == "ppm" else 1000.0)
@@ -386,13 +387,13 @@ def decode(answers: dict, top=3, min_p=0.05):
 def study_state(texts: dict, limit=60_000) -> dict:
     """One structured state from all texts of a study, labelled by source, so a
     single request reads them together (Jev 'state', or the LLM prompt)."""
-    order = ["user's description", "measured from the spectra", "SDRF", "PRIDE title", "PRIDE description", "PRIDE sample protocol",
-             "PRIDE data protocol", "methods section", "paper methods"]
+    order = ["user's description", "run", "measured from the spectra", "SDRF", "PRIDE record", "PRIDE title",
+             "PRIDE description", "PRIDE sample protocol", "PRIDE data protocol", "methods section", "paper methods"]
     state, used = {}, 0
     for k in order + [k for k in texts if k not in order]:
         t = (texts.get(k) or "").strip()
-        if t and k not in state:
-            t = t[: max(0, limit - used)]
+        t = t[: max(0, limit - used)]
+        if t and k not in state:   # no empty sources: the readers must not be told of a text they did not get
             state[k] = t
             used += len(t)
     return state

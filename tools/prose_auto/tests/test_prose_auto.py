@@ -3,6 +3,8 @@
 import json
 import os
 
+import numpy as np
+
 import pytest
 
 from prose_auto import detect_chemistry as chem
@@ -113,6 +115,32 @@ def _write(path, recs):
             fh.write(f">{h}\n{s}\n")
 
 
+def test_digest_cache_and_variants(tmp_path):
+    fasta = tmp_path / "p.fasta"
+    _write(fasta, [("P1", "MKCLLAGGTKPEPTIDECKRAAACCDEFGHIKLMNPQRSTVWYK"), ("REV_P2", "AAAAAAAAK"), ("P3", "XXBCDEFGHIKK")])
+    cache = tmp_path / "cache"
+    m = ts.Mods(cys=57.021464, k=229.162932, nterm=229.162932)
+    idx = ts.index_for("p", str(fasta), m, cache_dir=str(cache))
+    assert len(list(cache.iterdir())) == 1 and len(ts._LOADED) >= 1
+    for i in range(len(idx)):
+        seq = idx.seq(i)
+        assert set(seq) <= set(ts.AA)                           # X/B peptides are dropped
+        ref = sum(ts.AA[a] + (m.cys if a == "C" else m.k if a == "K" else 0) for a in seq) + ts.H2O + m.nterm
+        assert abs(idx.masses[i] - ref) < 1e-9
+    assert all(np.diff(idx.masses) >= 0)
+    ts._LOADED.clear()
+    again = ts.index_for("p", str(fasta), ts.Mods(cys=0.0), cache_dir=str(cache))   # from disk, another Cys
+    assert len(again) == len(idx) and len(list(cache.iterdir())) == 1
+    f = ts._fragments("PEPTIDEK", ts.Mods(cys=0.0))
+    assert f.size == 14 and abs(f[0] - (ts.AA["P"] + ts.PROTON)) < 1e-9
+    # binomial tail against the direct sum
+    from math import comb, log10
+    for k, n, p in ((3, 14, 0.1), (0, 10, 0.2), (14, 14, 0.5)):
+        ref = 0.0 if k <= 0 else -log10(max(sum(comb(n, i) * p ** i * (1 - p) ** (n - i) for i in range(k, n + 1)), 1e-300))
+        got = ts._binom_scores(np.array([k]), np.array([n]), np.array([p]))[0]
+        assert abs(got - ref) < 1e-9
+
+
 def test_mini_search_alkylation(bsa, tmp_path):
     # BSA plus an unrelated proteome-like decoy organism (shuffled BSA-free mix)
     mix = os.path.join(ROOT, "share", "OpenMS", "examples", "TOPPAS", "data", "BSA_Identification",
@@ -128,6 +156,54 @@ def test_mini_search_alkylation(bsa, tmp_path):
     assert alk.value == "Carbamidomethyl (C)" and alk.confidence > 0.8
     acc = h.accuracy()
     assert abs(first(acc, "precursor_offset").value["value"]) < 3
+
+
+def test_reader_texts_and_independence():
+    from prose_auto import repository as repo
+    sdrf = ("source name\tcharacteristics[organism]\tcomment[data file]\tcomment[label]\n"
+            "s1\tHomo sapiens\ta.raw\tSILAC light\ns1\tHomo sapiens\ta.raw\tSILAC heavy\ns2\tHomo sapiens\tb.raw\tSILAC light\n")
+    d = repo.sdrf_digest(sdrf, "/x/a.mzML")
+    assert d.startswith("Rows of this data file (a.mzML)") and d.count("comment[label]=") == 2
+    assert "characteristics[organism]: Homo sapiens (3)" in d and "comment[label]: SILAC light (2); SILAC heavy (1)" in d
+    rec = repo.record_text({"organisms": [{"name": "Homo sapiens"}], "keywords": ["SILAC", "phospho"],
+                            "instruments": [{"name": "Q Exactive"}], "title": "ignored"})
+    assert rec == "organisms: Homo sapiens\ninstruments: Q Exactive\nkeywords: SILAC; phospho"
+    # a reader that saw the measured data does not raise the confidence of the measurement it may repeat
+    data = Evidence("label", "SILAC (Lys8/Arg10)", 0.7, "data", "MS1 heavy/light pairs")
+    blind = reconcile([data, Evidence("label", "SILAC (Lys8/Arg10)", 0.5, "llm", "jev:jev-latest")])["label"]
+    seen = reconcile([data, Evidence("label", "SILAC (Lys8/Arg10)", 0.5, "llm", "jev:jev-latest+data")])["label"]
+    assert seen.confidence == 0.7 and blind.confidence > 0.7
+
+
+def test_variable_mods_and_stated_windows():
+    from prose_auto import schema as S
+    d = reconcile([Evidence("variable_mods", ["Oxidation (M)", "Deamidated (N)"], 0.5, "data", "delta-mass combinations"),
+                   Evidence("variable_mods", ["Phospho (S)", "Oxidation (M)"], 0.5, "llm", "jev:x"),
+                   Evidence("variable_mods", ["Acetyl (K)"], 0.3, "repository", "pride")])["variable_mods"]
+    assert d.value == ["Oxidation (M)", "Deamidated (N)", "Phospho (S)"] and d.confidence >= 0.5
+    P = pp.to_prose(d := reconcile([
+        Evidence("precursor_tolerance", {"value": 20.0, "unit": "ppm"}, 0.6, "repository", "sdrf"),
+        Evidence("fragment_tolerance", {"value": 0.02, "unit": "Da"}, 0.6, "repository", "sdrf"),
+        Evidence("ms2_analyzer", "ORBITRAP", 0.95, "metadata", "mzML")]))["params"]
+    assert P["Search:precursor:mass_tolerance_lower"] == 20.0                  # stated window, not doubled
+    assert (P["Search:fragment:mass_tolerance"], P["Search:fragment:mass_tolerance_unit"]) == (0.02, "Da")
+    assert S._ppm("20 ppm") == 20.0 and S._ppm(">=0.5 Da") == 500.0
+    # defaults and measured errors are still widened; an ion trap by its full analyzer name gets 0.35 Da
+    P = pp.to_prose(reconcile([Evidence("precursor_tolerance", {"value": 10.0, "unit": "ppm"}, 0.9, "data", "x"),
+                               Evidence("ms2_analyzer", "PAULIONTRAP", 0.95, "metadata", "mzML"),
+                               Evidence("fragment_tolerance", {"value": 0.5, "unit": "Da"}, 0.8, "data", "x")]))["params"]
+    assert P["Search:precursor:mass_tolerance_lower"] == 20.0 and P["Search:fragment:mass_tolerance"] == 0.35
+    assert P["Search:calibration:enabled"] == "true"
+    # a stated Da window stays when the analyzer is unknown
+    P = pp.to_prose(reconcile([Evidence("fragment_tolerance", {"value": 0.02, "unit": "Da"}, 0.6, "repository", "sdrf")]))
+    assert P["params"]["Search:fragment:mass_tolerance"] == 0.02
+    # Jev having seen the data: no boost in either direction, and no extra source in the modification merge
+    cys = lambda m: Evidence("cys_alkylation", "Carbamidomethyl (C)", 0.6, *m)
+    d = reconcile([cys(("llm", "jev:x+data")), cys(("data", "Cys immonium"))])["cys_alkylation"]
+    assert d.confidence == 0.6
+    vm = reconcile([Evidence("variable_mods", ["Oxidation (M)"], 0.6, "data", "delta-mass combinations"),
+                    Evidence("variable_mods", ["Oxidation (M)", "Phospho (S)"], 0.6, "llm", "jev:x+data")])["variable_mods"]
+    assert vm.value == ["Oxidation (M)", "Phospho (S)"] and vm.confidence == 0.6
 
 
 def test_text_extract():

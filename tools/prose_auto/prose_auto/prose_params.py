@@ -65,6 +65,9 @@ def _per_residue(mods):
     return out
 
 
+ION_TRAPS = {"IT", "LIT", "PAULIONTRAP", "RADIALEJECTIONLINEARIONTRAP", "AXIALEJECTIONLINEARIONTRAP"}
+
+
 def to_prose(decisions: dict) -> dict:
     """Returns {'params': {name: value}, 'notes': [...]} with 'Search:'-prefixed
     ProSE parameter names."""
@@ -75,18 +78,25 @@ def to_prose(decisions: dict) -> dict:
     # tight. On the benchmark groups (PR build, entrapment FDP) the 2x window lost 1-4% against 20 ppm on Orbitrap
     # HCD and gained 10% on ion-trap MS2 at 0.35 Da: windows are 2x the measured error with floors of 10 ppm
     # (precursor) and 20 ppm (fragment); ion-trap fragments 0.35 Da.
-    lowres2 = v("ms2_analyzer") in ("IT", "LIT") or (ft and ft["unit"] == "Da")
+    # a window the authors searched with (record, SDRF, text, readers) is used as stated; measured errors and the
+    # instrument defaults are widened
+    stated = lambda p: p in decisions and decisions[p].source in ("user", "repository", "text", "llm")
+    ms2a = v("ms2_analyzer")
+    lowres2 = ms2a in ION_TRAPS or (ms2a is None and ft and ft["unit"] == "Da")
     if pt:
-        p = round(max(TOLERANCE_FACTOR * float(pt["value"]), PRECURSOR_FLOOR_PPM), 3) if pt["unit"] == "ppm" \
-            else float(pt["value"])
+        p = round(max(TOLERANCE_FACTOR * float(pt["value"]), PRECURSOR_FLOOR_PPM), 3) \
+            if pt["unit"] == "ppm" and not stated("precursor_tolerance") else float(pt["value"])
         P["Search:precursor:mass_tolerance_lower"] = p  # ProSE declares tolerances as double
         P["Search:precursor:mass_tolerance_upper"] = p
         P["Search:precursor:mass_tolerance_unit"] = pt["unit"]
-    if lowres2:
+    if ft and stated("fragment_tolerance"):
+        P["Search:fragment:mass_tolerance"], P["Search:fragment:mass_tolerance_unit"] = float(ft["value"]), ft["unit"]
+    elif lowres2:
         P["Search:fragment:mass_tolerance"], P["Search:fragment:mass_tolerance_unit"] = ION_TRAP_FRAGMENT_DA, "Da"
     elif ft:
         P["Search:fragment:mass_tolerance"] = round(max(TOLERANCE_FACTOR * float(ft["value"]),
-                                                       FRAGMENT_FLOOR_PPM[_analyzer_class(v)]), 3)
+                                                       FRAGMENT_FLOOR_PPM[_analyzer_class(v)]), 3) \
+            if ft["unit"] == "ppm" else float(ft["value"])
         P["Search:fragment:mass_tolerance_unit"] = ft["unit"]
     notes.append(f"search windows: {TOLERANCE_FACTOR:g}x the measured error, at least {PRECURSOR_FLOOR_PPM:g} ppm "
                  f"precursor and {FRAGMENT_FLOOR_PPM[_analyzer_class(v)]:g} ppm fragment on this analyzer "

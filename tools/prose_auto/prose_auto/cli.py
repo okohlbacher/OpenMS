@@ -11,10 +11,18 @@
 from __future__ import annotations
 
 import argparse
+import atexit
+import contextlib
+import csv
 import json
 import os
+import shutil
 import sys
+import tempfile
 import time
+import urllib.parse
+import urllib.request
+from dataclasses import dataclass, field
 
 from . import delta_combos as DC
 from . import detect_chemistry as chem
@@ -33,6 +41,15 @@ from .reconcile import reconcile
 from .spectra import load_mzml
 
 LOW_RES = {"IT", "LIT", "PAULIONTRAP", "RADIALEJECTIONLINEARIONTRAP", "AXIALEJECTIONLINEARIONTRAP"}
+MEASURED_SOURCES = ("data", "metadata", "search")
+STATED_SOURCES = ("user", "repository", "text", "llm")
+OUTSIDE_PANEL_MAX = 2   # organisms outside the panel fetched per run
+SHORTLIST_MAX = 5       # tier-2 candidates
+# isobaric label (value prefix) -> ts.LABEL_MASS key; the longer prefix first
+LABEL_MASS_KEYS = (("TMTpro", "TMTpro"), ("TMT", "TMT"), ("iTRAQ8", "iTRAQ8plex"), ("iTRAQ", "iTRAQ4plex"))
+# search evidence a new tier-2 organism winner invalidates
+TIER2_REDO = ("organism", "precursor_offset", "precursor_tolerance", "fragment_offset", "fragment_tolerance",
+              "cys_alkylation", "enzyme")
 
 
 def _arg_text(v):
@@ -50,44 +67,69 @@ def _first(evs, param):
     return max(c, key=lambda e: e.confidence) if c else None
 
 
+def _value(evs, param, default):
+    e = _first(evs, param)
+    return e.value if e else default
+
+
+def _unspecific(ev):
+    return any(e.parameter == "enzyme" and e.value == "unspecific cleavage" and e.confidence >= 0.6 for e in ev)
+
+
 def _genus(v):
     return str(v).replace("_", " ").split(" ")[0].lower()
 
 
-def _outside_panel(ev, panel, max_n=2):
+def _species_key(name):
+    """genus and species, lower case"""
+    return " ".join(str(name).replace("_", " ").split()[:2]).lower()
+
+
+def _fasta_name(a):
+    return os.path.splitext(os.path.basename(a.fasta))[0]
+
+
+def _panel(a, with_fasta=False):
+    """the --panel databases by name, with the user's --fasta if asked"""
+    panel = ts.load_panel(a.panel) if a.panel else {}
+    return {**panel, _fasta_name(a): a.fasta} if with_fasta and a.fasta else panel
+
+
+def _outside_panel(ev, panel):
     """Organisms worth fetching: stated by the user, a repository record or the text (confidence >= 0.5), or called
     by FASTag with confidence >= 0.75, whose genus no panel database covers. Stated organisms first."""
     have = {_genus(k) for k in panel}
-    stated = [e for e in ev if e.parameter == "organism" and e.source in ("user", "repository", "text", "llm")
-              and e.confidence >= 0.5]
+    stated = [e for e in ev if e.parameter == "organism" and e.source in STATED_SOURCES and e.confidence >= 0.5]
     tagged = [e for e in ev if e.parameter == "organism" and e.method == "FASTag species" and e.confidence >= 0.75]
-    out = []
+    out, seen = [], set()
     for e in sorted(stated, key=lambda e: -e.confidence) + sorted(tagged, key=lambda e: -e.confidence):
         g = _genus(e.value)
-        if g and g not in have and g not in {_genus(o) for o in out} and g not in ("unknown", "not"):
+        if g and g not in have and g not in seen and g not in ("unknown", "not"):
             out.append(str(e.value))
-    return out[:max_n]
+            seen.add(g)
+    return out[:OUTSIDE_PANEL_MAX]
 
 
-DATA_FEATURES = ("instrument", "ms1_analyzer", "ms2_analyzer", "fragmentation", "acquisition", "dia_windows", "enzyme",
-                 "variable_mods",
-                 "ion_mobility", "charge_range", "precursor_tolerance", "fragment_tolerance", "label", "enrichment",
-                 "cys_alkylation")
+def _val(v):
+    return f"{v['value']} {v.get('unit', '')}".strip() if isinstance(v, dict) and "value" in v else v
 
 
-def _data_features(ev, digest_stats, term_stats=None):
-    """What the spectra themselves show, as one text for Jev (a separate source, labelled as measured, so the
-    readers can weigh it against the authors' texts): the best data/metadata evidence per parameter with its
-    reason (reporter ions, SILAC pairs, neutral losses, oxonium and immonium ions, mass errors) and the precursor
-    mass and charge distribution."""
+def _data_features(ev, digest_stats, term_stats=None, per_parameter=4):
+    """What the spectra themselves show, as one text for the readers (a separate source, labelled as measured, so
+    they can weigh it against the authors' texts): every parameter's measured evidence (up to per_parameter, most
+    confident first) with its reason, the provisional reading of the spectra alone, and the precursor mass and
+    charge distribution."""
     lines = []
-    for p in DATA_FEATURES:
-        c = [e for e in ev if e.parameter == p and e.source in ("data", "metadata")]
-        if c:
-            e = max(c, key=lambda e: e.confidence)
-            v = f"{e.value['value']} {e.value.get('unit', '')}" if isinstance(e.value, dict) and "value" in e.value \
-                else e.value
-            lines.append(f"{p}: {v} (confidence {e.confidence:.2f}; {e.method}{': ' + e.detail if e.detail else ''})")
+    measured = [e for e in ev if e.source in MEASURED_SOURCES]
+    for p in dict.fromkeys(e.parameter for e in measured):
+        for e in sorted((e for e in measured if e.parameter == p), key=lambda e: -e.confidence)[:per_parameter]:
+            lines.append(f"{p}: {_val(e.value)} (confidence {e.confidence:.2f}; {e.source}/{e.method}"
+                         f"{': ' + e.detail[:240] if e.detail else ''})")
+    prov = [f"{k} = {_val(d.value)} (confidence {d.confidence:.2f})" for k, d in reconcile(measured).items()
+            if d.source != "default" and d.value not in ("unknown", None)]
+    if prov:
+        lines.append("Provisional reading of the spectra alone (prose-auto, before the texts; the texts may correct "
+                     "it): " + "; ".join(prov))
     if digest_stats:
         lines.append(f"precursor neutral mass: median {digest_stats['median_mass']} Da, 90th percentile "
                      f"{digest_stats['q90_mass']} Da; {digest_stats['charge_1']:.0%} singly charged "
@@ -99,350 +141,350 @@ def _data_features(ev, digest_stats, term_stats=None):
                      f"{term_stats.get('cterm_anchors_LVFYM')} (HLA class I about 0.5, class II about 0.1); most frequent "
                      f"{term_stats.get('cterm_top')}; heavy Lys8 {term_stats.get('heavy_K8')}, heavy Arg10 "
                      f"{term_stats.get('heavy_R10')}")
-    return "Measured from the raw spectra by prose-auto (not stated by the authors):\n" + "\n".join(lines)[:4000]
+    return "Measured from the raw spectra by prose-auto (not stated by the authors):\n" + "\n".join(lines)[:20000]
 
 
 def _panel_match(name, panel):
     """the panel database of a species name (genus and species), if any"""
-    key = " ".join(str(name).replace("_", " ").split()[:2]).lower()
+    key = _species_key(name)
     return next((k for k in panel if k.replace("_", " ").lower() == key), None)
 
 
-def _organism_shortlist(ev, panel, fastag_top, max_n=5):
+def _organism_shortlist(ev, panel, fastag_top):
     """Tier-2 candidates: the stated organisms and confident FASTag calls the panel lacks (_outside_panel), then the
     FASTag top-ranked species (in the panel or not), without duplicates."""
-    out = []
+    out, seen = [], set()
     for o in _outside_panel(ev, panel) + list(fastag_top):
-        if " ".join(str(o).replace("_", " ").split()[:2]).lower() not in {" ".join(x.replace("_", " ").split()[:2]).lower()
-                                                                            for x in out}:
+        if _species_key(o) not in seen:
             out.append(str(o))
-    return out[:max_n]
+            seen.add(_species_key(o))
+    return out[:SHORTLIST_MAX]
 
 
-def analyze(a, log=print):
-    t0 = time.time()
-    timings = {}
-    if not a.diaspextract:   # DIA pseudo-DDA spectra automatically when DIAspeXtract is installed
-        import shutil
-        a.diaspextract = (os.environ.get("PROSE_AUTO_DIASPEXTRACT") or shutil.which("DIAspeXtract")
-                          or shutil.which("diaspextract"))
-    if not getattr(a, "fileconverter", None):
-        import shutil
-        a.fileconverter = os.environ.get("PROSE_AUTO_FILECONVERTER") or shutil.which("FileConverter")
-    ev = []
-    os.makedirs(a.out, exist_ok=True)
-    base = os.path.join(a.out, os.path.splitext(os.path.basename(a.mzml.rstrip("/")))[0])
-    spectra_file = a.mzml          # the MS2 spectra the detectors and searches see
-    if a.mzml.rstrip("/").lower().endswith(".d"):
-        # Bruker timsTOF (pyopenms cannot read .d): only DIA goes through DIAspeXtract; ddaPASEF is converted to
-        # mzML by OpenMS FileConverter (one MS2 per precursor)
-        mode = ext.tims_acquisition(a.mzml)
-        if mode == "diaPASEF":
-            if not a.diaspextract:
-                raise SystemExit("a diaPASEF .d input needs --diaspextract")
-            log(f"[0/7] diaPASEF: DIAspeXtract {a.mzml} -> pseudo-MS/MS spectra")
-            try:
-                spectra_file = ext.diaspextract(a.diaspextract, a.mzml, base + ".pseudo.mzML", a.threads, log=log)
-                acq_ev = ("DIA (diaPASEF)", "analysis.tdf: diaPASEF frames; pseudo-spectra by DIAspeXtract")
-            except RuntimeError as e:
-                if getattr(e, "returncode", None) != ext.DIASPEXTRACT_DDA_INPUT:
-                    raise SystemExit(f"DIAspeXtract cannot read {a.mzml}: {str(e).strip()[-300:]}")
-                log("  DIAspeXtract: the input is ddaPASEF (exit 11); converting it as DDA")
-                mode = "ddaPASEF"
-        if mode == "ddaPASEF":
-            if not a.fileconverter:
-                raise SystemExit("a ddaPASEF .d input needs --fileconverter (OpenMS FileConverter with timsTOF support)")
-            log(f"[0/7] ddaPASEF: FileConverter {a.mzml} -> mzML")
-            try:
-                # the converted mzML (6-23 GB with profile MS1) is only an input: keep it out of the results
-                import atexit, shutil, tempfile
-                tmp = tempfile.mkdtemp(prefix="prose_auto_ddapasef_")
-                atexit.register(shutil.rmtree, tmp, True)
-                spectra_file = ext.fileconverter(a.fileconverter, a.mzml, os.path.join(tmp, os.path.basename(base) + ".mzML"),
-                                                 a.threads, log=log)
-            except RuntimeError as e:
-                raise SystemExit(f"FileConverter cannot read {a.mzml}: {str(e).strip()[-300:]}")
-            acq_ev = ("DDA (ddaPASEF)", "analysis.tdf: ddaPASEF frames; converted by OpenMS FileConverter")
-        elif mode != "diaPASEF":
-            raise SystemExit(f"{a.mzml}: timsTOF acquisition {mode or 'unknown or mixed'} is not supported "
-                             "(ddaPASEF and diaPASEF are)")
-        ev.append(Evidence("acquisition", acq_ev[0], 0.95, "metadata", "Bruker .d input", acq_ev[1]))
-        ev.append(Evidence("ion_mobility", True, 0.95, "metadata", "Bruker .d input", "timsTOF data"))
-        name = ext.tims_instrument(a.mzml)
-        if name:
-            ev.append(Evidence("instrument", name, 0.95, "metadata", "analysis.tdf", f"InstrumentName {name}"))
-    log(f"[1/7] reading {spectra_file}")
-    run = load_mzml(spectra_file, max_ms2=a.max_ms2)
-    timings["read"] = round(time.time() - t0, 1)
+@dataclass
+class _Run:
+    """What the stages of one analysis share."""
+    a: argparse.Namespace
+    log: object
+    base: str                 # output path stem
+    spectra_file: str         # the MS2 spectra the detectors and searches see
+    ev: list = field(default_factory=list)
+    timings: dict = field(default_factory=dict)
+    run: object = None
+    acq: object = None        # acquisition as detected
+    pseudo: bool = False      # DIAspeXtract pseudo-spectra replace the input
+    search_acq: object = None
+    ms2a: str = "ORBITRAP"
+    hr1: bool = True
+    hr2: bool = True
 
-    log("[2/7] instrument, fragmentation, acquisition mode")
-    ev += inst.detect_instrument(run)
-    if spectra_file == a.mzml:
-        ev += inst.detect_acquisition(run)
-    acq = _first(ev, "acquisition").value
-    im = _first(ev, "ion_mobility")
-    raw = run   # the run as read: its MS1 serves the SILAC pair test when DIA pseudo-spectra replace it
-    if str(acq).startswith("DIA") and a.diaspextract and spectra_file == a.mzml and im and im.value is True:
-        # DIAspeXtract needs ion mobility (diaPASEF); Orbitrap DIA stays on the DIA path
-        log("  DIA mzML with ion mobility: DIAspeXtract pseudo-MS/MS spectra for the DDA-style stages")
+    @property
+    def ftol(self):           # FASTag fragment tolerance
+        return (20.0, "ppm") if self.hr2 else (0.3, "Da")
+
+
+@contextlib.contextmanager
+def _timed(c, key):
+    t = time.time()
+    yield
+    c.timings[key] = round(time.time() - t, 1)
+
+
+def _fastag_species(c):
+    a = c.a
+    return ext.fastag_species(a.fastag, c.spectra_file, *c.ftol, threads=a.threads, subsample=a.fastag_subsample,
+                              log=c.log, taxonomy_dir=a.fastag_taxonomy,
+                              rank="species" if a.fastag_taxonomy else "genus")
+
+
+def _shortlist(c, panel):
+    # ion-trap MS2: short tags match large (polyploid) proteomes by chance (wheat and salmon ranked first on mouse
+    # and Arabidopsis LTQ runs), so the FASTag shortlist is used only with high-resolution MS2
+    return _organism_shortlist(c.ev, panel, ext.fastag_shortlist(c.ev) if c.a.fastag_taxonomy and c.hr2 else [])
+
+
+def _timstof_input(c):
+    """Bruker timsTOF (pyopenms cannot read .d): only DIA goes through DIAspeXtract; ddaPASEF is converted to mzML
+    by OpenMS FileConverter (one MS2 per precursor)."""
+    a, log = c.a, c.log
+    mode = ext.tims_acquisition(a.mzml)
+    if mode == "diaPASEF":
+        if not a.diaspextract:
+            raise SystemExit("a diaPASEF .d input needs --diaspextract")
+        log(f"[0/7] diaPASEF: DIAspeXtract {a.mzml} -> pseudo-MS/MS spectra")
         try:
-            spectra_file = ext.diaspextract(a.diaspextract, a.mzml, base + ".pseudo.mzML", a.threads, log=log)
-            run = load_mzml(spectra_file, max_ms2=a.max_ms2)
+            c.spectra_file = ext.diaspextract(a.diaspextract, a.mzml, c.base + ".pseudo.mzML", a.threads, log=log)
+            acq = ("DIA (diaPASEF)", "analysis.tdf: diaPASEF frames; pseudo-spectra by DIAspeXtract")
         except RuntimeError as e:
-            log("  DIAspeXtract: the input is DDA (exit 11), continuing on the spectra as they are"
-                if getattr(e, "returncode", None) == ext.DIASPEXTRACT_DDA_INPUT else
-                f"  DIAspeXtract failed, continuing without pseudo-spectra: {str(e).strip()[-300:]}")
-    elif str(acq).startswith("DIA") and a.diaspextract and spectra_file == a.mzml:
-        # Orbitrap DIA: DIAspeXtract refuses data without ion mobility, so give it a constant 1/K0 and switch its
-        # mobility steps off; it then traces precursors and fragments by retention time alone (PXD026600: 44k
-        # pseudo-spectra, 7.2k PSMs at 1% entrapment FDP)
-        log("  DIA mzML without ion mobility: DIAspeXtract on a constant-mobility copy (retention time only)")
+            if getattr(e, "returncode", None) != ext.DIASPEXTRACT_DDA_INPUT:
+                raise SystemExit(f"DIAspeXtract cannot read {a.mzml}: {str(e).strip()[-300:]}")
+            log("  DIAspeXtract: the input is ddaPASEF (exit 11); converting it as DDA")
+            mode = "ddaPASEF"
+    if mode == "ddaPASEF":
+        if not a.fileconverter:
+            raise SystemExit("a ddaPASEF .d input needs --fileconverter (OpenMS FileConverter with timsTOF support)")
+        log(f"[0/7] ddaPASEF: FileConverter {a.mzml} -> mzML")
         try:
-            im_copy = ext.with_constant_mobility(a.mzml, base + ".im.mzML")
-            spectra_file = ext.diaspextract(a.diaspextract, im_copy, base + ".pseudo.mzML", a.threads,
-                                            extra=ext.NO_MOBILITY_OPTIONS, log=log)
+            # the converted mzML (6-23 GB with profile MS1) is only an input: keep it out of the results
+            tmp = tempfile.mkdtemp(prefix="prose_auto_ddapasef_")
+            atexit.register(shutil.rmtree, tmp, True)
+            c.spectra_file = ext.fileconverter(a.fileconverter, a.mzml,
+                                               os.path.join(tmp, os.path.basename(c.base) + ".mzML"), a.threads, log=log)
+        except RuntimeError as e:
+            raise SystemExit(f"FileConverter cannot read {a.mzml}: {str(e).strip()[-300:]}")
+        acq = ("DDA (ddaPASEF)", "analysis.tdf: ddaPASEF frames; converted by OpenMS FileConverter")
+    elif mode != "diaPASEF":
+        raise SystemExit(f"{a.mzml}: timsTOF acquisition {mode or 'unknown or mixed'} is not supported "
+                         "(ddaPASEF and diaPASEF are)")
+    c.ev.append(Evidence("acquisition", acq[0], 0.95, "metadata", "Bruker .d input", acq[1]))
+    c.ev.append(Evidence("ion_mobility", True, 0.95, "metadata", "Bruker .d input", "timsTOF data"))
+    name = ext.tims_instrument(a.mzml)
+    if name:
+        c.ev.append(Evidence("instrument", name, 0.95, "metadata", "analysis.tdf", f"InstrumentName {name}"))
+
+
+def _pseudo_spectra(c):
+    """DIA mzML: DIAspeXtract pseudo-MS/MS spectra for the DDA-style stages. DIAspeXtract needs ion mobility
+    (diaPASEF); Orbitrap DIA gets a constant-mobility copy. Any failure keeps the spectra as they are."""
+    a, log = c.a, c.log
+    if not (str(c.acq).startswith("DIA") and a.diaspextract and c.spectra_file == a.mzml):
+        return
+    im = _first(c.ev, "ion_mobility")
+    with_im = bool(im and im.value is True)
+    log("  DIA mzML with ion mobility: DIAspeXtract pseudo-MS/MS spectra for the DDA-style stages" if with_im else
+        "  DIA mzML without ion mobility: DIAspeXtract on a constant-mobility copy (retention time only)")
+    try:
+        if with_im:
+            c.spectra_file = ext.diaspextract(a.diaspextract, a.mzml, c.base + ".pseudo.mzML", a.threads, log=log)
+        else:
+            # Orbitrap DIA: DIAspeXtract refuses data without ion mobility, so give it a constant 1/K0 and switch its
+            # mobility steps off; it then traces precursors and fragments by retention time alone (PXD026600: 44k
+            # pseudo-spectra, 7.2k PSMs at 1% entrapment FDP)
+            im_copy = ext.with_constant_mobility(a.mzml, c.base + ".im.mzML")
+            c.spectra_file = ext.diaspextract(a.diaspextract, im_copy, c.base + ".pseudo.mzML", a.threads,
+                                              extra=ext.NO_MOBILITY_OPTIONS, log=log)
             os.remove(im_copy)
-            run = load_mzml(spectra_file, max_ms2=a.max_ms2)
-        except RuntimeError as e:
-            log("  DIAspeXtract: the input is DDA (exit 11), continuing on the spectra as they are"
-                if getattr(e, "returncode", None) == ext.DIASPEXTRACT_DDA_INPUT else
-                f"  DIAspeXtract failed, continuing without pseudo-spectra: {str(e).strip()[-300:]}")
-    pseudo = spectra_file != a.mzml
-    if pseudo:  # pseudo-spectra carry DIAspeXtract's charge calls: measure the range on them
-        cr = inst.charge_range(run.ms2)
-        if cr:
-            ev = [e for e in ev if e.parameter != "charge_range"] + cr
-    search_acq = "DDA" if pseudo else acq      # pseudo-spectra have one precursor each
-    ms1a = (_first(ev, "ms1_analyzer").value if _first(ev, "ms1_analyzer") else "ORBITRAP")
-    ms2a = (_first(ev, "ms2_analyzer").value if _first(ev, "ms2_analyzer") else "ORBITRAP")
-    hr1, hr2 = ms1a not in LOW_RES, ms2a not in LOW_RES
+        c.run = load_mzml(c.spectra_file, max_ms2=a.max_ms2)
+    except RuntimeError as e:
+        log("  DIAspeXtract: the input is DDA (exit 11), continuing on the spectra as they are"
+            if getattr(e, "returncode", None) == ext.DIASPEXTRACT_DDA_INPUT else
+            f"  DIAspeXtract failed, continuing without pseudo-spectra: {str(e).strip()[-300:]}")
 
-    log("[3/7] mass accuracy from repeated ions and known ions")
-    t = time.time()
-    ev += tol.detect_tolerances(run, search_acq, ms2_high_res=hr2, ms1_high_res=hr1)
-    timings["tolerance"] = round(time.time() - t, 1)
 
-    log("[4/7] labels, enrichment, Cys alkylation (diagnostic ions)")
-    t = time.time()
-    ev += chem.detect_labels(run, hr2) + chem.detect_enrichment(run, hr2, dia=str(acq).startswith("DIA")) \
-          + chem.detect_cys_alkylation(run, hr2)
-    if pseudo and raw is not run:   # pseudo-spectra carry no MS1: the SILAC pairs come from the DIA run itself
-        ev += chem.detect_silac(raw)
-    hint, hint_stats = chem.digest_hint(run, hr2)
-    timings["chemistry"] = round(time.time() - t, 1)
+def _chemistry(c, raw):
+    """Diagnostic ions, the digest hint and the FASTag termini. Returns (hint, hint_stats, term_stats)."""
+    a, run, hr2 = c.a, c.run, c.hr2
+    with _timed(c, "chemistry"):
+        c.ev += chem.detect_labels(run, hr2) + chem.detect_enrichment(run, hr2, dia=str(c.acq).startswith("DIA")) \
+            + chem.detect_cys_alkylation(run, hr2)
+        if c.pseudo and raw is not run:   # pseudo-spectra carry no MS1: the SILAC pairs come from the DIA run itself
+            c.ev += chem.detect_silac(raw)
+        hint, hint_stats = chem.digest_hint(run, hr2)
     term_stats = {}
     if a.fastag and hr2:   # protease (C-terminal residues) and labels (N-terminal gaps) from FASTag k=4 tags
-        t = time.time()
-        try:
-            term_ev, term_stats = ext.fastag_termini(a.fastag, spectra_file, threads=a.threads, log=log)
-            # on DIA pseudo-spectra co-eluting fragments put +8/+10 Da gaps behind K/R by chance (32%/50% in the
-            # label-free Orbitrap DIA run PXD066483): heavy termini count only on DDA spectra
-            ev += [e for e in term_ev if not (pseudo and "SILAC" in str(e.value))]
-        except Exception as e:
-            log(f"  FASTag termini failed: {e}")
-        timings["termini"] = round(time.time() - t, 1)
+        with _timed(c, "termini"):
+            try:
+                term_ev, term_stats = ext.fastag_termini(a.fastag, c.spectra_file, threads=a.threads, log=c.log)
+                # on DIA pseudo-spectra co-eluting fragments put +8/+10 Da gaps behind K/R by chance (32%/50% in the
+                # label-free Orbitrap DIA run PXD066483): heavy termini count only on DDA spectra
+                c.ev += [e for e in term_ev if not (c.pseudo and "SILAC" in str(e.value))]
+            except Exception as e:
+                c.log(f"  FASTag termini failed: {e}")
+    return hint, hint_stats, term_stats
 
-    log("[5/7] repository records and text")
-    t = time.time()
+
+def _texts_and_readers(c, hint_stats, term_stats):
+    """Repository records, the user's description and methods, then the readers (LLM, Jev) over all texts.
+    Returns (study, backend, jev, llm_rejected, llm_text_conflicts, jev_report)."""
+    a, log = c.a, c.log
     texts = {}
     if a.accession:
         e, texts = repo.repository_evidence(a.accession, log=log, fetch_paper=not a.no_paper, sdrf_use=a.sdrf)
-        ev += e
-    desc = _arg_text(a.description)
-    methods = _arg_text(a.methods)
+        c.ev += e
+    desc, methods = _arg_text(a.description), _arg_text(a.methods)
     if desc:
-        ev += tx.extract(desc, source="user", base_conf=0.75)
+        c.ev += tx.extract(desc, source="user", base_conf=0.75)
     if methods:
-        ev += tx.extract(methods, source="text", base_conf=0.55)
+        c.ev += tx.extract(methods, source="text", base_conf=0.55)
     for k in ("sample_protocol", "data_protocol", "description", "methods"):
         if texts.get(k):
-            ev += tx.extract(texts[k], source="text", base_conf=0.5)
+            c.ev += tx.extract(texts[k], source="text", base_conf=0.5)
     study = {"user's description": desc, "methods section": methods,
              "PRIDE title": texts.get("title", ""), "PRIDE description": texts.get("description", ""),
              "PRIDE sample protocol": texts.get("sample_protocol", ""),
              "PRIDE data protocol": texts.get("data_protocol", ""),
-             "paper methods": texts.get("methods", ""), "SDRF": texts.get("sdrf", "")[:8000]}
-    study = {k: v for k, v in study.items() if v}
+             "paper methods": texts.get("methods", ""), "PRIDE record": texts.get("record", "")}
     backend = L.make_backend(a.llm)
-    llm_rejected, llm_text_conflicts = [], []
+    if backend or a.jev:   # only the readers use the whole SDRF
+        study["SDRF"] = repo.sdrf_digest(texts.get("sdrf", ""), a.mzml.rstrip("/"))
+    study = {k: v for k, v in study.items() if v}
+    rejected, conflicts = [], []
     if backend and study:
         log(f"  LLM: {backend.name} (one multi-head request over {len(study)} texts)")
-        e, rej, llm_text_conflicts = L.extract_study(backend, study, user=bool(desc))
-        ev += e
-        llm_rejected += rej
+        e, rejected, conflicts = L.extract_study(backend, study, user=bool(desc))
+        c.ev += e
         if a.llm_priors:
-            ins = _first(ev, "instrument")
-            frg = _first(ev, "fragmentation")
-            ev += L.literature_priors(backend, ins.value if ins else "", acq, frg.value if frg else "", ms2a)
-
+            c.ev += L.literature_priors(backend, _value(c.ev, "instrument", ""), c.acq,
+                                        _value(c.ev, "fragmentation", ""), c.ms2a)
     jev = J.Jev() if a.jev else None
-    jev_report, jev_issues = {}, []
-    # Jev also sees what the spectra show (mass distribution, marker ions, mass errors) as a source of its own
-    jev_study = {**study, "measured from the spectra": _data_features(ev, hint_stats, term_stats)} if study else {}
+    jev_report = {}
     if jev and study:
+        # Jev also sees the run and what the spectra show (marker ions, mass errors, the provisional reading)
+        run_info = (f"data file {os.path.basename(a.mzml.rstrip('/'))}; " + "; ".join(
+            f"{k} {v}" for k, v in c.run.summary().items() if k != "path" and v not in (None, "", []))
+            + ("; DIA pseudo-MS/MS spectra by DIAspeXtract" if c.pseudo else ""))
+        jev_study = {**study, "run": run_info,
+                     "measured from the spectra": _data_features(c.ev, hint_stats, term_stats)}
         log(f"  Jev: {jev.name} (one multi-head request over {len(jev_study)} sources, one of them the data)")
         e, jev_report = J.read_study(jev, jev_study, user=bool(desc))
-        ev += e
+        c.ev += e
+    return study, backend, jev, rejected, conflicts, jev_report
 
-    timings["text"] = round(time.time() - t, 1)
 
-    # organism from the metadata instead of the data: the user's FASTA, else the most confident stated organism
-    # (user, repository record, SDRF, text, Jev); the hypotheses search only that proteome, FASTag makes no species
-    # call and there is no tier 2. Nothing stated: the organism stays unknown and the mini-search is skipped.
-    org_meta = a.organism_source == "metadata"
-    if org_meta:
-        panel = ts.load_panel(a.panel) if a.panel else {}
-        stated = [e for e in ev if e.parameter == "organism" and e.source in ("user", "repository", "text", "llm")
-                  and str(e.value) not in ("not in panel", "unknown")]
-        top = max(stated, key=lambda e: e.confidence) if stated else None
-        if a.fasta:
-            db = (os.path.splitext(os.path.basename(a.fasta))[0], a.fasta)
-            ev.append(Evidence("organism", db[0], 0.9, "user", "--fasta", f"the user's database {a.fasta}"))
-        elif top:
-            hit = _panel_match(top.value, panel)
-            db = (hit, panel[hit]) if hit else (fetch_proteome(top.value, os.path.join(a.panel, "extra"), log)
-                                                if a.panel else None)
-        else:
-            db = None
-        log(f"  organism from metadata: {db[0] if db else 'none stated'}")
-        org_panel = {db[0]: db[1]} if db else {}
+def _organism_from_metadata(c):
+    """Organism from the metadata instead of the data: the user's FASTA, else the most confident stated organism
+    (user, repository record, SDRF, text, Jev); the hypotheses search only that proteome, FASTag makes no species
+    call and there is no tier 2. Nothing stated: the organism stays unknown and the mini-search is skipped.
+    Returns the one-database panel ({} if none)."""
+    a = c.a
+    panel = _panel(a)
+    top = _first([e for e in c.ev if e.parameter == "organism" and e.source in STATED_SOURCES
+                  and str(e.value) not in ("not in panel", "unknown")], "organism")
+    db = None
+    if a.fasta:
+        db = (_fasta_name(a), a.fasta)
+        c.ev.append(Evidence("organism", db[0], 0.9, "user", "--fasta", f"the user's database {a.fasta}"))
+    elif top:
+        hit = _panel_match(top.value, panel)
+        db = (hit, panel[hit]) if hit else (fetch_proteome(top.value, os.path.join(a.panel, "extra"), c.log)
+                                            if a.panel else None)
+    c.log(f"  organism from metadata: {db[0] if db else 'none stated'}")
+    return {db[0]: db[1]} if db else {}
 
-    # HLA ligands (no protease): a hint from the precursor masses, or stated (SDRF "unspecific cleavage"); the ProSE
-    # organism search then tries the unspecific search first, and only its result sets the enzyme
-    stated_unspec = any(e.parameter == "enzyme" and e.value == "unspecific cleavage" and e.confidence >= 0.6
-                        for e in ev)
-    hla_first = "II" if term_stats.get("hla_hint") == "HLA class II?" and not hint else \
-        "I" if hint or term_stats.get("hla_hint") or stated_unspec else None
-    if hla_first:
-        log(f"  HLA class {hla_first} ligands? ({hint or term_stats.get('hla_hint') or 'stated'}; {hint_stats}): "
-            "the unspecific search goes first")
 
-    # organism from one ProSE search: panel + stated organisms outside it + the FASTag shortlist, concatenated;
-    # the winner by discriminating PSMs (prose_runner.organism_with_prose). The hypotheses then search the winner.
-    org_prose = a.organism_source == "prose"
-    if org_prose and not str(search_acq).startswith("DIA"):
-        from .prose_runner import find_prose, load_signatures, organism_with_prose
-        t = time.time()
-        panel = ts.load_panel(a.panel) if a.panel else {}
-        if a.fasta:
-            panel[os.path.splitext(os.path.basename(a.fasta))[0]] = a.fasta
+def _hla_first(c, hint, hint_stats, term_stats):
+    """HLA ligands (no protease): a hint from the precursor masses, or stated (SDRF "unspecific cleavage"); the ProSE
+    organism search then tries the unspecific search first, and only its result sets the enzyme."""
+    hla = term_stats.get("hla_hint")
+    first = "II" if hla == "HLA class II?" and not hint else "I" if hint or hla or _unspecific(c.ev) else None
+    if first:
+        c.log(f"  HLA class {first} ligands? ({hint or hla or 'stated'}; {hint_stats}): "
+              "the unspecific search goes first")
+    return first
+
+
+def _organism_from_prose(c, hla_first):
+    """Organism from one ProSE search: panel + stated organisms outside it + the FASTag shortlist, concatenated; the
+    winner by discriminating PSMs (prose_runner.organism_with_prose). The hypotheses then search the winner.
+    Returns the winner's one-database panel, or None if ProSE failed (the panel mini-search decides then)."""
+    from .prose_runner import find_prose, load_signatures, organism_with_prose
+    a, log, hr2 = c.a, c.log, c.hr2
+    org_panel = None
+    with _timed(c, "organism_prose"):
+        panel = _panel(a, with_fasta=True)
         sig = a.organism_panel   # signature-protein panel: covers the whole reference set, no FASTag shortlist
         if sig:
-            import csv as _csv
-            sig_species = {r["species"]: r["proteome"] for r in _csv.DictReader(open(os.path.join(sig, "species.tsv")),
-                                                                               delimiter="\t")}
-        if a.fastag and not sig:
-            ftol, funit = (20.0, "ppm") if hr2 else (0.3, "Da")
-            try:
-                fev = ext.fastag_species(a.fastag, spectra_file, ftol, funit, threads=a.threads,
-                                         subsample=a.fastag_subsample, log=log, taxonomy_dir=a.fastag_taxonomy,
-                                         rank="species" if a.fastag_taxonomy else "genus")
-                ev += [e for e in fev if hr2 or not a.fastag_taxonomy]  # ion-trap tags: large proteomes by chance
-            except Exception as e:
-                log(f"  FASTag failed: {e}")
-        cands = sig_species if sig else dict(panel)
-        for o in [] if sig else _organism_shortlist(ev, panel, ext.fastag_shortlist(ev)
-                                                    if a.fastag_taxonomy and hr2 else []):
-            if not _panel_match(o, panel) and a.panel:
-                got = fetch_proteome(o, os.path.join(a.panel, "extra"), log)
-                if got and os.path.getsize(got[1]) > 100000:   # tiny files are wrong (virus) proteomes
-                    cands[got[0]] = got[1]
-        lab = _first([e for e in ev if e.parameter == "label" and e.value not in ("no isobaric label", "no SILAC",
-                                                                                  "unknown", "label free")], "label")
-        enr = _first([e for e in ev if e.parameter == "enrichment" and e.confidence >= 0.5], "enrichment")
+            with open(os.path.join(sig, "species.tsv")) as fh:
+                cands = {r["species"]: r["proteome"] for r in csv.DictReader(fh, delimiter="\t")}
+        else:
+            cands = dict(panel)
+            if a.fastag:
+                try:   # ion-trap tags match large proteomes by chance
+                    c.ev += [e for e in _fastag_species(c) if hr2 or not a.fastag_taxonomy]
+                except Exception as e:
+                    log(f"  FASTag failed: {e}")
+            for o in _shortlist(c, panel):
+                if not _panel_match(o, panel) and a.panel:
+                    got = fetch_proteome(o, os.path.join(a.panel, "extra"), log)
+                    if got and os.path.getsize(got[1]) > 100000:   # tiny files are wrong (virus) proteomes
+                        cands[got[0]] = got[1]
+        lab = _first([e for e in c.ev if e.parameter == "label" and e.value not in ("no isobaric label", "no SILAC",
+                                                                                    "unknown", "label free")], "label")
+        enr = _first([e for e in c.ev if e.parameter == "enrichment" and e.confidence >= 0.5], "enrichment")
         fixed = ["Carbamidomethyl (C)"] + pp.LABEL_MODS.get(lab.value if lab else "", [])
         var = (["Oxidation (M)"] + pp.SILAC_VARIABLE.get(lab.value if lab else "", [])
                + pp.ENRICHMENT_MODS.get(enr.value if enr else "", []))
         log(f"  organism: one ProSE search against {len(cands)} proteomes")
         try:
             stated = [_panel_match(e.value, cands) or str(e.value).replace(" ", "_") for e in
-                      sorted((e for e in ev if e.parameter == "organism" and e.confidence >= 0.5),
+                      sorted((e for e in c.ev if e.parameter == "organism" and e.confidence >= 0.5),
                              key=lambda e: -e.confidence)]
-            oe, win = organism_with_prose(find_prose(a.prose_bin), spectra_file, cands, fixed, var,
-                                          (20.0, "ppm") if hr1 else (1.0, "Da"), (20.0, "ppm") if hr2 else (0.4, "Da"),
+            oe, win = organism_with_prose(find_prose(a.prose_bin), c.spectra_file, cands, fixed, var,
+                                          (20.0, "ppm") if c.hr1 else (1.0, "Da"), (20.0, "ppm") if hr2 else (0.4, "Da"),
                                           contaminants=a.contaminants, threads=a.threads, hla_first=hla_first,
                                           preferred=stated + ["Homo_sapiens", "Mus_musculus"],
                                           panel_db=os.path.join(sig, "sigpanel.fasta") if sig else None,
                                           signatures=load_signatures(os.path.join(sig, "signatures.tsv.gz"))
                                           if sig else None, log=log)
-            ev += oe
+            c.ev += oe
             org_panel = {win: cands[win]} if win else {}
-        except Exception as e:  # no ProSE: the panel mini-search decides
+        except Exception as e:
             log(f"  ProSE organism search failed, panel mini-search instead: {str(e)[-300:]}")
-            org_prose = False
-        timings["organism_prose"] = round(time.time() - t, 1)
-    else:
-        org_prose = False
+    return org_panel
 
-    unspec = any(e.parameter == "enzyme" and e.value == "unspecific cleavage" and e.confidence >= 0.6 for e in ev)
 
-    # mini-search hypotheses (DDA only: DIA spectra have no single precursor)
-    if org_meta or org_prose:
-        panel = org_panel
-    else:
-        panel = ts.load_panel(a.panel) if a.panel else {}
-        if a.fasta:
-            panel = {**panel, os.path.splitext(os.path.basename(a.fasta))[0]: a.fasta}
-    h = None
-    if panel and not str(search_acq).startswith("DIA") and not a.no_search:
-        log(f"[6/7] mini-search on {min(a.spectra, len(run.ms2))} spectra against {len(panel)} database(s)")
-        t = time.time()
-        lab = _first([e for e in ev if e.parameter == "label" and e.source == "data"
+def _mini_search(c, panel, org_fixed, unspec):
+    """Mini-search hypotheses (DDA only: DIA spectra have no single precursor). Returns the HypothesisTester or
+    None. With the organism fixed (metadata, ProSE) its organism evidence is dropped."""
+    a, log, hr2 = c.a, c.log, c.hr2
+    dia = str(c.search_acq).startswith("DIA")
+    if not panel or dia or a.no_search:
+        log("[6/7] mini-search skipped" + (" (DIA without pseudo-spectra)" if dia else
+                                           " (no --panel/--fasta)" if not panel else ""))
+        return None
+    log(f"[6/7] mini-search on {min(a.spectra, len(c.run.ms2))} spectra against {len(panel)} database(s)")
+    with _timed(c, "mini_search"):
+        lab = _first([e for e in c.ev if e.parameter == "label" and e.source == "data"
                       and e.value not in ("no isobaric label", "no SILAC", "unknown")], "label")
         mods = ts.Mods()
-        if lab and str(lab.value).startswith("TMTpro"):
-            mods.k = mods.nterm = ts.LABEL_MASS["TMTpro"]
-        elif lab and str(lab.value).startswith("TMT"):
-            mods.k = mods.nterm = ts.LABEL_MASS["TMT"]
-        elif lab and str(lab.value).startswith("iTRAQ8"):
-            mods.k = mods.nterm = ts.LABEL_MASS["iTRAQ8plex"]
-        elif lab and str(lab.value).startswith("iTRAQ"):
-            mods.k = mods.nterm = ts.LABEL_MASS["iTRAQ4plex"]
-        frag_tol = 20.0 if hr2 else 0.4
-        h = HypothesisTester(run, frag_tol, hr2, prec_ppm=20.0 if hr1 else 500.0,
+        key = next((k for p, k in LABEL_MASS_KEYS if str(lab.value).startswith(p)), None) if lab else None
+        if key:
+            mods.k = mods.nterm = ts.LABEL_MASS[key]
+        h = HypothesisTester(c.run, 20.0 if hr2 else 0.4, hr2, prec_ppm=20.0 if c.hr1 else 500.0,
                              n_spectra=a.spectra, mods=mods, log=log)
         oe = h.organism(panel)
-        ev += [] if org_meta or org_prose else oe
+        if not org_fixed:
+            c.ev += oe
         if h.best_db:
-            ev += h.accuracy() + h.alkylation()
+            c.ev += h.accuracy() + h.alkylation()
             if not a.skip_enzyme and not unspec:   # the protease competition knows no unspecific digest
-                ev += h.enzyme()
-        timings["mini_search"] = round(time.time() - t, 1)
-    else:
-        log("[6/7] mini-search skipped" + (" (DIA without pseudo-spectra)" if str(search_acq).startswith("DIA") else
-                                           " (no --panel/--fasta)" if not panel else ""))
-    if a.fastag:
-        t = time.time()
-        ftol, funit = (20.0, "ppm") if hr2 else (0.3, "Da")
+                c.ev += h.enzyme()
+    return h
+
+
+def _fastag_stage(c, h, org_fixed):
+    """FASTag species call (unless the organism is fixed), then the mass-gap histogram against the winning database:
+    Cys alkylation and modification combinations."""
+    a, log = c.a, c.log
+    ftol, funit = c.ftol
+    with _timed(c, "fastag"):
         log("  FASTag: genus call from sequence tags")
         try:
-            fev = [] if org_meta or org_prose else ext.fastag_species(
-                a.fastag, spectra_file, ftol, funit, threads=a.threads, subsample=a.fastag_subsample, log=log,
-                taxonomy_dir=a.fastag_taxonomy, rank="species" if a.fastag_taxonomy else "genus")
-            if a.fastag_taxonomy and not hr2:  # ion-trap tags hit large proteomes by chance (wheat, salmon first)
+            fev = [] if org_fixed else _fastag_species(c)
+            if a.fastag_taxonomy and not c.hr2:  # ion-trap tags hit large proteomes by chance (wheat, salmon first)
                 for e in fev:
                     e.confidence = min(e.confidence, 0.2)
-            ev += fev
+            c.ev += fev
             db = (h.best_db[1] if h is not None and h.best_db else None) or a.fasta
             if db:
                 log(f"  FASTag: mass-gap histogram against {os.path.basename(db)} without fixed modifications")
-                alk = ext.fastag_alkylation(a.fastag, spectra_file, db, ftol, funit, threads=a.threads, log=log)
-                ev += alk
+                alk = ext.fastag_alkylation(a.fastag, c.spectra_file, db, ftol, funit, threads=a.threads, log=log)
+                c.ev += alk
                 # the same gap histogram, explained as modification combinations (variable mods, enrichment)
-                ev += DC.detect(alk[0].stats.get("hist", []) if alk else [], 0.02 if funit == "ppm" else 0.5)
+                c.ev += DC.detect(alk[0].stats.get("hist", []) if alk else [], 0.02 if funit == "ppm" else 0.5)
         except Exception as e:
             log(f"  FASTag failed: {e}")
-        timings["fastag"] = round(time.time() - t, 1)
 
-    # Organism, tier 2: the FASTag species ranking (extended index) gives a top-3 shortlist; with the stated
-    # organisms and confident FASTag calls the panel lacks, their reference proteomes are fetched (cached in
-    # <panel>/extra) and searched against the panel winner, so the nearest panel organism does not win by default
-    # ion-trap MS2: short tags match large (polyploid) proteomes by chance (wheat and salmon ranked first on mouse
-    # and Arabidopsis LTQ runs), so the FASTag shortlist is used only with high-resolution MS2
-    shortlist = [] if org_meta or org_prose else _organism_shortlist(ev, panel, ext.fastag_shortlist(ev)
-                                                        if a.fastag_taxonomy and hr2 else [])
-    if shortlist and h is not None and a.panel:
-        t = time.time()
+
+def _tier2(c, h, panel, unspec):
+    """Organism, tier 2: the FASTag species ranking (extended index) gives a top-3 shortlist; with the stated
+    organisms and confident FASTag calls the panel lacks, their reference proteomes are fetched (cached in
+    <panel>/extra) and searched against the panel winner, so the nearest panel organism does not win by default."""
+    a, log = c.a, c.log
+    shortlist = _shortlist(c, panel)
+    if not (shortlist and h is not None and a.panel):
+        return
+    with _timed(c, "organism_tier2"):
         dbs = {}
         for o in shortlist:
             hit = _panel_match(o, panel)
@@ -454,40 +496,105 @@ def analyze(a, log=print):
             dbs[prev] = h.best_db[1]
         if len(dbs) > 1 or (dbs and prev is None):
             log(f"  organism tier 2: testing {', '.join(dbs)}")
-            redo = ("organism", "precursor_offset", "precursor_tolerance", "fragment_offset", "fragment_tolerance",
-                    "cys_alkylation", "enzyme")
             new = h.organism(dbs)
             if h.best_db and h.best_db[0] != prev:  # a new winner: redo the stages that used the old one
-                ev = [e for e in ev if not (e.source == "search" and e.parameter in redo)] + new
-                ev += h.accuracy() + h.alkylation() + ([] if a.skip_enzyme or unspec else h.enzyme())
+                c.ev = [e for e in c.ev if not (e.source == "search" and e.parameter in TIER2_REDO)] + new
+                c.ev += h.accuracy() + h.alkylation() + ([] if a.skip_enzyme or unspec else h.enzyme())
             else:  # the winner holds; the new search evidence records which candidates were tested
-                ev = [e for e in ev if not (e.source == "search" and e.parameter == "organism")] + new
-        timings["organism_tier2"] = round(time.time() - t, 1)
+                c.ev = [e for e in c.ev if not (e.source == "search" and e.parameter == "organism")] + new
+
+
+def _confirm_with_prose(c, decisions, prose, panel, h):
+    """A ProSE subset search on the proposed settings, on the spectra the settings came from (converted or
+    pseudo-spectra) and the decided database (a tier-2 winner is not in the panel); on failure the data-only
+    result stays."""
+    from .prose_runner import confirm_with_prose, find_prose
+    a = c.a
+    exe = find_prose(a.prose)
+    org = decisions["organism"].value
+    db = a.fasta or (h.best_db[1] if h is not None and h.best_db and h.best_db[0] == org else None) \
+        or (panel.get(org) if panel else None)
+    if exe and db:
+        c.log(f"  confirming with ProSE ({exe})")
+        try:
+            c.ev += confirm_with_prose(exe, c.spectra_file, db, pp.to_cli(prose["params"]), open_search=a.open_search,
+                                       log=c.log)
+            decisions = reconcile(c.ev)
+            prose = pp.to_prose(decisions)
+        except Exception as e:
+            c.log(f"  ProSE confirmation failed: {e}")
+    return decisions, prose
+
+
+def analyze(a, log=print):
+    t0 = time.time()
+    if not a.diaspextract:   # DIA pseudo-DDA spectra automatically when DIAspeXtract is installed
+        a.diaspextract = (os.environ.get("PROSE_AUTO_DIASPEXTRACT") or shutil.which("DIAspeXtract")
+                          or shutil.which("diaspextract"))
+    if not getattr(a, "fileconverter", None):
+        a.fileconverter = os.environ.get("PROSE_AUTO_FILECONVERTER") or shutil.which("FileConverter")
+    os.makedirs(a.out, exist_ok=True)
+    c = _Run(a, log, os.path.join(a.out, os.path.splitext(os.path.basename(a.mzml.rstrip("/")))[0]), a.mzml)
+    if a.mzml.rstrip("/").lower().endswith(".d"):
+        _timstof_input(c)
+    log(f"[1/7] reading {c.spectra_file}")
+    # raw: the run as read; its MS1 serves the SILAC pair test when DIA pseudo-spectra replace it
+    c.run = raw = load_mzml(c.spectra_file, max_ms2=a.max_ms2)
+    c.timings["read"] = round(time.time() - t0, 1)
+
+    log("[2/7] instrument, fragmentation, acquisition mode")
+    c.ev += inst.detect_instrument(c.run)
+    if c.spectra_file == a.mzml:
+        c.ev += inst.detect_acquisition(c.run)
+    c.acq = _first(c.ev, "acquisition").value
+    _pseudo_spectra(c)
+    c.pseudo = c.spectra_file != a.mzml
+    if c.pseudo:  # pseudo-spectra carry DIAspeXtract's charge calls: measure the range on them
+        cr = inst.charge_range(c.run.ms2)
+        if cr:
+            c.ev = [e for e in c.ev if e.parameter != "charge_range"] + cr
+    c.search_acq = "DDA" if c.pseudo else c.acq      # pseudo-spectra have one precursor each
+    c.ms2a = _value(c.ev, "ms2_analyzer", "ORBITRAP")
+    c.hr1, c.hr2 = _value(c.ev, "ms1_analyzer", "ORBITRAP") not in LOW_RES, c.ms2a not in LOW_RES
+
+    log("[3/7] mass accuracy from repeated ions and known ions")
+    with _timed(c, "tolerance"):
+        c.ev += tol.detect_tolerances(c.run, c.search_acq, ms2_high_res=c.hr2, ms1_high_res=c.hr1)
+    log("[4/7] labels, enrichment, Cys alkylation (diagnostic ions)")
+    hint, hint_stats, term_stats = _chemistry(c, raw)
+    log("[5/7] repository records and text")
+    with _timed(c, "text"):
+        study, backend, jev, llm_rejected, llm_text_conflicts, jev_report = _texts_and_readers(c, hint_stats,
+                                                                                               term_stats)
+
+    # organism: from the metadata or one ProSE search fixes it (org_panel = the one database); otherwise the panel
+    # mini-search, FASTag and tier 2 decide
+    org_panel = _organism_from_metadata(c) if a.organism_source == "metadata" else None
+    hla_first = _hla_first(c, hint, hint_stats, term_stats)
+    if a.organism_source == "prose" and not str(c.search_acq).startswith("DIA"):
+        org_panel = _organism_from_prose(c, hla_first)
+    org_fixed = org_panel is not None
+    unspec = _unspecific(c.ev)
+    panel = org_panel if org_fixed else _panel(a, with_fasta=True)
+    h = _mini_search(c, panel, org_fixed, unspec)
+    if a.fastag:
+        _fastag_stage(c, h, org_fixed)
+    if not org_fixed:
+        _tier2(c, h, panel, unspec)
 
     log("[7/7] reconciling")
-    decisions = reconcile(ev)
+    decisions = reconcile(c.ev)
     prose = pp.to_prose(decisions)
-    if a.prose:
-        from .prose_runner import confirm_with_prose, find_prose
-        exe = find_prose(a.prose)
-        db = a.fasta or (panel.get(decisions["organism"].value) if panel else None)
-        if exe and db:
-            log(f"  confirming with ProSE ({exe})")
-            try:
-                ev += confirm_with_prose(exe, a.mzml, db, pp.to_cli(prose["params"]),
-                                         open_search=a.open_search, log=log)
-                decisions = reconcile(ev)
-                prose = pp.to_prose(decisions)
-            except Exception as e:  # keep the data-only result
-                log(f"  ProSE confirmation failed: {e}")
+    if a.prose is not None:   # a bare --prose means ProSE from PATH
+        decisions, prose = _confirm_with_prose(c, decisions, prose, panel, h)
     review = L.review(backend, decisions) if backend and a.llm_review else []
-    if jev and study:
-        jev_issues = J.cross_check(jev, jev_study, decisions)
+    # the texts alone: the data cannot confirm themselves
+    jev_issues = J.cross_check(jev, study, decisions) if jev and study else []
     consistency = J.consistency(decisions)
-    timings["total"] = round(time.time() - t0, 1)
+    c.timings["total"] = round(time.time() - t0, 1)
     return {
         "tool": "prose-auto 0.1 (prototype)",
-        "input": {**run.summary(), "given": a.mzml, "pseudo_spectra": spectra_file if pseudo else None},
+        "input": {**c.run.summary(), "given": a.mzml, "pseudo_spectra": c.spectra_file if c.pseudo else None},
         "decisions": {k: d.to_dict() for k, d in decisions.items()},
         "prose": prose,
         "prose_cli": pp.to_cli(prose["params"]),
@@ -497,7 +604,7 @@ def analyze(a, log=print):
                 "calls": jev.calls if jev else 0, "cost_usd": round(jev.cost_usd, 5) if jev else 0},
         "consistency": consistency,
         "text_conflicts": llm_text_conflicts + (jev_report.get("text_rules", []) if jev_report else []),
-        "timings_s": timings,
+        "timings_s": c.timings,
         "digest_hint": {"hint": hint, **hint_stats, "termini": term_stats},
     }
 
@@ -526,39 +633,29 @@ def markdown(rep):
              "enrichment", "enzyme", "organism", "variable_mods", "dia_windows", "collision_energy",
              "instrument_class", "ion_mobility"]
     ds = rep["decisions"]
-    for k in order + [k for k in ds if k not in order]:
-        if k in ds:
-            d = ds[k]
-            L_.append(f"| {d['label']} | {_fmt(d['value'])} | {d['confidence']:.2f} | {STATUS[d['status']]} | {d['source']} |")
+    keys = [k for k in order if k in ds] + [k for k in ds if k not in order]
+    for k in keys:
+        d = ds[k]
+        L_.append(f"| {d['label']} | {_fmt(d['value'])} | {d['confidence']:.2f} | {STATUS[d['status']]} | {d['source']} |")
     L_ += ["", "## Conflicts and notes", ""]
-    any_c = False
-    for k, d in ds.items():
-        for c in d["conflicts"]:
-            L_.append(f"- **{d['label']}**: {c}")
-            any_c = True
-    for n in rep["prose"]["notes"]:
-        L_.append(f"- {n}")
-        any_c = True
-    for r in rep.get("consistency", []):
-        L_.append(f"- Consistency ({r.get('severity')}): **{r.get('parameter')}** {r.get('issue')}")
-        any_c = True
-    for r in rep.get("text_conflicts", []):
-        L_.append(f"- Texts disagree with each other ({r.get('kind', '')}): {r.get('message') or r.get('issue')}")
-        any_c = True
-    for r in rep.get("jev", {}).get("cross_check", []):
-        L_.append(f"- Jev cross-check ({r.get('severity')}): **{r.get('parameter')}** {r.get('issue')}")
-        any_c = True
-    for r in rep["llm"]["review"]:
-        L_.append(f"- LLM review ({r.get('severity')}): **{r.get('parameter')}** {r.get('issue')}")
-        any_c = True
-    if not any_c:
+    n = len(L_)
+    for d in ds.values():
+        L_ += [f"- **{d['label']}**: {c}" for c in d["conflicts"]]
+    L_ += [f"- {x}" for x in rep["prose"]["notes"]]
+    L_ += [f"- Consistency ({r.get('severity')}): **{r.get('parameter')}** {r.get('issue')}"
+           for r in rep.get("consistency", [])]
+    L_ += [f"- Texts disagree with each other ({r.get('kind', '')}): {r.get('message') or r.get('issue')}"
+           for r in rep.get("text_conflicts", [])]
+    L_ += [f"- Jev cross-check ({r.get('severity')}): **{r.get('parameter')}** {r.get('issue')}"
+           for r in rep.get("jev", {}).get("cross_check", [])]
+    L_ += [f"- LLM review ({r.get('severity')}): **{r.get('parameter')}** {r.get('issue')}"
+           for r in rep["llm"]["review"]]
+    if len(L_) == n:
         L_.append("- none")
     L_ += ["", "## ProSE parameters", "", "```", "ProSE -in <mzML> -database <fasta> -out <idXML> \\",
            "  " + " ".join(f'"{x}"' if " " in x or not x else x for x in rep["prose_cli"]), "```", "",
            "## Evidence", ""]
-    for k in order + [k for k in ds if k not in order]:
-        if k not in ds:
-            continue
+    for k in keys:
         d = ds[k]
         L_.append(f"**{d['label']}** = {_fmt(d['value'])}")
         for e in d["evidence"]:
@@ -583,22 +680,25 @@ MODEL_PROTEOMES = {
 
 def _download(url, dst, log=print, attempts=5):
     """UniProt's REST endpoints return sporadic HTTP 500s: retry, and never leave a partial file."""
-    import urllib.request
+    part = f"{dst}.{os.getpid()}.part"  # parallel analyses may fetch the same proteome
     for attempt in range(attempts):
         try:
-            with urllib.request.urlopen(url, timeout=600) as r:
-                data = r.read()
-            break
-        except OSError as e:  # URLError and HTTPError are OSErrors
+            with urllib.request.urlopen(url, timeout=600) as r, open(part, "wb") as fh:
+                shutil.copyfileobj(r, fh, 1 << 20)
+                want = r.headers.get("Content-Length")
+                if want and fh.tell() != int(want):   # a cut connection must not become a cached database
+                    raise OSError(f"truncated download: {fh.tell()} of {want} bytes")
+        except BaseException as e:
+            with contextlib.suppress(OSError):
+                os.remove(part)
+            if not isinstance(e, OSError):  # URLError and HTTPError are OSErrors
+                raise
             log(f"    attempt {attempt + 1} failed: {e}")
             time.sleep(10 * 2 ** attempt)
-    else:
-        return False
-    part = f"{dst}.{os.getpid()}.part"  # parallel analyses may fetch the same proteome
-    with open(part, "wb") as fh:
-        fh.write(data)
-    os.replace(part, dst)
-    return True
+            continue
+        os.replace(part, dst)
+        return True
+    return False
 
 
 def fetch_panel(out, reviewed=True, log=print):
@@ -619,9 +719,6 @@ def fetch_proteome(organism, cache, log=print):
     """UniProt reference proteome of an organism outside the panel (species name, or a genus: then the first
     reference proteome UniProt lists for it), all entries (non-model organisms have few reviewed ones), cached as
     <cache>/<Genus_species>.fasta. Returns (name, path) or None."""
-    import json
-    import urllib.parse
-    import urllib.request
     words = str(organism).replace("_", " ").split()
     if not words or not words[0][:1].isupper():
         return None

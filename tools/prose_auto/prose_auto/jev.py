@@ -62,9 +62,10 @@ class Jev:
 
     def _http(self, body):
         headers = {"Content-Type": "application/json", "Authorization": f"Bearer {self.key}"}
-        if len(json.dumps(body["state"])) > 400_000:
+        data = json.dumps(body).encode()
+        if len(data) > 400_000:
             headers["TypeSafe-Danger-Zone-Long-Context"] = "true"
-        req = urllib.request.Request(self.url, data=json.dumps(body).encode(), headers=headers)
+        req = urllib.request.Request(self.url, data=data, headers=headers)
         with urllib.request.urlopen(req, timeout=self.timeout) as r:
             return json.loads(r.read())
 
@@ -81,9 +82,10 @@ class Jev:
         out = self.transport(body)
         if cache:
             os.makedirs(cache, exist_ok=True)
-            with open(f + ".tmp", "w") as fh:
+            tmp = f"{f}.{os.getpid()}.tmp"   # parallel analyses may write the same request
+            with open(tmp, "w") as fh:
                 json.dump(out, fh)
-            os.replace(f + ".tmp", f)
+            os.replace(tmp, f)
         self.calls += 1
         u = out.get("usage") or {}
         self.cost_usd += float(u.get("cost_usd") or (u.get("input_tokens") or 0) * USD_PER_INPUT_TOKEN)
@@ -138,6 +140,9 @@ def read_study(jev: Jev, texts: dict, user=False, min_p=0.5):
         ans = jev.decide(state, study_questions())
     except Exception as e:
         return [], {"error": str(e)}
+    # with the measured block in the state Jev's answers are not text-only: they must not count as independent
+    # agreement with the measurement they may repeat (reconcile._combine)
+    method = jev.name + ("+data" if "measured from the spectra" in state else "")
     mapped = {h.name: _map_answer(h, ans[h.name]) for h in S.HEADS if h.name in ans}
     decoded, changed = S.decode(mapped)
     flags = {k.split(":", 1)[1]: float(a.get("noul", 0)) for k, a in ans.items() if k.startswith(("var:", "scope:"))}
@@ -162,27 +167,22 @@ def read_study(jev: Jev, texts: dict, user=False, min_p=0.5):
         if h.name == "organism" and v in ("other species", "mixed species"):
             continue
         conf = min(h.cap, cap_user, 0.7 * p) * (0.8 if h.name in changed else 1.0)
-        ev.append(Evidence(h.parameter, v, conf, "llm", jev.name,
+        ev.append(Evidence(h.parameter, v, conf, "llm", method,
                            f"Jev read the study texts: {h.name} = {decoded[h.name]} (p={p:.2f})"
                            + ("; chosen by the consistency rules over the top answer" if h.name in changed else "")))
     mods = [m for m in S.VARIABLE_MOD_FLAGS if flags.get(m, 0) >= 0.6]
     if mods:
-        ev.append(Evidence("variable_mods", mods, 0.5, "llm", jev.name,
+        ev.append(Evidence("variable_mods", mods, 0.5, "llm", method,
                            "Jev: the texts say these were searched as variable modifications"))
     for r in S.RULES:
         if r.kind == "imply" and r.test(facts):
             for k, val in r.fix.items():
                 if k in PARAMETERS and k != "ion_mobility":
-                    ev.append(Evidence(k, val, 0.45, "llm", jev.name, f"implied by the text: {r.message}"))
+                    ev.append(Evidence(k, val, 0.45, "llm", method, f"implied by the text: {r.message}"))
     report = {"heads": decoded, "probabilities": {k: v["probabilities"] for k, v in mapped.items()},
               "changed_by_rules": changed, "flags": flags, "text_rules": S.check(facts),
               "sources": list(state)}
     return ev, report
-
-
-def classify(jev: Jev, text: str, source_label: str, user=False, min_p=0.5):
-    """One text on its own (kept for single-source use)."""
-    return read_study(jev, {source_label: text}, user=user, min_p=min_p)
 
 
 def cross_check(jev: Jev, texts, decisions: dict, source_label="description"):

@@ -105,8 +105,18 @@ def _untested_pick(d, evs):
     return Decision("organism", search[0].value, round(conf * 0.85, 3), "search", evs, d.conflicts + [note], "review")
 
 
+MEASURED_SOURCES = ("data", "metadata", "search")
+
+
+def _echo(a: Evidence, b: Evidence):
+    """a reader that saw the measured data (Jev "+data") and a measurement are no independent witnesses"""
+    return (a.method.endswith("+data") and b.source in MEASURED_SOURCES) or \
+        (b.method.endswith("+data") and a.source in MEASURED_SOURCES)
+
+
 def _combine(winner: Evidence, evs: list):
-    agree = [e for e in evs if e is not winner and _same(e.value, winner.value) and e.source != winner.source]
+    agree = [e for e in evs if e is not winner and _same(e.value, winner.value) and e.source != winner.source
+             and not _echo(e, winner)]
     p = 1 - winner.confidence
     for e in agree:
         p *= 1 - 0.5 * e.confidence   # agreement counts half: sources are not fully independent
@@ -146,6 +156,29 @@ def _decide(param, evs, order=None):
             and w.source in ("data", "search", "metadata"):
         status = "review"
     return Decision(param, w.value, round(conf, 3), w.source, evs, conflicts, status)
+
+
+def _variable_mods(evs):
+    """Lists from different sources complement each other (the delta-mass histogram, the SDRF, Jev's flags): the
+    union of the modifications a source names with confidence >= 0.5, most supported first. As one winning list, a second list counted as a conflict and dropped both below the
+    threshold of the search settings."""
+    strong = [e for e in evs if e.confidence >= 0.5 and isinstance(e.value, list)]
+    if not strong:
+        return _decide("variable_mods", evs)
+    measured = {m for e in strong if e.source in MEASURED_SOURCES for m in e.value}
+    score = {}
+    for e in strong:
+        echo = e.method.endswith("+data")
+        for m in e.value:
+            if isinstance(m, str) and not (echo and m in measured):   # Jev repeating a measurement adds nothing
+                score[m] = score.get(m, 0.0) + e.confidence
+    if not score:
+        return _decide("variable_mods", evs)
+    w = max(strong, key=lambda e: e.confidence)
+    sources = {e.source for e in strong if not e.method.endswith("+data")} or {w.source}
+    conf = min(0.9, w.confidence + 0.1 * (len(sources) - 1))
+    return Decision("variable_mods", sorted(score, key=lambda m: -score[m]), round(conf, 3),
+                    w.source, evs, [], "auto" if conf >= 0.7 else "review")
 
 
 def _label(evs):
@@ -252,7 +285,7 @@ def reconcile(evidence: list) -> dict:
     for p in ("instrument", "instrument_class", "ms1_analyzer", "ms2_analyzer", "fragmentation",
               "collision_energy", "ion_mobility", "acquisition", "dia_windows", "charge_range",
               "precursor_offset", "fragment_offset", "enzyme", "cys_alkylation", "enrichment",
-              "variable_mods", "peptide_length"):
+              "peptide_length"):
         if p in by:
             # enrichment: when the spectra could test it (>= 100 charged DDA spectra, confidence >= 0.6) the
             # measurement wins; project texts mention phospho for atlases whose other runs were enriched
@@ -260,6 +293,10 @@ def reconcile(evidence: list) -> dict:
             d = _decide(p, by[p], ORDER_MEASURED if tested else None)
             if d:
                 out[p] = _co_enrichment(d, by[p]) if p == "enrichment" else d
+    if "variable_mods" in by:
+        d = _variable_mods(by["variable_mods"])
+        if d:
+            out["variable_mods"] = d
     if "label" in by:
         d = _label(by["label"])
         if d:

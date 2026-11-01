@@ -20,7 +20,9 @@ from __future__ import annotations
 import csv
 import io
 import json
+import os
 import re
+from collections import Counter
 import urllib.request
 
 from .evidence import Evidence
@@ -157,6 +159,47 @@ def sdrf_evidence(text, source_name="SDRF") -> list:
     return ev
 
 
+# --- texts for the readers (Jev, LLM) ---------------------------------------------
+RECORD_FIELDS = ("organisms", "organismParts", "diseases", "cellTypes", "instruments", "softwares",
+                 "quantificationMethods", "identifiedPTMStrings", "experimentTypes", "keywords", "projectTags",
+                 "submissionType", "submissionDate", "publicationDate")
+
+
+def record_text(p):
+    """The structured fields of a PRIDE project as text: the readers see the record the evidence came from."""
+    def names(v):
+        items = v if isinstance(v, list) else [v]
+        return [str(x.get("name") or x.get("value") or x.get("accession")) if isinstance(x, dict) else str(x)
+                for x in items if x]
+    lines = [f"{k}: {'; '.join(names(p[k]))}" for k in RECORD_FIELDS if p.get(k)]
+    for r in p.get("references") or []:
+        if isinstance(r, dict) and r.get("referenceLine"):
+            lines.append(f"reference: {r['referenceLine']}")
+    return "\n".join(lines)
+
+
+def sdrf_digest(sdrf, data_file="", max_values=25):
+    """The whole SDRF, compact: every column with its distinct values and counts, then the rows of this data file
+    verbatim. Replaces the first 8,000 characters, which often held only the header and a few rows."""
+    rows = list(csv.reader(io.StringIO(sdrf or ""), delimiter="\t"))
+    if len(rows) < 2:
+        return ""
+    head, body = rows[0], [r + [""] * (len(rows[0]) - len(r)) for r in rows[1:]]
+    stem = lambda f: re.sub(r"\.(raw|mzml|d|d\.zip|d\.tar\.gz|wiff)$", "", os.path.basename(f).lower())
+    fi = [i for i, h in enumerate(head) if "data file" in h.lower()]
+    mine = [r for r in body if fi and data_file and stem(r[fi[0]]) == stem(data_file)]
+    out = []
+    if mine:   # first, so a long table cannot push them out of the reader's budget
+        out.append(f"Rows of this data file ({os.path.basename(data_file)}):")
+        out += ["; ".join(f"{h}={v}" for h, v in zip(head, r) if v) for r in mine[:6]]
+    out.append(f"Whole SDRF: {len(body)} rows, {len(head)} columns; values per column (count):")
+    for h, col in zip(head, zip(*body)):
+        c = Counter(col)
+        vals = "; ".join(f"{v[:100]} ({n})" for v, n in c.most_common(max_values))
+        out.append(f"{h}: {vals}" + (f"; ... {len(c) - max_values} more" if len(c) > max_values else ""))
+    return "\n".join(out)[:15000]
+
+
 # --- PRIDE / MassIVE -----------------------------------------------------------
 
 def pride_evidence(acc, log=print):
@@ -185,6 +228,7 @@ def pride_evidence(acc, log=print):
         "sample_protocol": p.get("sampleProcessingProtocol", ""),
         "data_protocol": p.get("dataProcessingProtocol", ""),
         "references": p.get("references", []),
+        "record": record_text(p),
     }
     return ev, texts
 
