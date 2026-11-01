@@ -7,6 +7,7 @@
 // --------------------------------------------------------------------------
 
 #include <OpenMS/ANALYSIS/TOPDOWN/MassLadderAlgorithm.h>
+#include <OpenMS/ANALYSIS/TOPDOWN/FLASHAblation.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/ProteoformDatabase.h>
 #include <OpenMS/CHEMISTRY/EmpiricalFormula.h>
 #include <OpenMS/CHEMISTRY/Residue.h>
@@ -36,6 +37,8 @@ namespace
 // breaking them by the index would keep every target before every decoy (the decoys follow the targets in the database).
 inline std::uint64_t scrambledIndex(std::uint64_t x)
 {
+  static const bool ablate_tiebreak = flashAblated("tiebreak"); // ablation: upstream's index order
+  if (ablate_tiebreak) return x;
   x += 0x9E3779B97F4A7C15ULL;
   x = (x ^ (x >> 30)) * 0xBF58476D1CE4E5B9ULL;
   x = (x ^ (x >> 27)) * 0x94D049BB133111EBULL;

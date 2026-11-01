@@ -13,6 +13,7 @@
 #include <OpenMS/ANALYSIS/TOPDOWN/FLASHGappedTaggerAlgorithm.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/FLASHTaggerAlgorithm.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/FLASHTnTAlgorithm.h>
+#include <OpenMS/ANALYSIS/TOPDOWN/FLASHAblation.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/FLASHTnTCandidateRanker.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/MassLadderAlgorithm.h>
 #include <algorithm>
@@ -2128,7 +2129,9 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       double score, coverage;
       std::uint64_t order;
       Size index;
+      const String* description; // ablation of the tie-break: upstream's order
     };
+    static const bool ablate_tiebreak = flashAblated("tiebreak");
     std::vector<RankedCandidate> ranked;
     ranked.reserve(candidate_count);
     for (Size i = 0; i < candidate_count; i++)
@@ -2137,12 +2140,13 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       if (i < seq_count)
       {
         const auto& fe = fasta_entry[seq_candidates[i].protein];
-        ranked.push_back({scores[i], (double)seq_candidates[i].covered_pos / (double)fe.sequence.length(), scrambledIndex(seq_candidates[i].protein), i});
+        ranked.push_back({scores[i], (double)seq_candidates[i].covered_pos / (double)fe.sequence.length(), scrambledIndex(seq_candidates[i].protein), i, &fe.description});
       }
-      else { ranked.push_back({scores[i], hits[i - seq_count].getCoverage(), scrambledIndex(hit_shifts[i - seq_count].fasta_index), i}); }
+      else { ranked.push_back({scores[i], hits[i - seq_count].getCoverage(), scrambledIndex(hit_shifts[i - seq_count].fasta_index), i, &fasta_entry[hit_shifts[i - seq_count].fasta_index].description}); }
     }
     const Size ranked_count = ranked.size();
     std::sort(ranked.begin(), ranked.end(), [](const RankedCandidate& left, const RankedCandidate& right) {
+      if (ablate_tiebreak && left.score == right.score && left.coverage == right.coverage) return *left.description > *right.description;
       return left.score == right.score ? (left.coverage == right.coverage ? (left.order < right.order) : (left.coverage > right.coverage))
                                        : (left.score > right.score);
     });
@@ -3238,7 +3242,8 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
           // PrSM is chosen: out holds the other sources' PrSMs (one PrSM per spectrum: the best of the tag search; every candidate's
           // with keep_all, which keepBestPerSpectrum_ then chooses from), so the proteoform stays with the tag search and its class. The
           // rule reads no label.
-          if (! native_rule && is_determined(h)
+          static const bool ablate_duplicate = flashAblated("duplicate");
+          if (! ablate_duplicate && ! native_rule && is_determined(h)
               && std::any_of(out.begin(), out.end(), [&](const ProteinHit& o) {
                    return is_determined(o) && o.getAccession() == h.getAccession() && areConsistent_(o, h, pl_precursor_tol);
                  }))
@@ -3642,13 +3647,14 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       std::vector<bool> decoys;
       proteoformQvalues(hit_class, qvalues, decoys, decoy_weights, false);
       std::set<int> identified, seen;
+      static const bool ablate_cascade = flashAblated("cascade");
       for (Size i = 0; i < proteoform_hits_.size(); i++)
       {
         const auto& hit = proteoform_hits_[i];
         const auto it = spectrum_of_scan_number.find((int)hit.getMetaValue(mi_scan));
         // the spectrum's best PrSM only (proteoform_hits_ is in byScore order here)
         if (it == spectrum_of_scan_number.end() || ! seen.insert(it->second).second) continue;
-        if (hit_class[i] < 0 || (double)hit.getMetaValue("proqvalue", 1.0) > rep_q) continue;
+        if ((ablate_cascade && decoys[i]) || hit_class[i] < 0 || (double)hit.getMetaValue("proqvalue", 1.0) > rep_q) continue;
         identified.insert(it->second);
       }
       proteoform_hits_.swap(kept);
