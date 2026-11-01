@@ -18,12 +18,6 @@ from . import tagsearch as ts
 from .evidence import Evidence
 
 
-def _psms(scans, peaks, index, prec_ppm, frag_tol, frag_ppm, mods, fdr=0.01):
-    ps = ts.score_search(scans, index, prec_ppm, frag_tol, frag_ppm, mods, peaks=peaks)
-    ok, thr = ts.fdr_filter(ps, fdr)
-    return ok, len(ps)
-
-
 def _margin_conf(best, second):
     """Confidence from the PSM count margin of the winner over the runner-up."""
     if best <= 0:
@@ -47,27 +41,37 @@ def fragment_errors(scans, peaks, psms, mods, frag_tol, frag_ppm):
 
 class HypothesisTester:
     def __init__(self, run, frag_tol, frag_ppm, prec_ppm=20.0, n_spectra=2000,
-                 mods: ts.Mods | None = None, log=print):
+                 mods: ts.Mods | None = None, log=print, sample="top", seed=0):
         self.run = run
-        self.scans = ts.select_scans(run, n_spectra)
+        self.scans = ts.select_scans(run, n_spectra, sample, seed)
         self.peaks = [ts.prepare_peaks(s) for s in self.scans]
         self.frag_tol, self.frag_ppm, self.prec_ppm = frag_tol, frag_ppm, prec_ppm
         self.mods = mods or ts.Mods()
         self.log = log
         self.best_db = None       # (name, path)
         self.best_psms = []
+        self._done = {}           # (FASTA, enzyme, mods) -> (passing PSMs, peptides): each search runs once
+
+    def _search(self, name, path, mods, enzyme="Trypsin"):
+        """PSMs at 1% FDR of one database under one setting; the organism search under the run's modifications is
+        also the Trypsin/CAM variant of the Cys and protease competitions and the old winner in tier 2."""
+        key = (ts._cache_key(path, enzyme, 1), mods.cys, mods.k, mods.nterm)
+        if key not in self._done:
+            idx = ts.index_for(name, path, mods, enzyme=enzyme)
+            ok, _ = ts.fdr_filter(ts.score_search(self.scans, idx, self.prec_ppm, self.frag_tol, self.frag_ppm, mods,
+                                                  peaks=self.peaks))
+            self._done[key] = (ok, len(idx))
+        return self._done[key]
 
     # -- organism -------------------------------------------------------------
-    def organism(self, panel: dict, missed=1) -> list:
+    def organism(self, panel: dict) -> list:
         res = {}
         for name, path in panel.items():
             t = time.time()
-            idx = ts.build_index(name, ts.read_fasta(path), self.mods, missed=missed)
-            ok, n = _psms(self.scans, self.peaks, idx, self.prec_ppm, self.frag_tol,
-                          self.frag_ppm, self.mods)
-            res[name] = {"psms": len(ok), "scans": {p[0] for p in ok}, "peptides": len(idx.seqs),
+            ok, n_pep = self._search(name, path, self.mods)
+            res[name] = {"psms": len(ok), "scans": {p[0] for p in ok}, "peptides": n_pep,
                          "seconds": round(time.time() - t, 1), "_ok": ok, "path": path}
-            self.log(f"  organism {name}: {len(ok)} PSMs at 1% FDR ({len(idx.seqs)} peptides, "
+            self.log(f"  organism {name}: {len(ok)} PSMs at 1% FDR ({n_pep} peptides, "
                      f"{res[name]['seconds']} s)")
         if not res:
             return []
@@ -110,9 +114,6 @@ class HypothesisTester:
         self.best_psms = res[best]["_ok"]
         return ev
 
-    def _db(self):
-        return self.best_db
-
     # -- accuracy -------------------------------------------------------------
     def accuracy(self) -> list:
         ev = []
@@ -148,15 +149,13 @@ class HypothesisTester:
         return ev
 
     # -- competing settings on the best database -------------------------------
-    def _compete(self, parameter, variants, missed=1, enzyme="Trypsin", method=""):
+    def _compete(self, parameter, variants):
         if not self.best_db:
             return []
         name, path = self.best_db
-        prots = list(ts.read_fasta(path))
         counts = {}
         for label, mods, enz in variants:
-            idx = ts.build_index(name, prots, mods, enzyme=enz or enzyme, missed=missed)
-            ok, _ = _psms(self.scans, self.peaks, idx, self.prec_ppm, self.frag_tol, self.frag_ppm, mods)
+            ok, _ = self._search(name, path, mods, enz or "Trypsin")
             counts[label] = {"psms": len(ok), "with_C": sum(1 for p in ok if "C" in p[3])}
             self.log(f"  {parameter} {label}: {counts[label]}")
         return counts

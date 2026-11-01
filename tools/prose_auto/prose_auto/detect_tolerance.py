@@ -126,12 +126,19 @@ def detect_tolerances(run, acquisition="DDA", ms2_high_res=True, ms1_high_res=Tr
     frag_unit = "ppm" if ms2_high_res else "Da"
     frag_tol_match = 30.0 if ms2_high_res else 0.6     # pairing tolerance
     stats = {}
+    tops = {}
+
+    def top(scan, n=40):   # a spectrum sits in many pairs: sort its peaks once
+        k = (id(scan), n)
+        if k not in tops:
+            tops[k] = _top_peaks(scan, n)
+        return tops[k]
 
     # --- fragment precision (and precursor precision for DDA) from repeated ions
     pairs = _pairs_dia(run.ms2) if dia else _pairs_dda(run.ms2)
     prec_d, frag_d, n_good = [], [], 0
     for a, b in pairs:
-        pa, pb = _top_peaks(a), _top_peaks(b)
+        pa, pb = top(a), top(b)
         d = _match(pa, pb, frag_tol_match, ms2_high_res)
         if d.size >= 20:
             n_good += 1
@@ -172,7 +179,7 @@ def detect_tolerances(run, acquisition="DDA", ms2_high_res=True, ms1_high_res=Tr
     # --- MS1 precision from neighbouring survey scans (every acquisition mode)
     if ms1_high_res and len(run.ms1) >= 10:
         ms1 = sorted(run.ms1, key=lambda x: x.rt)
-        d = [_match(_top_peaks(a, 100), _top_peaks(b, 100), 20.0, True)
+        d = [_match(top(a, 100), top(b, 100), 20.0, True)
              for a, b in zip(ms1[:-1], ms1[1:])]
         d = np.concatenate(d) if d else np.empty(0)
         fit = fit_gauss_uniform(d, 20.0)

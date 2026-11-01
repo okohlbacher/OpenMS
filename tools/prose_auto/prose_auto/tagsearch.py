@@ -1,36 +1,29 @@
-"""A small sequence-tag search used to test hypotheses before the real search.
+"""The mini-search: score the top spectra of a run against in-silico digests to test hypotheses before the real
+search (organism, Cys alkylation, protease, mass accuracy).
 
-De novo sequence tags (>= 3 residues) are read from the MS2 spectra and
-matched, together with the precursor mass and the flanking fragment mass,
-against in-silico digests of candidate databases. Target and reversed-decoy
-digests are searched the same way, so every count comes with its own
-background. The same machinery answers several Auto Mode questions:
-
-* organism: which model-organism proteome explains the most spectra
-  (net target - decoy matches; spectra that only one organism explains);
-* Cys alkylation: which Cys mass explains the most Cys-containing peptides;
-* protease: which cleavage rule explains the most spectra;
-* mass accuracy: the precursor errors of the matched spectra give the
-  systematic offset and the spread, i.e. a calibration search.
-
-This is a prototype in pure Python/numpy. The production version belongs in
-ProSE's own fragment index (a subset search per hypothesis), see the report.
+Every candidate in the precursor window is scored by its matched b/y ions (a binomial score, as in Andromeda and
+MS Amanda); reversed decoys in the same index give the FDR. Digests do not depend on the run: they are cached on disk
+per (FASTA content, enzyme, missed cleavages) and memory-mapped, and a modification setting (Cys, label) is only a
+vectorised mass sum over the cached residue counts.
 """
 
 from __future__ import annotations
 
 import gzip
+import hashlib
 import math
 import os
 import re
-from collections import defaultdict
-from dataclasses import dataclass, field
+import tempfile
+from dataclasses import dataclass
 
 import numpy as np
 
 PROTON = 1.007276466812
 H2O = 18.010564684
 ISO = 1.0033548378
+MAX_LEN = 30
+MAX_CANDIDATES = 500      # per precursor window and isotope
 
 AA = {
     "G": 57.021464, "A": 71.037114, "S": 87.032028, "P": 97.052764, "V": 99.068414,
@@ -52,7 +45,7 @@ LABEL_MASS = {"TMT": 229.162932, "TMTpro": 304.207146, "iTRAQ4plex": 144.102063,
               "iTRAQ8plex": 304.205360}
 
 ENZYMES = {
-    # name: (cleave after, not before, or None for N-terminal cleavers)
+    # name: (cleave after, not before, side)
     "Trypsin": ("KR", "P", "C"),
     "Trypsin/P": ("KR", "", "C"),
     "Lys-C": ("K", "", "C"),
@@ -61,6 +54,8 @@ ENZYMES = {
     "Glu-C": ("E", "", "C"),
     "Asp-N": ("D", "", "N"),
 }
+
+CACHE_DIR = os.environ.get("PROSE_AUTO_INDEX_CACHE", os.path.join(os.path.expanduser("~"), ".cache", "prose_auto", "index"))
 
 
 def read_fasta(path):
@@ -84,7 +79,7 @@ def is_decoy(acc):
     return a.startswith(("DECOY_", "REV_", "XXX_", "DECOY")) or a.endswith(("_REVERSED", "_DECOY", "_REV"))
 
 
-def digest(seq, enzyme="Trypsin", missed=1, min_len=7, max_len=30):
+def digest(seq, enzyme="Trypsin", missed=1, min_len=7, max_len=MAX_LEN):
     after, not_before, side = ENZYMES[enzyme]
     sites = [0]
     for i in range(len(seq) - 1):
@@ -102,46 +97,25 @@ def digest(seq, enzyme="Trypsin", missed=1, min_len=7, max_len=30):
     return out
 
 
-def canon(s, low_res=False):
-    s = s.replace("I", "L")
-    if low_res:
-        s = s.replace("Q", "K")
-    return s
-
-
 @dataclass
 class Mods:
     cys: float = 57.021464
     k: float = 0.0          # fixed mass on K (label)
     nterm: float = 0.0      # fixed mass on the peptide N-term (label)
 
-    def residue(self, aa):
-        m = AA.get(aa)
-        if m is None:
-            return None
-        if aa == "C":
-            m += self.cys
-        elif aa == "K":
-            m += self.k
-        return m
+    def residue_lut(self):
+        """Residue mass by ASCII code (0 for padding)."""
+        lut = np.zeros(256)
+        for aa, m in AA.items():
+            lut[ord(aa)] = m + (self.cys if aa == "C" else self.k if aa == "K" else 0.0)
+        return lut
 
 
-@dataclass
-class PeptideIndex:
-    name: str
-    seqs: list = field(default_factory=list)
-    canon: list = field(default_factory=list)
-    masses: np.ndarray = None
-    decoy: np.ndarray = None   # bool per peptide
-
-
-def build_index(name, proteins, mods: Mods, enzyme="Trypsin", missed=1, low_res=False,
-                max_proteins=None):
-    """Digest targets and reversed decoys of a protein list [(acc, seq)]."""
+# --- digest cache -------------------------------------------------------------
+def _digest_arrays(proteins, enzyme, missed):
+    """Targets and reversed decoys, first-seen order; a peptide seen as target and decoy is a target."""
     seen = {}
-    for n, (acc, seq) in enumerate(proteins):
-        if max_proteins and n >= max_proteins:
-            break
+    for acc, seq in proteins:
         if is_decoy(acc):
             continue
         seq = re.sub(r"[^A-Z]", "", seq.upper())
@@ -150,138 +124,87 @@ def build_index(name, proteins, mods: Mods, enzyme="Trypsin", missed=1, low_res=
                 if p in seen and (seen[p] is False or dec):
                     continue
                 seen[p] = dec
-    seqs, masses, dec = [], [], []
-    for p, d in seen.items():
-        m = 0.0
-        ok = True
-        for aa in p:
-            r = mods.residue(aa)
-            if r is None:
-                ok = False
-                break
-            m += r
-        if not ok:
-            continue
-        seqs.append(p)
-        masses.append(m + H2O + mods.nterm)
-        dec.append(d)
-    order = np.argsort(masses)
-    idx = PeptideIndex(name)
-    idx.seqs = [seqs[i] for i in order]
-    idx.canon = [canon(seqs[i], low_res) for i in order]
-    idx.masses = np.asarray(masses)[order]
-    idx.decoy = np.asarray(dec, dtype=bool)[order]
-    return idx
+    ok = set(AA)
+    peps = [p for p in seen if set(p) <= ok]           # unknown residues (X, B, U, ...) have no mass
+    codes = np.array(peps, dtype=f"S{MAX_LEN}")
+    m = codes.view(np.uint8).reshape(len(peps), MAX_LEN)
+    base = Mods(cys=0.0).residue_lut()[m].sum(1)
+    return {"codes": codes, "decoy": np.array([seen[p] for p in peps], dtype=bool), "base": base,
+            "n_c": (m == ord("C")).sum(1).astype(np.uint8), "n_k": (m == ord("K")).sum(1).astype(np.uint8)}
 
 
-def spectrum_tags(scan, frag_tol, mods: Mods, low_res=False, top=60, min_len=3, max_tags=20):
-    """Sequence tags: paths through peaks whose spacings are residue masses.
-    Returns [(tag, start_mz, end_mz)] where the tag reads from low to high m/z."""
-    if scan.mz.size < 5:
-        return []
-    idx = np.argsort(scan.intensity)[::-1][:top]
-    mz = np.sort(scan.mz[idx])
-    residues = {}
-    for aa in "GASPVTCLNDQKEMHFRYW":
-        m = mods.residue(aa)
-        residues.setdefault(round(m, 3), set()).add(canon(aa, low_res))
-    rmass = np.array(sorted(residues))
-    rlett = [sorted(residues[m])[0] for m in rmass]
-    edges = defaultdict(list)
-    for i in range(mz.size):
-        d = mz[i + 1:] - mz[i]
-        for j_off in np.nonzero((d > 56) & (d < 187))[0]:
-            j = i + 1 + j_off
-            k = np.searchsorted(rmass, d[j_off])
-            for kk in (k - 1, k):
-                if 0 <= kk < rmass.size and abs(rmass[kk] - d[j_off]) <= frag_tol:
-                    edges[i].append((j, rlett[kk]))
-    # longest paths by DFS from each node (graphs are small)
-    best = {}
-
-    def walk(i, tag, start):
-        ext = False
-        for j, a in edges.get(i, ()):
-            if len(tag) < 12:
-                ext = True
-                walk(j, tag + a, start)
-        if not ext and len(tag) >= min_len:
-            key = (tag, round(mz[start], 2))
-            best[key] = (tag, mz[start], mz[i])
-
-    for i in list(edges):
-        walk(i, "", i)
-        if len(best) > 400:
-            break
-    tags = sorted(best.values(), key=lambda t: -len(t[0]))
-    return tags[:max_tags]
+_HASHES = {}
 
 
-def _prefix_masses(seq, mods: Mods):
-    out = [mods.nterm]
-    for aa in seq:
-        out.append(out[-1] + (mods.residue(aa) or 0.0))
-    return out
+def _cache_key(path, enzyme, missed):
+    st = os.stat(path)
+    ident = (os.path.realpath(path), st.st_dev, st.st_ino, st.st_size, st.st_mtime_ns)   # hash once per process
+    if ident not in _HASHES:
+        h = hashlib.sha1()
+        with open(path, "rb") as fh:
+            for block in iter(lambda: fh.read(1 << 20), b""):
+                h.update(block)
+        _HASHES[ident] = h.hexdigest()[:16]
+    return f"{_HASHES[ident]}_{enzyme.replace('/', '_')}_{missed}_v1"
 
 
-def match_spectrum(scan, tags, index: PeptideIndex, prec_ppm, frag_tol, mods: Mods,
-                   charges=(2, 3), low_res=False):
-    """Return (peptide, is_decoy, precursor_ppm_error) of the first consistent
-    candidate, or None."""
-    if not tags or scan.precursor_mz <= 0:
-        return None
-    zs = (scan.charge,) if scan.charge > 0 else charges
-    for z in zs:
-        mass = (scan.precursor_mz - PROTON) * z
-        for iso in (0, 1):
-            m = mass - iso * ISO
-            tol = m * prec_ppm * 1e-6
-            lo = np.searchsorted(index.masses, m - tol)
-            hi = np.searchsorted(index.masses, m + tol)
-            for c in range(lo, hi):
-                cs = index.canon[c]
-                for tag, start, _end in tags:
-                    for t, ion in ((tag, "b"), (tag[::-1], "y")):
-                        pos = cs.find(t)
-                        while pos >= 0:
-                            pm = _prefix_masses(index.seqs[c], mods)
-                            if ion == "b":
-                                expect = pm[pos] + PROTON
-                            else:
-                                expect = (pm[-1] - pm[pos + len(t)]) + H2O + PROTON
-                            if abs(expect - start) <= max(frag_tol * 2, 0.02):
-                                err = (m - index.masses[c]) / index.masses[c] * 1e6
-                                return index.seqs[c], bool(index.decoy[c]), err
-                            pos = cs.find(t, pos + 1)
-    return None
+_LOADED = {}
 
 
-def search(scans, index, prec_ppm, frag_tol, mods, low_res=False, tag_cache=None):
-    """Search spectra against one index. Returns dict with target/decoy counts,
-    the matched peptides and precursor errors of target matches."""
-    t = d = 0
-    hits = {}
-    errs = []
-    for k, s in enumerate(scans):
-        tags = tag_cache[k] if tag_cache is not None else spectrum_tags(s, frag_tol, mods, low_res)
-        r = match_spectrum(s, tags, index, prec_ppm, frag_tol, mods, low_res=low_res)
-        if r is None:
-            continue
-        if r[1]:
-            d += 1
-        else:
-            t += 1
-            hits[k] = r[0]
-            errs.append(r[2])
-    return {"target": t, "decoy": d, "net": t - d, "hits": hits, "errors": errs}
+def load_digest(path, enzyme="Trypsin", missed=1, cache_dir=None):
+    """The digest of a FASTA file, from the disk cache (built once, written atomically, memory-mapped)."""
+    key = _cache_key(path, enzyme, missed)
+    if key in _LOADED:
+        return _LOADED[key]
+    d = os.path.join(cache_dir or CACHE_DIR, key)
+    if not os.path.exists(os.path.join(d, "done")):
+        arr = _digest_arrays(read_fasta(path), enzyme, missed)
+        os.makedirs(os.path.dirname(d), exist_ok=True)
+        tmp = tempfile.mkdtemp(prefix=key + ".", dir=os.path.dirname(d))
+        for k, v in arr.items():
+            np.save(os.path.join(tmp, k + ".npy"), v)
+        open(os.path.join(tmp, "done"), "w").close()
+        try:
+            os.rename(tmp, d)                      # another process may have finished first: keep its copy
+        except OSError:
+            for f in os.listdir(tmp):
+                os.remove(os.path.join(tmp, f))
+            os.rmdir(tmp)
+    arr = {k: np.load(os.path.join(d, k + ".npy"), mmap_mode="r") for k in ("codes", "decoy", "base", "n_c", "n_k")}
+    _LOADED[key] = arr
+    return arr
 
 
-def precompute_tags(scans, frag_tol, mods, low_res=False):
-    return [spectrum_tags(s, frag_tol, mods, low_res) for s in scans]
+@dataclass
+class PeptideIndex:
+    name: str
+    codes: np.ndarray       # S30 sequences, sorted by mass
+    masses: np.ndarray      # neutral peptide masses, ascending
+    decoy: np.ndarray
+
+    def seq(self, i):
+        return self.codes[i].decode()
+
+    def __len__(self):
+        return len(self.masses)
 
 
-def select_scans(run, n=2000):
+def index_for(name, path, mods: Mods, enzyme="Trypsin", missed=1, cache_dir=None):
+    """Peptide index of a FASTA file under one modification setting."""
+    d = load_digest(path, enzyme, missed, cache_dir)
+    masses = d["base"] + d["n_c"] * mods.cys + d["n_k"] * mods.k + (H2O + mods.nterm)
+    order = np.argsort(masses, kind="stable")
+    return PeptideIndex(name, d["codes"][order], masses[order], d["decoy"][order])
+
+
+# --- spectra --------------------------------------------------------------------
+def select_scans(run, n=2000, sample="top", seed=0):
+    """n searchable MS2: the highest-TIC ones ("top"), or a uniform random sample ("random")."""
     ms2 = [s for s in run.ms2 if s.precursor_mz > 0 and s.mz.size >= 10]
+    if sample == "random":
+        if len(ms2) <= n:
+            return ms2
+        return [ms2[i] for i in np.sort(np.random.default_rng(seed).choice(len(ms2), n, replace=False))]
     ms2.sort(key=lambda s: -s.tic)
     return ms2[:n]
 
@@ -291,51 +214,8 @@ def load_panel(path):
     panel = {}
     for f in sorted(os.listdir(path)):
         if re.search(r"\.(fasta|fa|faa)(\.gz)?$", f, re.I):
-            name = re.sub(r"\.(fasta|fa|faa)(\.gz)?$", "", f, flags=re.I)
-            panel[name] = os.path.join(path, f)
+            panel[re.sub(r"\.(fasta|fa|faa)(\.gz)?$", "", f, flags=re.I)] = os.path.join(path, f)
     return panel
-
-
-def fdr_net(res):
-    """Decoy-corrected matches and a crude FDR."""
-    return res["net"], (res["decoy"] / res["target"]) if res["target"] else 1.0
-
-
-def robust_offset(errs):
-    if len(errs) < 20:
-        return None
-    e = np.asarray(errs)
-    med = float(np.median(e))
-    mad = float(1.4826 * np.median(np.abs(e - med)))
-    return med, mad, len(e)
-
-
-# --- scoring mini-search -----------------------------------------------------
-# Tags alone are too strict on low-resolution or sparse spectra. The mini
-# search below scores every candidate in the precursor window by its matched
-# b/y ions (a binomial probability score, as in Andromeda/MS Amanda) and
-# estimates the FDR from the reversed decoys in the same index.
-
-def _fragments(seq, mods: Mods, max_charge=1):
-    pm = np.cumsum([mods.nterm] + [mods.residue(a) or 0.0 for a in seq])
-    total = pm[-1] + H2O
-    b = pm[1:-1] + PROTON
-    y = total - pm[1:-1] + PROTON
-    frags = [b, y]
-    if max_charge >= 2:
-        frags += [(b + PROTON) / 2, (y + PROTON) / 2]
-    return np.sort(np.concatenate(frags))
-
-
-def _binom_score(k, n, p):
-    """-log10 P(X >= k) for X ~ Binomial(n, p)."""
-    if k <= 0:
-        return 0.0
-    from math import comb, log10
-    tail = 0.0
-    for i in range(k, n + 1):
-        tail += comb(n, i) * p ** i * (1 - p) ** (n - i)
-    return -log10(max(tail, 1e-300))
 
 
 def prepare_peaks(scan, top_per_100=10):
@@ -350,43 +230,81 @@ def prepare_peaks(scan, top_per_100=10):
     return np.sort(scan.mz[np.array(keep, dtype=int)])
 
 
-def score_search(scans, index, prec_ppm, frag_tol, frag_ppm, mods: Mods,
+# --- scoring --------------------------------------------------------------------
+def _fragment_matrix(codes, lut, nterm, double):
+    """b and y ions of each peptide (rows; NaN where the peptide is shorter), with 2+ ions when double."""
+    m = codes.view(np.uint8).reshape(len(codes), MAX_LEN)
+    res = lut[m]
+    length = (m > 0).sum(1)
+    pm = np.cumsum(res, 1) + nterm                     # prefix masses after 1..30 residues
+    total = pm[np.arange(len(m)), length - 1] + H2O
+    inner = np.arange(MAX_LEN)[None, :] < (length - 1)[:, None]   # prefixes of length 1..L-1
+    b = np.where(inner, pm + PROTON, np.nan)
+    y = np.where(inner, total[:, None] - pm + PROTON, np.nan)
+    frags = [b, y] + ([(b + PROTON) / 2, (y + PROTON) / 2] if double else [])
+    return np.concatenate(frags, 1)
+
+
+def _fragments(seq, mods: Mods, max_charge=1):
+    """b and y ions of one peptide, sorted (for the fragment error estimate)."""
+    f = _fragment_matrix(np.array([seq], dtype=f"S{MAX_LEN}"), mods.residue_lut(), mods.nterm, max_charge >= 2)[0]
+    return np.sort(f[~np.isnan(f)])
+
+
+_LOG_FACT = np.array([math.lgamma(i + 1) for i in range(4 * MAX_LEN + 1)])
+
+
+def _binom_scores(k, n, p):
+    """-log10 P(X >= k) for X ~ Binomial(n, p), per candidate; 0 where k <= 0."""
+    out = np.zeros(len(k))
+    r = np.nonzero(k > 0)[0]
+    if r.size:
+        i = np.arange(int(n[r].max()) + 1)[None, :]
+        kr, nr, pr = k[r, None], n[r, None], p[r, None]
+        lt = (_LOG_FACT[nr] - _LOG_FACT[i] - _LOG_FACT[np.maximum(nr - i, 0)]
+              + i * np.log(pr) + (nr - i) * np.log1p(-pr))
+        tail = np.where((i >= kr) & (i <= nr), np.exp(lt), 0.0).sum(1)
+        out[r] = -np.log10(np.maximum(tail, 1e-300))
+    return out
+
+
+def score_search(scans, index: PeptideIndex, prec_ppm, frag_tol, frag_ppm, mods: Mods,
                  charges=(2, 3), peaks=None):
     """Best-scoring candidate per spectrum. Returns a list of
     (scan_index, score, is_decoy, peptide, precursor_ppm_error)."""
+    lut = mods.residue_lut()
     out = []
-    cache = {}
     for k, s in enumerate(scans):
         pk = peaks[k] if peaks is not None else prepare_peaks(s)
         if pk.size < 5 or s.precursor_mz <= 0:
             continue
         rng = max(1.0, pk[-1] - pk[0])
         best = None
-        zs = (s.charge,) if s.charge > 0 else charges
-        for z in zs:
+        for z in ((s.charge,) if s.charge > 0 else charges):
             mass = (s.precursor_mz - PROTON) * z
             for iso in (0, 1):
                 m = mass - iso * ISO
                 tol = m * prec_ppm * 1e-6
-                lo = np.searchsorted(index.masses, m - tol)
-                hi = np.searchsorted(index.masses, m + tol)
-                for c in range(lo, min(hi, lo + 500)):
-                    key = (c, z >= 3)
-                    th = cache.get(key)
-                    if th is None:
-                        th = _fragments(index.seqs[c], mods, 2 if z >= 3 else 1)
-                        if len(cache) < 200000:
-                            cache[key] = th
-                    j = np.searchsorted(pk, th)
-                    j = np.clip(j, 1, pk.size - 1)
-                    near = np.minimum(np.abs(pk[j] - th), np.abs(pk[j - 1] - th))
-                    t = th * frag_tol * 1e-6 if frag_ppm else frag_tol
-                    hits = int(np.count_nonzero(near <= t))
-                    p = min(0.5, pk.size * 2 * (np.mean(t) if frag_ppm else t) / rng)
-                    sc = _binom_score(hits, th.size, p)
-                    if best is None or sc > best[1]:
-                        err = (m - index.masses[c]) / index.masses[c] * 1e6
-                        best = (k, sc, bool(index.decoy[c]), index.seqs[c], err)
+                lo = int(np.searchsorted(index.masses, m - tol))
+                hi = min(int(np.searchsorted(index.masses, m + tol)), lo + MAX_CANDIDATES)
+                if hi <= lo:
+                    continue
+                th = _fragment_matrix(index.codes[lo:hi], lut, mods.nterm, z >= 3)
+                valid = ~np.isnan(th)
+                thv = np.where(valid, th, 0.0)
+                j = np.clip(np.searchsorted(pk, thv), 1, pk.size - 1)
+                near = np.minimum(np.abs(pk[j] - thv), np.abs(pk[j - 1] - thv))
+                t = thv * frag_tol * 1e-6 if frag_ppm else frag_tol
+                hits = ((near <= t) & valid).sum(1)
+                n_ions = valid.sum(1)
+                tmean = np.where(valid, t, 0.0).sum(1) / n_ions if frag_ppm else np.full(len(hits), frag_tol)
+                p = np.minimum(0.5, pk.size * 2 * tmean / rng)
+                sc = _binom_scores(hits, n_ions, p)
+                c = int(np.argmax(sc))                         # first of equal scores, as in scan order
+                if best is None or sc[c] > best[1]:
+                    i = lo + c
+                    best = (k, float(sc[c]), bool(index.decoy[i]), index.seq(i),
+                            (m - index.masses[i]) / index.masses[i] * 1e6)
         if best is not None:
             out.append(best)
     return out
@@ -398,7 +316,7 @@ def fdr_filter(psms, fdr=0.01):
     psms = sorted(psms, key=lambda x: -x[1])
     t = d = 0
     best_n, thr = 0, float("inf")
-    for i, p in enumerate(psms):
+    for p in psms:
         if p[2]:
             d += 1
         else:

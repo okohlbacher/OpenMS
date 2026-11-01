@@ -77,21 +77,34 @@ def _has_peak(scan, mz, tol, ppm, min_rel=0.0):
     return True
 
 
-def _frac(scans, mz, tol, ppm, min_rel=0.0):
-    hits = [h for h in (_has_peak(s, mz, tol, ppm, min_rel) for s in scans) if h is not None]
-    if not hits:
-        return None, 0
-    return float(np.mean(hits)), len(hits)
-
-
-def _enrichment(scans, mz, tol, ppm, min_rel=0.0):
-    f, n = _frac(scans, mz, tol, ppm, min_rel)
-    if f is None:
-        return None
-    ctrl = [c for c in (_frac(scans, mz + d, tol, ppm, min_rel)[0] for d in CONTROL_SHIFTS) if c is not None]
-    bg = float(np.mean(ctrl)) if ctrl else 0.0
-    return {"fraction": round(f, 4), "background": round(bg, 4),
-            "enrichment": round(f / max(bg, 0.002), 2), "n": n}
+def _enrichments(scans, targets: dict, tol, ppm):
+    """Per diagnostic m/z: the fraction of spectra with a peak there, against the mean fraction at the control
+    shifts. One pass over the spectra for all targets and controls; a scan whose range misses a probe does not
+    count for that probe. None where no scan covers the target."""
+    keys = list(targets)
+    probes = np.array([targets[k] + d for k in keys for d in (0.0,) + CONTROL_SHIFTS])
+    t = probes * tol * 1e-6 if ppm else tol
+    lo, hi = probes - t, probes + t
+    hits = np.zeros(probes.size, dtype=np.int64)
+    n = np.zeros(probes.size, dtype=np.int64)
+    for s in scans:
+        if s.mz.size == 0:
+            continue
+        cover = (s.scan_low - 0.5 <= probes) & (probes <= s.scan_high + 0.5)
+        n += cover
+        hits += cover & (np.searchsorted(s.mz, hi) > np.searchsorted(s.mz, lo))
+    w = 1 + len(CONTROL_SHIFTS)
+    out = {}
+    for i, k in enumerate(keys):
+        fr = [int(hits[j]) / int(n[j]) if n[j] else None for j in range(i * w, (i + 1) * w)]
+        if fr[0] is None:
+            out[k] = None
+            continue
+        ctrl = [c for c in fr[1:] if c is not None]
+        bg = float(np.mean(ctrl)) if ctrl else 0.0
+        out[k] = {"fraction": round(fr[0], 4), "background": round(bg, 4),
+                  "enrichment": round(fr[0] / max(bg, 0.002), 2), "n": int(n[i * w])}
+    return out
 
 
 def detect_labels(run, ms2_high_res=True) -> list:
@@ -100,7 +113,7 @@ def detect_labels(run, ms2_high_res=True) -> list:
     level = "MS3" if scans is run.ms3 else "MS2"
     hr = ms2_high_res if level == "MS2" else True
     tol, ppm = (15.0, True) if hr else (0.3, False)
-    res = {k: _enrichment(scans, v, tol, ppm) for k, v in REPORTERS.items()}
+    res = _enrichments(scans, REPORTERS, tol, ppm)
     covered = {k: r for k, r in res.items() if r is not None}
     if not scans:
         return detect_silac(run)
@@ -185,20 +198,24 @@ def _silac_controls(d):
     return out
 
 
-def _pairs(mz, it, dm, z):
-    """Indices of light peaks with a heavy partner dm Th above: comparable intensity (0.15-7x; Arg6 spaces like the
-    light peptide's M+6 isotope, which is far weaker), a light M+1 isotope (a peptide, not noise), and a gap below
-    the heavy peak (the heavy is not just the next peak of the light isotope envelope)."""
+CONTROLS = {k: _silac_controls(d) for k, d in SILAC_DELTAS.items()}
+
+
+def _pair_hits(mz, it, dms, z):
+    """Light peaks with a heavy partner dm Th above, for several spacings at once (rows): comparable intensity
+    (0.15-7x; Arg6 spaces like the light peptide's M+6 isotope, which is far weaker), a light M+1 isotope (a
+    peptide, not noise), and a gap below the heavy peak (the heavy is not just the next peak of the light envelope)."""
     def find(target):
         j = np.clip(np.searchsorted(mz, target), 1, mz.size - 1)
         j = np.where(np.abs(mz[j - 1] - target) < np.abs(mz[j] - target), j - 1, j)
         return j, np.abs(mz[j] - target) <= target * 5e-6
+    dm = np.asarray(dms)[:, None]
     j, ok = find(mz + dm)
     ratio = it[j] / it
-    k1, ok1 = find(mz + C13 / z)
+    _, ok1 = find(mz + C13 / z)
     g, okg = find(mz + dm - C13 / z)
     gap = ~okg | (it[g] < 0.3 * it[j]) | (np.abs(dm - C13 / z) < 1e-3)
-    return np.nonzero(ok & (ratio >= 0.15) & (ratio <= 7) & ok1 & gap)[0]
+    return ok & (ratio >= 0.15) & (ratio <= 7) & ok1 & gap
 
 
 def _coherent_silac_pair(enr, distinct):
@@ -220,8 +237,10 @@ def detect_silac(run) -> list:
     if len(run.ms1) < 20:
         return []
     counts = {k: 0 for k in SILAC_DELTAS}
-    ctrl = {k: [0] * len(_silac_controls(d)) for k, d in SILAC_DELTAS.items()}
+    ctrl = {k: [0] * len(CONTROLS[k]) for k in SILAC_DELTAS}
     light = {k: set() for k in SILAC_DELTAS}   # distinct light precursors (m/z, z) carrying a pair
+    rows = [(k, None) for k in SILAC_DELTAS] + [(k, i) for k in SILAC_DELTAS for i in range(len(CONTROLS[k]))]
+    spacing = [SILAC_DELTAS[k] if i is None else CONTROLS[k][i] for k, i in rows]
     for s in run.ms1:
         if s.mz.size < 10:
             continue
@@ -229,12 +248,13 @@ def detect_silac(run) -> list:
         order = np.argsort(s.mz[idx])
         mz, it = s.mz[idx][order], s.intensity[idx][order]
         for z in (2, 3):
-            for k, d in SILAC_DELTAS.items():
-                hit = _pairs(mz, it, d / z, z)
-                counts[k] += hit.size
-                light[k].update((round(float(m), 2), z) for m in mz[hit])
-                for i, c in enumerate(_silac_controls(d)):
-                    ctrl[k][i] += _pairs(mz, it, c / z, z).size
+            hit = _pair_hits(mz, it, [d / z for d in spacing], z)
+            for (k, i), h in zip(rows, hit):
+                if i is None:
+                    counts[k] += int(h.sum())
+                    light[k].update((round(float(m), 2), z) for m in mz[h])
+                else:
+                    ctrl[k][i] += int(h.sum())
     bg = {k: max(1.0, float(np.mean(v))) for k, v in ctrl.items()}
     enr = {k: round(counts[k] / bg[k], 2) for k in counts}
     distinct = {k: len(v) for k, v in light.items()}
@@ -278,7 +298,7 @@ def detect_enrichment(run, ms2_high_res=True, dia=False) -> list:
         for i, c in enumerate((91.5, 104.5)):
             if _has_peak(s, s.precursor_mz - c / s.charge, tol, ppm, 0.2):
                 ctrl[i] += 1
-    diag = {k: _enrichment(run.ms2, v, tol, ppm, 0.0) for k, v in DIAG.items()}
+    diag = _enrichments(run.ms2, DIAG, tol, ppm)
     stats = {"neutral_loss_fraction": round(nl / max(1, n), 4),
              "neutral_loss_control": round(np.mean(ctrl) / max(1, n), 4), "diagnostic": diag}
     calls = []
@@ -322,8 +342,7 @@ def detect_cys_alkylation(run, ms2_high_res=True) -> list:
     if not ms2_high_res:
         return [Evidence("cys_alkylation", "unknown", 0.1, "data", "Cys immonium",
                          "low-resolution MS2: Cys immonium ions cannot be resolved")]
-    res = {k: _enrichment(run.ms2, v, 10.0, True, 0.0) for k, v in CYS_IMMONIUM.items()}
-    res = {k: r for k, r in res.items() if r}
+    res = {k: r for k, r in _enrichments(run.ms2, CYS_IMMONIUM, 10.0, True).items() if r}
     if not res:
         return [Evidence("cys_alkylation", "unknown", 0.1, "data", "Cys immonium",
                          "Cys immonium region outside the MS2 scan range")]
