@@ -191,6 +191,22 @@ def test_reconcile_conflict_and_params():
     assert "<ITEMLIST" in pp.to_ini_snippet(P)
 
 
+def test_silac_coherent_pairs_and_gaps():
+    from prose_auto.delta_combos import silac_from_gaps
+    E = lambda k8, r10, r6, k4: {"Lys8": k8, "Arg10": r10, "Arg6": r6, "Lys4/dimethyl-d4": k4}
+    many = E(400, 400, 400, 400)
+    assert chem._coherent_silac_pair(E(3.06, 3.58, 0.55, 0.66), many)[0] == "SILAC (Lys8/Arg10)"   # PXD001739
+    assert chem._coherent_silac_pair(E(1.3, 0.87, 3.74, 3.04), many)[0] == "SILAC (Lys4/Arg6)"     # PXD009049
+    assert chem._coherent_silac_pair(E(2.07, 2.19, 2.49, 1.56), many) is None                      # triplex: gaps
+    assert chem._coherent_silac_pair(E(1.0, 1.0, 1.2, 3.5), many) is None                          # dimethyl-d4
+    assert chem._coherent_silac_pair(E(3.06, 3.58, 0.55, 0.66), E(150, 400, 400, 400)) is None     # too few
+    tri = {"Label:13C(6)": 0.20, "Label:2H(4)": 0.18, "Label:13C(6)15N(2)": 0.08, "Oxidation": 0.10}
+    assert silac_from_gaps(tri, 860)[0].value.startswith("SILAC triplex")                           # PXD016465
+    assert silac_from_gaps({"Label:13C(6)15N(4)": 0.13}, 2000) == []                                # one label only
+    assert silac_from_gaps({"Label:13C(6)15N(4)": 0.05, "Label:13C(6)15N(2)": 0.04}, 1179) == []    # PXD050844
+    assert "Label:2H(4) (K)" in pp.SILAC_VARIABLE["SILAC (Lys4/Arg6)"]
+
+
 def test_co_enrichment():
     # PXD003531: TiO2 phospho enrichment that also took glycopeptides; a weaker third signal stays out
     ev = [Evidence("enrichment", "Phospho (STY)", 0.814, "data", "diagnostic ions"),

@@ -17,6 +17,8 @@ SILAC_VARIABLE = {
     "SILAC (Lys8/Arg10)": ["Label:13C(6)15N(2) (K)", "Label:13C(6)15N(4) (R)"],
     "SILAC (Arg6)": ["Label:13C(6) (R)"],
     "SILAC Lys4 or dimethyl (d4)": ["Label:2H(4) (K)"],
+    "SILAC (Lys4/Arg6)": ["Label:2H(4) (K)", "Label:13C(6) (R)"],
+    "SILAC triplex (Lys4/Arg6, Lys8/Arg10)": ["Label:2H(4) (K)", "Label:13C(6) (R)", "Label:13C(6)15N(2) (K)", "Label:13C(6)15N(4) (R)"],
 }
 ENRICHMENT_MODS = {
     "Phospho (STY)": ["Phospho (S)", "Phospho (T)", "Phospho (Y)"],

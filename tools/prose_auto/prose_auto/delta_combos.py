@@ -15,6 +15,21 @@ import itertools
 
 from .evidence import Evidence
 
+SILAC_GAPS = {"Label:2H(4)": "Lys4", "Label:13C(6)": "Arg6", "Label:13C(6)15N(2)": "Lys8", "Label:13C(6)15N(4)": "Arg10"}
+
+
+def silac_from_gaps(share, shifted, stats=None):
+    """Two or more SILAC labels each explaining >= 8 % of >= 500 gapped spectra (triplex PXD016465: Arg6 20 %,
+    Lys4 18 %, Lys8 8 %); label-free validation runs reach 13 % for one label at most (PXD033741, Arg10)."""
+    seen = {v for n, v in SILAC_GAPS.items() if share.get(n, 0) >= 0.08}
+    if len(seen) < 2 or shifted < 500:
+        return []
+    med, heavy = seen & {"Lys4", "Arg6"}, seen & {"Lys8", "Arg10"}
+    name = "SILAC triplex (Lys4/Arg6, Lys8/Arg10)" if med and heavy else "SILAC (Lys8/Arg10)" if heavy else "SILAC (Lys4/Arg6)"
+    return [Evidence("label", name, 0.7, "data", "delta-mass combinations",
+                     "SILAC labels explain the mass gaps: " + ", ".join(
+                         f"{n} {share[n]:.0%}" for n in SILAC_GAPS if SILAC_GAPS[n] in seen) + f" of {shifted} spectra", stats)]
+
 # name -> (monoisotopic mass shift, ProSE names, prior): prior 1.0 = seen in most runs, 0.5 = study-specific
 MODS = {
     "Oxidation": (15.994915, ["Oxidation (M)"], 1.0),
@@ -156,6 +171,7 @@ def detect(hist, tol, min_spectra=20, min_share=0.005, max_mods_out=5):
                            "mass gaps explained as modification combinations: "
                            + ", ".join(f"{n} {share[n]:.0%}" for n in mods[:max_mods_out])
                            + f" of {shifted} spectra with a mass gap", stats))
+    ev += silac_from_gaps(share, shifted, stats)
     for n, enr in ENRICHMENT.items():
         if share.get(n, 0) >= 0.10:
             ev.append(Evidence("enrichment", enr, min(0.7, 0.4 + share[n]), "data", "delta-mass combinations",

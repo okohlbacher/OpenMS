@@ -47,7 +47,7 @@ def _opts(pairs):
 
 
 ISOBARIC = {"TMT6plex", "TMT10/11plex", "TMTpro (16/18plex)", "TMT2plex", "iTRAQ4plex", "iTRAQ8plex"}
-SILAC = {"SILAC (Lys8/Arg10)", "SILAC (Arg6)", "SILAC Lys4 or dimethyl (d4)"}
+SILAC = {"SILAC (Lys8/Arg10)", "SILAC (Arg6)", "SILAC Lys4 or dimethyl (d4)", "SILAC (Lys4/Arg6)", "SILAC triplex (Lys4/Arg6, Lys8/Arg10)"}
 METABOLIC = {"15N metabolic labelling", "heavy water (2H2O) labelling"}
 TIMS = ("timsTOF",)
 NO_ETD = ("Q Exactive", "Exploris", "Astral", "TripleTOF", "ZenoTOF", "timsTOF", "LTQ Orbitrap XL", "Synapt", "Xevo")
@@ -162,6 +162,8 @@ HEADS = [
                 ("SILAC (Lys8/Arg10)", "SILAC with heavy lysine +8 and arginine +10"),
                 ("SILAC (Arg6)", "SILAC with arginine +6 (and/or lysine +6/+4, medium channels)"),
                 ("SILAC Lys4 or dimethyl (d4)", "dimethyl labelling or lysine +4"),
+                ("SILAC (Lys4/Arg6)", "SILAC medium channel: lysine +4 and arginine +6"),
+                ("SILAC triplex (Lys4/Arg6, Lys8/Arg10)", "triple SILAC: light, medium (Lys4/Arg6) and heavy (Lys8/Arg10)"),
                 ("15N metabolic labelling", "15N-labelled organism or medium"),
                 ("heavy water (2H2O) labelling", "D2O / heavy water turnover labelling")]),
          "label", hint="Label-free spike-ins of heavy standard peptides are still label free. " + "'TMT6plex' is also the modification name used for TMT 10/11plex: without a plex count or channel names, TMT10/11plex and TMT6plex are equally likely; prefer the plex the texts count."),

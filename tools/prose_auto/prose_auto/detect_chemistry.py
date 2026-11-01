@@ -201,6 +201,21 @@ def _pairs(mz, it, dm, z):
     return np.nonzero(ok & (ratio >= 0.15) & (ratio <= 7) & ok1 & gap)[0]
 
 
+def _coherent_silac_pair(enr, distinct):
+    """A SILAC channel labels lysine and arginine together: both spacings of one channel rise, the other channel's do
+    not. Heavy: Lys8 and Arg10 >= 3x with Arg6 and Lys4 <= 1.5x (PXD001739: 3.1x / 3.6x on 336 / 376 precursors).
+    Medium: Arg6 >= 3x and Lys4 >= 2.4x with Lys8 and Arg10 <= 1.5x (PXD009049, PXD023090; dimethyl-d4 raises Lys4
+    alone). Among 133 label-free held-out and validation runs only two SILAC runs annotated label free pass."""
+    def ok(*k):
+        return min(distinct[x] for x in k) >= 200
+    if enr["Lys8"] >= 3 and enr["Arg10"] >= 3 and max(enr["Arg6"], enr["Lys4/dimethyl-d4"]) <= 1.5 and ok("Lys8", "Arg10"):
+        return "SILAC (Lys8/Arg10)", ("Lys8", "Arg10")
+    if enr["Arg6"] >= 3 and enr["Lys4/dimethyl-d4"] >= 2.4 and max(enr["Lys8"], enr["Arg10"]) <= 1.5 \
+            and ok("Arg6", "Lys4/dimethyl-d4"):
+        return "SILAC (Lys4/Arg6)", ("Arg6", "Lys4/dimethyl-d4")
+    return None
+
+
 def detect_silac(run) -> list:
     if len(run.ms1) < 20:
         return []
@@ -225,6 +240,12 @@ def detect_silac(run) -> list:
     distinct = {k: len(v) for k, v in light.items()}
     best = max(enr, key=enr.get)
     stats = {"pair_counts": counts, "control_mean": bg, "enrichment": enr, "distinct_light": distinct}
+    pair = _coherent_silac_pair(enr, distinct)
+    if pair:
+        name, (a, b) = pair
+        return [Evidence("label", name, round(max(0.7, min(0.9, 0.5 + min(enr[a], enr[b]) / 40)), 3), "data",
+                         "MS1 heavy/light pairs", f"both spacings of one channel rise together: {a} {enr[a]}x on "
+                         f"{distinct[a]} and {b} {enr[b]}x on {distinct[b]} precursors, the other channel's do not", stats)]
     # a real SILAC sample: the delta beats its own isotope-shifted neighbours, on many distinct peptides
     # 30-200 distinct precursors at 3x: label-free runs too (PXD024405, 95 at 3.1x); 3.0-3.5x on >= 1000 precursors
     # occurs in label-free runs as well (PXD077447 3.4x), so only >= 3.5x on >= 1000 passes the label gate (0.6)
