@@ -84,6 +84,7 @@ class HypothesisTester:
             else:
                 stats[k]["unique_vs_best"] = len(res[k]["scans"] - res[best]["scans"])
         n = len(self.scans)
+        stats["n_spectra"] = n
         top = res[best]["psms"]
         second = res[ranked[1]]["psms"] if len(ranked) > 1 else 0
         ev = []

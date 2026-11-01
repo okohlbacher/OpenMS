@@ -20,6 +20,8 @@ Policy
 
 from __future__ import annotations
 
+import re
+
 import math
 
 from .detect_instrument import classify_instrument
@@ -70,6 +72,9 @@ def _stated_untested(d, evs):
     return Decision("organism", s.value, round(s.confidence * 0.9, 3), s.source, evs, d.conflicts + [note], "review")
 
 
+MIN_RULE_SHARE = 0.05   # of the mini-search spectra the data species must explain before it overrules the record
+
+
 def _untested_pick(d, evs):
     """Records and texts often name several species (host and sample, spike-in standards, the organism of an antibody).
     The decisive mini-search tests the FASTag shortlist (the data's top species). When the metadata pick is not on
@@ -87,6 +92,12 @@ def _untested_pick(d, evs):
     fastag = [e for e in evs if e.method == "FASTag species" and e.confidence >= 0.5]
     if (not best or best == _organism_key(d.value) or _organism_key(d.value) in psms or best not in named
             or not fastag or _organism_key(fastag[0].value) != best):
+        return d
+    # a weak search result is no reason to overrule the record: the antibody of an IP (mouse IgG in human cells,
+    # PXD050844: 75 of 2000 spectra) is named in the texts too. The rule was right from 7 % on (PXD031090)
+    m = re.search(r"of (\d+) spectra", search[0].detail or "")
+    n = search[0].stats.get("n_spectra") or (int(m.group(1)) if m else 0)
+    if n and psms[best] < MIN_RULE_SHARE * n:
         return d
     note = (f"{d.source} picks {d.value}, which is not among the species the data shortlist; of the species the "
             f"records and texts name, the mini-search finds {search[0].value} best ({psms[best]} PSMs) and FASTag agrees")

@@ -241,6 +241,10 @@ def test_organism_data_chooses_among_named_species():
     e[2] = Evidence("organism", "Rattus norvegicus", 0.66, "data", "FASTag species", "")
     e[3] = Evidence("organism", "Rattus_norvegicus", 0.47, "search", "panel mini-search", "", {"Rattus_norvegicus": {"psms": 900}})
     assert reconcile(e)["organism"].value == "Escherichia coli"
+    # a weak search share (antibody species of an IP) does not overrule the record
+    e = ev({"Homo_sapiens": 75, "Chlorocebus_sabaeus": 16})
+    e[3].stats["n_spectra"] = 2000
+    assert reconcile(e)["organism"].value == "Escherichia coli"
 
 
 def test_tims_acquisition(tmp_path):
