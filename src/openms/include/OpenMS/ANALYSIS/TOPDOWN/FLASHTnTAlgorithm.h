@@ -44,8 +44,6 @@ public:
                                                     bool by_kind, const std::function<int(int)>& kind_of);
   /// the blind modifications of a PrSM: its BlindModCount, else the ModificationVariable entries of kind 0, else all its Modifications
   static Size blindModCount(const ProteinHit& hit);
-  /// the fixed pseudo-random order of the database entries (splitmix64 of the index) that breaks the ties of the candidate cuts
-  static std::uint64_t entryOrder(std::uint64_t index);
   /// constructor
   FLASHTnTAlgorithm();
 

@@ -42,6 +42,17 @@ the best ion type of each side as a ladder spanning residues of the protein), fr
 class OPENMS_DLLAPI MassLadderAlgorithm
 {
 public:
+  /// The fixed pseudo-random order of the database entries (splitmix64 of the index) that breaks the ties of the candidate cuts, here and
+  /// in FLASHTnTAlgorithm. The database order puts every target before every decoy, so a cut that broke ties by it kept chance
+  /// candidates of targets and dropped those of decoys (shuffles of a protein have its length and composition, so equal scores are
+  /// common).
+  static std::uint64_t entryOrder(std::uint64_t index)
+  {
+    index += 0x9E3779B97F4A7C15ULL;
+    index = (index ^ (index >> 30)) * 0xBF58476D1CE4E5B9ULL;
+    index = (index ^ (index >> 27)) * 0x94D049BB133111EBULL;
+    return index ^ (index >> 31);
+  }
   /// precursor ladders: a window needs this many matched ladder positions to be a candidate (the prototype's calibrated setting)
   static constexpr int precursor_ladder_min_k = 3;
   /// precursor ladders: a window has at least this many residues. Shorter windows were chance hits: on Eclip_1480 against E. coli + B.
@@ -265,7 +276,6 @@ private:
   std::vector<double> prepared_masses_;
   Size prepared_chunks_ = 0;
   std::unique_ptr<std::uint16_t[]> prepared_starts_; // not value-initialized: written once, by the threads that fill it
-  Size prepared_unit_count_ = 0;
   std::vector<std::uint32_t> prepared_offsets_;
   std::vector<std::uint32_t> prepared_chunk_first_;
   std::vector<std::uint32_t> prepared_segment_base_;

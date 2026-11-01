@@ -141,17 +141,6 @@ double shiftedCandidateCount(const String& sequence, double mass, double max_shi
   return std::max(1.0, count);
 }
 
-// A fixed pseudo-random order of the database entries for ties (splitmix64 of the index; MassLadderAlgorithm breaks its ties the
-// same way). The database order puts every target before every decoy, so a cut that broke ties by it kept chance candidates of targets
-// and dropped those of decoys.
-inline std::uint64_t scrambledIndex(std::uint64_t x)
-{
-  x += 0x9E3779B97F4A7C15ULL;
-  x = (x ^ (x >> 30)) * 0xBF58476D1CE4E5B9ULL;
-  x = (x ^ (x >> 27)) * 0x94D049BB133111EBULL;
-  return x ^ (x >> 31);
-}
-
 // mass and both termini known (unknown: -1)
 bool isDetermined(const ProteinHit& hit)
 {
@@ -680,11 +669,6 @@ std::set<Size> FLASHTnTAlgorithm::getProteinsPassingFDR_(const ProteoformDatabas
   }
   passing.insert(partners.begin(), partners.end());
   return passing;
-}
-
-std::uint64_t FLASHTnTAlgorithm::entryOrder(std::uint64_t index)
-{
-  return scrambledIndex(index);
 }
 
 std::vector<std::vector<int>> FLASHTnTAlgorithm::groupClasses(const std::vector<int>& class_order, const std::vector<Size>& class_size, Size min_size,
@@ -2132,9 +2116,8 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
 #endif
     if (one_by_one && ! native_rule && ! by_entry && candidate_count > learned_pool && (Size)max_protein_hits_ <= learned_pool)
     {
-      std::vector<double> tags(candidate_count);
-      for (Size i = 0; i < candidate_count; i++) tags[i] = tagCount(i);
-      std::vector<double> sorted_tags = tags;
+      std::vector<double> sorted_tags(candidate_count);
+      for (Size i = 0; i < candidate_count; i++) sorted_tags[i] = tagCount(i);
       std::nth_element(sorted_tags.begin(), sorted_tags.begin() + (learned_pool - 1), sorted_tags.end(), std::greater<double>());
       const double tag_floor = sorted_tags[learned_pool - 1];
       std::priority_queue<double, std::vector<double>, std::greater<double>> best; // the learned_pool best scores so far
@@ -2146,17 +2129,14 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
           best.push(score);
         }
       };
-      for (Size i = 0; i < candidate_count; i++)
+      for (const bool by_tags : {true, false})
       {
-        if (tags[i] < tag_floor) continue;
-        scoreCandidate((int)i, -std::numeric_limits<double>::infinity());
-        add(scores[i]);
-      }
-      for (Size i = 0; i < candidate_count; i++)
-      {
-        if (tags[i] >= tag_floor) continue;
-        scoreCandidate((int)i, best.size() < learned_pool ? -std::numeric_limits<double>::infinity() : best.top());
-        add(scores[i]);
+        for (Size i = 0; i < candidate_count; i++)
+        {
+          if ((tagCount(i) >= tag_floor) != by_tags) continue;
+          scoreCandidate((int)i, by_tags || best.size() < learned_pool ? -std::numeric_limits<double>::infinity() : best.top());
+          add(scores[i]);
+        }
       }
     }
     else
@@ -2211,9 +2191,9 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       for (const auto& [protein, k] : kept_of) scores[k] = best_of[protein].second;
     }
 
-    // Ranked by score, coverage and a fixed pseudo-random order of the entries (scrambledIndex) with std::sort. Ties in score and
-    // coverage are common (shuffles of a protein have its length and composition), and the description broke them before: a target's
-    // ("sp|...") sorted before a decoy's ("DECOY_..."), so a chance candidate was cut in favour of the targets.
+    // Ranked by score, coverage and a fixed pseudo-random order of the entries (MassLadderAlgorithm::entryOrder) with std::sort. Ties in
+    // score and coverage are common (shuffles of a protein have its length and composition), and the description broke them before: a
+    // target's ("sp|...") sorted before a decoy's ("DECOY_..."), so a chance candidate was cut in favour of the targets.
     struct RankedCandidate
     {
       double score, coverage;
@@ -2228,9 +2208,9 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       if (i < seq_count)
       {
         const auto& fe = fasta_entry[seq_candidates[i].protein];
-        ranked.push_back({scores[i], (double)seq_candidates[i].covered_pos / (double)fe.sequence.length(), scrambledIndex(seq_candidates[i].protein), i});
+        ranked.push_back({scores[i], (double)seq_candidates[i].covered_pos / (double)fe.sequence.length(), MassLadderAlgorithm::entryOrder(seq_candidates[i].protein), i});
       }
-      else { ranked.push_back({scores[i], hits[i - seq_count].getCoverage(), scrambledIndex(hit_shifts[i - seq_count].fasta_index), i}); }
+      else { ranked.push_back({scores[i], hits[i - seq_count].getCoverage(), MassLadderAlgorithm::entryOrder(hit_shifts[i - seq_count].fasta_index), i}); }
     }
     const Size ranked_count = ranked.size();
     std::sort(ranked.begin(), ranked.end(), [](const RankedCandidate& left, const RankedCandidate& right) {
@@ -3339,7 +3319,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
             duplicates++;
             continue;
           }
-          (is_determined(h) ? determined : undetermined).push_back(h);
+          (is_determined(h) ? determined : undetermined).push_back(std::move(h));
         }
         tl_duplicates += duplicates;
         const bool fill = out.empty();
@@ -3348,7 +3328,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
           mergeNative(determined);
           mergeNative(undetermined);
         }
-        else if (keep_all) { out.insert(out.end(), determined.begin(), determined.end()); }
+        else if (keep_all) { out.insert(out.end(), std::make_move_iterator(determined.begin()), std::make_move_iterator(determined.end())); }
         else if (! determined.empty() && (out.empty() || ! is_determined(out[0]) || determined[0].getScore() > out[0].getScore()))
         {
           // a ladder PrSM that explains the precursor mass also replaces an undetermined one of a higher score
@@ -3356,7 +3336,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
         }
         if (native_rule) {}
         else if (fill && out.empty()) out.swap(undetermined);
-        else if (fill && keep_all) { out.insert(out.end(), undetermined.begin(), undetermined.end()); }
+        else if (fill && keep_all) { out.insert(out.end(), std::make_move_iterator(undetermined.begin()), std::make_move_iterator(undetermined.end())); }
       }
       // Precursor-ladder candidates: extended on their own, as the terminal-ladder ones. Only their PrSMs of determined mass and termini
       // are kept (the same rule for targets and decoys): the source proposes a window that explains the precursor mass, and an
@@ -3520,6 +3500,7 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       {
         const double iso = Constants::C13C12_MASSDIFF_U;
         std::vector<int> todo;
+        std::vector<double> best_own(dspecs.size(), -1e10); // the spectrum's best score: the choice starts at it less the penalty
         for (int d : spectra)
         {
           const auto& own_hits = spec_proteoforms[d];
@@ -3537,7 +3518,9 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
           {
             if (m > 0 && std::abs(m - own) > 0.01) others++;
           }
-          if (others > 0) todo.push_back(d);
+          if (others == 0) continue;
+          todo.push_back(d);
+          best_own[d] = best->getScore();
         }
         flashPhase("tnt: reselection start");
         std::vector<std::vector<ProteinHit>> chosen(dspecs.size());
@@ -3570,11 +3553,6 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
             alternatives.push_back({d, m, -1e10, {}});
           }
           alternatives_of[d].second = alternatives.size();
-        }
-        std::vector<double> best_own(dspecs.size(), -1e10); // the spectrum's best score: the choice starts at it less the penalty
-        for (int d : todo)
-        {
-          for (const auto& h : spec_proteoforms[d]) best_own[d] = std::max(best_own[d], h.getScore());
         }
         const double penalty = FLASHExtenderAlgorithm::truncation_penalty; // the penalty a precursor-mass path pays for a truncation
         std::vector<Size> work(alternatives.size());
@@ -3636,7 +3614,6 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
         {
           if (chosen_mass[d] <= 0) continue;
           reselected++;
-          for (auto& h : chosen[d]) h.setMetaValue("PrecursorReselected", chosen_mass[d]);
           spec_proteoforms[d].swap(chosen[d]);
           auto pg = dspecs[d].getPrecursorPeakGroup(); // the spectrum's precursor from here on (reported mass, feature and decoy rules)
           pg.setMonoisotopicMass(chosen_mass[d]);
@@ -4334,27 +4311,18 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
       // two proteoforms: in a shuffled entrapment of 38 runs (22f25b5844), 19 of the 24 entrapment proteins per seed at protein q 1% had
       // no proteoform at proteoform q 1%.
       if (protein_evidence_passing_ && q > rep_q) continue;
-      best_of[rep.getAccession()].proteoforms++;
-      for (Size i : members)
-      {
-        const auto& h = proteoform_hits_[i];
-        // the determined classes of the tag search (not a ladder window, which fits any precursor mass somewhere)
-        if (hit_class[i] >= 0 && hit_class[i] <= fdr_class_max_blind && (double)h.getMetaValue("Mass") >= protein_evidence_min_mass_
-            && blindModCount_(h) == 0)
-        {
-          best_of[rep.getAccession()].strong = true;
-          break;
-        }
-      }
-      // option protein_evidence_min_fragments: a proteoform matching that many fragment positions identifies its protein alone
-      if (protein_evidence_min_fragments_ > 0 && (int)rep.getMetaValue("MatchedAA", 0) >= protein_evidence_min_fragments_)
-      {
-        best_of[rep.getAccession()].strong = true;
-      }
+      auto& b = best_of[rep.getAccession()];
+      b.proteoforms++;
+      // strong: a determined proteoform of the tag search (not a ladder window, which fits any precursor mass somewhere) without blind
+      // modifications, or (option protein_evidence_min_fragments) one matching that many fragment positions, identifies its protein alone
+      b.strong = b.strong || std::any_of(members.begin(), members.end(), [&](Size i) {
+                   return hit_class[i] >= 0 && hit_class[i] <= fdr_class_max_blind
+                          && (double)proteoform_hits_[i].getMetaValue("Mass") >= protein_evidence_min_mass_ && blindModCount_(proteoform_hits_[i]) == 0;
+                 })
+                 || (protein_evidence_min_fragments_ > 0 && (int)rep.getMetaValue("MatchedAA", 0) >= protein_evidence_min_fragments_);
       double score = 0;
       for (Size i : members) score = std::max(score, proteoform_hits_[i].getScore());
       const std::pair<double, double> key {q, -score};
-      auto& b = best_of[rep.getAccession()];
       if (! (key < b.key)) continue;
       b.key = key;
       const int start = rep.getMetaValue("StartPosition"), end = rep.getMetaValue("EndPosition");
@@ -4383,8 +4351,9 @@ void FLASHTnTAlgorithm::run(const MSExperiment& map, const std::vector<FASTAFile
         if (! supported(b)) (acc.hasPrefix("DECOY") ? unsupported_decoys : unsupported_targets)++;
       }
       OPENMS_LOG_INFO << "Protein evidence: " << unsupported_targets << " target and " << unsupported_decoys << " decoy proteins without two "
-                      << "proteoforms or a determined proteoform without blind modifications of " << protein_evidence_min_mass_ << " Da are not ranked"
-                      << std::endl;
+                      << "proteoforms, a determined proteoform without blind modifications of " << protein_evidence_min_mass_ << " Da"
+                      << (protein_evidence_min_fragments_ > 0 ? " or a proteoform of " + String(protein_evidence_min_fragments_) + " matched fragments" : String(""))
+                      << " are not ranked" << std::endl;
     }
     for (const bool internal : {false, true})
     {

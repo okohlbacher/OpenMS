@@ -31,16 +31,6 @@ namespace OpenMS
 {
 namespace
 {
-// A fixed pseudo-random order of the entries for ties (splitmix64 of the index). The cuts below keep the top_n best; equal scores are
-// common (shuffles of a protein have its length and composition, so the same chance probability for the same matched count), and
-// breaking them by the index would keep every target before every decoy (the decoys follow the targets in the database).
-inline std::uint64_t scrambledIndex(std::uint64_t x)
-{
-  x += 0x9E3779B97F4A7C15ULL;
-  x = (x ^ (x >> 30)) * 0xBF58476D1CE4E5B9ULL;
-  x = (x ^ (x >> 27)) * 0x94D049BB133111EBULL;
-  return x ^ (x >> 31);
-}
 // the residues of terminal and precursor ladders
 const std::string standard_residues = "ACDEFGHIKLMNPQRSTVWYUO";
 // whether a character is one of standard_residues: a table, not a search of the string per residue of the database
@@ -181,12 +171,12 @@ struct Window
   std::vector<int> counts;    // matched positions per target set (for the tags)
 };
 
-// LogP descending, k descending, then protein in the fixed pseudo-random order (scrambledIndex), i and j ascending
+// LogP descending, k descending, then protein in the fixed pseudo-random order (MassLadderAlgorithm::entryOrder), i and j ascending
 inline bool isBetter(const Window& a, const Window& b)
 {
   if (a.log_p != b.log_p) return a.log_p > b.log_p;
   if (a.k != b.k) return a.k > b.k;
-  if (a.protein != b.protein) return scrambledIndex(a.protein) < scrambledIndex(b.protein);
+  if (a.protein != b.protein) return MassLadderAlgorithm::entryOrder(a.protein) < MassLadderAlgorithm::entryOrder(b.protein);
   if (a.i != b.i) return a.i < b.i;
   return a.j < b.j;
 }
@@ -389,13 +379,12 @@ inline void searchListed(const std::vector<TargetSet>& sets, const std::vector<S
 // mass spectrometers).
 inline bool findWindows(const std::vector<Segment>& segments, const std::vector<const double*>& sums, const std::vector<Query>& queries,
                         double h2o, double isotope_mass, int min_length, std::size_t max_units, std::size_t& prepared, std::size_t& chunks_out,
-                        const std::vector<std::uint32_t>& segment_base, std::unique_ptr<std::uint16_t[]>& starts, std::size_t& unit_count,
+                        const std::vector<std::uint32_t>& segment_base, std::unique_ptr<std::uint16_t[]>& starts,
                         std::vector<std::uint32_t>& offsets, std::vector<std::uint32_t>& chunk_first)
 {
   prepared = 0;
   chunks_out = 0;
   starts.reset();
-  unit_count = 0;
   offsets.clear();
   chunk_first.clear();
   const std::size_t n_queries = queries.size();
@@ -571,7 +560,6 @@ inline bool findWindows(const std::vector<Segment>& segments, const std::vector<
   }
   // pass 2: the starts of the listed queries (not value-initialized: every unit is written below, by the thread of its chunk)
   starts = std::make_unique_for_overwrite<std::uint16_t[]>(total);
-  unit_count = total;
 #pragma omp parallel for schedule(dynamic, 1) if (threads > 1)
   for (long c = 0; c < (long)chunks; c++)
   {
@@ -1021,7 +1009,7 @@ void MassLadderAlgorithm::searchTerminalLadders(const std::vector<double>& masse
   bestEntryPerProtein_(ranked, ranked_evidence);
   Size top = std::min(ranked.size(), top_n);
   std::partial_sort(ranked.begin(), ranked.begin() + top, ranked.end(),
-                    [](const auto& a, const auto& b) { return a.first != b.first ? a.first > b.first : scrambledIndex(a.second) < scrambledIndex(b.second); });
+                    [](const auto& a, const auto& b) { return a.first != b.first ? a.first > b.first : MassLadderAlgorithm::entryOrder(a.second) < MassLadderAlgorithm::entryOrder(b.second); });
   // the top proteins are the cut; each of their entries with evidence is a candidate (annotated residues are residues of the entry)
   addEntriesOfTopProteins_(ranked, top, with_evidence);
   for (Size r = 0; r < top; r++)
@@ -1181,7 +1169,7 @@ void MassLadderAlgorithm::preparePrecursorWindows(const std::vector<double>& pre
   // up to 2^29 units (1 GiB): the starts of about 4x as many windows as 2^27 windows of 8 bytes listed before
   Size prepared = 0;
   if (! precursor_ladder::findWindows(segments_, window_sums_, queries, h2o, Constants::C13C12_MASSDIFF_U, precursor_ladder_min_length,
-                                      (Size)1 << 29, prepared, prepared_chunks_, prepared_segment_base_, prepared_starts_, prepared_unit_count_,
+                                      (Size)1 << 29, prepared, prepared_chunks_, prepared_segment_base_, prepared_starts_,
                                       prepared_offsets_, prepared_chunk_first_)
       || prepared == 0)
   {
@@ -1199,7 +1187,6 @@ void MassLadderAlgorithm::clearPrecursorWindows()
   std::vector<double>().swap(prepared_masses_);
   prepared_chunks_ = 0;
   prepared_starts_.reset();
-  prepared_unit_count_ = 0;
   std::vector<std::uint32_t>().swap(prepared_offsets_);
   std::vector<std::uint32_t>().swap(prepared_chunk_first_);
   std::vector<std::uint32_t>().swap(prepared_segment_base_);
@@ -1272,7 +1259,7 @@ void MassLadderAlgorithm::searchSlidingLadders(const std::vector<const std::vect
     bestEntryPerProtein_(ranked, ranked_evidence);
     Size top = std::min(ranked.size(), top_n);
     std::partial_sort(ranked.begin(), ranked.begin() + top, ranked.end(),
-                      [](const auto& a, const auto& b) { return a.first != b.first ? a.first > b.first : scrambledIndex(a.second) < scrambledIndex(b.second); });
+                      [](const auto& a, const auto& b) { return a.first != b.first ? a.first > b.first : MassLadderAlgorithm::entryOrder(a.second) < MassLadderAlgorithm::entryOrder(b.second); });
     // the top proteins are the cut; each of their entries with evidence is a candidate (annotated residues are residues of the entry)
     addEntriesOfTopProteins_(ranked, top, with_evidence);
     for (Size r = 0; r < top; r++)

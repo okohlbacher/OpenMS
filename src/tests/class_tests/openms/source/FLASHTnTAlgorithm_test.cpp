@@ -13,6 +13,7 @@
 #include <OpenMS/ANALYSIS/TOPDOWN/DeconvolvedSpectrum.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/FLASHHelperClasses.h>
 #include <OpenMS/ANALYSIS/TOPDOWN/FLASHTnTAlgorithm.h>
+#include <OpenMS/ANALYSIS/TOPDOWN/MassLadderAlgorithm.h>
 #include <OpenMS/METADATA/ProteinHit.h>
 #include <cmath>
 #include <cstdint>
@@ -54,20 +55,20 @@ START_SECTION((static Size blindModCount(const ProteinHit& hit)))
 }
 END_SECTION
 
-START_SECTION((static std::uint64_t entryOrder(std::uint64_t index)))
+START_SECTION((static std::uint64_t MassLadderAlgorithm::entryOrder(std::uint64_t index)))
 {
   // deterministic, collision-free on the first entries, and not the database order: about half the consecutive pairs ascend
   std::set<std::uint64_t> seen;
   Size ascending = 0;
   for (std::uint64_t i = 0; i < 1000; i++)
   {
-    TEST_EQUAL(FLASHTnTAlgorithm::entryOrder(i), FLASHTnTAlgorithm::entryOrder(i))
-    seen.insert(FLASHTnTAlgorithm::entryOrder(i));
-    if (i > 0 && FLASHTnTAlgorithm::entryOrder(i) > FLASHTnTAlgorithm::entryOrder(i - 1)) ascending++;
+    TEST_EQUAL(MassLadderAlgorithm::entryOrder(i), MassLadderAlgorithm::entryOrder(i))
+    seen.insert(MassLadderAlgorithm::entryOrder(i));
+    if (i > 0 && MassLadderAlgorithm::entryOrder(i) > MassLadderAlgorithm::entryOrder(i - 1)) ascending++;
   }
   TEST_EQUAL(seen.size(), 1000)
   TEST_EQUAL(ascending > 400 && ascending < 600, true)
-  TEST_EQUAL(FLASHTnTAlgorithm::entryOrder(0) == 0, false)
+  TEST_EQUAL(MassLadderAlgorithm::entryOrder(0) == 0, false)
 }
 END_SECTION
 
