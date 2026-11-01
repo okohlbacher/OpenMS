@@ -163,6 +163,9 @@ def analyze(a, log=print):
                              "(ddaPASEF and diaPASEF are)")
         ev.append(Evidence("acquisition", acq_ev[0], 0.95, "metadata", "Bruker .d input", acq_ev[1]))
         ev.append(Evidence("ion_mobility", True, 0.95, "metadata", "Bruker .d input", "timsTOF data"))
+        name = ext.tims_instrument(a.mzml)
+        if name:
+            ev.append(Evidence("instrument", name, 0.95, "metadata", "analysis.tdf", f"InstrumentName {name}"))
     log(f"[1/7] reading {spectra_file}")
     run = load_mzml(spectra_file, max_ms2=a.max_ms2)
     timings["read"] = round(time.time() - t0, 1)
@@ -173,6 +176,7 @@ def analyze(a, log=print):
         ev += inst.detect_acquisition(run)
     acq = _first(ev, "acquisition").value
     im = _first(ev, "ion_mobility")
+    raw = run   # the run as read: its MS1 serves the SILAC pair test when DIA pseudo-spectra replace it
     if str(acq).startswith("DIA") and a.diaspextract and spectra_file == a.mzml and im and im.value is True:
         # DIAspeXtract needs ion mobility (diaPASEF); Orbitrap DIA stays on the DIA path
         log("  DIA mzML with ion mobility: DIAspeXtract pseudo-MS/MS spectra for the DDA-style stages")
@@ -217,6 +221,8 @@ def analyze(a, log=print):
     t = time.time()
     ev += chem.detect_labels(run, hr2) + chem.detect_enrichment(run, hr2, dia=str(acq).startswith("DIA")) \
           + chem.detect_cys_alkylation(run, hr2)
+    if pseudo and raw is not run:   # pseudo-spectra carry no MS1: the SILAC pairs come from the DIA run itself
+        ev += chem.detect_silac(raw)
     hint, hint_stats = chem.digest_hint(run, hr2)
     timings["chemistry"] = round(time.time() - t, 1)
     term_stats = {}
@@ -224,7 +230,9 @@ def analyze(a, log=print):
         t = time.time()
         try:
             term_ev, term_stats = ext.fastag_termini(a.fastag, spectra_file, threads=a.threads, log=log)
-            ev += term_ev
+            # on DIA pseudo-spectra co-eluting fragments put +8/+10 Da gaps behind K/R by chance (32%/50% in the
+            # label-free Orbitrap DIA run PXD066483): heavy termini count only on DDA spectra
+            ev += [e for e in term_ev if not (pseudo and "SILAC" in str(e.value))]
         except Exception as e:
             log(f"  FASTag termini failed: {e}")
         timings["termini"] = round(time.time() - t, 1)

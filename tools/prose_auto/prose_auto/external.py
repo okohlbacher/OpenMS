@@ -266,6 +266,17 @@ def tims_acquisition(d):
     return TIMS_MODES.get(types.pop()) if len(types) == 1 else None
 
 
+def tims_instrument(d):
+    """Instrument name of a Bruker .d (analysis.tdf GlobalMetadata InstrumentName, e.g. 'timsTOF Pro 2'), or None"""
+    import sqlite3
+    try:
+        db = sqlite3.connect(f"file:{os.path.join(d, 'analysis.tdf')}?mode=ro", uri=True)
+        row = db.execute("SELECT Value FROM GlobalMetadata WHERE Key = 'InstrumentName'").fetchone()
+    except sqlite3.Error:
+        return None
+    return row[0].strip() if row and row[0] and row[0].strip() else None
+
+
 def fileconverter(exe, inp, out_mzml, threads=0, log=print):
     """Bruker ddaPASEF .d -> mzML with OpenMS FileConverter (built-in timsTOF reader: one MS2 per precursor)."""
     _run([exe, "-in", inp, "-out", out_mzml] + (["-threads", threads] if threads else []), log, timeout=6 * 3600)

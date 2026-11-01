@@ -208,6 +208,13 @@ def test_tims_acquisition(tmp_path):
     assert ext.tims_acquisition(tdf("ms1", [0, 0])) == "MS1 only"
     assert ext.tims_acquisition(tdf("mixed", [0, 8, 9])) is None
     assert ext.tims_acquisition(str(tmp_path)) is None
+    d = tdf("named", [0, 9])
+    import sqlite3 as sq
+    db = sq.connect(os.path.join(d, "analysis.tdf"))
+    db.execute("CREATE TABLE GlobalMetadata (Key TEXT, Value TEXT)")
+    db.execute("INSERT INTO GlobalMetadata VALUES ('InstrumentName', 'timsTOF Pro 2')")
+    db.commit()
+    assert ext.tims_instrument(d) == "timsTOF Pro 2" and ext.tims_instrument(str(tmp_path)) is None
 
 
 def test_schema_rules_and_decode():
