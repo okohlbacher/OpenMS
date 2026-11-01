@@ -102,6 +102,22 @@ def detect_instrument(run) -> list:
     return ev
 
 
+def window_periodicity(centres):
+    """(share of repeat gaps equal to the commonest gap, that gap in MS2 scans, distinct windows) for the
+    isolation centres in scan order. A DIA scheme gives (1.0, n, n); DDA a share near 0."""
+    last, gaps = {}, []
+    c = np.round(np.asarray(centres, dtype=float), 1).tolist()
+    for i, x in enumerate(c):
+        if x in last:
+            gaps.append(i - last[x])
+        last[x] = i
+    n_win = len(last)
+    if len(gaps) < 10:     # tiny files are protected by the cycle == windows test in detect_acquisition
+        return 0.0, 0, n_win
+    g, n = Counter(gaps).most_common(1)[0]
+    return n / len(gaps), g, n_win
+
+
 def detect_acquisition(run) -> list:
     """DDA vs DIA vs PRM from the isolation windows.
 
@@ -126,31 +142,28 @@ def detect_acquisition(run) -> list:
     repeats = Counter(centers.tolist())
     rep_med = float(np.median(list(repeats.values())))
     stats["median_repeats_per_centre"] = rep_med
+    # Regularity: a DIA scheme visits the same windows in the same order every cycle, so every window returns after
+    # exactly one cycle, and the cycle holds each window once. DDA precursors return irregularly, if at all.
+    seq = list(getattr(run, "iso_centres", None) or [s.iso_center for s in ms2])
+    per, cycle, n_win = window_periodicity(seq)
+    periodic = per >= 0.8 and cycle >= 2 and abs(cycle - n_win) <= 0.1 * n_win
+    wins = np.sort(np.unique(np.round(np.asarray(seq), 1)))
+    gap = float(np.median(np.diff(wins))) if len(wins) > 1 else 0.0
+    contiguous = gap <= 1.5 * med_w            # DIA windows abut or overlap; PRM targets are scattered
+    stats.update(periodicity=round(per, 3), cycle=cycle, windows_per_cycle=n_win, window_gap=round(gap, 2))
     ev = []
     if not have_w.any():
         mode, conf, why = ("DDA" if uniq_ratio > 0.5 else "DIA"), 0.5, "no isolation windows recorded"
-    elif med_w >= 4.0 and uniq_ratio < 0.2:
-        mode, conf, why = "DIA", 0.97, f"wide windows (median {med_w:.1f} Th) on {n_unique} repeating centres"
-    elif med_w >= 4.0 and uniq_ratio > 0.5:
-        # older ion traps (LTQ, LTQ FT) isolate DDA precursors with 3-4 Th windows
-        mode, conf, why = "DDA", 0.7, \
-            f"wide windows (median {med_w:.1f} Th) on {n_unique} mostly distinct precursors"
-    elif med_w >= 4.0 and rep_med < 5:
-        # Q Exactive / Velos DDA with 4-Th isolation: 20-50 % distinct centres, each hit about twice (dynamic exclusion);
-        # DIA centres repeat once per cycle, hundreds of times (88-800 on the held-out and validation DIA runs)
-        mode, conf, why = "DDA", 0.85, \
-            f"wide windows (median {med_w:.1f} Th) on {n_unique} precursors, each hit only {rep_med:.0f}x"
-    elif med_w >= 4.0:
-        mode, conf, why = "DIA", 0.75, f"wide windows (median {med_w:.1f} Th), but many distinct centres"
-    elif uniq_ratio < 0.05 and rep_med >= 5 and charged < 0.1 and n_unique * med_w >= 100:
-        # narrow-window DIA (Astral, 2-3 Th): uncharged windows that tile a wide m/z range; PRM targets carry a charge
-        mode, conf, why = "DIA", 0.9, (f"narrow uncharged windows (median {med_w:.1f} Th) on {n_unique} repeating "
-                                       f"centres tiling about {n_unique * med_w:.0f} Th")
+    elif periodic and contiguous and n_win >= 5 and n_win * med_w >= 100:   # fewer than 5 windows is no DIA scheme
+        mode, conf, why = "DIA", 0.97, (f"the same {n_win} windows (median {med_w:.1f} Th) repeat every cycle "
+                                        f"(periodicity {per:.2f}), tiling about {n_win * med_w:.0f} Th")
+    elif periodic:
+        mode, conf, why = "PRM", 0.9, f"the same {n_win} scattered targets repeat every cycle (periodicity {per:.2f})"
     elif uniq_ratio < 0.05 and rep_med >= 5:
-        mode, conf, why = "PRM", 0.8, f"narrow windows on {n_unique} repeating targets"
+        mode, conf, why = "PRM", 0.8, f"narrow windows on {n_unique} repeating targets (scheduled)"
     else:
-        mode, conf, why = "DDA", 0.95 if uniq_ratio > 0.3 else 0.7, \
-            f"narrow windows (median {med_w:.2f} Th) on {n_unique} distinct precursors"
+        mode, conf, why = "DDA", 0.95 if uniq_ratio > 0.3 or per < 0.3 else 0.7, \
+            f"no repeating window scheme (periodicity {per:.2f}): {n_unique} distinct precursors"
     if mode == "DIA" and any(s.ion_mobility for s in ms2):
         mode = "DIA (diaPASEF)"
     ev.append(Evidence("acquisition", mode, conf, "metadata", "isolation windows", why, stats))

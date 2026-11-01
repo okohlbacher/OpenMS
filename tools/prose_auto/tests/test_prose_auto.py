@@ -43,11 +43,16 @@ def test_instrument_and_dda(bsa):
 
 
 def test_dia_windows():
+    from types import SimpleNamespace as S
+    # 3 repeating 50-Th windows (+1 single scan): fewer than 5 periodic windows is no DIA scheme
     run = load_mzml(os.path.join(TOPP, "DIAuditor_1_input.mzML"))
-    ev = inst.detect_acquisition(run)
+    assert first(inst.detect_acquisition(run), "acquisition").value != "DIA"
+    dia = [S(iso_width=16.0, iso_center=400 + 16 * (i % 40) + 8, iso_lower=8.0, iso_upper=8.0, charge=0, ion_mobility=None)
+           for i in range(4000)]
+    ev = inst.detect_acquisition(S(ms2=dia))
     assert first(ev, "acquisition").value == "DIA"
     w = first(ev, "dia_windows").value
-    assert w["n_windows"] >= 4 and w["min_mz"] == 400.0
+    assert w["n_windows"] == 40 and w["min_mz"] == 400.0
 
 
 def test_narrow_window_dia_is_not_prm():
@@ -57,8 +62,10 @@ def test_narrow_window_dia_is_not_prm():
                  ion_mobility=None) for i in range(60 * n_centres)]
         return S(ms2=ms2)
     assert first(inst.detect_acquisition(run(0, 200)), "acquisition").value == "DIA"     # Astral 2 Th DIA, 400 Th
-    assert first(inst.detect_acquisition(run(2, 200)), "acquisition").value == "PRM"     # charged targets
     assert first(inst.detect_acquisition(run(0, 20)), "acquisition").value == "PRM"      # 20 targets, 40 Th
+    prm = [S(iso_width=1.2, iso_center=400 + 37.3 * (i % 16), iso_lower=0.6, iso_upper=0.6, charge=2, ion_mobility=None)
+           for i in range(1600)]                                                            # 16 scattered targets
+    assert first(inst.detect_acquisition(S(ms2=prm)), "acquisition").value == "PRM"
 
 
 def test_wide_window_dda_is_not_dia():
@@ -71,6 +78,11 @@ def test_wide_window_dda_is_not_dia():
            for i in range(16000)]
     assert first(inst.detect_acquisition(S(ms2=dda)), "acquisition").value == "DDA"
     assert first(inst.detect_acquisition(S(ms2=dia)), "acquisition").value == "DIA"
+    # the same precursor fragmented twice in a row (PXD004732) repeats with gap 1: not a DIA cycle
+    twice = [S(iso_width=2.0, iso_center=400 + 0.37 * (i // 2), iso_lower=1.0, iso_upper=1.0, charge=2, ion_mobility=None)
+             for i in range(4000)]
+    assert first(inst.detect_acquisition(S(ms2=twice)), "acquisition").value == "DDA"
+    assert inst.window_periodicity([400 + 16 * (i % 40) for i in range(4000)]) == (1.0, 40, 40)
 
 
 def test_itraq_reporters():

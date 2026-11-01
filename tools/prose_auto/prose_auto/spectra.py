@@ -54,6 +54,7 @@ class Run:
     software: list = field(default_factory=list)
     ms1: list = field(default_factory=list)          # list[Scan]
     ms2: list = field(default_factory=list)
+    iso_centres: list = field(default_factory=list)   # isolation centre of every MS2 in scan order (not subsampled)
     ms3: list = field(default_factory=list)
     n_spectra: int = 0
     n_ms1_total: int = 0
@@ -116,6 +117,10 @@ def load_mzml(path: str, max_ms2: int = 20000, max_ms1: int = 2000,
     run.n_ms1_total = int((levels == 1).sum())
     run.n_ms2_total = int((levels == 2).sum())
     run.n_ms3_total = int((levels >= 3).sum())
+    for s in spectra:   # the acquisition detector needs the scan order, which the MS2 subsample below loses
+        if s.getMSLevel() == 2 and s.getPrecursors():
+            p = s.getPrecursors()[0]
+            run.iso_centres.append(p.getMZ() + (p.getIsolationWindowUpperOffset() - p.getIsolationWindowLowerOffset()) / 2.0)
 
     rng = np.random.default_rng(seed)
 
