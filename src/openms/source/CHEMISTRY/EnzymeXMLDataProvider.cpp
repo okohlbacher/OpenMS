@@ -101,7 +101,10 @@ namespace OpenMS
   }
 
   // Explicit template instantiations
-  template class EnzymeXMLDataProvider<DigestionEnzymeProtein>;
-  template class EnzymeXMLDataProvider<DigestionEnzymeRNA>;
+  // OPENMS_DLLAPI also here: clang-cl exports an explicit instantiation only when the
+  // definition carries dllexport (the attribute on the 'extern template' declaration in
+  // the header is enough for cl.exe only).
+  template class OPENMS_DLLAPI EnzymeXMLDataProvider<DigestionEnzymeProtein>;
+  template class OPENMS_DLLAPI EnzymeXMLDataProvider<DigestionEnzymeRNA>;
 
 } // namespace OpenMS
