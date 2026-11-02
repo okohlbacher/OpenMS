@@ -572,3 +572,67 @@ def test_indicator_agreement_and_organism_mix():
     assert mix["suspected"] and len(mix["indicators"]) == 3 and mix["score"] > 0.8
     assert not organism_mix(ev[:2])["suspected"]   # the search note alone
     assert not organism_mix(ev[:1] + ev[2:3])["suspected"]
+
+
+def test_fdr_filter_accepts_tied_scores_only_as_a_group():
+    # 99 targets above a tie of 1 target and 2 decoys: cutting inside the tie would pass 100 targets at 2% FDR
+    psms = [(i, 100.0 - i, False, "PEPTIDE", 0.0) for i in range(99)]
+    psms += [(99, 1.0, False, "PEPTIDE", 0.0), (100, 1.0, True, "EDITPEP", 0.0), (101, 1.0, True, "EDITPEP", 0.0)]
+    ok, thr = ts.fdr_filter(psms)
+    assert len(ok) == 99 and thr == 2.0
+
+
+def _fake_run(**kw):
+    from argparse import Namespace
+    from prose_auto import cli
+    a = Namespace(**{"fastag": "FASTag", "fasta": None, "panel": "p", "skip_enzyme": False, "fastag_subsample": 0.1,
+                     "fastag_taxonomy": None, "threads": 0, **kw})
+    return cli._Run(a, lambda *x: None, "base", "run.mzML")
+
+
+def test_tier2_redoes_mass_gaps_for_a_new_winner(monkeypatch):
+    from prose_auto import cli
+    monkeypatch.setattr(cli.ext, "fastag_alkylation", lambda fastag, mzml, db, *x, **k:
+                        [Evidence("cys_alkylation", db, 0.5, "data", "FASTag mass gaps", "", {"hist": []})])
+    monkeypatch.setattr(cli, "_shortlist", lambda c, panel: ["B"])
+
+    class H:
+        best_db = ("A", "a.fasta")
+        def organism(self, dbs):
+            self.best_db = ("B", dbs["B"])
+            return [Evidence("organism", "B", 0.8, "search", "panel mini-search")]
+        def accuracy(self):
+            return []
+        alkylation = enzyme = accuracy
+
+    c, h = _fake_run(), H()
+    cli._fastag_stage(c, h, org_fixed=True)
+    cli._tier2(c, h, {"A": "a.fasta", "B": "b.fasta"}, unspec=False)
+    assert [e.value for e in c.ev if e.method == "FASTag mass gaps"] == ["b.fasta"]
+
+
+def test_fastag_species_runs_once(monkeypatch):
+    from prose_auto import cli
+    calls = []
+    monkeypatch.setattr(cli.ext, "fastag_species", lambda *x, **k:
+                        calls.append(1) or [Evidence("organism", "Homo", 0.6, "data", "FASTag")])
+    c = _fake_run()
+    c.ev += cli._fastag_species(c)        # the ProSE organism search's call; ProSE then fails
+    cli._fastag_stage(c, None, org_fixed=False)
+    assert len(calls) == 1 and len([e for e in c.ev if e.method == "FASTag"]) == 1
+    monkeypatch.setattr(cli.ext, "fastag_species", lambda *x, **k: calls.append(1) or 1 / 0)
+    c = _fake_run()
+    for _ in range(2):
+        with pytest.raises(ZeroDivisionError):
+            cli._fastag_species(c)
+    assert len(calls) == 2                 # a failure is not retried either
+
+
+def test_threads_cap_numeric_libraries(monkeypatch):
+    from prose_auto import cli
+    monkeypatch.setattr(os, "environ", {"MKL_NUM_THREADS": "2"})
+    cli._cap_threads(["analyze", "run.mzML", "--threads", "4"])
+    assert os.environ == {"MKL_NUM_THREADS": "2", "OMP_NUM_THREADS": "4", "OPENBLAS_NUM_THREADS": "4"}
+    monkeypatch.setattr(os, "environ", {})
+    cli._cap_threads(["analyze", "run.mzML", "--threads=0"])
+    assert os.environ == {}

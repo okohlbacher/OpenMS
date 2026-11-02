@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.3 (2026-11-02)
+
+- Target-decoy FDR of the mini-search: tied scores pass or fail together; the 1 % cut no longer falls inside a group
+  of equal scores.
+- A tier-2 organism winner also redoes the FASTag mass-gap evidence (Cys alkylation, modification combinations)
+  against its database; before, the gaps against the losing database were kept.
+- The FASTag species call runs once per run: after a failed ProSE organism search the panel stages reuse it.
+- `--threads` also caps the OpenMP, OpenBLAS and MKL thread pools (unless set in the environment).
+
 ## 0.1.2 (2026-11-02)
 
 - Jev reads last: after the mini-search, the ProSE organism search, FASTag and the mass gaps, with the texts and

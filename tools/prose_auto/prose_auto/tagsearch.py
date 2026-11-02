@@ -312,15 +312,18 @@ def score_search(scans, index: PeptideIndex, prec_ppm, frag_tol, frag_ppm, mods:
 
 def fdr_filter(psms, fdr=0.01):
     """Target PSMs passing a target-decoy FDR (decoys/targets above the
-    threshold). Returns the passing target PSMs and the score threshold."""
+    threshold). Returns the passing target PSMs and the score threshold.
+    Tied scores pass or fail together: the FDR is checked at group ends only."""
     psms = sorted(psms, key=lambda x: -x[1])
     t = d = 0
     best_n, thr = 0, float("inf")
-    for p in psms:
+    for i, p in enumerate(psms):
         if p[2]:
             d += 1
         else:
             t += 1
+        if i + 1 < len(psms) and psms[i + 1][1] == p[1]:
+            continue
         if t and d / t <= fdr and t > best_n:
             best_n, thr = t, p[1]
     passing = [p for p in psms if p[1] >= thr and not p[2]]

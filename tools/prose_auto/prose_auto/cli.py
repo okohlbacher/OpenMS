@@ -24,6 +24,20 @@ import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
 
+
+def _cap_threads(argv):
+    """--threads caps the OpenMP/OpenBLAS/MKL pools; they read the environment when numpy loads, so this runs
+    before the imports below. A value already in the environment wins."""
+    for i, x in enumerate(argv):
+        n = x.split("=", 1)[1] if x.startswith("--threads=") else argv[i + 1] if x == "--threads" and i + 1 < len(
+            argv) else None
+        if n and n.isdigit() and int(n) > 0:
+            for v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
+                os.environ.setdefault(v, n)
+
+
+_cap_threads(sys.argv[1:])
+
 from . import delta_combos as DC
 from . import detect_chemistry as chem
 from . import detect_instrument as inst
@@ -246,6 +260,8 @@ class _Run:
     ms2a: str = "ORBITRAP"
     hr1: bool = True
     hr2: bool = True
+    fastag_sp: object = None  # the FASTag species call (list, or the exception it raised): it runs once
+    gap_ev: list = field(default_factory=list)   # mass-gap evidence, redone when tier 2 changes the database
 
     @property
     def ftol(self):           # FASTag fragment tolerance
@@ -270,10 +286,18 @@ def _fastag_fraction(c):
 
 
 def _fastag_species(c):
+    """FASTag species call, once per run: after a failed ProSE organism search _fastag_stage reuses it."""
     a = c.a
-    return ext.fastag_species(a.fastag, c.spectra_file, *c.ftol, threads=a.threads, subsample=_fastag_fraction(c),
-                              log=c.log, taxonomy_dir=a.fastag_taxonomy,
-                              rank="species" if a.fastag_taxonomy else "genus")
+    if c.fastag_sp is None:
+        try:
+            c.fastag_sp = ext.fastag_species(a.fastag, c.spectra_file, *c.ftol, threads=a.threads,
+                                             subsample=_fastag_fraction(c), log=c.log, taxonomy_dir=a.fastag_taxonomy,
+                                             rank="species" if a.fastag_taxonomy else "genus")
+        except Exception as e:
+            c.fastag_sp = e
+    if isinstance(c.fastag_sp, Exception):
+        raise c.fastag_sp
+    return c.fastag_sp
 
 
 def _shortlist(c, panel):
@@ -603,7 +627,6 @@ def _fastag_stage(c, h, org_fixed):
     """FASTag species call (unless the organism is fixed), then the mass-gap histogram against the winning database:
     Cys alkylation and modification combinations."""
     a, log = c.a, c.log
-    ftol, funit = c.ftol
     with _timed(c, "fastag"):
         log("  FASTag: genus call from sequence tags")
         try:
@@ -611,17 +634,31 @@ def _fastag_stage(c, h, org_fixed):
             if a.fastag_taxonomy and not c.hr2:  # ion-trap tags hit large proteomes by chance (wheat, salmon first)
                 for e in fev:
                     e.confidence = min(e.confidence, 0.2)
-            c.ev += fev
-            db = (h.best_db[1] if h is not None and h.best_db else None) or a.fasta
-            if db:
-                log(f"  FASTag: mass-gap histogram against {os.path.basename(db)} without fixed modifications")
-                alk = ext.fastag_alkylation(a.fastag, c.spectra_file, db, ftol, funit, threads=a.threads, log=log,
-                                            subsample=_fastag_fraction(c))
-                c.ev += alk
-                # the same gap histogram, explained as modification combinations (variable mods, enrichment)
-                c.ev += DC.detect(alk[0].stats.get("hist", []) if alk else [], 0.02 if funit == "ppm" else 0.5)
+            have = {id(e) for e in c.ev}   # added already by a failed ProSE organism search
+            c.ev += [e for e in fev if id(e) not in have]
         except Exception as e:
             log(f"  FASTag failed: {e}")
+        _fastag_gaps(c, (h.best_db[1] if h is not None and h.best_db else None) or a.fasta)
+
+
+def _fastag_gaps(c, db):
+    """The FASTag mass-gap histogram against db: Cys alkylation and modification combinations; replaces earlier
+    gap evidence (tier 2 calls it again for a new winner)."""
+    a, log = c.a, c.log
+    ftol, funit = c.ftol
+    if not db:
+        return
+    gone = {id(e) for e in c.gap_ev}
+    c.ev, c.gap_ev = [e for e in c.ev if id(e) not in gone], []
+    try:
+        log(f"  FASTag: mass-gap histogram against {os.path.basename(db)} without fixed modifications")
+        alk = ext.fastag_alkylation(a.fastag, c.spectra_file, db, ftol, funit, threads=a.threads, log=log,
+                                    subsample=_fastag_fraction(c))
+        # the same gap histogram, explained as modification combinations (variable mods, enrichment)
+        c.gap_ev = alk + DC.detect(alk[0].stats.get("hist", []) if alk else [], 0.02 if funit == "ppm" else 0.5)
+        c.ev += c.gap_ev
+    except Exception as e:
+        log(f"  FASTag failed: {e}")
 
 
 def _tier2(c, h, panel, unspec):
@@ -648,6 +685,9 @@ def _tier2(c, h, panel, unspec):
             if h.best_db and h.best_db[0] != prev:  # a new winner: redo the stages that used the old one
                 c.ev = [e for e in c.ev if not (e.source == "search" and e.parameter in TIER2_REDO)] + new
                 c.ev += h.accuracy() + h.alkylation() + ([] if a.skip_enzyme or unspec else h.enzyme())
+                if a.fastag:
+                    with _timed(c, "fastag_tier2"):
+                        _fastag_gaps(c, h.best_db[1])
             else:  # the winner holds; the new search evidence records which candidates were tested
                 c.ev = [e for e in c.ev if not (e.source == "search" and e.parameter == "organism")] + new
 
