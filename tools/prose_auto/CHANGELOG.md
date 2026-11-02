@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.1.2 (2026-11-02)
+
+- Jev reads last: after the mini-search, the ProSE organism search, FASTag and the mass gaps, with the texts and
+  every indicator (counts and reference ranges, no verdicts, no confidences). Its second request judges each final
+  setting against the texts and the indicators (supports / texts contradict / indicators contradict / not
+  mentioned); tolerances and modifications against the texts only.
+- New output `agreement`: per setting, the confidence-weighted share of independent detectors that disagree
+  (inconsistency, level, dissenting detectors, Jev's verdict), and an overall score. An inconsistency >= 0.2
+  flags 53 of the 73 wrong decisions and 16 % of the correct ones.
+- New output `organism_mix`: a suspected mixture of organisms from at least two kinds of indicator (a second
+  database with spectra of its own, several genera stated, Jev's p(mixed species)).
+- No single indicator decides an enrichment: a strong diagnostic-ion signal or two independent indicators are
+  needed; on ion-trap MS2 the neutral-loss test no longer counts as tested. Enrichment 160 -> 165/180.
+- HLA ligand call from several indicators (tag termini where valid, hydrophobic C-termini, precursor masses,
+  singly charged share); tag termini alone no longer claim an unspecific digest.
+- Lock-mass share counts scans with a hit, not hits.
+
 ## 0.1.1 (2026-11-02)
 
 - pyopenms 3.5 (the last release for Python 3.10): idXML is read into a `PeptideIdentificationList`; a plain list

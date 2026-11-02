@@ -383,7 +383,7 @@ def test_schema_rules_and_decode():
 def _fake_jev_answers(body):
     qs = body["questions"]
     if "organism" in qs and "supports" in qs["organism"]["criteria"]:
-        return {"answers": {"organism": {"choice": "contradicts", "probabilities": {"contradicts": 0.85}}},
+        return {"answers": {"organism": {"choice": "texts_contradict", "probabilities": {"texts_contradict": 0.85}}},
                 "usage": {"cost_usd": 0.0004}}
     ans = {k: {"noul": 0.1} for k in qs if ":" in k}
     ans["var:Acetyl (Protein N-term)"] = {"noul": 0.9}
@@ -413,8 +413,9 @@ def test_jev_read_study_and_cross_check():
     assert all(e.source == "llm" and e.confidence <= 0.7 for e in ev)
     assert rep["sources"] == ["user's description", "PRIDE data protocol"]
     dec = reconcile([Evidence("organism", "Mus musculus", 0.9, "search", "t", "t")])
-    issues = J.cross_check(jev, {"user's description": "HeLa"}, dec)
+    issues, verdicts = J.cross_check(jev, {"user's description": "HeLa"}, dec)
     assert issues and issues[0]["parameter"] == "organism" and issues[0]["severity"] == "high"
+    assert verdicts["organism"]["verdict"] == "texts_contradict"
     assert jev.calls == 2 and abs(jev.cost_usd - 0.0016) < 1e-9
 
 
@@ -546,3 +547,28 @@ def test_diaspextract_exit_11_falls_back_to_dda(tmp_path):
               "--organism-source", "metadata", "--spectra", "600", "-o", str(out)])
     rep = json.load(open(out / "run.auto.json"))
     assert rep["decisions"]["acquisition"]["value"] == "DDA (ddaPASEF)"
+
+
+def test_indicator_agreement_and_organism_mix():
+    from prose_auto.reconcile import indicator_agreement, organism_mix
+    ev = [Evidence("organism", "Homo_sapiens", 0.7, "search", "panel mini-search", "",
+                   {"Homo_sapiens": {"psms": 300, "unique_vs_best": 250}, "Escherichia_coli": {"psms": 120,
+                    "unique_vs_best": 100}}),
+          Evidence("organism", "Homo_sapiens + Escherichia_coli", 0.5, "search", "panel mini-search", "",
+                   {"Homo_sapiens": {"psms": 300}, "Escherichia_coli": {"psms": 120, "unique_vs_best": 100}}),
+          Evidence("organism", "Homo sapiens (human)", 0.6, "repository", "pride"),
+          Evidence("organism", "Escherichia coli", 0.6, "repository", "pride"),
+          Evidence("enzyme", "Trypsin", 0.8, "search", "protease competition"),
+          Evidence("enzyme", "Trypsin", 0.5, "text", "keywords"),
+          Evidence("label", "TMT10/11plex", 0.9, "data", "reporter ions"),
+          Evidence("label", "label free", 0.5, "text", "keywords")]
+    dec = reconcile(ev)
+    ag = indicator_agreement(dec, {"label": {"verdict": "texts_contradict", "p": 0.9}})
+    assert ag["parameters"]["enzyme"]["inconsistency"] == 0.0
+    lab = ag["parameters"]["label"]
+    assert lab["inconsistency"] > 0.4 and lab["level"] == "high" and len(lab["dissent"]) == 2
+    assert "label" in ag["overall"]["most_inconsistent"]
+    mix = organism_mix(ev, {"probabilities": {"organism": {"mixed species": 0.8}}})
+    assert mix["suspected"] and len(mix["indicators"]) == 3 and mix["score"] > 0.8
+    assert not organism_mix(ev[:2])["suspected"]   # the search note alone
+    assert not organism_mix(ev[:1] + ev[2:3])["suspected"]

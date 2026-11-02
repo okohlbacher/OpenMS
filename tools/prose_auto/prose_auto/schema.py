@@ -43,7 +43,8 @@ class Head:
 
 
 def _opts(pairs):
-    return {re.sub(r"[^a-z0-9]+", "_", v.lower()).strip("_")[:60]: (v, d) for v, d in pairs}
+    # "+" is kept as "plus": TripleTOF 5600 and 5600+ must not share a key
+    return {re.sub(r"[^a-z0-9]+", "_", v.lower().replace("+", " plus")).strip("_")[:60]: (v, d) for v, d in pairs}
 
 
 ISOBARIC = {"TMT6plex", "TMT10/11plex", "TMTpro (16/18plex)", "TMT2plex", "iTRAQ4plex", "iTRAQ8plex"}
@@ -129,7 +130,7 @@ HEADS = [
              ("other species", "a species not in this list"),
              ("mixed species", "proteins of several species are in the SAME sample and searched together on purpose: a human/yeast/E. coli benchmark mix, xenograft, host-pathogen infection, microbiome. NOT for a study whose different samples come from different species, NOT for contaminants, BSA, trypsin or spike-in standard peptides")]),
          "organism", hint="Cell lines imply their species (HeLa, HEK293 = human). Ignore reagent proteins "
-                          "(BSA, trypsin) and contaminant databases. " + "If one species dominates the samples, answer that species."),
+                          "(BSA, trypsin) and contaminant databases. " + "If one species dominates the samples, answer that species; a sample that mixes species on purpose stays mixed species whatever the proportions."),
     Head("sample_type", "What kind of sample was analysed?",
          _opts([("cell line", "cultured cells"), ("tissue", "tissue or organ"),
                 ("body fluid", "plasma, serum, urine, CSF, saliva"),
@@ -152,7 +153,7 @@ HEADS = [
                 ("Nethylmaleimide (C)", "N-ethylmaleimide (NEM)"),
                 ("Methylthio (C)", "MMTS, methyl methanethiosulfonate"),
                 ("Carboxymethyl (C)", "iodoacetic acid, carboxymethylation"),
-                ("none (free Cys)", "explicitly not reduced or not alkylated")]),
+                ("none (free Cys)", "explicitly not alkylated (reduction alone, or no reduction, does not say)")]),
          "cys_alkylation", hint="Reduction alone (DTT, TCEP) says nothing about alkylation."),
     Head("label", "Which quantification labelling was used?",
          _opts([("label free", "no quantification label: label-free quantification, spectral counting, or no quantification. Proximity labelling (biotin, APEX, BioID), crosslinking and isotope-labelled standard peptides are label free"),
@@ -188,7 +189,8 @@ HEADS = [
          _opts([("HCD", "HCD, beam-type CID"), ("CID", "ion-trap CID"), ("ETD", "ETD"),
                 ("EThcD", "EThcD"), ("UVPD", "UVPD")]), "fragmentation"),
     Head("ms2_analyzer", "Which analyzer recorded the MS/MS spectra?",
-         _opts([("ORBITRAP", "Orbitrap"), ("IT", "linear or 3D ion trap"), ("TOF", "time of flight")]),
+         _opts([("ORBITRAP", "Orbitrap"), ("ASTRAL", "Astral analyzer (Orbitrap Astral)"), ("IT", "linear or 3D ion trap"),
+                ("TOF", "time of flight")]),
          "ms2_analyzer"),
     Head("instrument", "Which mass spectrometer was used?", _opts(INSTRUMENT_OPTIONS), "instrument",
          hint="Name a model only if a model name appears in the texts; a vendor or 'Orbitrap mass spectrometer' alone is not_stated. 'CID in the LTQ' means an LTQ Orbitrap, never a Q Exactive."),
@@ -295,7 +297,7 @@ RULES = [
          lambda f: f.get("ms2_analyzer") == "IT" and (_ppm(f.get("fragment_tolerance")) or 1e9) < 100,
          "ion-trap MS/MS cannot support a ppm-level fragment tolerance (use about 0.5 Da)"),
     Rule("fragment_tol_wide", "soft", ("ms2_analyzer", "fragment_tolerance"),
-         lambda f: f.get("ms2_analyzer") in ("ORBITRAP", "TOF") and (_ppm(f.get("fragment_tolerance")) or 0) >= 300,
+         lambda f: f.get("ms2_analyzer") in ("ORBITRAP", "ASTRAL", "TOF") and (_ppm(f.get("fragment_tolerance")) or 0) >= 300,
          "a fragment tolerance of 0.3 Da or more wastes high-resolution MS/MS (costs identifications)"),
     Rule("precursor_tol_wide", "soft", ("instrument", "precursor_tolerance"),
          lambda f: _has(f.get("instrument"), "Orbitrap", "Exactive", "Exploris", "Astral", "timsTOF")

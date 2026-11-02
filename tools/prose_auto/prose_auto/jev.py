@@ -13,7 +13,7 @@ prose-auto vocabularies. prose-auto uses it in three ways:
   combination that breaks no hard consistency rule wins, so TMT + ion-trap
   CID or diaPASEF + Orbitrap cannot come out of the text together. Soft rules
   and decoding changes are reported as text conflicts.
-* cross_check: for every final decision, ask whether the texts support it,
+* cross_check: for every final decision, ask whether the texts and the measured indicators support it,
   contradict it or do not mention it.
 * choose: pick the next step of the tuning loop (tune.py) from a closed list,
   given a description of the last search's diagnostics.
@@ -96,21 +96,29 @@ def _choice(instructions, criteria):
     return {"type": "choice", "instructions": instructions, "criteria": criteria}
 
 
+# questions about what the authors chose for their search: the measured profiles describe the data, not the choice
+PROTOCOL_HEADS = {"precursor_tolerance", "fragment_tolerance", "missed_cleavages"}
+PROTOCOL_ONLY = (" Answer only from what the authors report; the source 'measured from the spectra' describes the data, "
+                 "not the authors' search settings.")
+WEIGH_ALL = (" Weigh the authors' texts and the measured profiles together, and no single indicator alone; answer "
+             "not_stated if neither supports an answer.")
+
+
 def _head_question(h: S.Head, priors=False):
     criteria = {k: d for k, (_, d) in h.options.items()}
-    criteria[NOT_STATED] = "the texts do not say"
+    criteria[NOT_STATED] = "neither the texts nor the measured profiles support an answer"
     return _choice(READ_INSTRUCTIONS + h.question + (" " + h.hint if h.hint else "")
                    + (S.priors_text(h.name) if priors else "")
-                   + " Answer not_stated unless the texts say so or clearly imply it.", criteria)
+                   + (PROTOCOL_ONLY if h.name in PROTOCOL_HEADS else WEIGH_ALL), criteria)
 
 
 def study_questions(priors=False):
     qs = {h.name: _head_question(h, priors) for h in S.HEADS}
     for mod, desc in S.VARIABLE_MOD_FLAGS.items():
         qs["var:" + mod] = {"type": "noul", "instructions": READ_INSTRUCTIONS +
-                            f"Did the authors search {desc} as a variable modification?"}
+                            f"Did the authors search {desc} as a variable modification?" + PROTOCOL_ONLY}
     for flag, desc in S.SCOPE_FLAGS.items():
-        qs["scope:" + flag] = {"type": "noul", "instructions": READ_INSTRUCTIONS + f"Did the study use {desc}?"}
+        qs["scope:" + flag] = {"type": "noul", "instructions": READ_INSTRUCTIONS + f"Did the study use {desc}?" + PROTOCOL_ONLY}
     return qs
 
 
@@ -155,7 +163,7 @@ def read_study(jev: Jev, texts: dict, user=False, min_p=0.5, priors=False):
         if not h.parameter or v in (None, NOT_STATED) or h.parameter not in PARAMETERS:
             continue
         p = mapped[h.name]["probabilities"].get(v, 0.0)
-        if p < min_p and h.name not in changed:
+        if p < min_p:   # also for heads the consistency rules changed: a rule alone does not make an answer
             continue
         if h.name == "enrichment" and v == "none":
             continue
@@ -186,31 +194,47 @@ def read_study(jev: Jev, texts: dict, user=False, min_p=0.5, priors=False):
     return ev, report
 
 
+TEXT_ONLY = {"precursor_tolerance", "fragment_tolerance", "variable_mods", "missed_cleavages"}
+
+
 def cross_check(jev: Jev, texts, decisions: dict, source_label="description"):
-    """Ask, for every decided setting, whether the texts support or contradict it.
-    texts is a str or a {source: text} dict. Returns review issues."""
+    """For every decided setting: do the texts and the measured indicators support it? The tolerance and
+    modification settings are measured or searched values, so only the texts are asked about them. texts is a str
+    or a {source: text} dict (with the measured block when the indicators are to be judged).
+    Returns (review issues, {parameter: {"verdict", "p"}})."""
     state = S.study_state(texts if isinstance(texts, dict) else {source_label: texts})
     if not jev or not state:
-        return []
+        return [], {}
+    measured = "measured from the spectra" in state
     qs = {}
     for p, d in decisions.items():
         if d.value in (None, "", "unknown") or p in ("charge_range", "dia_windows", "collision_energy"):
             continue
-        qs[p] = _choice(READ_INSTRUCTIONS + f"The search will use {PARAMETERS[p]} = {d.value}. Do the texts agree?",
-                        {"supports": "the texts state this or something equivalent",
-                         "contradicts": "the texts state a different value",
-                         "not_mentioned": "the texts say nothing about it"})
+        crit = {"supports": "the texts state this or something equivalent, and no measured indicator points elsewhere",
+                "texts_contradict": "the texts state a different value",
+                "not_mentioned": "the texts say nothing about it and the indicators do not decide it"}
+        if measured and p not in TEXT_ONLY:
+            crit["indicators_contradict"] = ("the measured indicators, taken together, point to a different value "
+                                             "than this one")
+            crit["supports"] = "the texts or the measured indicators support it, and neither contradicts it"
+        qs[p] = _choice(READ_INSTRUCTIONS + f"The search will use {PARAMETERS[p]} = {d.value}. Is this consistent "
+                        "with the texts" + (" and the measured indicators?" if measured and p not in TEXT_ONLY else "?"),
+                        crit)
     try:
         ans = jev.decide(state, qs)
     except Exception as e:
-        return [{"parameter": "-", "issue": f"Jev cross-check failed: {e}", "severity": "low"}]
-    out = []
+        return [{"parameter": "-", "issue": f"Jev cross-check failed: {e}", "severity": "low"}], {}
+    out, verdicts = [], {}
     for p, a in ans.items():
-        prob = float((a.get("probabilities") or {}).get("contradicts", 0))
-        if a.get("choice") == "contradicts" and prob >= 0.5:
-            out.append({"parameter": p, "severity": "high" if prob >= 0.8 else "medium",
-                        "issue": f"Jev: the texts contradict {decisions[p].value} (p={prob:.2f})"})
-    return out
+        probs = a.get("probabilities") or {}
+        choice = a.get("choice")
+        verdicts[p] = {"verdict": choice, "p": round(float(probs.get(choice, a.get("confidence", 0)) or 0), 2)}
+        for k, who in (("texts_contradict", "the texts"), ("indicators_contradict", "the measured indicators")):
+            prob = float(probs.get(k, 0))
+            if choice == k and prob >= 0.5:
+                out.append({"parameter": p, "severity": "high" if prob >= 0.8 else "medium",
+                            "issue": f"Jev: {who} contradict {decisions[p].value} (p={prob:.2f})"})
+    return out, verdicts
 
 
 def consistency(decisions: dict):

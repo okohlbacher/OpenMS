@@ -331,10 +331,13 @@ def detect_enrichment(run, ms2_high_res=True, dia=False) -> list:
         # with >= 100 charged DDA spectra the neutral-loss test could have seen an enrichment; DIA spectra
         # (no precursor charge) leave the question to the records and the text
         # DIA-derived spectra (raw windows or DIAspeXtract pseudo-spectra, which keep no precursor neutral loss) cannot
-        # test it: PXD034623 (phospho DIA) "measured" none at 0.6 and overrode the SDRF and the text
-        ev.append(Evidence("enrichment", "none", 0.6 if n >= 100 and not dia else 0.3, "data", "diagnostic ions",
+        # test it: PXD034623 (phospho DIA) "measured" none at 0.6 and overrode the SDRF and the text. On ion-trap MS2
+        # the 0.4 Da window matches the control losses in 1-10% of the spectra as well, so the test is weak there too
+        # (four phospho ion-trap runs measured "none" against the texts and Jev)
+        tested = n >= 100 and not dia and ms2_high_res
+        ev.append(Evidence("enrichment", "none", 0.6 if tested else 0.3, "data", "diagnostic ions",
                            "no phospho, glyco or acetyl signature above background"
-                           + ("" if n >= 100 else " (DIA or too few charged spectra: weak)"), stats))
+                           + ("" if tested else " (DIA, ion-trap MS2 or too few charged spectra: weak)"), stats))
     return ev
 
 

@@ -37,7 +37,7 @@ from . import tagsearch as ts
 from . import text_extract as tx
 from .hypotheses import HypothesisTester
 from .evidence import Evidence
-from .reconcile import reconcile
+from .reconcile import indicator_agreement, organism_mix, reconcile
 from .spectra import load_mzml
 
 LOW_RES = {"IT", "LIT", "PAULIONTRAP", "RADIALEJECTIONLINEARIONTRAP", "AXIALEJECTIONLINEARIONTRAP"}
@@ -114,34 +114,103 @@ def _val(v):
     return f"{v['value']} {v.get('unit', '')}".strip() if isinstance(v, dict) and "value" in v else v
 
 
-def _data_features(ev, digest_stats, term_stats=None, per_parameter=4):
-    """What the spectra themselves show, as one text for the readers (a separate source, labelled as measured, so
-    they can weigh it against the authors' texts): every parameter's measured evidence (up to per_parameter, most
-    confident first) with its reason, the provisional reading of the spectra alone, and the precursor mass and
-    charge distribution."""
-    lines = []
-    measured = [e for e in ev if e.source in MEASURED_SOURCES]
-    for p in dict.fromkeys(e.parameter for e in measured):
-        for e in sorted((e for e in measured if e.parameter == p), key=lambda e: -e.confidence)[:per_parameter]:
-            lines.append(f"{p}: {_val(e.value)} (confidence {e.confidence:.2f}; {e.source}/{e.method}"
-                         f"{': ' + e.detail[:240] if e.detail else ''})")
-    prov = [f"{k} = {_val(d.value)} (confidence {d.confidence:.2f})" for k, d in reconcile(measured).items()
-            if d.source != "default" and d.value not in ("unknown", None)]
-    if prov:
-        lines.append("Provisional reading of the spectra alone (prose-auto, before the texts; the texts may correct "
-                     "it): " + "; ".join(prov))
-    if digest_stats:
-        lines.append(f"precursor neutral mass: median {digest_stats['median_mass']} Da, 90th percentile "
-                     f"{digest_stats['q90_mass']} Da; {digest_stats['charge_1']:.0%} singly charged "
-                     f"({digest_stats['spectra']} charged MS2 spectra); tryptic peptides: median about 1200-2500 Da, "
-                     "HLA class I ligands (8-12 residues): about 900-1200 Da")
-    if term_stats and term_stats.get("cterm_tags"):
-        lines.append(f"C-terminal residues of {term_stats['cterm_tags']} sequence tags: K/R {term_stats.get('cterm_KR')}"
-                     f" (tryptic digests >= 0.86, HLA ligands about 0.3), hydrophobic L/V/F/Y/M "
-                     f"{term_stats.get('cterm_anchors_LVFYM')} (HLA class I about 0.5, class II about 0.1); most frequent "
-                     f"{term_stats.get('cterm_top')}; heavy Lys8 {term_stats.get('heavy_K8')}, heavy Arg10 "
-                     f"{term_stats.get('heavy_R10')}")
-    return "Measured from the raw spectra by prose-auto (not stated by the authors):\n" + "\n".join(lines)[:20000]
+def _stats(ev, parameter, method):
+    e = _first([e for e in ev if e.parameter == parameter and e.method == method], parameter)
+    return (e.stats or {}) if e else None
+
+
+def _data_features(ev, digest_stats, term_stats=None, pseudo=False, tims=False):
+    """What the spectra show, for the readers: no verdicts, no confidences, no provisional reading (the readers'
+    answers come back as evidence and must not repeat prose-auto's own calls). Indicators are grouped into profiles,
+    each with the ranges seen on 180 benchmark studies and 14 HLA ligand files, and with its known failure modes, so
+    that no single indicator decides. Measured tolerances are left out: the tolerance questions ask what the authors
+    searched with."""
+    f = lambda x, n=2: "n/a" if x is None else f"{x:.{n}f}" if isinstance(x, float) else str(x)
+    lines = ["Measured from the raw spectra by prose-auto (not stated by the authors). Each profile lists independent "
+             "indicators with the ranges seen in typical runs; none decides alone, and the texts may override them."]
+    facts = []
+    for p in ("instrument", "ms1_analyzer", "ms2_analyzer", "fragmentation", "collision_energy", "acquisition",
+              "ion_mobility"):
+        e = _first([e for e in ev if e.parameter == p and e.source == "metadata"], p)
+        if e:
+            facts.append(f"{p} {_val(e.value)}")
+    if pseudo:
+        facts.append("spectra: DIA pseudo-MS/MS spectra built by DIAspeXtract (charges and fragments are inferred)")
+    if facts:
+        lines.append("Run (from the file header): " + "; ".join(facts))
+    ds, ts = digest_stats or {}, term_stats or {}
+    hr2 = _value(ev, "ms2_analyzer", "ORBITRAP") not in LOW_RES
+    dig = []
+    if ds:
+        dig.append(f"precursor neutral mass median {ds['median_mass']} Da, 90th percentile {ds['q90_mass']} Da "
+                   "(tryptic runs: median 1250-2250 Da; HLA ligand runs 890-2040 Da, class I about 900-1200 Da, "
+                   "class II overlaps tryptic)")
+        dig.append(f"singly charged precursors {ds['charge_1']:.0%} of {ds['spectra']} spectra (tryptic Orbitrap DDA "
+                   "about 0 %; HLA ligand runs 0-53 %; timsTOF up to 12 %; DIA pseudo-spectra 11-44 % from inferred "
+                   "charges)")
+    if ts.get("cterm_tags") and ts.get("cterm_KR") is None:
+        dig.append(f"sequence-tag termini not estimable ({ts['cterm_tags']} terminal tags, at least 200 needed)")
+    elif ts.get("cterm_tags"):
+        caveat = (" - unreliable on this run: tryptic timsTOF runs show 0.33-0.66" if tims else
+                  " - unreliable on this run: tryptic DIA pseudo-spectra show 0.39-0.96" if pseudo else "")
+        dig.append(f"C-terminal K/R share of {ts['cterm_tags']} sequence tags {f(ts.get('cterm_KR'))} (tryptic "
+                   f"Orbitrap DDA 0.84-0.98, HLA ligand runs 0.07-0.42{caveat})")
+        dig.append(f"hydrophobic C-terminal residues L/V/F/Y/M {f(ts.get('cterm_anchors_LVFYM'))} (tryptic "
+                   "Orbitrap DDA 0.00-0.03, timsTOF 0.06-0.27; HLA class I about 0.5, class II about 0.1)")
+    if dig:
+        lines.append("Digest profile (protease, or no protease for HLA ligands and endogenous peptides): "
+                     + "; ".join(dig) + ". Tryptic timsTOF runs and HLA class II ligands overlap in tags and "
+                     "masses; read them together with the sample description.")
+    lab = []
+    rep = _stats(ev, "label", "reporter ions")
+    if rep and any(v.get("fraction") for v in (rep.get("reporters") or {}).values()):
+        top = sorted(((k, v) for k, v in rep["reporters"].items() if v.get("fraction")),
+                     key=lambda kv: -kv[1].get("enrichment", 0))[:4]
+        lab.append(f"reporter ions ({rep.get('level', 'MS2')}): " + ", ".join(
+            f"{k} in {v['fraction']:.0%} of spectra ({v.get('enrichment', 0):.0f}x background)" for k, v in top)
+            + " (isobaric runs: several channels at 350x background or more; label-free runs mostly below 20x"
+            + ("; low-resolution MS/MS cannot separate reporter ions from noise" if not hr2 else "") + ")")
+    for e in ev:
+        if e.parameter == "label" and e.method == "FASTag termini" and "N-terminal" in e.detail:
+            lab.append(f"sequence tags with an N-terminal {_val(e.value)} gap")
+    ms1 = _stats(ev, "label", "MS1 heavy/light pairs")
+    if ms1 and ms1.get("enrichment"):
+        lab.append("MS1 heavy/light pair spacings over controls: " + ", ".join(
+            f"{k} {v:.2f}x" for k, v in sorted(ms1["enrichment"].items(), key=lambda kv: -kv[1]))
+            + " (SILAC runs: best spacing median 3.6x, from 1.35x; label-free runs median 1.25x, up to 2.5x)")
+    if ts.get("cterm_KR") is not None and hr2:
+        lab.append(f"heavy C-termini: Lys8 {f(ts.get('heavy_K8'))} of the K C-termini, Arg10 {f(ts.get('heavy_R10'))} "
+                   "of the R C-termini (SILAC runs median 0.25 / 0.37; label-free DDA mostly below 0.05 / 0.37; isobaric "
+                   "labels can mimic Lys8" + ("; DIA pseudo-spectra show Arg10 0.25-0.9 without any SILAC" if pseudo
+                                                else "") + ")")
+    if lab:
+        lines.append("Label profile: " + "; ".join(lab) + ".")
+    enr = []
+    di = _stats(ev, "enrichment", "diagnostic ions")
+    dia = str(_value(ev, "acquisition", "")).startswith("DIA")
+    if dia:
+        enr.append("DIA run: the phospho neutral-loss test needs one precursor per spectrum and is not applicable, "
+                   "and oxonium ions are present in most DIA spectra, so the spectra cannot exclude an enrichment")
+    if di and not dia:
+        if di.get("neutral_loss_fraction") is not None:
+            enr.append(f"phospho neutral loss (precursor - 98/z) in {di['neutral_loss_fraction']:.1%} of spectra, "
+                       f"control offsets {di.get('neutral_loss_control', 0):.1%} (phospho-enriched runs median 5.6 %, "
+                       "from 0.05 %; not enriched median 0.15 %, up to 3 %; CID and HCD differ)")
+        for k, v in sorted((di.get("diagnostic") or {}).items()):
+            if v and v.get("fraction") is not None:
+                enr.append(f"{k} in {v['fraction']:.0%} of spectra ({v.get('enrichment', 0):.1f}x background)")
+        if any(k.startswith("HexNAc") for k in (di.get("diagnostic") or {})):
+            enr.append("HexNAc oxonium ions are also strong in TiO2 phospho enrichments and in DIA spectra")
+    if enr:
+        lines.append("Enrichment profile: " + "; ".join(enr) + ".")
+    cys = _stats(ev, "cys_alkylation", "Cys immonium")
+    if cys and cys.get("immonium"):
+        lines.append("Cys profile: immonium ions " + ", ".join(
+            f"{k} {v['fraction']:.1%} ({v.get('enrichment', 0):.0f}x background)" for k, v in cys["immonium"].items()
+            if v) + " (often absent even when cysteines were alkylated).")
+    elif not hr2:
+        lines.append("Cys profile: low-resolution MS/MS, no Cys immonium test.")
+    return "\n".join(lines)[:20000]
 
 
 def _panel_match(name, panel):
@@ -300,12 +369,45 @@ def _chemistry(c, raw):
                 c.ev += [e for e in term_ev if not (c.pseudo and "SILAC" in str(e.value))]
             except Exception as e:
                 c.log(f"  FASTag termini failed: {e}")
-    return hint, hint_stats, term_stats
+    votes, cls = _digest_votes(hint_stats, term_stats, c.pseudo, "PASEF" in str(c.acq))
+    if term_stats or hint_stats:
+        c.log(f"  digest indicators: {votes} -> {'HLA class ' + cls + ' ligands?' if cls else 'no HLA call'}")
+    term_stats = {**term_stats, "digest_votes": votes}
+    term_stats.pop("hla_hint", None)
+    if cls:
+        term_stats["hla_hint"] = f"HLA class {cls}?"
+    else:   # the tags alone do not make an unspecific digest (tryptic timsTOF runs show K/R 0.33-0.66)
+        c.ev = [e for e in c.ev if not (e.method == "FASTag termini" and e.value == "unspecific cleavage")]
+    return ("HLA class I?" if cls == "I" else None), hint_stats, term_stats
 
 
-def _texts_and_readers(c, hint_stats, term_stats):
-    """Repository records, the user's description and methods, then the readers (LLM, Jev) over all texts.
-    Returns (study, backend, jev, llm_rejected, llm_text_conflicts, jev_report)."""
+def _digest_votes(ds, ts, pseudo, tims):
+    """HLA ligands from several indicators, each only where it is valid. Ranges on 180 benchmark studies and 14 HLA
+    files: tag C-terminal K/R tryptic Orbitrap DDA 0.53-0.995, HLA 0.07-0.42, but tryptic timsTOF 0.33-0.66 and DIA
+    pseudo-spectra 0.39-0.96 (not valid there); hydrophobic C-termini HLA class I about 0.5, tryptic <= 0.27; median
+    precursor mass HLA class I about 900-1200 Da; singly charged precursors HLA up to 0.53, tryptic Orbitrap about 0
+    (pseudo-spectra charges are inferred: not valid there). Class I needs two agreeing indicators; class II only shows
+    in the tags, so it needs valid tags (Orbitrap DDA) with a low K/R share. Returns (votes, "I" | "II" | None)."""
+    kr, anch = ts.get("cterm_KR"), ts.get("cterm_anchors_LVFYM")
+    votes = {}
+    if kr is not None and not (pseudo or tims):
+        votes["low_KR_tags"] = kr <= 0.5
+    if anch is not None:
+        votes["hydrophobic_C_termini"] = anch >= 0.35
+    if ds.get("median_mass"):
+        votes["small_precursors"] = ds["median_mass"] < chem.HLA_I_MEDIAN_MASS and ds["q90_mass"] < chem.HLA_I_Q90_MASS
+    if ds.get("charge_1") is not None and not pseudo:
+        votes["singly_charged"] = ds["charge_1"] >= 0.15
+    if sum(votes.values()) >= 2:
+        return votes, "I"
+    if votes.get("low_KR_tags"):
+        return votes, "II"
+    return votes, None
+
+
+def _texts_and_readers(c):
+    """Repository records, the user's description and methods, then the LLM reader over all texts (Jev reads them
+    last, with every indicator: _jev_last). Returns (study, backend, llm_rejected, llm_text_conflicts)."""
     a, log = c.a, c.log
     texts = {}
     if a.accession:
@@ -336,19 +438,27 @@ def _texts_and_readers(c, hint_stats, term_stats):
         if a.llm_priors:
             c.ev += L.literature_priors(backend, _value(c.ev, "instrument", ""), c.acq,
                                         _value(c.ev, "fragmentation", ""), c.ms2a)
+    return study, backend, rejected, conflicts
+
+
+def _jev_last(c, study, hint_stats, term_stats):
+    """Jev reads last: the texts plus every indicator, the searches included (organism, digest, mass gaps).
+    Returns (jev, jev_study, report); its answers join the evidence before reconciling."""
+    a = c.a
     jev = J.Jev() if a.jev else None
-    jev_report = {}
-    if jev and study:
-        # Jev also sees the run and what the spectra show (marker ions, mass errors, the provisional reading)
-        run_info = (f"data file {os.path.basename(a.mzml.rstrip('/'))}; " + "; ".join(
-            f"{k} {v}" for k, v in c.run.summary().items() if k != "path" and v not in (None, "", []))
-            + ("; DIA pseudo-MS/MS spectra by DIAspeXtract" if c.pseudo else ""))
-        jev_study = {**study, "run": run_info,
-                     "measured from the spectra": _data_features(c.ev, hint_stats, term_stats)}
-        log(f"  Jev: {jev.name} (one multi-head request over {len(jev_study)} sources, one of them the data)")
-        e, jev_report = J.read_study(jev, jev_study, user=bool(desc), priors=a.jev_priors)
-        c.ev += e
-    return study, backend, jev, rejected, conflicts, jev_report
+    if not (jev and study):
+        return jev, {}, {}
+    run_info = (f"data file {os.path.basename(a.mzml.rstrip('/'))}; " + "; ".join(
+        f"{k} {v}" for k, v in c.run.summary().items() if k != "path" and v not in (None, "", []))
+        + ("; DIA pseudo-MS/MS spectra by DIAspeXtract" if c.pseudo else ""))
+    measured = _data_features(c.ev, hint_stats, term_stats, pseudo=c.pseudo, tims="PASEF" in str(c.acq))
+    found = _search_features(c.ev)
+    jev_study = {**study, "run": run_info, "measured from the spectra": measured + ("\n" + found if found else "")}
+    with _timed(c, "jev"):
+        c.log(f"  Jev: {jev.name} (one multi-head request over {len(jev_study)} sources, one of them the data)")
+        e, report = J.read_study(jev, jev_study, user=bool(_arg_text(a.description)), priors=a.jev_priors)
+    c.ev += e
+    return jev, jev_study, report
 
 
 def _organism_from_metadata(c):
@@ -375,8 +485,8 @@ def _organism_from_metadata(c):
 def _hla_first(c, hint, hint_stats, term_stats):
     """HLA ligands (no protease): a hint from the precursor masses, or stated (SDRF "unspecific cleavage"); the ProSE
     organism search then tries the unspecific search first, and only its result sets the enzyme."""
-    hla = term_stats.get("hla_hint")
-    first = "II" if hla == "HLA class II?" and not hint else "I" if hint or hla or _unspecific(c.ev) else None
+    hla = term_stats.get("hla_hint")   # set by _digest_votes from several indicators
+    first = "II" if hla == "HLA class II?" else "I" if hla or _unspecific(c.ev) else None
     if first:
         c.log(f"  HLA class {first} ligands? ({hint or hla or 'stated'}; {hint_stats}): "
               "the unspecific search goes first")
@@ -431,6 +541,33 @@ def _organism_from_prose(c, hla_first):
         except Exception as e:
             log(f"  ProSE organism search failed, panel mini-search instead: {str(e)[-300:]}")
     return org_panel
+
+
+def _search_features(ev):
+    """What the searches found, for Jev: PSM counts per database, spectra a second database explains alone, and the
+    mass-gap shares. Counts only, no verdicts."""
+    lines = []
+    for method in ("panel mini-search", "ProSE organism search"):
+        e = _first([e for e in ev if e.parameter == "organism" and e.method == method and e.source == "search"
+                    and " + " not in str(e.value)], "organism")   # "A + B" is the mixed-sample note
+        if not e:
+            continue
+        st = {k: v for k, v in (e.stats or {}).items() if isinstance(v, dict) and "psms" in v}
+        if st:
+            n = (e.stats or {}).get("n_spectra")
+            top = sorted(st.items(), key=lambda kv: -kv[1]["psms"])[:4]
+            lines.append(f"Organism profile ({method}, 1% FDR{f', {n} spectra' if n else ''}): " + "; ".join(
+                f"{k} {v['psms']} PSMs ({v.get('unique_vs_best', 0)} spectra no other top database explains)"
+                for k, v in top) + " (a second organism with many spectra of its own suggests a mixed sample, "
+                "spike-ins or a xenograft; close relatives share most peptides)")
+        else:
+            lines.append(f"Organism profile ({method}): {e.detail}")
+    dc = _stats(ev, "variable_mods", "delta-mass combinations") or _stats(ev, "enrichment", "delta-mass combinations")
+    if dc and dc.get("share"):
+        lines.append(f"Mass-gap profile ({dc.get('shifted_spectra')} spectra with a precursor mass gap): " + ", ".join(
+            f"{k} {v:.0%}" for k, v in sorted(dc["share"].items(), key=lambda kv: -kv[1])[:6])
+            + " (Acetyl gaps include protein N-termini; a GlyGly gap equals an Asn residue)")
+    return "\n".join(lines)
 
 
 def _mini_search(c, panel, org_fixed, unspec):
@@ -575,8 +712,7 @@ def analyze(a, log=print):
     hint, hint_stats, term_stats = _chemistry(c, raw)
     log("[5/7] repository records and text")
     with _timed(c, "text"):
-        study, backend, jev, llm_rejected, llm_text_conflicts, jev_report = _texts_and_readers(c, hint_stats,
-                                                                                               term_stats)
+        study, backend, llm_rejected, llm_text_conflicts = _texts_and_readers(c)
 
     # organism: from the metadata or one ProSE search fixes it (org_panel = the one database); otherwise the panel
     # mini-search, FASTag and tier 2 decide, with the stated organisms as evidence. auto: something stated and a
@@ -603,15 +739,20 @@ def analyze(a, log=print):
     if not org_fixed:
         _tier2(c, h, panel, unspec)
 
+    jev, jev_study, jev_report = _jev_last(c, study, hint_stats, term_stats)
+
     log("[7/7] reconciling")
     decisions = reconcile(c.ev)
     prose = pp.to_prose(decisions)
     if a.prose is not None:   # a bare --prose means ProSE from PATH
         decisions, prose = _confirm_with_prose(c, decisions, prose, panel, h)
     review = L.review(backend, decisions) if backend and a.llm_review else []
-    # the texts alone: the data cannot confirm themselves
-    jev_issues = J.cross_check(jev, study, decisions) if jev and study else []
+    # Jev judges each setting against the texts and against the indicators; the agreement score is the
+    # deterministic counterpart over all evidence
+    jev_issues, jev_verdicts = J.cross_check(jev, jev_study, decisions) if jev and jev_study else ([], {})
     consistency = J.consistency(decisions)
+    agreement = indicator_agreement(decisions, jev_verdicts)
+    mix = organism_mix(c.ev, jev_report)
     c.timings["total"] = round(time.time() - t0, 1)
     return {
         "tool": "prose-auto 0.1 (prototype)",
@@ -624,6 +765,8 @@ def analyze(a, log=print):
         "jev": {"model": jev.name if jev else None, "cross_check": jev_issues, "study": jev_report,
                 "calls": jev.calls if jev else 0, "cost_usd": round(jev.cost_usd, 5) if jev else 0},
         "consistency": consistency,
+        "agreement": agreement,
+        "organism_mix": mix,
         "text_conflicts": llm_text_conflicts + (jev_report.get("text_rules", []) if jev_report else []),
         "timings_s": c.timings,
         "digest_hint": {"hint": hint, **hint_stats, "termini": term_stats},
@@ -673,6 +816,22 @@ def markdown(rep):
            for r in rep["llm"]["review"]]
     if len(L_) == n:
         L_.append("- none")
+    ag, mix = rep.get("agreement") or {}, rep.get("organism_mix") or {}
+    if ag:
+        o = ag["overall"]
+        L_ += ["", "## Agreement of the indicators", "",
+               f"Overall inconsistency {o['inconsistency']:.2f} ({o['level']})"
+               + (f"; most inconsistent: {', '.join(o['most_inconsistent'])}" if o["most_inconsistent"] else ""), "",
+               "| Setting | Inconsistency | Indicators agreeing | Jev | Dissent |", "|---|---|---|---|---|"]
+        for k, v in ag["parameters"].items():
+            j = v.get("jev") or {}
+            js = f"{j['verdict']} ({j['p']:.2f})" if j else ""
+            L_.append(f"| {k} | {v['inconsistency']:.2f} ({v['level']}) | {v['agreeing']}/{v['indicators']} | {js} | "
+                      + "; ".join(v["dissent"][:3]) + " |")
+    if mix:
+        L_ += ["", f"**Organism mix suspected: {'yes' if mix['suspected'] else 'no'}** (score {mix['score']:.2f})"]
+        L_ += [f"- {i['indicator']}: {', '.join(i['species'])} ({i['strength']:.2f})"
+               + (f" — {i['detail']}" if i.get("detail") else "") for i in mix["indicators"]]
     L_ += ["", "## ProSE parameters", "", "```", "ProSE -in <mzML> -database <fasta> -out <idXML> \\",
            "  " + " ".join(f'"{x}"' if " " in x or not x else x for x in rep["prose_cli"]), "```", "",
            "## Evidence", ""]

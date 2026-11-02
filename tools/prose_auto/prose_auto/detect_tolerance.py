@@ -195,8 +195,9 @@ def detect_tolerances(run, acquisition="DDA", ms2_high_res=True, ms1_high_res=Tr
 
     # --- offsets from ions of known mass
     if ms1_high_res and run.ms1:
-        errs = []
+        errs, hit_scans = [], 0
         for s in run.ms1:
+            n0 = len(errs)
             for lm in LOCK_MASSES:
                 if s.mz.size and s.scan_low <= lm <= s.scan_high:
                     i = np.searchsorted(s.mz, lm)
@@ -205,7 +206,8 @@ def detect_tolerances(run, acquisition="DDA", ms2_high_res=True, ms1_high_res=Tr
                             e = (s.mz[k] - lm) / lm * 1e6
                             if abs(e) <= 15:
                                 errs.append(e)
-        frac = len(errs) / max(1, len(run.ms1))
+            hit_scans += len(errs) > n0
+        frac = hit_scans / max(1, len(run.ms1))   # share of MS1 scans with a lock-mass ion (not of hits)
         if len(errs) >= 30 and frac >= 0.2:
             fit = fit_gauss_uniform(np.array(errs), 15.0)
             if fit and fit[2] > 0.3:

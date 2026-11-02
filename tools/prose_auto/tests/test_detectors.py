@@ -96,6 +96,23 @@ def test_text_does_not_override_a_tested_enrichment():
     assert reconcile(ev)["enrichment"].value == "Phospho (STY)"
 
 
+def test_one_indicator_does_not_decide_an_enrichment():
+    none = Evidence("enrichment", "none", 0.3, "data", "diagnostic ions")
+    kw = Evidence("enrichment", "Phospho (STY)", 0.45, "text", "keywords")
+    gap = Evidence("enrichment", "GlyGly (K)", 0.7, "data", "delta-mass combinations")
+    jev = Evidence("enrichment", "GlyGly (K)", 0.6, "llm", "jev:jev-latest+data")
+    assert reconcile([none, kw])["enrichment"].value == "none"            # one keyword on a DIA run
+    assert reconcile([none, jev])["enrichment"].value == "none"           # Jev alone
+    assert reconcile([gap])["enrichment"].value == "none"                 # a mass gap alone (GG = Asn)
+    assert reconcile([gap, jev])["enrichment"].value == "none"            # Jev echoing that gap
+    assert reconcile([gap, jev, Evidence("enrichment", "GlyGly (K)", 0.45, "text", "keywords")]
+                     )["enrichment"].value == "GlyGly (K)"
+    # a mass gap next to a tested "none": a measurement plus the texts outweigh it (PXD003808, pTyr IP)
+    tested = Evidence("enrichment", "none", 0.6, "data", "diagnostic ions")
+    p_gap = Evidence("enrichment", "Phospho (STY)", 0.7, "data", "delta-mass combinations")
+    assert reconcile([tested, p_gap, kw])["enrichment"].value == "Phospho (STY)"
+
+
 def test_sdrf_variable_mod_is_not_an_enrichment():
     sdrf = ("source name\tcharacteristics[organism]\tcomment[modification parameters]\n"
             "s1\tHomo sapiens\tNT=Phospho;TA=S,T,Y;MT=variable\n")
@@ -318,10 +335,15 @@ def test_jev_cache(tmp_path, monkeypatch):
 def test_jev_sees_the_data_features():
     from prose_auto import schema as S
     from prose_auto.cli import _data_features
-    ev = [Evidence("label", "TMT10/11plex", 0.9, "data", "reporter ions", "126-131 reporters in 94% of MS2"),
-          Evidence("label", "TMT6plex", 0.6, "text", "keywords")]
-    txt = _data_features(ev, {"median_mass": 950, "q90_mass": 1260, "charge_1": 0.4, "spectra": 5000})
-    assert "TMT10/11plex" in txt and "reporters in 94%" in txt and "median 950 Da" in txt and "TMT6plex" not in txt
+    ev = [Evidence("label", "TMT10/11plex", 0.9, "data", "reporter ions", "126-131 reporters in 94% of MS2",
+                   {"level": "MS2", "reporters": {"TMT126": {"fraction": 0.94, "background": 0.002, "enrichment": 470}}}),
+          Evidence("label", "TMT6plex", 0.6, "text", "keywords"),
+          Evidence("precursor_tolerance", {"value": 8, "unit": "ppm"}, 0.9, "search", "mini-search PSMs")]
+    txt = _data_features(ev, {"median_mass": 950, "q90_mass": 1260, "charge_1": 0.4, "spectra": 5000},
+                         {"cterm_tags": 900, "cterm_KR": 0.38, "cterm_anchors_LVFYM": 0.1}, tims=True)
+    # indicators with ranges and caveats, no verdicts, no confidences, no measured tolerances, no text evidence
+    assert "TMT126 in 94%" in txt and "median 950 Da" in txt and "unreliable on this run" in txt
+    assert "TMT10/11plex" not in txt and "TMT6plex" not in txt and "confidence" not in txt and "8 ppm" not in txt
     state = S.study_state({"PRIDE description": "x" * 70000, "measured from the spectra": txt})
     assert state["measured from the spectra"] == txt          # never cut away by long texts
 
@@ -367,3 +389,16 @@ def test_delta_combinations_histone_and_phospho():
     assert "Propionyl (K)" in mods.value and "Phospho (S)" in mods.value and "Oxidation (M)" in mods.value
     assert any(e.parameter == "enrichment" and e.value == "Phospho (STY)" for e in ev)
     assert DC.detect([(0.0, 500)], 0.02) == []                                  # nothing shifted: no call
+
+
+def test_hla_call_needs_several_indicators():
+    from prose_auto.cli import _digest_votes
+    tryp = {"median_mass": 1650, "q90_mass": 2200, "charge_1": 0.0}
+    assert _digest_votes(tryp, {"cterm_KR": 0.94, "cterm_anchors_LVFYM": 0.01}, False, False)[1] is None
+    # tryptic timsTOF: low tag K/R alone is not valid there (PXD061636: K/R 0.41)
+    tims = {"median_mass": 1365, "q90_mass": 1982, "charge_1": 0.02}
+    assert _digest_votes(tims, {"cterm_KR": 0.41, "cterm_anchors_LVFYM": 0.14}, False, True)[1] is None
+    hla1 = {"median_mass": 1006, "q90_mass": 1264, "charge_1": 0.35}
+    assert _digest_votes(hla1, {"cterm_KR": 0.38, "cterm_anchors_LVFYM": 0.53}, False, False)[1] == "I"
+    hla2 = {"median_mass": 1900, "q90_mass": 2855, "charge_1": 0.0}
+    assert _digest_votes(hla2, {"cterm_KR": 0.30, "cterm_anchors_LVFYM": 0.10}, False, False)[1] == "II"

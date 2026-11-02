@@ -117,7 +117,8 @@ def fastag_termini(fastag, mzml, frag_tol=20.0, frag_unit="ppm", subsample=0.25,
     """Protease and labels from the termini of FASTag k=4 tags (Carbamidomethyl only, so labels are mass gaps).
     Tags read from y ions keep the C-terminal end in cterm_mass (one residue left: its residue mass); tags read
     from b ions are written reversed, with the C-terminal end in nterm_mass plus water; the N-terminal label is the
-    bare label mass in either column. On 17 calibration runs: C-terminal K/R share 0.86-0.99 on tryptic HCD runs,
+    bare label mass in either column. On 17 calibration runs: C-terminal K/R share 0.86-0.99 on tryptic HCD runs (threshold 0.80; on 180 benchmark
+    runs tryptic Orbitrap DDA 0.84-0.98, tryptic timsTOF 0.33-0.66),
     0.27-0.42 on HLA class I and II (class I: hydrophobic anchors L/V/F/Y/M 0.44-0.63, class II about 0.1);
     N-terminal TMT/TMTpro on 5-10% of the tags of labelled runs (>= 0.1% otherwise); heavy Lys8 and Arg10 shares
     >= 0.25 only in SILAC runs (label-free <= 0.16, diaPASEF pseudo-spectra show an Arg10 artifact without Lys8).
@@ -155,7 +156,7 @@ def fastag_termini(fastag, mzml, frag_tol=20.0, frag_unit="ppm", subsample=0.25,
     elif kr <= KR_NONTRYPTIC:
         stats["hla_hint"] = "HLA class I?" if anchors >= CLASS_I_ANCHORS else "HLA class II?"
         ev.append(Evidence("enzyme", "unspecific cleavage", 0.45, "data", "FASTag termini",
-                           f"only {kr:.0%} of the C-terminal residues of {tot} sequence tags are K/R (tryptic: >= 86%); "
+                           f"only {kr:.0%} of the C-terminal residues of {tot} sequence tags are K/R (tryptic: >= 80%); "
                            f"hydrophobic anchors L/V/F/Y/M {anchors:.0%}: {stats['hla_hint']}", stats))
     for lab, m in _NLABEL.items():
         x, bg = near(n, m) + near(c, m), near(n, m + 0.5) + near(c, m + 0.5)

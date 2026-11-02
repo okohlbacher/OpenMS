@@ -251,6 +251,48 @@ def _tolerance(kind, evs, offsets, instrument, ms_analyzer):
 
 
 ENRICH_SEP = " + "
+STRONG_ENRICHMENT = 0.7   # one diagnostic-ion signal this strong decides alone (neutral loss >= 5 % at a clean control)
+
+
+def _enrichment(evs):
+    """No single indicator decides an enrichment. The indicators: diagnostic ions (neutral loss, oxonium,
+    immonium), mass gaps (delta-mass combinations), the ProSE organism search, keywords in the texts, Jev. An
+    enrichment needs a strong diagnostic-ion signal or two independent indicators, Jev counting only next to a
+    text keyword or a second measurement (it read the measured profile). Where the spectra tested it and found
+    nothing (high-resolution DDA), the texts alone do not overrule them: project texts mention phospho for the
+    total-proteome runs of a phospho study. A stated enrichment (user, repository) decides as before.
+    Single-indicator calls this stops: one keyword on DIA (3 runs), Jev alone (PXD076863), a GlyGly mass gap alone
+    (114.043 Da is also an Asn residue, PXD027767)."""
+    if any(e.source in ("user", "repository") and e.confidence >= 0.5 for e in evs):
+        return _decide("enrichment", evs)
+    fam = lambda v: str(v).split()[0].lower()
+    pos = [e for e in evs if str(e.value) not in NEGATIVE and e.source != "default" and e.confidence >= 0.3]
+    kinds = {}
+    for e in pos:
+        kinds.setdefault(fam(e.value), set()).add(e.method if e.source in MEASURED_SOURCES else e.source)
+    tested_none = any(e.source == "data" and str(e.value) == "none" and e.confidence >= 0.6 for e in evs)
+
+    def supported(f):
+        k = kinds[f]
+        measured = k - {"text", "llm"}
+        if any(e.method == "diagnostic ions" and e.confidence >= STRONG_ENRICHMENT for e in pos if fam(e.value) == f):
+            return True
+        n = len(k) - ("llm" in k and "text" not in k and len(measured) < 2)   # Jev echoing one measurement
+        return n >= 2 and (measured or not tested_none)
+
+    keep = {f for f in kinds if supported(f)}
+    sub = [e for e in evs if fam(e.value) in keep] or [e for e in evs if str(e.value) in NEGATIVE]
+    if not sub:
+        return None
+    d = _decide("enrichment", sub, ORDER_MEASURED if any(e.source in MEASURED_SOURCES for e in sub) else None)
+    for e in evs:
+        if e not in sub and e.confidence >= 0.4 and not _same(e.value, d.value):
+            d.conflicts.append(f"{e.source} ({e.method}) says {e.value}: {e.detail}"
+                               + ("" if keep else " (one indicator alone does not decide)"))
+            d.confidence = round(d.confidence * 0.85, 3)
+            d.status = "review"
+    d.evidence = evs
+    return d
 
 
 def _co_enrichment(d, evs):
@@ -287,10 +329,7 @@ def reconcile(evidence: list) -> dict:
               "precursor_offset", "fragment_offset", "enzyme", "cys_alkylation", "enrichment",
               "peptide_length"):
         if p in by:
-            # enrichment: when the spectra could test it (>= 100 charged DDA spectra, confidence >= 0.6) the
-            # measurement wins; project texts mention phospho for atlases whose other runs were enriched
-            tested = p == "enrichment" and any(e.source == "data" and e.confidence >= 0.6 for e in by[p])
-            d = _decide(p, by[p], ORDER_MEASURED if tested else None)
+            d = _enrichment(by[p]) if p == "enrichment" else _decide(p, by[p])
             if d:
                 out[p] = _co_enrichment(d, by[p]) if p == "enrichment" else d
     if "variable_mods" in by:
@@ -332,3 +371,103 @@ def reconcile(evidence: list) -> dict:
         out["organism"] = Decision("organism", "unknown", 0.0, "default", [], ["give a FASTA, a "
                                    "description, a PXD accession or an organism panel"], "unknown")
     return out
+
+
+NO_AGREEMENT = {"precursor_tolerance", "fragment_tolerance", "precursor_offset", "fragment_offset", "charge_range",
+                "dia_windows", "collision_energy", "variable_mods", "peptide_length"}
+
+
+def indicator_agreement(decisions: dict, jev_verdicts=None):
+    """How far the independent indicators agree with each decision. Per parameter, each detector (source:method)
+    counts once with its strongest evidence; agreement = the confidence-weighted share that backs the decided value,
+    inconsistency = 1 - agreement. Jev's verdict (texts and indicators against the decision) is reported beside it,
+    and a contradiction by Jev counts as one more dissenting indicator. The tolerances and modification lists are
+    left out: their sources measure different quantities (the error in the data, the authors' search window).
+    overall = the confidence-weighted mean over the parameters with >= 2 indicators; level from the inconsistency
+    (low < 0.2 <= medium < 0.4 <= high)."""
+    jev_verdicts = jev_verdicts or {}
+    per = {}
+    for p, d in decisions.items():
+        if p in NO_AGREEMENT or d.value in (None, "", "unknown"):
+            continue
+        parts = str(d.value).split(ENRICH_SEP) if p == "enrichment" else [d.value]
+        best = {}
+        for e in d.evidence:
+            if e.source == "default" or e.method == "combined" or e.confidence < 0.3:
+                continue
+            agree = any(_same(e.value, v) or (p == "organism" and _organism_key(e.value) == _organism_key(v))
+                        or (p == "label" and v == "label free" and str(e.value) in NEGATIVE)   # no tag, no SILAC
+                        for v in parts)
+            k = f"{e.source}:{e.method}"
+            if k not in best or e.confidence > best[k][0]:
+                best[k] = (e.confidence, agree, e.value)
+        jv = jev_verdicts.get(p) or {}
+        if str(jv.get("verdict", "")).endswith("contradict"):
+            best[f"jev cross-check:{jv['verdict']}"] = (0.7 * jv.get("p", 0.5), False, jv["verdict"])
+        if not best:
+            continue
+        tot = sum(c for c, _, _ in best.values())
+        ok = sum(c for c, a, _ in best.values() if a)
+        inc = round(1 - ok / tot, 2) if tot else 0.0
+        per[p] = {"inconsistency": inc, "indicators": len(best), "agreeing": sum(a for _, a, _ in best.values()),
+                  "dissent": [f"{k} = {_short(v)}" for k, (c, a, v) in sorted(best.items(), key=lambda kv: -kv[1][0])
+                              if not a],
+                  "level": _level(inc)}
+        if jv:
+            per[p]["jev"] = jv
+    multi = {p: v for p, v in per.items() if v["indicators"] >= 2}
+    w = {p: decisions[p].confidence or 0.1 for p in multi}
+    overall = round(sum(multi[p]["inconsistency"] * w[p] for p in multi) / sum(w.values()), 2) if multi else 0.0
+    worst = sorted(multi, key=lambda p: -multi[p]["inconsistency"])[:3]
+    return {"overall": {"inconsistency": overall, "level": _level(overall),
+                        "most_inconsistent": [p for p in worst if multi[p]["inconsistency"] >= 0.2]},
+            "parameters": per}
+
+
+def _level(x):
+    return "low" if x < 0.2 else "medium" if x < 0.4 else "high"
+
+
+def _short(v):
+    return f"{v['value']} {v.get('unit', '')}".strip() if isinstance(v, dict) and "value" in v else str(v)[:60]
+
+
+def organism_mix(evidence: list, jev_report=None):
+    """Suspected mixture of organisms (benchmark mixes, xenografts, host-pathogen, co-culture), from independent
+    indicators, each with a strength in 0..1:
+    - search: a second database explains many spectra the winner does not (the mini-search or ProSE "A + B" note);
+      strength 0.4 + its share of the winner's PSMs, at most 0.6: alone it is no mix (related species, contaminants
+      and the antibody of an IP explain spectra of their own too)
+    - stated: the user or the repository record names organisms of two or more genera (0.5); the texts alone 0.2
+      (cell lines, BSA, E. coli expression hosts and antibodies name other species without a mixed sample)
+    - Jev: p(organism = mixed species) x 0.7
+    FASTag species ranks are left out: on large panels unrelated species score alike (Brachypodium vs Thalassiosira
+    2693 vs 2688 tags in a human run). suspected = two kinds of indicator >= 0.3; score = 1 - prod(1 - s)."""
+    ind = []
+    genus = lambda v: str(v).replace("_", " ").split(" ")[0].lower()
+    for e in evidence:
+        if e.parameter == "organism" and e.source == "search" and " + " in str(e.value):
+            a, b = str(e.value).split(" + ", 1)
+            st = e.stats or {}
+            top = (st.get(a) or {}).get("psms") if isinstance(st.get(a), dict) else None
+            u = (st.get(b) or {}).get("unique_vs_best") if isinstance(st.get(b), dict) else None
+            s = min(0.6, 0.4 + (u / top if top and u else 0.2))
+            ind.append({"indicator": e.method, "species": [a, b], "strength": round(s, 2), "detail": e.detail})
+    for srcs, s, name in ((("user", "repository"), 0.5, "stated by the user or the repository record"),
+                          (("text",), 0.2, "named in the texts")):
+        g = {}
+        for e in evidence:
+            if e.parameter == "organism" and e.source in srcs and e.confidence >= 0.45 and \
+                    str(e.value) not in ("not in panel", "unknown"):
+                g.setdefault(genus(e.value), e.value)
+        if len(g) >= 2:
+            ind.append({"indicator": name, "species": sorted(g.values()), "strength": s})
+    p = ((jev_report or {}).get("probabilities") or {}).get("organism", {}).get("mixed species", 0.0)
+    if p >= 0.2:
+        ind.append({"indicator": "Jev (texts and indicators)", "species": [], "strength": round(0.7 * p, 2),
+                    "detail": f"p(mixed species) = {p:.2f}"})
+    score = 1.0
+    for i in ind:
+        score *= 1 - i["strength"]
+    suspected = len({i["indicator"] for i in ind if i["strength"] >= 0.3}) >= 2
+    return {"suspected": suspected, "score": round(1 - score, 2), "indicators": ind}

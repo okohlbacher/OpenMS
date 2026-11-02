@@ -60,9 +60,10 @@ places only a handful of tags, and its evidence stays below the mini-search.
 | 3 mass offset | `detect_tolerance.py` | systematic offset without a database | lock-mass polysiloxane ions (MS1), immonium and y1 ions (HCD MS2) |
 | 4 chemistry | `detect_chemistry.py` | TMT/TMTpro/iTRAQ plex, SILAC, phospho/glyco/acetyl enrichment, Cys alkylation (weak) | reporter and diagnostic ions against control m/z values (Param-Medic 2019 idea); MS1 heavy/light pairs with an intensity check |
 | 5 mini-search | `tagsearch.py`, `hypotheses.py` | organism, Cys alkylation, protease, calibrated offsets and tolerances | binomial b/y scoring with target/reversed-decoy FDR on the top-TIC subset; competing hypotheses compared by PSMs at 1% FDR |
-| 6 records and text | `repository.py`, `text_extract.py` | what the submitters and the user say | PRIDE API v3, PROXI, bigbio/sdrf-annotated-datasets, Europe PMC methods; keyword rules with verbatim quotes |
+| 5 records and text | `repository.py`, `text_extract.py` | what the submitters and the user say | PRIDE API v3, PROXI, bigbio/sdrf-annotated-datasets, Europe PMC methods; keyword rules with verbatim quotes |
 | 6 LLM | `llm.py` | the same from free text, literature priors, a final review | any CLI or OpenAI-compatible endpoint; quotes must occur in the text |
-| 7 reconcile | `reconcile.py` | one decision per parameter, confidence, conflicts, status | measured beats stated for instrument-determined settings; a clear mini-search result beats text for sample prep |
+| 6b Jev (last) | `jev.py`, `schema.py` | every head from the texts and all indicators; afterwards a consistency verdict per setting | typed choice questions over the texts plus the measured and search profiles (`--jev`) |
+| 7 reconcile | `reconcile.py` | one decision per parameter, confidence, conflicts, status; indicator agreement; suspected organism mix | measured beats stated for instrument-determined settings; a clear mini-search result beats text for sample prep; an enrichment needs a strong signal or two indicators |
 | (opt) ProSE | `prose_runner.py` | confirmation with ProSE's own calibration pass and an open search | `-summary_out` YAML (`precursor_error`, `fragment_error`), `-out_mod_analysis_dir` |
 
 ## LLM backends
@@ -92,8 +93,10 @@ labelled state and are read in **one request**:
   `choice` question (with "not stated") and every flag as a `noul` question.
   The head answers are decoded jointly: the most probable combination that
   breaks no hard rule wins, so a near-tie in one head is settled by the
-  others. After reconciling, Jev checks each final setting against the texts
-  (supports / contradicts / not mentioned). A TypeSafe console key
+  others. Jev runs after all searches and sees the texts plus every indicator
+  as profiles with reference ranges. After reconciling, it judges each final
+  setting against the texts and the indicators (supports / texts contradict /
+  indicators contradict / not mentioned). Two requests per run, about $0.01. A TypeSafe console key
   (`TYPESAFE_API_KEY` or `JEV_API_KEY`) uses `api.typesafe.ai/v1/systemone`; a
   `jv_live_` key uses the jevtypesafeai.com proxy. About $0.001 per request.
 
@@ -151,11 +154,15 @@ On 180 public studies (62 validation, 118 held-out, one run each; truth from the
 | instrument | 163/180 |
 | acquisition | 168/180 |
 | label | 160/178 |
-| enrichment | 160/180 |
+| enrichment | 165/180 |
 | enzyme | 174/175 |
 | Cys alkylation | 122/128 |
 
 The mass tolerances are measured, not copied. A wide-window search against the true proteome agrees with the measured error in 117 of 120 cases. The curated SDRF value is the authors' search-engine window, not the instrument's accuracy, so it is not used as truth.
+
+Every report also carries `agreement` (per setting: the inconsistency of the independent indicators, the
+dissenting detectors and Jev's verdict; overall score and level) and `organism_mix` (suspected, score,
+indicators). An inconsistency of 0.2 or more flags 53 of the 73 wrong decisions and 16 % of the correct ones.
 
 ## Known limits (prototype)
 
