@@ -119,7 +119,7 @@ def _species_counts(idxml, signatures=None):
     peptides found by an unspecific search from HLA ligands."""
     import pyopenms as oms
     from collections import Counter
-    prots, peps = [], []
+    prots, peps = [], oms.PeptideIdentificationList()   # pyopenms 3.5 (Python 3.10) rejects a plain list
     oms.IdXMLFile().load(idxml, prots, peps)
     disc, allm, crap, n, tryp = Counter(), Counter(), 0, 0, 0
     for pid in peps:

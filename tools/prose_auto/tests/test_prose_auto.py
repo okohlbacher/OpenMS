@@ -2,6 +2,7 @@
 
 import json
 import os
+import sys
 
 import numpy as np
 
@@ -520,6 +521,7 @@ def test_organism_from_metadata_searches_only_the_given_db(tmp_path):
     assert rep["decisions"]["cys_alkylation"]["value"] == "Carbamidomethyl (C)"   # hypotheses ran on the given DB
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="the DIAspeXtract and FileConverter stand-ins are shell scripts")
 def test_diaspextract_exit_11_falls_back_to_dda(tmp_path):
     """frames that look diaPASEF, a DIAspeXtract that answers 'this is DDA' (exit 11): FileConverter takes over"""
     import sqlite3, stat

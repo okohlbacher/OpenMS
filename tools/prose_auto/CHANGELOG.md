@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1 (2026-11-02)
+
+- pyopenms 3.5 (the last release for Python 3.10): idXML is read into a `PeptideIdentificationList`; a plain list
+  failed there and broke the ProSE organism search.
+- Tests: the shell-script stand-ins of DIAspeXtract and FileConverter are skipped on Windows.
+
 ## 0.1.0 (2026-11-02)
 
 First release of the prototype.

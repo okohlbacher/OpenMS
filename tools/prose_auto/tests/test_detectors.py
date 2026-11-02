@@ -237,7 +237,10 @@ def test_prose_organism_search_counts_discriminating_psms(tmp_path, monkeypatch)
             x.setAccession(a)
             ph.append(x)
         prot.setHits(ph)
-        oms.IdXMLFile().store(args[args.index("-out_idxml") + 1], [prot], peps)
+        out = oms.PeptideIdentificationList()   # pyopenms 3.5 takes no plain list
+        for pid in peps:
+            out.push_back(pid)
+        oms.IdXMLFile().store(args[args.index("-out_idxml") + 1], [prot], out)
 
     monkeypatch.setattr(pr, "_run", fake_run)
     fa = tmp_path / "x.fasta"
