@@ -17,6 +17,7 @@ import csv
 import json
 import os
 import shutil
+import statistics
 import sys
 import tempfile
 import time
@@ -48,6 +49,7 @@ from . import llm as L
 from . import prose_params as pp
 from . import repository as repo
 from . import tagsearch as ts
+from . import taxa
 from . import text_extract as tx
 from .hypotheses import HypothesisTester
 from .evidence import Evidence
@@ -91,12 +93,12 @@ def _unspecific(ev):
 
 
 def _genus(v):
-    return str(v).replace("_", " ").split(" ")[0].lower()
+    return taxa.scientific(v).replace("_", " ").split(" ")[0].lower()
 
 
 def _species_key(name):
-    """genus and species, lower case"""
-    return " ".join(str(name).replace("_", " ").split()[:2]).lower()
+    """NCBI taxon id, else genus and species (taxa.key)"""
+    return taxa.key(name)
 
 
 def _fasta_name(a):
@@ -230,7 +232,7 @@ def _data_features(ev, digest_stats, term_stats=None, pseudo=False, tims=False):
 def _panel_match(name, panel):
     """the panel database of a species name (genus and species), if any"""
     key = _species_key(name)
-    return next((k for k in panel if k.replace("_", " ").lower() == key), None)
+    return next((k for k in panel if _species_key(k) == key), None)
 
 
 def _organism_shortlist(ev, panel, fastag_top):
@@ -383,17 +385,22 @@ def _chemistry(c, raw):
         if c.pseudo and raw is not run:   # pseudo-spectra carry no MS1: the SILAC pairs come from the DIA run itself
             c.ev += chem.detect_silac(raw)
         hint, hint_stats = chem.digest_hint(run, hr2)
-    term_stats = {}
+    term_stats, tims = {}, "PASEF" in str(c.acq)
     if a.fastag and hr2:   # protease (C-terminal residues) and labels (N-terminal gaps) from FASTag k=4 tags
         with _timed(c, "termini"):
             try:
-                term_ev, term_stats = ext.fastag_termini(a.fastag, c.spectra_file, threads=a.threads, log=c.log)
+                low = [float(s.mz[0]) for s in run.ms2 if s.mz.size]   # the MS2 scan start
+                term_ev, term_stats = ext.fastag_termini(a.fastag, c.spectra_file, threads=a.threads, log=c.log,
+                                                         ms2_low_mz=round(statistics.median(low), 2) if low else None)
                 # on DIA pseudo-spectra co-eluting fragments put +8/+10 Da gaps behind K/R by chance (32%/50% in the
                 # label-free Orbitrap DIA run PXD066483): heavy termini count only on DDA spectra
-                c.ev += [e for e in term_ev if not (c.pseudo and "SILAC" in str(e.value))]
+                # timsTOF (ddaPASEF and diaPASEF) barely shows C-terminal R: 3 of 5 tryptic controls read "unspecific",
+                # the right calls had margins 0.03-0.12; Orbitrap DIA pseudo-spectra keep the call (controls >= 0.67)
+                c.ev += [e for e in term_ev if not (c.pseudo and "SILAC" in str(e.value))
+                         and not (tims and e.parameter == "enzyme")]
             except Exception as e:
                 c.log(f"  FASTag termini failed: {e}")
-    votes, cls = _digest_votes(hint_stats, term_stats, c.pseudo, "PASEF" in str(c.acq))
+    votes, cls = _digest_votes(hint_stats, term_stats, c.pseudo, tims)
     if term_stats or hint_stats:
         c.log(f"  digest indicators: {votes} -> {'HLA class ' + cls + ' ligands?' if cls else 'no HLA call'}")
     term_stats = {**term_stats, "digest_votes": votes}
@@ -406,26 +413,24 @@ def _chemistry(c, raw):
 
 
 def _digest_votes(ds, ts, pseudo, tims):
-    """HLA ligands from several indicators, each only where it is valid. Ranges on 180 benchmark studies and 14 HLA
-    files: tag C-terminal K/R tryptic Orbitrap DDA 0.53-0.995, HLA 0.07-0.42, but tryptic timsTOF 0.33-0.66 and DIA
-    pseudo-spectra 0.39-0.96 (not valid there); hydrophobic C-termini HLA class I about 0.5, tryptic <= 0.27; median
-    precursor mass HLA class I about 900-1200 Da; singly charged precursors HLA up to 0.53, tryptic Orbitrap about 0
-    (pseudo-spectra charges are inferred: not valid there). Class I needs two agreeing indicators; class II only shows
-    in the tags, so it needs valid tags (Orbitrap DDA) with a low K/R share. Returns (votes, "I" | "II" | None)."""
-    kr, anch = ts.get("cterm_KR"), ts.get("cterm_anchors_LVFYM")
+    """HLA ligands. On Orbitrap DDA spectra the tag-profile call decides (external.protease_call: HLA-I and proteasome
+    -> class I, HLA-II and unspecific -> class II; 12/12 HLA files with the right class, no false HLA call on 17
+    tryptic and 13 non-tryptic runs; a low K/R share alone made 5 false calls on Glu-C, Asp-N and chymotrypsin digests).
+    The tags are not valid on timsTOF (tryptic K/R 0.33-0.66, C-terminal R barely seen) and give no call below 100
+    terminal tags: there class I needs two agreeing indicators, one of them from the precursors (median
+    precursor mass HLA class I about 900-1200 Da; singly charged precursors HLA up to 0.53, tryptic Orbitrap about 0;
+    hydrophobic C-termini HLA class I about 0.5, tryptic <= 0.27). Returns (votes, "I" | "II" | None)."""
+    if ts.get("tag_call") and not tims:
+        return {"tag_profile": ts["tag_call"]}, ext.HLA_CLASS.get(ts["tag_call"])
     votes = {}
-    if kr is not None and not (pseudo or tims):
-        votes["low_KR_tags"] = kr <= 0.5
-    if anch is not None:
-        votes["hydrophobic_C_termini"] = anch >= 0.35
+    if ts.get("cterm_anchors_LVFYM") is not None:
+        votes["hydrophobic_C_termini"] = ts["cterm_anchors_LVFYM"] >= 0.35
     if ds.get("median_mass"):
         votes["small_precursors"] = ds["median_mass"] < chem.HLA_I_MEDIAN_MASS and ds["q90_mass"] < chem.HLA_I_Q90_MASS
     if ds.get("charge_1") is not None and not pseudo:
         votes["singly_charged"] = ds["charge_1"] >= 0.15
-    if sum(votes.values()) >= 2:
+    if sum(votes.values()) >= 2 and (votes.get("small_precursors") or votes.get("singly_charged")):
         return votes, "I"
-    if votes.get("low_KR_tags"):
-        return votes, "II"
     return votes, None
 
 
@@ -445,6 +450,7 @@ def _texts_and_readers(c):
     for k in ("sample_protocol", "data_protocol", "description", "methods"):
         if texts.get(k):
             c.ev += tx.extract(texts[k], source="text", base_conf=0.5)
+    c.ev += tx.from_file_name(a.mzml)
     study = {"user's description": desc, "methods section": methods,
              "PRIDE title": texts.get("title", ""), "PRIDE description": texts.get("description", ""),
              "PRIDE sample protocol": texts.get("sample_protocol", ""),
@@ -594,7 +600,7 @@ def _search_features(ev):
     return "\n".join(lines)
 
 
-def _mini_search(c, panel, org_fixed, unspec):
+def _mini_search(c, panel, org_fixed):
     """Mini-search hypotheses (DDA only: DIA spectra have no single precursor). Returns the HypothesisTester or
     None. With the organism fixed (metadata, ProSE) its organism evidence is dropped."""
     a, log, hr2 = c.a, c.log, c.hr2
@@ -618,8 +624,6 @@ def _mini_search(c, panel, org_fixed, unspec):
             c.ev += oe
         if h.best_db:
             c.ev += h.accuracy() + h.alkylation()
-            if not a.skip_enzyme and not unspec:   # the protease competition knows no unspecific digest
-                c.ev += h.enzyme()
     return h
 
 
@@ -661,7 +665,7 @@ def _fastag_gaps(c, db):
         log(f"  FASTag failed: {e}")
 
 
-def _tier2(c, h, panel, unspec):
+def _tier2(c, h, panel):
     """Organism, tier 2: the FASTag species ranking (extended index) gives a top-3 shortlist; with the stated
     organisms and confident FASTag calls the panel lacks, their reference proteomes are fetched (cached in
     <panel>/extra) and searched against the panel winner, so the nearest panel organism does not win by default."""
@@ -676,15 +680,30 @@ def _tier2(c, h, panel, unspec):
             p = (hit, panel[hit]) if hit else fetch_proteome(o, os.path.join(a.panel, "extra"), log)
             if p:
                 dbs[p[0]] = p[1]
+        # every stated organism is a candidate too (user and repository, text from 0.5): the tier-2 search replaces
+        # the panel statistics, and a stated second species missing from it went unseen (yeast and E. coli in
+        # human-yeast-E. coli benchmarks)
+        added = []
+        for e in c.ev:
+            if e.parameter == "organism" and (e.source in ("user", "repository")
+                                               or (e.source == "text" and e.confidence >= 0.5)):
+                hit = _panel_match(e.value, panel)
+                if hit and hit not in dbs:
+                    dbs[hit] = panel[hit]
+                    added.append(hit)
         prev = h.best_db[0] if h.best_db else None
         if prev:
             dbs[prev] = h.best_db[1]
+            added = [k for k in added if k != prev]
         if len(dbs) > 1 or (dbs and prev is None):
             log(f"  organism tier 2: testing {', '.join(dbs)}")
             new = h.organism(dbs)
+            for e in new:   # reconcile._untested_pick: these were searched for being stated, not shortlisted
+                if e.method == "panel mini-search" and e.stats is not None:
+                    e.stats["stated_added"] = added
             if h.best_db and h.best_db[0] != prev:  # a new winner: redo the stages that used the old one
                 c.ev = [e for e in c.ev if not (e.source == "search" and e.parameter in TIER2_REDO)] + new
-                c.ev += h.accuracy() + h.alkylation() + ([] if a.skip_enzyme or unspec else h.enzyme())
+                c.ev += h.accuracy() + h.alkylation()
                 if a.fastag:
                     with _timed(c, "fastag_tier2"):
                         _fastag_gaps(c, h.best_db[1])
@@ -771,13 +790,12 @@ def analyze(a, log=print):
     if src == "prose" and not str(c.search_acq).startswith("DIA"):
         org_panel = _organism_from_prose(c, hla_first)
     org_fixed = org_panel is not None
-    unspec = _unspecific(c.ev)
     panel = org_panel if org_fixed else _panel(a, with_fasta=True)
-    h = _mini_search(c, panel, org_fixed, unspec)
+    h = _mini_search(c, panel, org_fixed)
     if a.fastag:
         _fastag_stage(c, h, org_fixed)
     if not org_fixed:
-        _tier2(c, h, panel, unspec)
+        _tier2(c, h, panel)
 
     jev, jev_study, jev_report = _jev_last(c, study, hint_stats, term_stats)
 
@@ -1020,7 +1038,6 @@ def main(argv=None):
     an.add_argument("--sdrf", choices=("use", "jev", "off"), default="use",
                     help="curated SDRF (with --accession): use = evidence and reader input, jev = reader input "
                          "only (Jev/LLM), off = not fetched")
-    an.add_argument("--skip-enzyme", action="store_true", help="skip the protease competition")
     an.add_argument("-o", "--out", default="prose_auto_out")
     an.add_argument("--json", action="store_true", help="print the report JSON to stdout (for the GUI)")
     pn = sub.add_parser("panel", help="download the model-organism FASTA panel from UniProt")

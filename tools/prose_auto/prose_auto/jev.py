@@ -178,7 +178,8 @@ def read_study(jev: Jev, texts: dict, user=False, min_p=0.5, priors=False):
         conf = min(h.cap, cap_user, 0.7 * p) * (0.8 if h.name in changed else 1.0)
         ev.append(Evidence(h.parameter, v, conf, "llm", method,
                            f"Jev read the study texts: {h.name} = {decoded[h.name]} (p={p:.2f})"
-                           + ("; chosen by the consistency rules over the top answer" if h.name in changed else "")))
+                           + ("; chosen by the consistency rules over the top answer" if h.name in changed else ""),
+                           {"p": round(p, 3)}))
     mods = [m for m in S.VARIABLE_MOD_FLAGS if flags.get(m, 0) >= 0.6]
     if mods:
         ev.append(Evidence("variable_mods", mods, 0.5, "llm", method,

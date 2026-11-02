@@ -20,6 +20,8 @@ detectors and the mini-search can run on DIA data too.
 from __future__ import annotations
 
 import csv
+import functools
+import math
 import os
 import subprocess
 import tempfile
@@ -110,10 +112,76 @@ _AA = {"G": 57.02146, "A": 71.03711, "S": 87.03203, "P": 97.05276, "V": 99.06841
 _RES = dict(_AA, **{"K+TMT": _AA["K"] + 229.162932, "K+TMTpro": _AA["K"] + 304.207146,
                     "K+iTRAQ4": _AA["K"] + 144.102063, "K+8": _AA["K"] + 8.014199, "R+10": _AA["R"] + 10.008269})
 _NLABEL = {"TMT6/10/11plex": 229.162932, "TMTpro (16/18plex)": 304.207146, "iTRAQ4plex": 144.102063}
-KR_TRYPTIC, KR_NONTRYPTIC, CLASS_I_ANCHORS = 0.8, 0.5, 0.35
+KR_TRYPTIC = 0.8
+# residue window on the tag termini (high-res MS2 only): 0.02 Da counted N-terminal F (147.068 Da, nterm_mass) as a
+# C-terminal E of a reversed b tag (E + water 147.053 Da)
+TERMINUS_WINDOW_DA = 0.008
+SILAC_MIN_TAGS = 50   # K- and R-terminal tags each before the heavy shares count (chymotrypsin: Lys8 50% of 12% K/R)
 
 
-def fastag_termini(fastag, mzml, frag_tol=20.0, frag_unit="ppm", subsample=0.25, threads=0, log=print):
+TAG_MIN = 100            # terminal tags per end for the tag-profile call
+NONSPECIFIC_SHARE = 0.05   # proteome background mixed into every model: non-specific cleavage (stated, not tuned)
+TAG_AAS = "GASPVTCLNDQKEMHFRYW"   # I merged into L
+# model -> enzyme value; HLA-I ligands and proteasome products are class I, HLA-II ligands and unspecific cleavage
+# class II (their ends barely differ from the proteome: "no protease")
+TAG_MODELS = {"Trypsin": "Trypsin", "Lys-C": "Lys-C", "Arg-C": "Arg-C", "Glu-C": "Glu-C", "Chymotrypsin": "Chymotrypsin",
+              "Asp-N": "Asp-N", "Lys-N": "Lys-N", "HLA-I": "unspecific cleavage", "proteasome": "unspecific cleavage",
+              "HLA-II": "unspecific cleavage", "unspecific": "unspecific cleavage"}
+HLA_CLASS = {"HLA-I": "I", "proteasome": "I", "HLA-II": "II", "unspecific": "II"}
+
+
+@functools.lru_cache(maxsize=None)
+def _tag_models():
+    """(C-terminal, N-terminal) residue distributions per model from data/protease_models.tsv (MEROPS, MHC Motif
+    Atlas, proteome; sources in its header). Arg-C and Asp-N have 7 and 19 MEROPS sites: the PeptideCutter rules
+    (after R; before D) with the proteome background at the other end."""
+    m = {}
+    with open(os.path.join(os.path.dirname(__file__), "data", "protease_models.tsv")) as fh:
+        for r in csv.DictReader((l for l in fh if not l.startswith("#")), delimiter="\t"):
+            m.setdefault((r["model"], r["end"]), {})[r["residue"]] = float(r["freq"])
+    bg = m[("background", "C")]
+    one = lambda a: {x: float(x == a) for x in TAG_AAS}
+    raw = {k: (m[(f"merops:{k}", "C")], m[(f"merops:{k}", "N")])
+           for k in ("Trypsin", "Lys-C", "Glu-C", "Chymotrypsin", "Lys-N", "proteasome")}
+    raw.update({"Arg-C": (one("R"), bg), "Asp-N": (bg, one("D")), "unspecific": (bg, bg),
+                "HLA-I": (m[("atlas:HLA-I", "C")], m[("atlas:HLA-I", "N")]),
+                "HLA-II": (m[("atlas:HLA-II", "C")], m[("atlas:HLA-II", "N")])})
+    mix = lambda p: {a: (1 - NONSPECIFIC_SHARE) * p.get(a, 0.0) + NONSPECIFIC_SHARE * bg[a] for a in TAG_AAS}
+    return {k: (mix(c), mix(n)) for k, (c, n) in raw.items()}
+
+
+def protease_call(cterm, nterm):
+    """Multinomial log-likelihood of the C- and N-terminal residue counts under each model (the N-terminal end only
+    with >= TAG_MIN tags). Returns (model, runner-up with another enzyme value, margin in log-likelihood per tag) or
+    None below TAG_MIN C-terminal tags. Margins on 44 test runs: trypsin 0.29-1.61, Lys-C 0.09-0.35 and Arg-C 0.01-0.09
+    against trypsin, Glu-C 1.03, HLA-I 0.20-0.47."""
+    n_c, n_n = sum(cterm.values()), sum(nterm.values())
+    if n_c < TAG_MIN:
+        return None
+    use_n = n_n >= TAG_MIN
+
+    def ll(cnt, p):
+        z = sum(p.values())
+        return sum(k * math.log(p[a] / z) for a, k in cnt.items() if k)
+    sc = {k: ll(cterm, c) + (ll(nterm, n) if use_n else 0.0) for k, (c, n) in _tag_models().items()}
+    rk = sorted(sc, key=lambda k: -sc[k])
+    other = next(k for k in rk if TAG_MODELS[k] != TAG_MODELS[rk[0]])
+    return rk[0], other, (sc[rk[0]] - sc[other]) / (n_c + (n_n if use_n else 0))
+
+
+def _residue_counts(v, near, offset=0.0):
+    """residue counts over TAG_AAS; labelled K (TMT, TMTpro, iTRAQ4, Lys8) count as K; Arg10 is left out (166.109 Da
+    shows at 3-15% in label-free runs)"""
+    cnt = {a: near(v, _RES[a] + offset) for a in TAG_AAS}
+    cnt["K"] += sum(near(v, _RES[k] + offset) for k in ("K+TMT", "K+TMTpro", "K+iTRAQ4", "K+8"))
+    return cnt
+
+
+Y1_K = 147.1128   # y1 of a C-terminal K; MS2 scans that start above it hide K-ending y tags
+
+
+def fastag_termini(fastag, mzml, frag_tol=20.0, frag_unit="ppm", subsample=0.25, threads=0, log=print,
+                   ms2_low_mz=None):
     """Protease and labels from the termini of FASTag k=4 tags (Carbamidomethyl only, so labels are mass gaps).
     Tags read from y ions keep the C-terminal end in cterm_mass (one residue left: its residue mass); tags read
     from b ions are written reversed, with the C-terminal end in nterm_mass plus water; the N-terminal label is the
@@ -122,7 +190,8 @@ def fastag_termini(fastag, mzml, frag_tol=20.0, frag_unit="ppm", subsample=0.25,
     0.27-0.42 on HLA class I and II (class I: hydrophobic anchors L/V/F/Y/M 0.44-0.63, class II about 0.1);
     N-terminal TMT/TMTpro on 5-10% of the tags of labelled runs (>= 0.1% otherwise); heavy Lys8 and Arg10 shares
     >= 0.25 only in SILAC runs (label-free <= 0.16, diaPASEF pseudo-spectra show an Arg10 artifact without Lys8).
-    Ion-trap and pseudo-spectra K/R shares (0.6-0.65) give no protease call. High-res MS2 only; 1-16 s on 25%.
+    The protease (or HLA class) is the tag-profile call over both ends (protease_call; N-terminal residue: bare
+    residue mass in nterm_mass). High-res MS2 only; 1-16 s on 25%.
     Returns evidence (enzyme, label) and the stats (C-terminal residue shares, HLA class hint)."""
     import bisect
     if frag_unit != "ppm":
@@ -138,26 +207,39 @@ def fastag_termini(fastag, mzml, frag_tol=20.0, frag_unit="ppm", subsample=0.25,
                 c.append(float(r["cterm_mass"]))
                 n.append(float(r["nterm_mass"]))
     c.sort(); n.sort()
-    w = 0.02
+    w = TERMINUS_WINDOW_DA
     near = lambda v, m: bisect.bisect_right(v, m + w) - bisect.bisect_left(v, m - w)
     res = {a: near(c, m) + near(n, m + H2O) for a, m in _RES.items()}
     tot, tags = sum(res.values()), len(c)
-    if tot < 200:
+    if tot < TAG_MIN:
         return [], {"tags": tags, "cterm_tags": tot}
     share = {a: v / tot for a, v in res.items()}
     kr = sum(v for a, v in share.items() if a[0] in "KR")
     anchors = sum(share[a] for a in "LVFYM")
+    cterm = {a: x + y for (a, x), y in zip(_residue_counts(c, near).items(), _residue_counts(n, near, H2O).values())}
+    nterm = _residue_counts(n, near)
+    # MS2 scans from m/z 150 or 156 (PXD066944, PXD038809) left K 0.02-0.13 on tryptic runs: no tag call there
+    call = None if ms2_low_mz and ms2_low_mz > Y1_K + 0.1 else protease_call(cterm, nterm)
     stats = {"tags": tags, "cterm_tags": tot, "cterm_KR": round(kr, 3), "cterm_anchors_LVFYM": round(anchors, 3),
-             "cterm_top": {a: round(v, 3) for a, v in sorted(share.items(), key=lambda x: -x[1])[:6]}}
+             "cterm_top": {a: round(v, 3) for a, v in sorted(share.items(), key=lambda x: -x[1])[:6]},
+             "nterm_tags": sum(nterm.values()), "nterm_D": round(nterm["D"] / max(sum(nterm.values()), 1), 3),
+             "ms2_low_mz": ms2_low_mz}
     ev = []
-    if kr >= KR_TRYPTIC:
-        ev.append(Evidence("enzyme", "Trypsin", 0.6, "data", "FASTag termini",
-                           f"{kr:.0%} of the C-terminal residues of {tot} sequence tags are K/R: a tryptic digest", stats))
-    elif kr <= KR_NONTRYPTIC:
-        stats["hla_hint"] = "HLA class I?" if anchors >= CLASS_I_ANCHORS else "HLA class II?"
-        ev.append(Evidence("enzyme", "unspecific cleavage", 0.45, "data", "FASTag termini",
-                           f"only {kr:.0%} of the C-terminal residues of {tot} sequence tags are K/R (tryptic: >= 80%); "
-                           f"hydrophobic anchors L/V/F/Y/M {anchors:.0%}: {stats['hla_hint']}", stats))
+    if call:
+        model, other, margin = call
+        # isobaric labels make K-ending tags easy to read (intense labelled y1): tryptic TMTpro runs show K 0.93,
+        # R 0.06 (PXD037434, PXD001670), so the K/R split is no evidence there
+        iso_k = sum(near(c, _RES[k]) + near(n, _RES[k] + H2O) for k in ("K+TMT", "K+TMTpro", "K+iTRAQ4"))
+        if model in ("Lys-C", "Arg-C") and TAG_MODELS[other] == "Trypsin" and iso_k > cterm["K"] / 2:
+            margin = 0.0
+        stats.update({"tag_call": model, "tag_runner_up": other, "tag_margin": round(margin, 3)})
+        why = (f"tag-profile call over {sum(cterm.values())} C- and {sum(nterm.values())} N-terminal residues: {model} "
+               f"(next {other}, {margin:.2f} log-likelihood per tag)")
+        if model in HLA_CLASS:
+            stats["hla_hint"] = f"HLA class {HLA_CLASS[model]}?"
+        # the margin is the confidence: a weak call loses to a confident Jev answer (reconcile._enzyme)
+        ev.append(Evidence("enzyme", TAG_MODELS[model], round(min(0.8, 0.45 + margin), 3), "data", "FASTag termini",
+                           why, stats))
     for lab, m in _NLABEL.items():
         x, bg = near(n, m) + near(c, m), near(n, m + 0.5) + near(c, m + 0.5)
         if x >= 0.01 * tags and x >= 20 * max(bg, 1):
@@ -167,7 +249,8 @@ def fastag_termini(fastag, mzml, frag_tol=20.0, frag_unit="ppm", subsample=0.25,
                                + ")", stats))
     hk, hr = share["K+8"] / max(share["K+8"] + share["K"], 1e-9), share["R+10"] / max(share["R+10"] + share["R"], 1e-9)
     stats.update({"heavy_K8": round(hk, 3), "heavy_R10": round(hr, 3)})
-    if hk >= 0.2 and hr >= 0.2:
+    nk, nr = res["K"] + res["K+8"], res["R"] + res["R+10"]
+    if hk >= 0.2 and hr >= 0.2 and kr >= KR_TRYPTIC and min(nk, nr) >= SILAC_MIN_TAGS:
         # both heavy shares >= 30% occurred only in SILAC runs (5 of 164, three of them annotated label free in the
         # SDRF but SILAC by their text or file name); 20-30% stays a hint
         ev.append(Evidence("label", "SILAC (Lys8/Arg10)", 0.7 if min(hk, hr) >= 0.3 else 0.5, "data", "FASTag termini",

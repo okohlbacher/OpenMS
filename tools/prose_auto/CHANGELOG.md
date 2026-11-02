@@ -2,12 +2,53 @@
 
 ## 0.1.3 (2026-11-02)
 
+Proteases and HLA ligands
+- Protease from the published matrices: the FASTag tag termini (C-terminal residue and, from 100 tags, the
+  N-terminal one; window +-0.008 Da) are scored by multinomial log-likelihood against MEROPS P1/P1' frequencies
+  (trypsin, Lys-C, Lys-N, chymotrypsin, Glu-C, proteasome), PeptideCutter rules for Arg-C and Asp-N, the MHC
+  Motif Atlas ligand ends (HLA-I, HLA-II) and the human proteome background ("unspecific") (5 % non-specific
+  cleavage mixed into every model; `data/protease_models.tsv`). The margin per tag is the confidence; a call needs
+  100 C-terminal tags and a margin >= 0.15. HLA-I/proteasome give class I ligands, HLA-II/unspecific class II.
+- No tag call on timsTOF (ddaPASEF, diaPASEF: C-terminal R is nearly invisible), when the MS2 scans start above
+  the y1 ion of K (147.11), or between trypsin and Lys-C/Arg-C when isobaric-labelled K dominates (TMTpro).
+- Enzyme decision: user or repository, else the stronger of the tag call and Jev "+data" at p >= 0.8, else the
+  keywords, else Trypsin. Inside the trypsin family (Trypsin, Trypsin/P, Lys-C, Arg-C) a Jev answer picks the
+  member. The mini-search protease competition is removed.
+- Keywords: Lys-N, lysyl and glutamyl endopeptidase, V8 protease; "unspecific" needs immunopeptidomics or HLA
+  ligands, a bare "HLA" no longer counts; "no enzyme" in a control phrasing and texts naming three or more
+  proteases give no call; a protease in the file name (`AspN`, `GluC`, `LysC`, `LysN`, `ArgC`, `chymo`) is evidence.
+- SILAC needs >= 50 tags on both K and R; a low K/R share alone no longer votes for HLA ligands.
+- Non-tryptic Orbitrap DDA (16 runs): enzyme 9 -> 15/16, label 14 -> 15/16, Cys alkylation 7 -> 8/10.
+  DIA/timsTOF (11 non-tryptic runs, 12 tryptic controls): 5 -> 8/11, controls 12/12. HLA ligands 14/14.
+
+Organisms
+- Organism names resolve to NCBI taxon ids (`taxa.py`, `data/organism_taxa.tsv`, 165 taxa from the UniProt
+  taxonomy); "yeast" is *S. cerevisiae* (4932), not *Candida albicans*.
+- Tier 2 also searches every stated organism (user, repository, text from 0.5). A record's pick that was searched
+  and explains under max(10, 1 %) of the spectra yields to another named species the search finds. A database
+  under 10 % of the largest searched one's peptides tests nothing; an organism searched only for being stated
+  does not keep a record's pick on the data shortlist.
+- `organism_mix`: the "A + B" search indicator needs >= 40 unique spectra and 0.12 x the winner's PSMs, without
+  PSMs of trypsin, keratins and serum albumin. A mixture only the records and texts describe is reported as
+  study-level (`scope`), and not suspected when every stated second species was searched and is absent.
+- Label agreement: "no SILAC" and "no isobaric label" agree unless they negate the decided label class.
+- Mixture set (38 runs): sensitivity 19/19, specificity 15 -> 18/19; single-species files right 18 -> 19/19;
+  suspected mixtures among the 180 validation runs 19 -> 9. Agreement at 0.2 on all data: precision
+  0.16 -> 0.25, recall 0.71 -> 0.65.
+
+Search windows
+- ProSE windows per analyzer, as multiples of the measured error with ppm floors: Orbitrap precursor 4x, fragment
+  2x (10/20 ppm); Astral 8x, 2x (10/10 ppm); TOF 1x, 1x (10/15 ppm); ion trap unchanged.
+
+Fixes
 - Target-decoy FDR of the mini-search: tied scores pass or fail together; the 1 % cut no longer falls inside a group
   of equal scores.
 - A tier-2 organism winner also redoes the FASTag mass-gap evidence (Cys alkylation, modification combinations)
   against its database; before, the gaps against the losing database were kept.
 - The FASTag species call runs once per run: after a failed ProSE organism search the panel stages reuse it.
 - `--threads` also caps the OpenMP, OpenBLAS and MKL thread pools (unless set in the environment).
+
+180 validation and held-out runs: enzyme 174/175 and every other setting as in 0.1.2; organism 174 -> 177/180.
 
 ## 0.1.2 (2026-11-02)
 

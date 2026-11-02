@@ -25,6 +25,7 @@ import re
 import math
 
 from .detect_instrument import classify_instrument
+from . import taxa
 from .evidence import Decision, Evidence
 
 MEASURED = {"precursor_tolerance", "fragment_tolerance", "precursor_offset", "fragment_offset",
@@ -52,7 +53,7 @@ def _same(a, b):
 
 
 def _organism_key(v):
-    return " ".join(str(v).replace("_", " ").split()[:2]).lower()
+    return taxa.key(v)
 
 
 def _stated_untested(d, evs):
@@ -72,6 +73,48 @@ def _stated_untested(d, evs):
     return Decision("organism", s.value, round(s.confidence * 0.9, 3), s.source, evs, d.conflicts + [note], "review")
 
 
+MIN_DB_SHARE = 0.1   # of the largest searched database's peptides, for a search to test a species
+
+
+def _search_psms(evs):
+    """(PSMs per organism key, spectra searched, winner key) of the last panel mini-search, or None"""
+    search = [e for e in evs if e.source == "search" and e.method == "panel mini-search" and e.stats
+              and " + " not in str(e.value)]
+    if not search:
+        return None
+    st = search[-1].stats
+    # a database far smaller than the largest searched is no test of its species (PXD066108: a 167-peptide
+    # Macaca mulatta proteome beside 2.5 million human peptides)
+    top = max((v.get("peptides") or 0 for v in st.values() if isinstance(v, dict)), default=0)
+    psms = {_organism_key(k): v.get("psms", 0) for k, v in st.items()
+            if isinstance(v, dict) and not (v.get("peptides") and v["peptides"] < MIN_DB_SHARE * top)}
+    return psms, st.get("n_spectra") or 0, max(psms, key=psms.get) if psms else None
+
+
+def _absent(psms, n, k):
+    return k in psms and psms[k] < max(10, 0.01 * n)
+
+
+def _absent_pick(d, evs):
+    """A record that names several species picks the first at equal confidence (PXD028735: "Candida albicans (yeast)"
+    for a human-yeast-E. coli benchmark, decided for a pure human file). When the search tested the pick and it
+    explains under max(10, 1%) of the spectra while another named species explains more, that species wins."""
+    if d.source not in ("user", "repository", "text", "llm"):
+        return d
+    got = _search_psms(evs)
+    if not got:
+        return d
+    psms, n, best = got
+    named = {_organism_key(e.value) for e in evs if e.source in ("user", "repository", "text", "llm")}
+    if not (best and best in named and _absent(psms, n, _organism_key(d.value)) and not _absent(psms, n, best)):
+        return d
+    w = max((e for e in evs if e.source in ("user", "repository", "text", "llm") and _organism_key(e.value) == best),
+            key=lambda e: e.confidence)
+    note = (f"{d.source} picks {d.value}, which the mini-search tested: {psms[_organism_key(d.value)]} of {n} spectra; "
+            f"{w.value}, also named, explains {psms[best]}")
+    return Decision("organism", w.value, round(w.confidence * 0.9, 3), w.source, evs, d.conflicts + [note], "review")
+
+
 MIN_RULE_SHARE = 0.05   # of the mini-search spectra the data species must explain before it overrules the record
 
 
@@ -88,9 +131,12 @@ def _untested_pick(d, evs):
         return d
     psms = {_organism_key(k): v.get("psms", 0) for k, v in search[0].stats.items() if isinstance(v, dict)}
     best = max(psms, key=psms.get) if psms else None
+    # tier 2 searches the stated organisms too; one searched only for being stated is not on the data shortlist
+    # (PXD043814: PRIDE says human, the rat SMCs explain 343 spectra, human 232)
+    off = {_organism_key(k) for k in search[0].stats.get("stated_added", [])}
     named = {_organism_key(e.value) for e in evs if e.source in ("user", "repository", "text", "llm")}
     fastag = [e for e in evs if e.method == "FASTag species" and e.confidence >= 0.5]
-    if (not best or best == _organism_key(d.value) or _organism_key(d.value) in psms or best not in named
+    if (not best or best == _organism_key(d.value) or _organism_key(d.value) in psms.keys() - off or best not in named
             or not fastag or _organism_key(fastag[0].value) != best):
         return d
     # a weak search result is no reason to overrule the record: the antibody of an IP (mouse IgG in human cells,
@@ -136,10 +182,11 @@ def _pick(evs, order, strong_first=None):
     return None
 
 
-def _decide(param, evs, order=None):
+def _decide(param, evs, order=None, pool=None):
+    """pool: the evidence the winner may come from (default all); conflicts and agreement count all of evs."""
     measured = order is ORDER_MEASURED or param in MEASURED
     order = order or (ORDER_MEASURED if measured else ORDER_SAMPLE)
-    w = _pick(evs, order, strong_first=None if measured else "search")
+    w = _pick(evs if pool is None else pool, order, strong_first=None if measured else "search")
     if w is None:
         return None
     conf, agree = _combine(w, evs)
@@ -318,6 +365,34 @@ def _co_enrichment(d, evs):
     return d
 
 
+JEV_ENZYME_P = 0.8
+KR_FAMILY = ("Trypsin", "Trypsin/P", "Lys-C", "Arg-C")
+TAG_MARGIN = 0.15   # tag-profile margin (log-likelihood per tag) from which the tag call takes part in the decision
+
+
+def _enzyme(evs):
+    """The protease. What the user or a repository record states comes first. Then the tag-profile call (FASTag
+    termini under published cleavage specificities, high-res MS2, margin >= TAG_MARGIN: 17/17 tryptic, 12/12 HLA)
+    and a Jev answer with p >= 0.8 (17 of 18 non-tryptic digests), the more confident one; the tag margin is its
+    confidence. Keyword text names the first protease it finds (the first of six in a protease comparison, "no
+    enzyme" of a control) and decides only without them, as does the ProSE organism search (HLA-first). No protease
+    competition: the Trypsin rule covers Lys-C and Arg-C peptides, and it lost to the tags on tryptic and HLA runs."""
+    first = [e for e in evs if e.source in ("user", "repository")]
+    tag = [e for e in evs if e.method == "FASTag termini" and (e.stats or {}).get("tag_margin", 0) >= TAG_MARGIN]
+    jev = [e for e in evs if e.source == "llm" and e.method.endswith("+data")
+           and (e.stats or {}).get("p", 0) >= JEV_ENZYME_P]
+    if not first and (tag or jev):
+        w = max(tag + jev, key=lambda e: e.confidence)
+        # within the K/R family the tags only tell the family: labels, the scan range and the Trypsin rule's
+        # missed cleavages bias the K/R split (tryptic Astral and TMTpro runs read Arg-C or Lys-C), so a Jev answer
+        # naming a family member picks the member (keywords do not: "tryptic" in a protease comparison)
+        if w in tag and w.value in KR_FAMILY:
+            w = next((e for e in jev if e.value in KR_FAMILY), w)
+        return _decide("enzyme", evs, pool=[w])
+    weak = [e for e in evs if e.method == "FASTag termini" and e not in tag]   # a weak tag call does not decide
+    return _decide("enzyme", evs, pool=[e for e in evs if e not in weak])
+
+
 def reconcile(evidence: list) -> dict:
     by = {}
     for e in evidence:
@@ -329,7 +404,7 @@ def reconcile(evidence: list) -> dict:
               "precursor_offset", "fragment_offset", "enzyme", "cys_alkylation", "enrichment",
               "peptide_length"):
         if p in by:
-            d = _enrichment(by[p]) if p == "enrichment" else _decide(p, by[p])
+            d = _enrichment(by[p]) if p == "enrichment" else _enzyme(by[p]) if p == "enzyme" else _decide(p, by[p])
             if d:
                 out[p] = _co_enrichment(d, by[p]) if p == "enrichment" else d
     if "variable_mods" in by:
@@ -350,7 +425,8 @@ def reconcile(evidence: list) -> dict:
             by["organism"] = [e for e in by["organism"] if e.value != "not in panel"]
         d = _decide("organism", by["organism"])
         if d:
-            out["organism"] = _untested_pick(_stated_untested(d, by["organism"]), by["organism"])
+            out["organism"] = _untested_pick(_absent_pick(_stated_untested(d, by["organism"]), by["organism"]),
+                                             by["organism"])
     instrument = get("instrument") or ""
     for kind in ("precursor", "fragment"):
         param = f"{kind}_tolerance"
@@ -371,6 +447,17 @@ def reconcile(evidence: list) -> dict:
         out["organism"] = Decision("organism", "unknown", 0.0, "default", [], ["give a FASTA, a "
                                    "description, a PXD accession or an organism panel"], "unknown")
     return out
+
+
+def _label_compatible(neg, label):
+    """a negative label call agrees unless it negates the decided label's class: "no SILAC" agrees with TMT and
+    with label free, "no isobaric label" with SILAC (they made 120 of 171 flags on correct label decisions)"""
+    neg, label = str(neg), str(label)
+    if neg == "no SILAC":
+        return not label.startswith("SILAC")
+    if neg == "no isobaric label":
+        return not label.startswith(("TMT", "iTRAQ"))
+    return neg in NEGATIVE and label == "label free"
 
 
 NO_AGREEMENT = {"precursor_tolerance", "fragment_tolerance", "precursor_offset", "fragment_offset", "charge_range",
@@ -396,7 +483,7 @@ def indicator_agreement(decisions: dict, jev_verdicts=None):
             if e.source == "default" or e.method == "combined" or e.confidence < 0.3:
                 continue
             agree = any(_same(e.value, v) or (p == "organism" and _organism_key(e.value) == _organism_key(v))
-                        or (p == "label" and v == "label free" and str(e.value) in NEGATIVE)   # no tag, no SILAC
+                        or (p == "label" and _label_compatible(e.value, v))
                         for v in parts)
             k = f"{e.source}:{e.method}"
             if k not in best or e.confidence > best[k][0]:
@@ -432,6 +519,9 @@ def _short(v):
     return f"{v['value']} {v.get('unit', '')}".strip() if isinstance(v, dict) and "value" in v else str(v)[:60]
 
 
+SEARCH_INDICATORS = ("panel mini-search", "ProSE organism search")
+
+
 def organism_mix(evidence: list, jev_report=None):
     """Suspected mixture of organisms (benchmark mixes, xenografts, host-pathogen, co-culture), from independent
     indicators, each with a strength in 0..1:
@@ -444,7 +534,7 @@ def organism_mix(evidence: list, jev_report=None):
     FASTag species ranks are left out: on large panels unrelated species score alike (Brachypodium vs Thalassiosira
     2693 vs 2688 tags in a human run). suspected = two kinds of indicator >= 0.3; score = 1 - prod(1 - s)."""
     ind = []
-    genus = lambda v: str(v).replace("_", " ").split(" ")[0].lower()
+    genus = lambda v: taxa.scientific(v).replace("_", " ").split(" ")[0].lower()
     for e in evidence:
         if e.parameter == "organism" and e.source == "search" and " + " in str(e.value):
             a, b = str(e.value).split(" + ", 1)
@@ -470,4 +560,15 @@ def organism_mix(evidence: list, jev_report=None):
     for i in ind:
         score *= 1 - i["strength"]
     suspected = len({i["indicator"] for i in ind if i["strength"] >= 0.3}) >= 2
-    return {"suspected": suspected, "score": round(1 - score, 2), "indicators": ind}
+    out = {"suspected": suspected, "score": round(1 - score, 2), "indicators": ind,
+           "scope": "file" if any(i["indicator"] in SEARCH_INDICATORS for i in ind) else "study"}
+    # records, texts and Jev describe the study; a file of a mixed study can hold one species (the human-only and
+    # 0 ng yeast files of benchmarks, uninfected controls): when every stated second species was searched and is
+    # absent from this file, the mixture is the study's, not the file's
+    got = _search_psms(evidence)
+    if suspected and out["scope"] == "study" and got:
+        psms, n, best = got
+        named = {_organism_key(s) for i in ind for s in i["species"]} - {best}
+        if named and all(_absent(psms, n, k) for k in named):
+            out.update(suspected=False, note="study describes a mixture; this file looks single-species")
+    return out

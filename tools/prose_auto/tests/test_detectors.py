@@ -167,7 +167,7 @@ def test_search_windows_enzyme_and_calibration():
           Evidence("precursor_offset", {"value": 1.2, "unit": "ppm"}, 0.9, "search", "mini-search PSMs"),
           Evidence("enzyme", "Trypsin", 0.8, "search", "protease competition")]
     P = pp.to_prose(reconcile(ev))["params"]
-    assert P["Search:precursor:mass_tolerance_lower"] == 16.0      # 2x measured, above the 10 ppm floor
+    assert P["Search:precursor:mass_tolerance_lower"] == 32.0      # 4x measured, above the 10 ppm floor
     assert P["Search:fragment:mass_tolerance"] == 20.0             # 2x 6 = 12, floor 20 ppm
     assert P["Search:enzyme"] == "Trypsin/P"                       # the protease test cannot see the P rule
     assert P["Search:calibration:enabled"] == "false"              # small measured offset, high-res MS2
@@ -401,4 +401,6 @@ def test_hla_call_needs_several_indicators():
     hla1 = {"median_mass": 1006, "q90_mass": 1264, "charge_1": 0.35}
     assert _digest_votes(hla1, {"cterm_KR": 0.38, "cterm_anchors_LVFYM": 0.53}, False, False)[1] == "I"
     hla2 = {"median_mass": 1900, "q90_mass": 2855, "charge_1": 0.0}
-    assert _digest_votes(hla2, {"cterm_KR": 0.30, "cterm_anchors_LVFYM": 0.10}, False, False)[1] == "II"
+    # class II only from the tag-profile call (a low K/R share alone is also Glu-C, Asp-N, chymotrypsin)
+    assert _digest_votes(hla2, {"cterm_KR": 0.30, "cterm_anchors_LVFYM": 0.10}, False, False)[1] is None
+    assert _digest_votes(hla2, {"cterm_KR": 0.30, "tag_call": "unspecific"}, False, False)[1] == "II"

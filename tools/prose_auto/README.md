@@ -59,7 +59,8 @@ places only a handful of tags, and its evidence stays below the mini-search.
 | 3 mass precision | `detect_tolerance.py` | fragment and precursor precision without a database | Param-Medic pairs (May et al. 2017), extended to DIA window repeats and MS1 scan-to-scan; Gaussian + uniform EM |
 | 3 mass offset | `detect_tolerance.py` | systematic offset without a database | lock-mass polysiloxane ions (MS1), immonium and y1 ions (HCD MS2) |
 | 4 chemistry | `detect_chemistry.py` | TMT/TMTpro/iTRAQ plex, SILAC, phospho/glyco/acetyl enrichment, Cys alkylation (weak) | reporter and diagnostic ions against control m/z values (Param-Medic 2019 idea); MS1 heavy/light pairs with an intensity check |
-| 5 mini-search | `tagsearch.py`, `hypotheses.py` | organism, Cys alkylation, protease, calibrated offsets and tolerances | binomial b/y scoring with target/reversed-decoy FDR on the top-TIC subset; competing hypotheses compared by PSMs at 1% FDR |
+| 5 mini-search | `tagsearch.py`, `hypotheses.py` | organism, Cys alkylation, calibrated offsets and tolerances | binomial b/y scoring with target/reversed-decoy FDR on the top-TIC subset; competing hypotheses compared by PSMs at 1% FDR |
+| 5 protease | `external.py` (FASTag termini) | protease, HLA ligand class | tag termini scored against MEROPS, PeptideCutter, MHC Motif Atlas and proteome models (`data/protease_models.tsv`); not on timsTOF |
 | 5 records and text | `repository.py`, `text_extract.py` | what the submitters and the user say | PRIDE API v3, PROXI, bigbio/sdrf-annotated-datasets, Europe PMC methods; keyword rules with verbatim quotes |
 | 6 LLM | `llm.py` | the same from free text, literature priors, a final review | any CLI or OpenAI-compatible endpoint; quotes must occur in the text |
 | 6b Jev (last) | `jev.py`, `schema.py` | every head from the texts and all indicators; afterwards a consistency verdict per setting | typed choice questions over the texts plus the measured and search profiles (`--jev`) |
@@ -150,7 +151,7 @@ On 180 public studies (62 validation, 118 held-out, one run each; truth from the
 
 | Parameter | Correct |
 |---|---|
-| organism | 174/180 |
+| organism | 177/180 |
 | instrument | 163/180 |
 | acquisition | 168/180 |
 | label | 160/178 |
@@ -162,15 +163,19 @@ The mass tolerances are measured, not copied. A wide-window search against the t
 
 Every report also carries `agreement` (per setting: the inconsistency of the independent indicators, the
 dissenting detectors and Jev's verdict; overall score and level) and `organism_mix` (suspected, score,
-indicators). An inconsistency of 0.2 or more flags 53 of the 73 wrong decisions and 16 % of the correct ones.
+indicators, scope). An inconsistency of 0.2 or more flags 65 % of the wrong decisions (precision 0.25).
+
+Other sets (0.1.3): non-tryptic Orbitrap DDA enzyme 15/16, DIA/timsTOF non-tryptic 8/11 with 12/12 tryptic
+controls, HLA ligand files 14/14 (unspecific, human); organism mixtures (38 runs) sensitivity 19/19, specificity
+18/19.
 
 ## Known limits (prototype)
 
 * The mini-search is pure Python; with persistent peptide indexes it takes 10-30 s per run.
 * Repeated-ion and MS1 scan-to-scan estimates give precision without the offset and are about 2x too small
   alone; the mini-search PSM errors or the immonium/y1 probe should decide.
-* FASTag tag termini call tryptic timsTOF and DIA pseudo-spectra "unspecific"; the protease competition and
-  the fully-tryptic share of the HLA ladder correct this.
-* The validation sets are almost entirely tryptic: other proteases are untested.
-* Open: FDR thresholds at tied scores; stale FASTag evidence after a tier-2 change; FASTag species called twice
-  after a failed ProSE organism search; numeric-library threads are not capped (set `OMP_NUM_THREADS`).
+* Proteases on timsTOF come from the records, the texts and Jev only: the tag termini there miss C-terminal R.
+  N-side cutters (Lys-N, Asp-N) need 100 N-terminal tags; LysargiNase has no model and reads as "unspecific".
+* The non-tryptic sets are small (16 Orbitrap DDA, 11 DIA/timsTOF runs).
+* `organism_mix` from the records and texts alone is study-level: a pure file of a mixed study is flagged unless
+  the stated second species was searched and is absent.

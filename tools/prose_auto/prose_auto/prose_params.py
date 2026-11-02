@@ -27,11 +27,18 @@ ENRICHMENT_MODS = {
     "GlyGly (K)": ["GG (K)"],
 }
 ENZYME_NAMES = {"Trypsin": "Trypsin", "Trypsin/P": "Trypsin/P", "Lys-C": "Lys-C", "Arg-C": "Arg-C",
-                "Chymotrypsin": "Chymotrypsin", "Glu-C": "glutamyl endopeptidase", "Asp-N": "Asp-N",
+                "Chymotrypsin": "Chymotrypsin", "Glu-C": "glutamyl endopeptidase", "Asp-N": "Asp-N", "Lys-N": "Lys-N",
                 "unspecific cleavage": "unspecific cleavage"}
 
 
-TOLERANCE_FACTOR = 2.0  # search window / measured error (ppm tolerances)
+# search window / measured error (ppm tolerances) per MS2 analyzer class; ProSE window sweeps, entrapment FDP
+# unchanged: Orbitrap (50 runs) precursor 4x +2.4% PSMs over 2x, fragment flat from 2x to 4x; Astral (8) precursor 8x
+# +7.9% over 4x, fragment 4x loses; TOF/timsTOF (17) 1x best, wider fragment windows lose. The TOF factor 1 holds for
+# the mini-search measurement (median 22 / 25 ppm): a tighter measurement needs TOF floors of about 20 ppm (flat 10 ppm
+# lost 16%). Ion-trap MS2: the precursor factor makes no difference and stays 2x
+PRECURSOR_FACTOR = {"orbitrap": 4.0, "astral": 8.0, "tof": 1.0}
+FRAGMENT_FACTOR = {"orbitrap": 2.0, "astral": 2.0, "tof": 1.0}
+PRECURSOR_FACTOR_ION_TRAP = 2.0
 PRECURSOR_FLOOR_PPM = 10.0
 # fragment floor per analyzer, from the benchmark sweep: Orbitrap HCD 20 ppm, Astral 10 ppm (frag 10 ppm was the
 # Astral optimum, +9%), TOF / timsTOF 15 ppm (10 ppm lost, 40 ppm gained on tims)
@@ -42,7 +49,7 @@ CALIBRATION_OFFSET_PPM = 3.0  # calibrate when the measured precursor offset is 
 
 
 def _analyzer_class(v):
-    """orbitrap | astral | tof, for the fragment-window floor"""
+    """orbitrap | astral | tof, for the search-window factors and floors"""
     ins, ms2 = str(v("instrument") or "").lower(), str(v("ms2_analyzer") or "").upper()
     if "astral" in ins:
         return "astral"
@@ -75,16 +82,17 @@ def to_prose(decisions: dict) -> dict:
     P, notes = {}, []
     pt, ft = v("precursor_tolerance"), v("fragment_tolerance")
     # The decisions hold the measured error (|offset| + 4 SD, or precision + offset); as a search window it is too
-    # tight. On the benchmark groups (PR build, entrapment FDP) the 2x window lost 1-4% against 20 ppm on Orbitrap
-    # HCD and gained 10% on ion-trap MS2 at 0.35 Da: windows are 2x the measured error with floors of 10 ppm
-    # (precursor) and 20 ppm (fragment); ion-trap fragments 0.35 Da.
+    # tight: precursor 4x (ion-trap MS2 2x) and fragment 2x the measured error, with floors of 10 ppm (precursor)
+    # and 20 ppm (fragment); ion-trap fragments 0.35 Da.
     # a window the authors searched with (record, SDRF, text, readers) is used as stated; measured errors and the
     # instrument defaults are widened
     stated = lambda p: p in decisions and decisions[p].source in ("user", "repository", "text", "llm")
     ms2a = v("ms2_analyzer")
     lowres2 = ms2a in ION_TRAPS or (ms2a is None and ft and ft["unit"] == "Da")
+    cls = _analyzer_class(v)
+    pf, ff = (PRECURSOR_FACTOR_ION_TRAP if lowres2 else PRECURSOR_FACTOR[cls]), FRAGMENT_FACTOR[cls]
     if pt:
-        p = round(max(TOLERANCE_FACTOR * float(pt["value"]), PRECURSOR_FLOOR_PPM), 3) \
+        p = round(max(pf * float(pt["value"]), PRECURSOR_FLOOR_PPM), 3) \
             if pt["unit"] == "ppm" and not stated("precursor_tolerance") else float(pt["value"])
         P["Search:precursor:mass_tolerance_lower"] = p  # ProSE declares tolerances as double
         P["Search:precursor:mass_tolerance_upper"] = p
@@ -94,12 +102,11 @@ def to_prose(decisions: dict) -> dict:
     elif lowres2:
         P["Search:fragment:mass_tolerance"], P["Search:fragment:mass_tolerance_unit"] = ION_TRAP_FRAGMENT_DA, "Da"
     elif ft:
-        P["Search:fragment:mass_tolerance"] = round(max(TOLERANCE_FACTOR * float(ft["value"]),
-                                                       FRAGMENT_FLOOR_PPM[_analyzer_class(v)]), 3) \
+        P["Search:fragment:mass_tolerance"] = round(max(ff * float(ft["value"]), FRAGMENT_FLOOR_PPM[cls]), 3) \
             if ft["unit"] == "ppm" else float(ft["value"])
         P["Search:fragment:mass_tolerance_unit"] = ft["unit"]
-    notes.append(f"search windows: {TOLERANCE_FACTOR:g}x the measured error, at least {PRECURSOR_FLOOR_PPM:g} ppm "
-                 f"precursor and {FRAGMENT_FLOOR_PPM[_analyzer_class(v)]:g} ppm fragment on this analyzer "
+    notes.append(f"search windows ({cls}): precursor {pf:g}x, fragment {ff:g}x the measured error, at least "
+                 f"{PRECURSOR_FLOOR_PPM:g} ppm precursor and {FRAGMENT_FLOOR_PPM[cls]:g} ppm fragment "
                  f"({ION_TRAP_FRAGMENT_DA} Da on ion-trap MS2)")
     cr = v("charge_range")
     if cr:

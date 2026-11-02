@@ -9,6 +9,7 @@ vectorised mass sum over the cached residue counts.
 
 from __future__ import annotations
 
+import functools
 import gzip
 import hashlib
 import math
@@ -53,6 +54,7 @@ ENZYMES = {
     "Chymotrypsin": ("FYWL", "P", "C"),
     "Glu-C": ("E", "", "C"),
     "Asp-N": ("D", "", "N"),
+    "Lys-N": ("K", "", "N"),
 }
 
 CACHE_DIR = os.environ.get("PROSE_AUTO_INDEX_CACHE", os.path.join(os.path.expanduser("~"), ".cache", "prose_auto", "index"))
@@ -72,6 +74,26 @@ def read_fasta(path):
                 seq.append(line)
     if acc is not None:
         yield acc, "".join(seq)
+
+
+# proteins that cRAP lists for every species (trypsin, keratins, serum albumin), by UniProt entry name or gene
+CRAP_HEADER = re.compile(r"\|(?:TRYP\w*|ALBU|K[12]C\w+)_|\bGN=(?:KRT\d+\w*|ALB|PRSS[123])\b")
+
+
+@functools.lru_cache(maxsize=64)
+def contaminant_peptides(path, enzyme="Trypsin"):
+    """Peptides (missed cleavages up to 2) of a database's trypsin, keratin and serum albumin entries"""
+    op = gzip.open if str(path).endswith(".gz") else open
+    out, keep, seq = set(), False, []
+    with op(path, "rt") as fh:
+        for line in list(fh) + [">"]:
+            if line.startswith(">"):
+                if keep and seq:
+                    out.update(digest("".join(seq), enzyme, missed=2, min_len=5))
+                keep, seq = bool(CRAP_HEADER.search(line)), []
+            elif keep:
+                seq.append(line.strip())
+    return frozenset(out)
 
 
 def is_decoy(acc):

@@ -30,14 +30,22 @@ ORGANISMS = {
 
 ENZYMES = {
     "Trypsin/P": r"\btrypsin/p\b",
-    "Lys-C": r"\blys-?c\b(?!.*trypsin)",
+    "Lys-C": r"\b(?:lys-?c|lysyl endopeptidase)\b(?!.*trypsin)",
+    "Lys-N": r"\blys-?n\b",
     "Trypsin": r"\btrypsin\b|\btryptic\b",
     "Chymotrypsin": r"\bchymotrypsin\b",
-    "Glu-C": r"\bglu-?c\b",
+    "Glu-C": r"\bglu-?c\b|\bglutamyl endopeptidase\b|\bv8 protease\b",
     "Asp-N": r"\basp-?n\b",
     "Arg-C": r"\barg-?c\b",
-    "unspecific cleavage": r"\bno enzyme\b|\bnon-?specific\b|\bunspecific\b|\bhla\b|\bimmunopeptid",
+    # a bare "HLA" is often an antibody or a cell line (PXD054186: Glu-C); "no enzyme" is often a control
+    "unspecific cleavage": r"\bno enzyme\b|\bnon-?specific\b|\bunspecific\b|\bimmunopeptid"
+                           r"|\bhla\b[^.;]{0,40}?\b(?:peptides?|ligands?|ligandome)\b"
+                           r"|\b(?:peptides?|ligands?)\b[^.;]{0,40}?\bhla\b",
 }
+MULTI_PROTEASE = 3   # a text naming this many proteases (a protease comparison) makes no single keyword call
+# enzyme tokens in file names (_GluC_, _AspN_, _LysC, _Chymo_); co-digests with trypsin give no hint
+FILE_ENZYMES = {"gluc": "Glu-C", "aspn": "Asp-N", "lysc": "Lys-C", "lysn": "Lys-N", "argc": "Arg-C",
+                "chymo": "Chymotrypsin", "chymotrypsin": "Chymotrypsin"}
 
 ALKYLATION = {
     "Carbamidomethyl (C)": r"\biodoacetamide\b|\bchloroacetamide\b|\biaa\b|\bcaa\b|\bcarbamidomethyl",
@@ -100,6 +108,24 @@ def _span(text, m, pad=40):
     return text[a:b].replace("\n", " ").strip()
 
 
+def _control(low, m):
+    """'no enzyme' as a control condition ('negative control without enzyme', PXD040407)"""
+    return m.group(0) == "no enzyme" and "control" in low[max(0, m.start() - 80):m.end() + 80]
+
+
+def from_file_name(path, conf=0.5) -> list:
+    """Enzyme hint from the run's file name (12 of 19 non-tryptic test runs carry it)."""
+    import os
+    name = os.path.basename(str(path).rstrip("/")).lower()
+    if "tryp" in name:
+        return []
+    hits = {FILE_ENZYMES[t] for t in re.split(r"[^a-z]+", name) if t in FILE_ENZYMES}
+    if len(hits) != 1:
+        return []
+    v = hits.pop()
+    return [Evidence("enzyme", v, conf, "text", "file name", f"the file name {os.path.basename(str(path))} names {v}")]
+
+
 def extract(text: str, source="text", base_conf=0.55) -> list:
     """Evidence from free text. source is 'user' for the user's own
     description (more trusted) or 'text' for methods/protocols."""
@@ -111,10 +137,13 @@ def extract(text: str, source="text", base_conf=0.55) -> list:
     def first(table, parameter, conf, single=True):
         hits = []
         for value, pat in table.items():
-            m = re.search(pat, low)
+            m = next((m for m in re.finditer(pat, low) if not (parameter == "enzyme" and _control(low, m))), None)
             if m:
                 hits.append((m.start(), value, m))
         hits.sort()
+        if parameter == "enzyme" and len({v for _, v, _ in hits if v != "unspecific cleavage"} - {"Trypsin/P"}) \
+                >= MULTI_PROTEASE:
+            return hits
         for _, value, m in hits[:1 if single else len(hits)]:
             ev.append(Evidence(parameter, value, conf, source, "keywords",
                                f"text mentions '{text[m.start():m.end()]}'", quote=_span(text, m)))

@@ -18,6 +18,13 @@ from . import tagsearch as ts
 from .evidence import Evidence
 
 
+TRYPSIN_FAMILY = ("Trypsin", "Lys-C", "Arg-C")
+MIN_END_PSMS, MINOR_END_SHARE = 20, 0.1   # Lys-C: under 10% of the Trypsin PSMs end in R; Arg-C: under 10% in K
+
+
+MIX_MIN_SPECTRA, MIX_MIN_SHARE = 40, 0.12   # unique spectra of a second organism (without cRAP) for "A + B"
+
+
 def _margin_conf(best, second):
     """Confidence from the PSM count margin of the winner over the runner-up."""
     if best <= 0:
@@ -103,10 +110,15 @@ class HypothesisTester:
                   f"({top / n:.0%}); next: {ranked[1]} with {second}" if len(ranked) > 1 else
                   f"{best} explains {top} of {n} spectra at 1% FDR")
         ev.append(Evidence("organism", best, conf, "search", "panel mini-search", detail, stats))
-        # a second organism with many spectra of its own: a mixed sample
+        # a second organism with many spectra of its own: a mixed sample. PSMs of trypsin, keratins and serum
+        # albumin do not count (porcine trypsin, human keratin, BSA explained 12-17% of the winner's PSMs in pure
+        # runs); the 6 data-confirmed mixtures of the mixset had >= 46 such spectra
+        crap = ts.contaminant_peptides(res[best]["path"])
         for k in ranked[1:]:
-            u = stats[k]["unique_vs_best"]
-            if u >= max(10, 0.2 * top):
+            ck = crap | ts.contaminant_peptides(res[k]["path"])
+            u = len({p[0] for p in res[k]["_ok"] if p[3] not in ck} - res[best]["scans"])
+            stats[k]["unique_vs_best"] = u
+            if u >= max(MIX_MIN_SPECTRA, MIX_MIN_SHARE * top):
                 ev.append(Evidence("organism", f"{best} + {k}", 0.5, "search", "panel mini-search",
                                    f"{k} explains {u} spectra that {best} does not: mixed sample, "
                                    "spike-ins or xenograft?", stats))
@@ -179,15 +191,26 @@ class HypothesisTester:
                          {"counts": counts})]
 
     def enzyme(self) -> list:
-        variants = [(e, self.mods, e) for e in ("Trypsin", "Lys-C", "Arg-C", "Chymotrypsin", "Glu-C", "Asp-N")]
+        variants = [(e, self.mods, e) for e in ("Trypsin", "Lys-C", "Arg-C", "Chymotrypsin", "Glu-C", "Asp-N",
+                                                "Lys-N")]
         counts = self._compete("enzyme", variants)
         if not counts:
             return []
         ranked = sorted(counts, key=lambda k: -counts[k]["psms"])
         b, s = counts[ranked[0]]["psms"], counts[ranked[1]]["psms"]
-        val = ranked[0]
-        # Trypsin and Lys-C/Arg-C share many peptides; call the broader rule
-        # unless the narrower one is clearly better
-        return [Evidence("enzyme", val, _margin_conf(b, s), "search", "protease competition",
-                         f"{val}: {b} PSMs at 1% FDR; next {ranked[1]}: {s}",
+        val, conf = ranked[0], _margin_conf(b, s)
+        detail = f"{val}: {b} PSMs at 1% FDR; next {ranked[1]}: {s}"
+        if val in TRYPSIN_FAMILY:
+            # the Trypsin rule covers every Lys-C and Arg-C peptide as a missed cleavage, so raw counts favour it
+            # (Arg-C runs lost 647/424 and 291/216): the C-terminal residue of the Trypsin PSMs picks the member,
+            # the margin over the other proteases gives the confidence
+            ok, _ = self._search(*self.best_db, self.mods, "Trypsin")
+            ends = [p[3][-1] for p in ok]
+            if len(ends) >= MIN_END_PSMS:
+                fk, fr = ends.count("K") / len(ends), ends.count("R") / len(ends)
+                val = "Lys-C" if fr < MINOR_END_SHARE else "Arg-C" if fk < MINOR_END_SHARE else "Trypsin"
+                other = max([v["psms"] for k, v in counts.items() if k not in TRYPSIN_FAMILY] or [0])
+                conf = _margin_conf(max(counts[k]["psms"] for k in TRYPSIN_FAMILY), other)
+                detail += f"; {len(ends)} Trypsin PSMs end in K {fk:.0%}, R {fr:.0%}: {val}"
+        return [Evidence("enzyme", val, conf, "search", "protease competition", detail,
                          {"counts": {k: v["psms"] for k, v in counts.items()}})]

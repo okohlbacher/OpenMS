@@ -1,0 +1,169 @@
+# NCBI taxon ids of the organisms prose-auto meets (panel, signature panel, PRIDE species list), with
+# scientific names and other names from the UniProt taxonomy (NCBI), 2026-11-02; collection codes,
+# author citations and names shared by several taxa removed; common names set by hand (yeast = 4932).
+taxid	scientific_name	rank	other_names
+197	Campylobacter jejuni	species	ampylobacter jejuni|vibrio hepaticus|vibrio jejuni
+210	Helicobacter pylori	species	campylobacter pylori|campylobacter pyloridis|helicobacter nemestrinae
+263	Francisella tularensis	species	bacterium tularense|brucella tularensis|francisella tularense|giem schu|pasteurella tularensis
+287	Pseudomonas aeruginosa	species	bacillus aeruginosus|bacillus pyocyaneus|bacterium aeruginosum|bacterium pyocyaneum|micrococcus pyocyaneus|peudomonas aeruginosa|pseudomonas polycolor|pseudomonas pyocyanea
+294	Pseudomonas fluorescens	species	bacillus fluorescens|bacillus fluorescens liquefaciens|bacterium fluorescen|liquidomonas fluorescens
+303	Pseudomonas putida	species	arthrobacter siderocapsulatus|bacillus fluorescens putidus|bacillus putidus|pseudomanas putida|pseudomonas arvilla|pseudomonas convexa|pseudomonas eisenbergii|pseudomonas incognita|pseudomonas ovalis|pseudomonas rugosa|pseudomonas striata
+446	Legionella pneumophila	species	
+470	Acinetobacter baumannii	species	acinetobacter baumanii|acinetobacter baumanni|bacterium anitratum
+485	Neisseria gonorrhoeae	species	diplococcus gonorrhoeae|gonococcus neisseri|merismopedia gonorrhoeae|micrococcus der gonorrhoe|micrococcus gonococcus|micrococcus gonorrhoeae|neisseria gonorrheae|neisseria gonorrhoeae.|nesseria gonorrhoeae
+520	Bordetella pertussis	species	bacterium tussis-convulsivae|haemophilus pertussis|hemophilus pertussis|microbe de la coqueluche
+546	Citrobacter freundii	species	bacterium freundii|citrobacter ballerapensis|citrobacter ballerupensis|escherichia freundii|salmonella ballerup|salmonella hormaechei|the ballerup group of bacteria|the bethesda group of bacteria
+562	Escherichia coli	species	bacillus coli|bacterium coli|bacterium coli commune|e. coli|enterococcus coli|escherchia coli|eschericia coli
+573	Klebsiella pneumoniae	species	bacillus pneumoniae|bacterium pneumoniae crouposae|hyalococcus pneumoniae|klebsiella pneumonia|klebsiella pneumoniae aerogenes
+615	Serratia marcescens	species	bacillus marcescens
+623	Shigella flexneri	species	escherichia flexneri|shigella paradysenteriae
+630	Yersinia enterocolitica	species	bacterium enterocoliticum
+632	Yersinia pestis	species	bacillus pestis|pasteurella pestis|pestisella pestis
+666	Vibrio cholerae	species	bacillo virgola del koch|bacillus cholerae|bacillus cholerae-asiaticae|kommabacillus|liquidivibrio cholerae|microspira comma|pacinia cholerae-asiaticae|spirillum cholerae|spirillum cholerae-asiaticae|vibrio albensis|vibrio choleae|vibrio cholera|vibrio cholerae biovar albensis|vibrio cholerae bv. albensis|vibrio cholerae-asiaticae|vibrio comma
+727	Haemophilus influenzae	species	bacterium influenzae|coccobacillus pfeifferi|haemophilus meningitidis|influenza-bacillus|mycobacterium influenzae
+817	Bacteroides fragilis	species	bacteroides fragili|bacteroides inaequalis|bacteroides incommunis|bacteroides uncatus|fusiformis fragilis|pseudobacterium fragilis|pseudobacterium inaequalis|pseudobacterium incommunis|pseudobacterium uncatum|ristella fragilis|ristella incommunis|ristella uncata|sphaerophorus inaequalis|sphaerophorus intermedius
+818	Bacteroides thetaiotaomicron	species	bacillus thetaiotaomicron|pseudobacterium thetaiotaomicron|sphaerocillus thetaiotaomicron
+820	Bacteroides uniformis	species	
+837	Porphyromonas gingivalis	species	bacteroides gingivalis
+851	Fusobacterium nucleatum	species	corynebacterium fusiforme|fusibacterium nucleatum|fusiformis fusiformis|fusiformis nucleatus|fusobacterium fusiforme|fusobacterium plauti-vincenti
+853	Faecalibacterium prausnitzii	species	bacillus mucosus anaerobius|faecalibacterium parazitii
+1076	Rhodopseudomonas palustris	species	rhodobacter palustris|rhodobacterium capsulatum|rhodomonas palustris|rhodopseudomonas rutila|rhodovibrio parvus
+1143	Synechocystis sp.	species	synechocystis sp
+1280	Staphylococcus aureus	species	micrococcus aureus|micrococcus pyogenes|staphilococcus aureus|staphylococcus pyogenes aureus|staphylococcus pyogenes citreus|staphylococus aureus
+1282	Staphylococcus epidermidis	species	albococcus epidermidis|micrococcus epidermidis|staphylococcus epidermidis albus|staphylococcus epidermis
+1299	Deinococcus radiodurans	species	deinococcus radiidurans|micrococcus radiodurans
+1308	Streptococcus thermophilus	species	
+1313	Streptococcus pneumoniae	species	diplococcus pneumoniae|micrococcus pneumoniae
+1314	Streptococcus pyogenes	species	micrococcus scarlatinae|streptococcus erysipelatos|streptococcus hemolyticus|streptococcus pyrogenes|streptococcus scarlatinae
+1351	Enterococcus faecalis	species	enterococcus feacalis|enterococcus proteiformis|enterocoque|micrococcus ovalis|micrococcus zymogenes|streptococcus faecalis|streptococcus glycerinaceus|streptococcus liquefaciens
+1352	Enterococcus faecium	species	streptococcus faecium
+1396	Bacillus cereus	species	bacillus cerus|bacillus endorhythmos|bacillus medusa
+1423	Bacillus subtilis	species	bacillus mesentericus|bacillus natto|bacillus subtillis|bacillus subtilus|bacillus uniflagellatus|vibrio subtilis
+1492	Clostridium butyricum	species	amylobacter navicula|bacillus amylobacter|bacillus butyricus|bacillus navicula|bacterium navicula|clostridium kainantoi|clostridium naviculum|clostridium pseudotetanicum|metallacter amylobacter
+1496	Clostridioides difficile	species	peptoclostridium difficile
+1547	Thomasclavelia ramosa	species	bacillus ramosus|erysipelatoclostridium ramosum|nocardia ramosa
+1590	Lactiplantibacillus plantarum	species	lactobacillus arabinosus|lactobacillus arizonensis|lactobacillus plantarum|lactobacterium plantarum|streptobacterium plantarum
+1613	Limosilactobacillus fermentum	species	bacillus casei d|bacillus d|lactobacillus cellobiosus|lactobacillus fermenti|lactobacillus fermentum|lactobacterium fermentum
+1639	Listeria monocytogenes	species	bacterium monocytogenes|bacterium monocytogenes hominis|corynebacterium infantisepticum|corynebacterium parvulum|erysipelothrix monocytogenes|listerella hepatolytica|listeria momocytogenes|lysteria monocytogenes
+1681	Bifidobacterium bifidum	species	actinobacterium bifidum|actinomyces bifidus|actinomyces parabifidus|bacillus bifidus|bacillus bifidus communis|bacterium bifidum|bacteroides bifidus|bifidibacterium bifidum|cohnistreptothrix bifidus|lactobacillus bifidus type ii|lactobacillus parabifidus|nocardia bifida|strain ti|tissieria bifida
+1718	Corynebacterium glutamicum	species	brevibacterium chang-fua|brevibacterium divaricatum|brevibacterium glutamigenes|brevibacterium lactofermentum|brevibacterium saccharolyticum|brevibacterium seonmiso|brevibacterium taipei|brevibacterium thiogenitalis|cornyebacterium lactofermentum|corymebacterium glutamicum|corynebacterium crenatum|corynebacterium lactofermentum|corynebacterium lilium|micrococcus glutamicus|micrococcus maripuniceus
+1736	Eubacterium limosum	species	bacteroides limosus|butyribacterium limosum|butyribacterium rettgeri|mycobacterium limosum
+1772	Mycolicibacterium smegmatis	species	bacterium smegmatis|mycobacterium paratuberculosis smegmatis|mycobacterium smegmatis
+1773	Mycobacterium tuberculosis	species	bacillus tuberculosis|bacterium tuberculosis|mycobacterium tuberculosis typus humanus
+1902	Streptomyces coelicolor	species	actinomyces coelicolor|cladothrix coelicolor|nocardia coelicolor|streptomyces calicolor|streptomyces coelicolor subspecies coelicolor
+2246	Haloferax volcanii	species	halobacterium volcanii|haloferax alexandrines|haloferax alexandrinum corrig.|haloferax alexandrinus|haloferax alicantei|haloferax lucentense|haloferax phenon k
+2285	Sulfolobus acidocaldarius	species	
+2850	Phaeodactylum tricornutum	species	diatom|nitzschia closterium f. minutissima|phaedactylum tricornutum
+3055	Chlamydomonas reinhardtii	species	chlamydomonas reihhardtii|chlamydomonas smithii|chlamydonas reinhardtii
+3197	Marchantia polymorpha	species	common liverwort|marchantia aquatica
+3218	Physcomitrium patens	species	phascum patens|physcomitrella patens|physcomitrella_patens|spreading-leaved earth moss
+3329	Picea abies	species	norway spruce|picea excelsa|picea montana|pinus abies|pinus abies l.
+3562	Spinacia oleracea	species	spinaca oleracea|spinacea oleracea|spinach|spinach oleracea|spinacia oleracea l
+3635	Gossypium hirsutum	species	american cotton|american upland cotton|cotton|gossypium lanceolatum|gossypium lanceolatum tod.|gossypium mexicanum|gossypium purpurascens|gossypium purpurascens poir.|upland cotton
+3702	Arabidopsis thaliana	species	arabidopsis|arabidopsis_thaliana|arabis thaliana|arbisopsis thaliana|mouse-ear cress|thale cress|thale kress|thale-cress
+3708	Brassica napus	species	oilseed rape|rape|rapeseeds
+3712	Brassica oleracea	species	wild cabbage
+3827	Cicer arietinum	species	chickpea|cicer arietinium|garbanzo
+3847	Glycine max	species	glycine hispida|glycine max; cv. wye|phaseolus max|soybean|soybeans
+4081	Solanum lycopersicum	species	lycopersicon esculentum|lycopersicon esculentum mill.|lycopersicon lycopersicum|lycopersicum esculentum|solanum esculentum|solanum esculentum dunal|solanum lycopercicum|solanum lycopersicon|tomato
+4097	Nicotiana tabacum	species	american tobacco|common tobacco|nicotania tabacum|tobacco
+4100	Nicotiana benthamiana	species	nicotiana benthamania
+4113	Solanum tuberosum	species	potato|potatoes|solanum aracc-papa
+4513	Hordeum vulgare	species	barley|horedum vulgare
+4530	Oryza sativa	species	asian cultivated rice|red rice
+4565	Triticum aestivum	species	bread wheat|canadian hard winter wheat|common wheat|tricum aestivum|triticum aestivam|triticum sativum|triticum vulgare|wheat
+4577	Zea mays	species	maize|zea mays mays
+4896	Schizosaccharomyces pombe	species	fission yeast|schizosaccharomyces malidevorans|schizosaccharomyces pombep
+4932	Saccharomyces cerevisiae	species	baker's yeast|brewer's yeast|budding yeast|candida robusta|mycoderma cerevisiae|saccaromyces cerevisiae|saccharomyce cerevisiae|saccharomyces boulardii|saccharomyces capensis|saccharomyces cereviseae|saccharomyces diastaticus|saccharomyces italicus|saccharomyces oviformis|saccharomyes cerevisiae|sacchromyces cerevisiae|sccharomyces cerevisiae|yeast
+4952	Yarrowia lipolytica	species	candida lipolytica|endomycopsis lipolytica|mycotorula lipolytica|yallowia lipolitica
+5207	Cryptococcus neoformans	species	blastomyces neoformans|cryptococcus neoformans a|cryptococcus neoformans serotype a|debaryomyces neoformans|filobasidiella neoformans|filobasidiella neoformans serotype a|filobaxidiella neoformans|lipomyces neoformans|saccharomyces neoformans|torula neoformans|torulopsis neoformans
+5476	Candida albicans	species	candida albican|candida stellatoidea|candida stellatoidea type i|dematium albicans|endomyces albicans|monilia albicans|monilia stellatoidea|myceloblastanon albicans|mycotorula albicans|oidium albicans|parasaccharomyces albicans|procandida albicans|procandida stellatoidea|saccharomyces albicans|syringospora albicans
+5507	Fusarium oxysporum	species	fusarium vascular wilt
+5661	Leishmania donovani	species	
+5691	Trypanosoma brucei	species	trypanosoma brucei subgroup
+5693	Trypanosoma cruzi	species	
+5722	Trichomonas vaginalis	species	tritrichomonas vaginalis
+5811	Toxoplasma gondii	species	
+5821	Plasmodium berghei	species	
+5833	Plasmodium falciparum	species	malaria parasite p. falciparum
+5911	Tetrahymena thermophila	species	
+6192	Fasciola hepatica	species	fasciolidae hepatica|liver fluke
+6239	Caenorhabditis elegans	species	rhabditis elegans
+6426	Riftia pachyptila	species	giant tube worm|tube worm|vent tube worm
+7029	Acyrthosiphon pisum	species	acyrhosiphum pisum|acyrthosiphum pisum|aphis pisum|pea aphid
+7091	Bombyx mori	species	domestic silkworm|phalaena mori|silk moth|silkworm
+7227	Drosophila melanogaster	species	drosophila melangaster|fruit fly|sophophora melanogaster
+7460	Apis mellifera	species	apis melifera|apis mellifica|bee|european honey bee|honey bee|honeybee|western honey bee
+7955	Danio rerio	species	brachidanio rerio|brachydanio rerio|brachydanio rerio frankei|cyprinus rerio|danio frankei|danio rerio frankei|leopard danio|zebra danio|zebra fish|zebrafish
+8022	Oncorhynchus mykiss	species	onchorhynchus mykiss|oncorhynchus nerka mykiss|parasalmo mykiss|rainbow trout|salmo gairdneri|salmo mykiss
+8030	Salmo salar	species	atlantic salmon
+8049	Gadus morhua	species	atlantic cod
+8355	Xenopus laevis	species	african clawed frog|bufo laevis|clawed frog|common platanna|platanna|xenopus leavis
+8364	Xenopus tropicalis	species	silurana tropicalis|tropical clawed frog|western clawed frog|xenopus laevis tropicalis
+9031	Gallus gallus	species	bantam|chicken|chickens|dwarf leghorn chickens|gallus domesticus|gallus gallus domesticus|phasianus gallus|red junglefowl
+9402	Pteropus alecto	species	black flying fox
+9541	Macaca fascicularis	species	crab eating macaque|crab-eating macaque|cynomolgus|cynomolgus macaque|cynomolgus monkey|cynomolgus monkeys|long-tailed macaque|macaca cynomolgus|macaca irus|simia fascicularis
+9544	Macaca mulatta	species	cercopithecus mulatta|rhesus macaque|rhesus macaques|rhesus monkey|rhesus monkeys
+9606	Homo sapiens	species	home sapiens|homo sampiens|homo sapeins|homo sapian|homo sapians|homo sapien|homo sapience|homo sapiense|homo sapients|homo sapines|homo spaiens|homo spiens|human|humo sapiens
+9612	Canis lupus	species	gray wolf|wolf
+9644	Ursus arctos	species	brown bear|grizzly bear
+9685	Felis catus	species	cat|cats|domestic cat|felis domesticus|felis silvestris catus|korat cats|korat cats l.
+9796	Equus caballus	species	domestic horse|equine|equus przewalskii f. caballus|equus przewalskii forma caballus|horse
+9823	Sus scrofa	species	pig|pigs|porcine|sus scrofa lw|sus scrofa pietrain|sus scrofus|swine|wild boar
+9913	Bos taurus	species	bos bovis|bos primigenius taurus|bos tauurus|bovine|cattle|cow|dairy cow|domestic cattle|domestic cow|ox
+9925	Capra hircus	species	african dwarf goat|african dwarf goats|capra aegagrus hircus|carpa hircus|domestic goat|goat|goats|naine d'afrique de l'ouest|south african angora goat
+9940	Ovis aries	species	domestic sheep|lambs|ovis ammon aries|ovis orientalis aries|ovis ovis|sheep|wild sheep
+9986	Oryctolagus cuniculus	species	domestic rabbit|european rabbit|japanese white rabbit|lepus cuniculus|new zealand rabbit|rabbit|rabbits
+10029	Cricetulus griseus	species	chinese hamster|chinese hamsters|cho cell lines|cricetulus aureus|cricetulus barabensis griseus
+10036	Mesocricetus auratus	species	cricetus auratus|golden hamster|golden hamsters|syrian golden hamster|syrian golden hamsters|syrian hamster|syrian hamsters
+10090	Mus musculus	species	house mouse|mice|mouse|nude mice|transgenic mice
+10116	Rattus norvegicus	species	brown rat|buffalo rat|laboratory rat|mus norvegicus|norway rat|rat|rats|rattus norwegicus|sprague-dawley rat|wistar rats|zitter rats
+10117	Rattus rattus	species	black rat|house rat|mus rattus|rattus rattoides|rattus wroughtoni|roof rat
+15368	Brachypodium distachyon	species	annual false brome|bromus distachyos|false brome|purple false brome|stiff brome|trachynia distachya
+28108	Alteromonas macleodii	species	pseudoalteromonas macleodii
+28901	Salmonella enterica	species	bacillus cholerae-suis|salmonella cholerae-suis|salmonella choleraesuis|salmonella enterica ser. choleraesuis
+29760	Vitis vinifera	species	grape|wine grape
+32046	Synechococcus elongatus	species	synechococcus elongatus naegeli
+33035	Blautia producta	species	blautia coccoides|clostridium coccoides|ruminococcus productus
+35128	Thalassiosira pseudonana	species	cyclotella nana|marine diatom
+36329	Plasmodium falciparum (isolate 3D7)	isolate	
+36809	Mycobacteroides abscessus	species	mycobacterium abscessus
+38323	Bartonella henselae	species	rochalimaea henselae
+39947	Oryza sativa subsp. japonica	no rank	japanese rice|japonica rice|oryza sativa japonica|oryza sativa japonica group|oryza sativa ssp. japonica
+44689	Dictyostelium discoideum	species	social amoeba
+45351	Nematostella vectensis	species	starlet sea anemone
+47742	Lathyrus oleraceus subsp. biflorus	subspecies	pisum biflorum|pisum elatius|wild pea
+52638	Gammarus fossarum	species	
+57975	Burkholderia thailandensis	species	burkholderia pseudomallei-like species
+59405	Thauera aromatica	species	beta proteobacterium sp
+60711	Chlorocebus sabaeus	species	cercopithecus aethiops sabaeus|cercopithecus sabaeus|cercopithecus sabeus|chlorocebus aethiops sabaeus|chlorocebus aethiops sabeus|chlorocebus sabeus|green monkey|simia sabaea
+70448	Ostreococcus tauri	species	marine green alga
+77608	Pseudoalteromonas distincta	species	alteromonas distincta|pseudoalteromonas elyakovii|pseudoalteromonas paragorgicola
+83332	Mycobacterium tuberculosis (strain ATCC 25618 / H37Rv)	strain	
+83333	Escherichia coli (strain K12)	strain	
+84645	Labeo rohita	species	cyprinus rohita|indian major carp|jayanti rohu|rohu
+91374	Diplonema papillatum	species	
+99287	Salmonella typhimurium (strain LT2 / SGSC1412 / ATCC 700720)	strain	
+105841	Anaerostipes caccae	species	
+106590	Cupriavidus necator	species	alcaligenes eutrophus|cupravidus necator|hydrogenomonas eutropha|ralstonia eutropha|wautersia eutropha
+113636	Populus tremula	species	european aspen
+145522	Nannochloropsis oceanica	species	
+156563	Cyanistes caeruleus	species	blaumeise|blue tit|eurasian blue tit|parus caeruleus
+185431	Trypanosoma brucei brucei (strain 927/4 GUTat10.1)	strain	
+188229	Olavius algarvensis	species	
+198628	Dickeya dadantii (strain 3937)	strain	
+216816	Bifidobacterium longum	species	
+218491	Pectobacterium atrosepticum (strain SCRI 1043 / ATCC BAA-672)	strain	
+224308	Bacillus subtilis (strain 168)	strain	
+227321	Emericella nidulans (strain FGSC A4 / ATCC 38163 / CBS 112.46 / NRRL 194 / M139)	strain	aspergillus nidulans
+237561	Candida albicans (strain SC5314 / ATCC MYA-2876)	strain	
+239935	Akkermansia muciniphila	species	strain muc
+243232	Methanocaldococcus jannaschii (strain ATCC 43067 / DSM 2661 / JAL-1 / JCM 10045 / NBRC 100440)	strain	methanococcus jannaschii
+273057	Saccharolobus solfataricus (strain ATCC 35092 / DSM 1617 / JCM 11322 / P2)	strain	sulfolobus solfataricus
+284812	Schizosaccharomyces pombe (strain 972 / ATCC 24843)	strain	
+367110	Neurospora crassa (strain ATCC 24698 / 74-OR23-1A / CBS 708.71 / DSM 1257 / FGSC 987)	strain	
+373995	Tenualosa ilisha	species	clupanodon ilisha|clupea ilisha|hilsa ilisa|hilsa ilisha|hilsa shad|macrura ilisha
+498019	Candidozyma auris	species	candida auris
+559292	Saccharomyces cerevisiae (strain ATCC 204508 / S288c)	strain	
+746128	Aspergillus fumigatus	species	aspergillus fumigata|aspergillus neoellipticus|neosartorya fumigata|sartorya fumigata
+1398155	Nakaseomyces glabratus M202019	strain	

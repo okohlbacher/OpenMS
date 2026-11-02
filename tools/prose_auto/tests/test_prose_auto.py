@@ -271,7 +271,7 @@ def test_reconcile_conflict_and_params():
     assert d["cys_alkylation"].value == "Carbamidomethyl (C)" and d["cys_alkylation"].status == "review"
     P = pp.to_prose(d)["params"]
     assert "TMT6plex (K)" in P["Search:modifications:fixed"]
-    assert P["Search:precursor:mass_tolerance_lower"] == 10  # 2x the measured 4 ppm, floor 10 ppm
+    assert P["Search:precursor:mass_tolerance_lower"] == 16  # 4x the measured 4 ppm
     assert P["Search:calibration:enabled"] == "true"
     assert "<ITEMLIST" in pp.to_ini_snippet(P)
 
@@ -585,7 +585,7 @@ def test_fdr_filter_accepts_tied_scores_only_as_a_group():
 def _fake_run(**kw):
     from argparse import Namespace
     from prose_auto import cli
-    a = Namespace(**{"fastag": "FASTag", "fasta": None, "panel": "p", "skip_enzyme": False, "fastag_subsample": 0.1,
+    a = Namespace(**{"fastag": "FASTag", "fasta": None, "panel": "p", "fastag_subsample": 0.1,
                      "fastag_taxonomy": None, "threads": 0, **kw})
     return cli._Run(a, lambda *x: None, "base", "run.mzML")
 
@@ -607,7 +607,7 @@ def test_tier2_redoes_mass_gaps_for_a_new_winner(monkeypatch):
 
     c, h = _fake_run(), H()
     cli._fastag_stage(c, h, org_fixed=True)
-    cli._tier2(c, h, {"A": "a.fasta", "B": "b.fasta"}, unspec=False)
+    cli._tier2(c, h, {"A": "a.fasta", "B": "b.fasta"})
     assert [e.value for e in c.ev if e.method == "FASTag mass gaps"] == ["b.fasta"]
 
 
@@ -636,3 +636,193 @@ def test_threads_cap_numeric_libraries(monkeypatch):
     monkeypatch.setattr(os, "environ", {})
     cli._cap_threads(["analyze", "run.mzML", "--threads=0"])
     assert os.environ == {}
+
+
+def test_search_windows_4x_precursor_on_high_res_ms2():
+    tol = lambda ms2, pv, fv, fu: pp.to_prose(reconcile([
+        Evidence("ms2_analyzer", ms2, 0.95, "metadata", "mzML"),
+        Evidence("precursor_tolerance", {"value": pv, "unit": "ppm"}, 0.9, "search", "mini-search PSMs"),
+        Evidence("fragment_tolerance", {"value": fv, "unit": fu}, 0.9, "search", "mini-search PSMs")]))["params"]
+    P = tol("ORBITRAP", 5.0, 15.0, "ppm")
+    assert P["Search:precursor:mass_tolerance_lower"] == 20.0 and P["Search:fragment:mass_tolerance"] == 30.0
+    P = tol("ORBITRAP", 2.0, 5.0, "ppm")           # floors 10 / 20 ppm
+    assert P["Search:precursor:mass_tolerance_lower"] == 10.0 and P["Search:fragment:mass_tolerance"] == 20.0
+    P = tol("IT", 7.0, 0.5, "Da")                  # ion trap: 2x precursor, 0.35 Da fragment
+    assert P["Search:precursor:mass_tolerance_lower"] == 14.0 and P["Search:fragment:mass_tolerance"] == 0.35
+    astral = Evidence("instrument", "Orbitrap Astral", 0.9, "metadata", "mzML")
+    tims = Evidence("instrument", "timsTOF Pro", 0.9, "metadata", "mzML")
+    win = lambda ins, ms2, pv, fv: (lambda P: (P["Search:precursor:mass_tolerance_lower"],
+                                               P["Search:fragment:mass_tolerance"]))(pp.to_prose(reconcile([
+        ins, Evidence("ms2_analyzer", ms2, 0.95, "metadata", "mzML"),
+        Evidence("precursor_tolerance", {"value": pv, "unit": "ppm"}, 0.9, "search", "mini-search PSMs"),
+        Evidence("fragment_tolerance", {"value": fv, "unit": "ppm"}, 0.9, "search", "mini-search PSMs")]))["params"])
+    assert win(astral, "ASTRAL", 3.0, 7.0) == (24.0, 14.0)       # Astral: 8x precursor, 2x fragment
+    assert win(astral, "ASTRAL", 1.0, 3.0) == (10.0, 10.0)       # floors 10 / 10 ppm
+    assert win(tims, "TOF", 22.0, 25.0) == (22.0, 25.0)          # TOF: 1x
+    assert win(tims, "TOF", 5.0, 8.0) == (10.0, 15.0)            # floors 10 / 15 ppm
+
+
+def test_strong_jev_outranks_disagreeing_enzyme_keywords():
+    kw = Evidence("enzyme", "Arg-C", 0.5, "text", "keywords", "text mentions 'ArgC'")
+    jev = lambda p: Evidence("enzyme", "Glu-C", 0.6, "llm", "jev:x+data", "", {"p": p})
+    assert reconcile([kw, jev(0.93)])["enzyme"].value == "Glu-C"
+    assert reconcile([kw, jev(0.6)])["enzyme"].value == "Arg-C"       # a weak Jev answer leaves the keyword
+    tag = lambda v, m: Evidence("enzyme", v, min(0.8, 0.45 + m), "data", "FASTag termini", "", {"tag_margin": m})
+    assert reconcile([tag("Trypsin", 0.6), jev(0.93)])["enzyme"].value == "Trypsin"      # tag 0.8 > Jev 0.6
+    assert reconcile([kw, tag("Trypsin", 0.6)])["enzyme"].value == "Trypsin"   # keywords do not pick the member
+    assert reconcile([kw, tag("Lys-C", 0.15)])["enzyme"].value == "Lys-C"                 # tag above the keywords
+    assert reconcile([kw, tag("Lys-C", 0.05), jev(0.93)])["enzyme"].value == "Glu-C"      # weak tag: Jev
+    assert reconcile([kw, tag("Lys-C", 0.05)])["enzyme"].value == "Arg-C"                 # weak tag: keywords
+    assert reconcile([tag("Lys-C", 0.05)])["enzyme"].value == "Trypsin"                   # ... or the default
+    # within the K/R family a Jev answer picks the member (tryptic Astral runs read Arg-C)
+    tryp = Evidence("enzyme", "Trypsin", 0.6, "llm", "jev:x+data", "", {"p": 1.0})
+    assert reconcile([tag("Arg-C", 0.4), tryp])["enzyme"].value == "Trypsin"
+    assert reconcile([tag("Arg-C", 0.4), jev(0.93)])["enzyme"].value == "Arg-C"    # Jev outside the family: confidence
+    assert reconcile([tag("Arg-C", 0.4)])["enzyme"].value == "Arg-C"
+    user = Evidence("enzyme", "Asp-N", 0.75, "user", "keywords", "")
+    assert reconcile([user, tag("Trypsin", 0.6)])["enzyme"].value == "Asp-N"              # the user's word first
+
+
+def test_enzyme_keywords_and_file_name():
+    enz = lambda t: [e.value for e in tx.extract(t) if e.parameter == "enzyme"]
+    assert enz("Proteins were digested with Lysyl Endopeptidase overnight.") == ["Lys-C"]
+    assert enz("Digestion with V8 protease.") == ["Glu-C"] and enz("Lys-N digestion") == ["Lys-N"]
+    assert enz("stained with an anti-HLA-DR antibody; Glu-C digestion") == ["Glu-C"]
+    assert enz("HLA class I ligands were eluted") == ["unspecific cleavage"]
+    assert enz("a negative control with no enzyme; chymotrypsin digestion") == ["Chymotrypsin"]
+    assert enz("lysates were digested with ArgC, AspN, Chymotrypsin, GluC, LysC and trypsin") == []
+    fn = lambda n: [e.value for e in tx.from_file_name(n)]
+    assert fn("/d/HeLa_GluC_HCD_1.mzML") == ["Glu-C"] and fn("Actin_AspN_4h.mzML") == ["Asp-N"]
+    assert fn("x_2nd_LysC.mzML") == ["Lys-C"] and fn("HeLa_LysC_trypsin_1.mzML") == [] and fn("run1.mzML") == []
+
+
+def test_fastag_termini_tag_profile_and_silac_gate(monkeypatch):
+    from prose_auto import external as ext
+    m = ext._RES
+    tags = [m["F"]] * 300 + [m["K"]] * 20 + [m["K+8"]] * 20 + [m["R"]] * 5 + [m["R+10"]] * 15
+    monkeypatch.setattr(ext, "_run", lambda cmd, log: None)
+    monkeypatch.setattr(ext, "_tsv", lambda p: [{"gapped": "0", "evalue": "0.1", "cterm_mass": str(x),
+                                                 "nterm_mass": "0"} for x in tags])
+    ev, st = ext.fastag_termini("FASTag", "run.mzML")
+    # a chymotrypsin profile, and heavy shares of 50% on 12% K/R C-termini are no SILAC
+    assert [(e.parameter, e.value) for e in ev] == [("enzyme", "Chymotrypsin")] and st["tag_call"] == "Chymotrypsin"
+    # N-terminal F (147.068 Da in nterm_mass) is no C-terminal E (b tag: E + water 147.053 Da)
+    tags = [(m["K"], m["F"])] * 125 + [(m["R"], m["F"])] * 125
+    monkeypatch.setattr(ext, "_tsv", lambda p: [{"gapped": "0", "evalue": "0.1", "cterm_mass": str(c),
+                                                 "nterm_mass": str(n)} for c, n in tags])
+    ev, st = ext.fastag_termini("FASTag", "run.mzML")
+    assert [e.value for e in ev] == ["Trypsin"]
+    # tryptic TMTpro: labelled K tags dominate; the Lys-C reading gets no margin (Jev and the texts decide)
+    tags = [(m["K+TMTpro"], 0.0)] * 280 + [(m["R"], 0.0)] * 20
+    monkeypatch.setattr(ext, "_tsv", lambda p: [{"gapped": "0", "evalue": "0.1", "cterm_mass": str(c),
+                                                 "nterm_mass": str(n)} for c, n in tags])
+    ev, st = ext.fastag_termini("FASTag", "run.mzML")
+    assert st["tag_call"] == "Lys-C" and st["tag_margin"] == 0.0
+    # an MS2 scan range from m/z 150 hides the y1 of K: no tag call
+    ev, st = ext.fastag_termini("FASTag", "run.mzML", ms2_low_mz=150.0)
+    assert "tag_call" not in st and not [e for e in ev if e.parameter == "enzyme"]
+
+
+def test_protease_call_from_external_models():
+    from prose_auto import external as ext
+    cnt = lambda **k: {a: k.get(a, 0) for a in ext.TAG_AAS}
+    none = cnt()
+    call = lambda c, n=none: ext.protease_call(c, n)[0]
+    assert call(cnt(K=150, R=150)) == "Trypsin"
+    assert call(cnt(K=290, R=10)) == "Lys-C" and call(cnt(R=290, K=10)) == "Arg-C"
+    assert call(cnt(E=280, D=20)) == "Glu-C"
+    bgc = cnt(L=30, A=20, S=20, G=20, E=20, K=15, R=10, V=15)
+    assert call(bgc, cnt(D=120, L=10, A=10, S=10)) == "Asp-N"
+    assert ext.HLA_CLASS[call(cnt(L=60, V=40, F=20, Y=20, K=15, M=10))] == "I"
+    assert ext.protease_call(cnt(K=50, R=40), none) is None                 # below 100 terminal tags
+    model, other, margin = ext.protease_call(cnt(K=150, R=150), none)
+    assert ext.TAG_MODELS[other] != "Trypsin" and margin > 0
+
+
+def test_digest_votes_from_the_tag_profile():
+    from prose_auto import cli
+    tryp_prec = {"median_mass": 1500.0, "q90_mass": 2500.0, "charge_1": 0.0}
+    hla_prec = {"median_mass": 1000.0, "q90_mass": 1500.0, "charge_1": 0.2}
+    assert cli._digest_votes(tryp_prec, {"tag_call": "HLA-II"}, False, False)[1] == "II"
+    assert cli._digest_votes(hla_prec, {"tag_call": "Chymotrypsin", "cterm_anchors_LVFYM": 0.5}, False, False)[1] is None
+    assert cli._digest_votes(tryp_prec, {"tag_call": "HLA-I"}, False, True)[1] is None     # timsTOF: tags not valid
+    assert cli._digest_votes(tryp_prec, {"tag_call": "HLA-II"}, True, False)[1] == "II"    # Orbitrap DIA pseudo-spectra
+    assert cli._digest_votes(hla_prec, {"cterm_anchors_LVFYM": 0.5}, False, False)[1] == "I"
+    assert cli._digest_votes(tryp_prec, {"cterm_anchors_LVFYM": 0.5}, False, False)[1] is None
+
+
+def test_protease_competition_trypsin_family_from_c_terminal_residues():
+    h = HypothesisTester.__new__(HypothesisTester)
+    h.best_db, h.mods, h.log = ("x", "x.fasta"), ts.Mods(), lambda *a: None
+    psm = lambda seqs: ([(i, 10.0, False, s, 0.0) for i, s in enumerate(seqs)], 0)
+    res = {"Trypsin": psm(["PEPTIDEK"] * 95 + ["PEPTIDER"] * 5), "Lys-C": psm(["PEPTIDEK"] * 90)}
+    h._search = lambda name, path, mods, enzyme="Trypsin": res.get(enzyme, psm(["PEPTIDE"] * 10))
+    e = h.enzyme()[0]
+    assert e.value == "Lys-C" and e.confidence > 0.9
+    res["Trypsin"] = psm(["PEPTIDEK"] * 50 + ["PEPTIDER"] * 50)
+    assert h.enzyme()[0].value == "Trypsin"
+    assert ts.digest("AAAAAAAKDDDDDDDKEEEEEEE", "Lys-N", missed=0) == ["AAAAAAA", "KDDDDDDD", "KEEEEEEE"]
+
+
+def test_organism_names_resolve_to_ncbi_taxa():
+    from prose_auto import taxa
+    tid = lambda n: (taxa.resolve(n) or (None,))[0]
+    assert tid("yeast") == tid("Baker's yeast") == tid("Saccharomyces cerevisiae (baker's yeast)") == 4932
+    assert tid("Candida albicans (yeast)") == 5476 and tid("Homo sapiens (human)") == tid("Homo_sapiens") == 9606
+    assert tid("Physcomitrella patens") == 3218 and tid("Erysipelatoclostridium ramosum") == 1547   # old names
+    assert tid("E. coli K-12") == 562 and tid("Plasmodium falciparum 3D7") == 5833                   # strains
+    assert taxa.key("Mus musculus") == taxa.key("mouse") and taxa.key("Foo bar baz") == "foo bar"
+
+
+def test_absent_stated_organism_and_study_level_mixture():
+    from prose_auto.reconcile import organism_mix
+    search = lambda second: Evidence("organism", "Homo_sapiens", 0.5, "search", "panel mini-search", "",
+                                     {"Homo_sapiens": {"psms": 655}, "Candida_albicans": {"psms": second},
+                                      "n_spectra": 2000})
+    rec = [Evidence("organism", "Candida albicans (yeast)", 0.6, "repository", "pride"),
+           Evidence("organism", "Homo sapiens (human)", 0.6, "repository", "pride")]
+    d = reconcile(rec + [search(2)])["organism"]
+    assert d.value == "Homo sapiens (human)" and d.status == "review"      # the record's first pick is absent
+    assert reconcile(rec + [search(300)])["organism"].value == "Candida albicans (yeast)"
+    jev = {"probabilities": {"organism": {"mixed species": 0.9}}}
+    mix = organism_mix(rec + [search(2)], jev)
+    assert not mix["suspected"] and mix["scope"] == "study" and "single-species" in mix["note"]
+    assert organism_mix(rec + [search(300)], jev)["suspected"]
+    tiny = Evidence("organism", "Homo_sapiens", 0.5, "search", "panel mini-search", "",
+                    {"Homo_sapiens": {"psms": 655, "peptides": 2500000},
+                     "Candida_albicans": {"psms": 0, "peptides": 167}, "n_spectra": 2000})
+    assert reconcile(rec + [tiny])["organism"].value == "Candida albicans (yeast)"   # a 167-peptide database tests nothing
+
+
+def test_stated_only_candidate_is_off_the_data_shortlist():
+    st = lambda added: {"Rattus_norvegicus": {"psms": 343}, "Mus_musculus": {"psms": 316},
+                        "Homo_sapiens": {"psms": 232}, "n_spectra": 2000, "stated_added": added}
+    ev = lambda added: [Evidence("organism", "Homo sapiens (human)", 0.6, "repository", "pride"),
+                        Evidence("organism", "Rattus norvegicus", 0.5, "text", "keywords"),
+                        Evidence("organism", "Rattus norvegicus", 0.64, "data", "FASTag species"),
+                        Evidence("organism", "Rattus_norvegicus", 0.43, "search", "panel mini-search",
+                                 "Rattus_norvegicus explains 343 of 2000 spectra", st(added))]
+    assert reconcile(ev(["Homo_sapiens"]))["organism"].value == "Rattus_norvegicus"
+    assert reconcile(ev([]))["organism"].value == "Homo sapiens (human)"     # human on the shortlist keeps its place
+
+
+def test_mix_indicator_ignores_crap_psms(tmp_path):
+    a, b = tmp_path / "a.fasta", tmp_path / "b.fasta"
+    a.write_text(">sp|P1|PROT_HUMAN Protein GN=PROT\nMMMMMMMR\n")
+    b.write_text(">sp|P2|K1C9_BOVIN Keratin GN=KRT9\nLLLLLLLKEEEEEEEK\n>sp|P3|OTHER_BOVIN Other GN=OTH\nGGGGGGGK\n")
+    h = HypothesisTester.__new__(HypothesisTester)
+    h.scans, h.mods, h.log, h.best_db = [None] * 2000, ts.Mods(), lambda *x: None, None
+    psm = lambda scans, pep: [(i, 10.0, False, pep, 0.0) for i in scans]
+    res = {"a": psm(range(300), "MMMMMMMR"), "b": psm(range(1000, 1070), "LLLLLLLK") + psm(range(1100, 1130), "GGGGGGGK")}
+    h._search = lambda name, path, mods, enzyme="Trypsin": (res[name], 1)
+    ev = h.organism({"a": str(a), "b": str(b)})
+    assert [e.value for e in ev] == ["a"] and ev[0].stats["b"]["unique_vs_best"] == 30    # keratin PSMs left out
+    res["b"] += psm(range(1200, 1220), "GGGGGGGK")
+    h._done = {}
+    assert [e.value for e in h.organism({"a": str(a), "b": str(b)})] == ["a", "a + b"]      # 50 >= max(40, 36)
+
+
+def test_negative_label_calls_agree_unless_they_negate_the_label_class():
+    from prose_auto.reconcile import _label_compatible
+    assert _label_compatible("no SILAC", "TMT10/11plex") and _label_compatible("no isobaric label", "label free")
+    assert not _label_compatible("no SILAC", "SILAC (Lys8/Arg10)") and not _label_compatible("no isobaric label", "TMTpro (16/18plex)")
