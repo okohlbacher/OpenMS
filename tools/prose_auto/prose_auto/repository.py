@@ -41,12 +41,22 @@ def _get(url, timeout=30):
         return r.read().decode("utf-8", "replace")
 
 
-def fetch(url, log=print):
-    try:
-        return _get(url)
-    except Exception as e:  # network policies, 404s
-        log(f"  could not fetch {url}: {e}")
-        return None
+def fetch(url, log=print, retries=1):
+    """None on 404s and network policies; transient failures (DNS, timeouts, 5xx) are retried once after 5 s"""
+    import time
+    import urllib.error
+    for i in range(retries + 1):
+        try:
+            return _get(url)
+        except urllib.error.HTTPError as e:
+            if e.code < 500 or i == retries:
+                log(f"  could not fetch {url}: {e}")
+                return None
+        except Exception as e:
+            if i == retries:
+                log(f"  could not fetch {url}: {e!r}")
+                return None
+        time.sleep(5)
 
 
 # --- SDRF -------------------------------------------------------------------

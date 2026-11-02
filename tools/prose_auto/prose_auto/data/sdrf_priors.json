@@ -1,0 +1,145 @@
+{
+ "datasets": 14445,
+ "enzyme": {
+  "Trypsin": 10900,
+  "Lys-C+Trypsin": 1496,
+  "trypsin": 384,
+  "Trypsin/P": 367,
+  "unspecific cleavage": 309,
+  "Lys-C": 58,
+  "Lys-C+Trypsin/P": 29,
+  "Chymotrypsin": 28,
+  "Chymotrypsin+Trypsin": 18,
+  "no cleavage": 18,
+  "lys-c": 16,
+  "Arg-C": 15,
+  "PepsinA": 11,
+  "Asp-N": 11,
+  "glutamyl endopeptidase": 9
+ },
+ "cys_alkylation": {
+  "Carbamidomethyl": 7265,
+  "no fixed Cys modification stated": 7071,
+  "Methylthio": 62,
+  "Propionamide": 21,
+  "Carboxymethyl": 7,
+  "Pyridylethyl": 3,
+  "Nethylmaleimide": 2,
+  "iodoTMT6plex": 2,
+  "Ethanolyl": 2,
+  "iodoacetic acid derivatized residue": 2,
+  "N-ethylmaleimide derivatized cysteine": 1,
+  "CarbamidomethylDTT": 1,
+  "Trioxidation": 1,
+  "Alkylation": 1,
+  "Dehydro": 1
+ },
+ "label": {
+  "label free": 13404,
+  "SILAC": 610,
+  "TMTpro": 294,
+  "TMT": 62,
+  "iTRAQ": 40
+ },
+ "enrichment": {
+  "none": 13914,
+  "phospho": 493,
+  "ubiquitin/GlyGly": 20,
+  "glyco": 12,
+  "acetyl": 6
+ },
+ "acquisition": {
+  "DDA": 12323,
+  "DIA": 1997,
+  "other": 46,
+  "PRM": 42
+ },
+ "fragmentation": {
+  "HCD": 4652,
+  "CID": 2163,
+  "ETD": 38,
+  "other": 24,
+  "EThcD": 4
+ },
+ "instrument": {
+  "Q Exactive": 1915,
+  "Orbitrap Fusion Lumos": 1638,
+  "Q Exactive HF": 1540,
+  "Orbitrap Exploris 480": 942,
+  "Orbitrap Fusion": 867,
+  "LTQ Orbitrap Velos": 661,
+  "Q Exactive Plus": 604,
+  "Q Exactive HF-X": 579,
+  "q exactive": 384,
+  "LTQ Orbitrap Elite": 377,
+  "LTQ Orbitrap": 367,
+  "Orbitrap Eclipse": 347,
+  "Orbitrap Astral": 252,
+  "orbitrap fusion lumos": 242,
+  "timsTOF Pro": 236
+ },
+ "precursor_tolerance": {
+  "Orbitrap": {
+   "10 ppm": 957,
+   "4.5 ppm": 546,
+   "20 ppm": 383,
+   "5 ppm": 251,
+   "7 ppm": 157,
+   "6 ppm": 115,
+   "15 ppm": 72,
+   "40 ppm": 66
+  },
+  "LTQ/Velos/Elite instruments": {
+   "10 ppm": 290,
+   "20 ppm": 113,
+   "4.5 ppm": 106,
+   "5 ppm": 93,
+   "6 ppm": 60,
+   "7 ppm": 30,
+   "0.5 Da": 20,
+   "50 ppm": 17
+  },
+  "TOF": {
+   "20 ppm": 90,
+   "10 ppm": 89,
+   "15 ppm": 62,
+   "50 ppm": 27,
+   "75 ppm": 19,
+   "25 ppm": 11,
+   "100 ppm": 11,
+   "30 ppm": 10
+  }
+ },
+ "fragment_tolerance": {
+  "Orbitrap": {
+   "20 ppm": 1115,
+   "0.02 Da": 543,
+   "0.5 Da": 226,
+   "0.6 Da": 148,
+   "0.05 Da": 134,
+   "10 ppm": 89,
+   "0.01 Da": 74,
+   "0.03 Da": 49
+  },
+  "LTQ/Velos/Elite instruments": {
+   "0.5 Da": 355,
+   "0.8 Da": 106,
+   "0.6 Da": 92,
+   "20 ppm": 62,
+   "0.02 Da": 45,
+   "0.4 Da": 29,
+   "0.05 Da": 27,
+   "1 Da": 17
+  },
+  "TOF": {
+   "20 ppm": 60,
+   "0.05 Da": 39,
+   "15 ppm": 35,
+   "40 ppm": 34,
+   "0.1 Da": 32,
+   "0.02 Da": 19,
+   "10 ppm": 19,
+   "25 ppm": 13
+  }
+ }
+}

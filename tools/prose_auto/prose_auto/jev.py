@@ -96,15 +96,16 @@ def _choice(instructions, criteria):
     return {"type": "choice", "instructions": instructions, "criteria": criteria}
 
 
-def _head_question(h: S.Head):
+def _head_question(h: S.Head, priors=False):
     criteria = {k: d for k, (_, d) in h.options.items()}
     criteria[NOT_STATED] = "the texts do not say"
     return _choice(READ_INSTRUCTIONS + h.question + (" " + h.hint if h.hint else "")
+                   + (S.priors_text(h.name) if priors else "")
                    + " Answer not_stated unless the texts say so or clearly imply it.", criteria)
 
 
-def study_questions():
-    qs = {h.name: _head_question(h) for h in S.HEADS}
+def study_questions(priors=False):
+    qs = {h.name: _head_question(h, priors) for h in S.HEADS}
     for mod, desc in S.VARIABLE_MOD_FLAGS.items():
         qs["var:" + mod] = {"type": "noul", "instructions": READ_INSTRUCTIONS +
                             f"Did the authors search {desc} as a variable modification?"}
@@ -127,7 +128,7 @@ def _map_answer(h: S.Head, a: dict):
     return {"choice": choice, "probabilities": probs}
 
 
-def read_study(jev: Jev, texts: dict, user=False, min_p=0.5):
+def read_study(jev: Jev, texts: dict, user=False, min_p=0.5, priors=False):
     """All texts of a study, all heads, one request.
 
     Returns (evidence, report) where report holds the decoded heads, the
@@ -137,7 +138,7 @@ def read_study(jev: Jev, texts: dict, user=False, min_p=0.5):
     if not jev or not state:
         return [], {}
     try:
-        ans = jev.decide(state, study_questions())
+        ans = jev.decide(state, study_questions(priors))
     except Exception as e:
         return [], {"error": str(e)}
     # with the measured block in the state Jev's answers are not text-only: they must not count as independent

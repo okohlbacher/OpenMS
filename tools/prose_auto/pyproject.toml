@@ -16,4 +16,4 @@ prose-auto = "prose_auto.cli:main"
 packages = ["prose_auto"]
 
 [tool.setuptools.package-data]
-prose_auto = ["data/*.tsv"]
+prose_auto = ["data/*.tsv", "data/*.json"]

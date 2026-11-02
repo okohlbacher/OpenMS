@@ -278,8 +278,8 @@ def test_prose_ladder_order_and_hla_evidence(tmp_path, monkeypatch):
     monkeypatch.setattr(pr, "_run", fake_run)
     from collections import Counter
     monkeypatch.setattr(pr, "_species_counts", lambda out, sig=None: (
-        (30, Counter({"Homo_sapiens": 30}), Counter({"Homo_sapiens": 30}), 0) if seen[-1] == "unspecific cleavage:14"
-        else (0, Counter(), Counter(), 0)))
+        (30, Counter({"Homo_sapiens": 30}), Counter({"Homo_sapiens": 30}), 0, 0.1) if seen[-1] == "unspecific cleavage:14"
+        else (0, Counter(), Counter(), 0, 0.0)))
     fa = tmp_path / "x.fasta"
     fa.write_text(">sp|P1|X\nPEPTIDEK\n")
     kw = dict(contaminants=None, log=lambda *a: None)
@@ -288,8 +288,19 @@ def test_prose_ladder_order_and_hla_evidence(tmp_path, monkeypatch):
     assert {e.parameter: e.value for e in ev if e.parameter != "organism"} == \
         {"enzyme": "unspecific cleavage", "peptide_length": [8, 14]}
     seen.clear()
-    pr.organism_with_prose("ProSE", "x", {"Homo_sapiens": str(fa)}, [], [], (20, "ppm"), (20, "ppm"), hla_first=True, **kw)
-    assert seen == ["unspecific cleavage:14"]     # the hint puts the HLA search first; it found the organism
+    ev, _ = pr.organism_with_prose("ProSE", "x", {"Homo_sapiens": str(fa)}, [], [], (20, "ppm"), (20, "ppm"),
+                                   hla_first=True, **kw)
+    # the hint puts the HLA search first; few fully tryptic PSMs: HLA ligands, no tryptic search needed
+    assert seen == ["unspecific cleavage:14"]
+    assert any(e.parameter == "enzyme" and e.value == "unspecific cleavage" for e in ev)
+    # mostly fully tryptic PSMs: a tryptic digest; the tryptic search decides, no unspecific claim (PXD061541, PXD074950)
+    monkeypatch.setattr(pr, "_species_counts", lambda out, sig=None: (30, Counter({"Homo_sapiens": 30}),
+                                                                      Counter({"Homo_sapiens": 30}), 0, 0.9))
+    seen.clear()
+    ev, win = pr.organism_with_prose("ProSE", "x", {"Homo_sapiens": str(fa)}, [], [], (20, "ppm"), (20, "ppm"),
+                                     hla_first=True, **kw)
+    assert seen == ["unspecific cleavage:14", "Trypsin/P"] and win == "Homo_sapiens"
+    assert not any(e.parameter in ("enzyme", "peptide_length") for e in ev)
 
 
 def test_jev_cache(tmp_path, monkeypatch):

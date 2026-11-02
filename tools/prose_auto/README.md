@@ -136,16 +136,34 @@ The tests use OpenMS test data: BSA1 (LTQ Orbitrap XL, CID/ion trap), the
 DIAuditor and OpenSWATH DIA inputs, and the IsobaricAnalyzer iTRAQ input. A
 fake LLM covers the quote guard.
 
+## Organism and validation
+
+`--organism-source auto` (the default):
+- **An organism is stated and `--panel` is given:** the spectra check the stated organism. The panel mini-search, FASTag and tier 2 run with the stated organisms as evidence, and the data overrule the record only from 5 % of the mini-search spectra.
+- **With `--fasta` or without a panel:** the stated organism is used directly.
+- **Nothing stated:** one ProSE search against the signature panel (`--organism-panel`), else the panel mini-search.
+
+On 180 public studies (62 validation, 118 held-out, one run each; truth from the curated SDRFs) the default reaches:
+
+| Parameter | Correct |
+|---|---|
+| organism | 174/180 |
+| instrument | 163/180 |
+| acquisition | 168/180 |
+| label | 160/178 |
+| enrichment | 160/180 |
+| enzyme | 174/175 |
+| Cys alkylation | 122/128 |
+
+The mass tolerances are measured, not copied. A wide-window search against the true proteome agrees with the measured error in 117 of 120 cases. The curated SDRF value is the authors' search-engine window, not the instrument's accuracy, so it is not used as truth.
+
 ## Known limits (prototype)
 
-* The mini-search is pure Python. On the BSA example (1,120 MS2 spectra, four
-  databases with 6.6k to 870k peptides) the whole analysis takes about 20 s;
-  a full human proteome panel needs ProSE's fragment index instead.
-* The mini-search has no variable modifications and covers DDA only (DIA
-  spectra have no single precursor) unless `--diaspextract` converts the DIA
-  run to pseudo-spectra first. Without it, DIA tolerances come from window
-  repeats and MS1 precision only.
-* The diagnostic-ion Cys test is weak by design; the alkylation competition
-  in the mini-search is the real test.
-* Real-data validation so far covers only the small OpenMS test files: this
-  container cannot reach PRIDE, UniProt or MassIVE (see the report).
+* The mini-search is pure Python; with persistent peptide indexes it takes 10-30 s per run.
+* Repeated-ion and MS1 scan-to-scan estimates give precision without the offset and are about 2x too small
+  alone; the mini-search PSM errors or the immonium/y1 probe should decide.
+* FASTag tag termini call tryptic timsTOF and DIA pseudo-spectra "unspecific"; the protease competition and
+  the fully-tryptic share of the HLA ladder correct this.
+* The validation sets are almost entirely tryptic: other proteases are untested.
+* Open: FDR thresholds at tied scores; stale FASTag evidence after a tier-2 change; FASTag species called twice
+  after a failed ProSE organism search; numeric-library threads are not capped (set `OMP_NUM_THREADS`).

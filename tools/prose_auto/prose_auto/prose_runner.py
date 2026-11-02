@@ -114,12 +114,14 @@ def _species_counts(idxml, signatures=None):
     """PSMs at the FDR cut per species: discriminating and all; contaminant hits (accession prefix CRAP) are counted
     apart. Discriminating: the peptide is in one candidate species only, or, with signatures (a signature-protein
     panel), it is a signature of that species in the whole reference set; a genus signature counts for every species
-    of the genus that matched (the species signatures then decide between them)."""
+    of the genus that matched (the species signatures then decide between them). Also returned: the share of the
+    PSMs that are fully tryptic (K/R before and at the C-terminus, or a protein terminus), which tells tryptic
+    peptides found by an unspecific search from HLA ligands."""
     import pyopenms as oms
     from collections import Counter
     prots, peps = [], []
     oms.IdXMLFile().load(idxml, prots, peps)
-    disc, allm, crap, n = Counter(), Counter(), 0, 0
+    disc, allm, crap, n, tryp = Counter(), Counter(), 0, 0, 0
     for pid in peps:
         hits = pid.getHits()
         if not hits or hits[0].getMetaValue("target_decoy") == "decoy":
@@ -130,6 +132,9 @@ def _species_counts(idxml, signatures=None):
             crap += 1
             continue
         allm.update(sp)
+        pe, seq = hits[0].getPeptideEvidences(), hits[0].getSequence().toUnmodifiedString()
+        tryp += (any(e.getAABefore() in "KR[" for e in pe)
+                 and (seq[-1] in "KR" or any(e.getAAAfter() == "]" for e in pe)))
         if signatures is not None:
             lab = signatures.get(hits[0].getSequence().toUnmodifiedString().replace("I", "L"))
             if lab and lab.startswith("genus:"):
@@ -140,7 +145,7 @@ def _species_counts(idxml, signatures=None):
                 disc[lab] += 1
         elif len(sp) == 1:
             disc[next(iter(sp))] += 1
-    return n, disc, allm, crap
+    return n, disc, allm, crap, tryp / max(n - crap, 1)
 
 
 HLA_CANDIDATES = {(8, 14): 4, (12, 25): 2}   # unspecific indexes of all panel proteomes are too large
@@ -184,8 +189,8 @@ def organism_with_prose(prose, spectra, candidates, fixed, variable, prec, frag,
         steps = ([hla2] + tryptic + [hla1] if hla_first == "II" else [hla1] + tryptic + [hla2] if hla_first
                  else tryptic + [hla1, hla2])
         added, tried, seen = [], {}, Counter()
-        for label, extra, length in steps:
-            added += extra
+
+        def step(label, extra, length):
             out = os.path.join(tmp, "org.idXML")
             dbi = db
             if length:
@@ -208,14 +213,30 @@ def organism_with_prose(prose, spectra, candidates, fixed, variable, prec, frag,
             if threads:
                 args += ["-threads", str(threads)]
             _run(args, log)
-            n, disc, allm, crap = _species_counts(out, None if length else signatures)
+            n, disc, allm, crap, tryp = _species_counts(out, None if length else signatures)
             seen.update(allm)
             ranked = disc.most_common()
-            tried[label] = {"psms": n, "contaminant_psms": crap, "discriminating": dict(ranked[:6]),
+            tried[label] = {"psms": n, "contaminant_psms": crap, "fully_tryptic": round(tryp, 2),
+                            "discriminating": dict(ranked[:6]),
                             "all_matching": dict(allm.most_common(6))}
-            log(f"  organism (ProSE, {label}): {n} PSMs, discriminating {dict(ranked[:4])}")
+            log(f"  organism (ProSE, {label}): {n} PSMs ({tryp:.0%} fully tryptic), discriminating {dict(ranked[:4])}")
+            return ranked, tryp
+
+        for label, extra, length in steps:
+            added += extra
+            ranked, tryp = step(label, extra, length)
             if ranked and ranked[0][1] >= min_psms:
                 break
+        # an unspecific search finds tryptic peptides too (four tryptic validation runs, three of them timsTOF with few
+        # K/R tag ends, were called "unspecific cleavage" after an HLA-first search): mostly fully tryptic PSMs mean a
+        # tryptic digest, and the organism then comes from the tryptic search (the signature panel) when it finds one
+        if length and ranked and ranked[0][1] >= min_psms and tryp >= 0.5:
+            log(f"  {tryp:.0%} of the unspecific PSMs are fully tryptic: tryptic digest, not HLA ligands")
+            length = None
+            if not any(t[0] in tried for t in tryptic):
+                t_ranked, _ = step(*tryptic[0])
+                if t_ranked and t_ranked[0][1] >= min_psms:
+                    label, ranked = tryptic[0][0], t_ranked
     stats = {"steps": tried, "candidates": list(candidates)}
     if not ranked or ranked[0][1] < min_psms:
         ev.append(Evidence("organism", "not in panel", 0.5, "search", "ProSE organism search",

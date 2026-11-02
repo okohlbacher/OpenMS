@@ -346,7 +346,7 @@ def _texts_and_readers(c, hint_stats, term_stats):
         jev_study = {**study, "run": run_info,
                      "measured from the spectra": _data_features(c.ev, hint_stats, term_stats)}
         log(f"  Jev: {jev.name} (one multi-head request over {len(jev_study)} sources, one of them the data)")
-        e, jev_report = J.read_study(jev, jev_study, user=bool(desc))
+        e, jev_report = J.read_study(jev, jev_study, user=bool(desc), priors=a.jev_priors)
         c.ev += e
     return study, backend, jev, rejected, conflicts, jev_report
 
@@ -579,10 +579,20 @@ def analyze(a, log=print):
                                                                                                term_stats)
 
     # organism: from the metadata or one ProSE search fixes it (org_panel = the one database); otherwise the panel
-    # mini-search, FASTag and tier 2 decide
-    org_panel = _organism_from_metadata(c) if a.organism_source == "metadata" else None
+    # mini-search, FASTag and tier 2 decide, with the stated organisms as evidence. auto: something stated and a
+    # panel -> data (the spectra check the record: data_jev 174/180 against 165/180 for metadata only; it catches
+    # expression hosts and viruses listed first in PRIDE records); stated without a panel or with --fasta ->
+    # metadata; nothing stated -> the signature-panel ProSE search, else the panel mini-search
+    src = a.organism_source
+    if src == "auto":
+        stated = any(e.parameter == "organism" and e.source in STATED_SOURCES
+                     and str(e.value) not in ("not in panel", "unknown") for e in c.ev)
+        src = ("metadata" if a.fasta or (stated and not a.panel) else "data" if stated else
+               "prose" if a.organism_panel else "data")
+        c.log(f"  organism (auto): {src}" + ("" if stated else ", nothing stated"))
+    org_panel = _organism_from_metadata(c) if src == "metadata" else None
     hla_first = _hla_first(c, hint, hint_stats, term_stats)
-    if a.organism_source == "prose" and not str(c.search_acq).startswith("DIA"):
+    if src == "prose" and not str(c.search_acq).startswith("DIA"):
         org_panel = _organism_from_prose(c, hla_first)
     org_fixed = org_panel is not None
     unspec = _unspecific(c.ev)
@@ -774,6 +784,8 @@ def main(argv=None):
     an.add_argument("--jev", action="store_true",
                     help="classify the texts with Jev and cross-check the settings (JEV_API_KEY)")
     an.add_argument("--llm-priors", action="store_true", help="ask the LLM for literature tolerance priors")
+    an.add_argument("--jev-priors", action="store_true",
+                    help="give Jev the value distributions of the annotated PRIDE datasets with each question")
     an.add_argument("--llm-review", action="store_true", help="let the LLM review the final settings")
     an.add_argument("--prose", nargs="?", const="", help="confirm with a ProSE subset search (path or PATH)")
     an.add_argument("--open-search", action="store_true", help="with --prose: also run an open search")
@@ -796,10 +808,12 @@ def main(argv=None):
                          "study) or the highest-TIC ones")
     an.add_argument("--max-ms2", type=int, default=20000, help="MS2 spectra read for the detectors")
     an.add_argument("--no-search", action="store_true", help="skip the mini-search")
-    an.add_argument("--organism-source", choices=("data", "prose", "metadata"), default="data",
-                    help="data: organism from panel mini-search, FASTag and tier 2; prose: one ProSE search against "
-                         "panel + shortlist (ProSE from --prose-bin or PATH); metadata: from --fasta or the "
-                         "stated organism only (user, repository, SDRF, text, Jev)")
+    an.add_argument("--organism-source", choices=("auto", "data", "prose", "metadata"), default="auto",
+                    help="auto (default): data when an organism is stated and --panel is given (the spectra check the "
+                         "stated organism), metadata with --fasta or without a panel, else prose with "
+                         "--organism-panel, else data; data: organism from panel mini-search, FASTag and tier 2; "
+                         "prose: one ProSE search against panel + shortlist (ProSE from --prose-bin or PATH); "
+                         "metadata: from --fasta or the stated organism only (user, repository, SDRF, text, Jev)")
     an.add_argument("--prose-bin", help="ProSE executable for --organism-source prose (default: ProSE on PATH)")
     an.add_argument("--organism-panel", help="signature-protein panel directory (build_sigpanel.py) for "
                     "--organism-source prose: one search covers the whole reference set")

@@ -409,3 +409,38 @@ def prompt_schema() -> str:
     lines.append("- scope flags (true/false): " + "; ".join(f"{k} ({d})" for k, d in SCOPE_FLAGS.items()) + ".")
     rules = [f"- [{r.kind}] {r.message}" for r in RULES if r.kind != "imply"]
     return "HEADS:\n" + "\n".join(lines) + "\n\nCONSISTENCY RULES:\n" + "\n".join(rules)
+
+
+# ---------------------------------------------------------------- priors for the readers
+_PRIORS = None
+
+
+def priors_text(head: str) -> str:
+    """How often each value occurs in the bigbio annotated PRIDE datasets (data/sdrf_priors.json, one vote per
+    dataset), as one sentence for a reader's question; '' for heads without a distribution."""
+    global _PRIORS
+    if _PRIORS is None:
+        import json
+        import os
+        p = os.path.join(os.path.dirname(__file__), "data", "sdrf_priors.json")
+        _PRIORS = json.load(open(p)) if os.path.exists(p) else {}
+    d = _PRIORS.get(head)
+    if not d:
+        return ""
+    def shares(counts, top=6):
+        merged = {}
+        for k, v in counts.items():
+            key = k if k.lower() != k else k[:1].upper() + k[1:]   # 'trypsin' and 'Trypsin' are one value
+            merged[key] = merged.get(key, 0) + v
+        n = sum(merged.values())
+        return ", ".join(f"{k} {100 * v / n:.0f} %" for k, v in sorted(merged.items(), key=lambda x: -x[1])[:top]
+                         if 100 * v / n >= 0.5)
+    if head in ("precursor_tolerance", "fragment_tolerance"):
+        body = "; ".join(f"{c}: {shares(v, 5)}" for c, v in d.items())
+    elif head == "cys_alkylation":
+        body = shares({k: v for k, v in d.items() if not k.startswith("no fixed")}) + \
+            " (about half of the SDRFs state no fixed Cys modification at all)"
+    else:
+        body = shares(d)
+    return (f" For orientation, in {_PRIORS.get('datasets', 0):,} annotated PRIDE datasets: {body}. Use this only to "
+            "read unclear wording, never as a reason to answer when the texts are silent.")
