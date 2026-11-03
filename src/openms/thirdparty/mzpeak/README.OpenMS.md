@@ -1,9 +1,9 @@
 # Vendored mzPeak C++ library
 
 Source: https://github.com/okohlbacher/mzpeak-openms, branch `feature/cmake-build`, commit
-`4fb1f5692cf9182db14865501ca519f5f8667263` (3 Nov 2026), a fork of the upstream
+`a1e9ea260d9f7ac8798db924aef0340ebc30f1d1` (3 Nov 2026), a fork of the upstream
 https://github.com/OpenMS/mzpeak (`trunk`, `d70ce3ac21ff885efb23bb3b49f148907e7a5e3b`,
-14 Sep 2026, the fork's merge base; the fork is 280 commits ahead, upstream has no
+14 Sep 2026, the fork's merge base; the fork is 281 commits ahead, upstream has no
 commits the fork lacks). License: BSD-3-Clause (`LICENSE`); the third-party notes of the
 library are in `THIRD_PARTY.upstream.md`.
 
