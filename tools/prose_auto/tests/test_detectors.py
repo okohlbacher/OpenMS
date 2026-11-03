@@ -340,7 +340,26 @@ def test_jev_cache(tmp_path, monkeypatch):
     monkeypatch.setenv("PROSE_AUTO_JEV_CACHE", str(tmp_path))
     j = J.Jev(key="k", transport=lambda body: n.append(1) or {"answers": {"q": {"choice": "a"}}})
     assert j.decide({"s": 1}, {"q": {}}) == j.decide({"s": 1}, {"q": {}}) == {"q": {"choice": "a"}}
-    assert len(n) == 1 and all("k" not in open(f).read() for f in tmp_path.glob("*.json"))
+    assert len(n) == 1 and all("k" not in open(f).read() for f in tmp_path.rglob("*.json"))
+
+
+def test_jev_cache_key_is_stable(tmp_path):
+    from prose_auto import jev as J
+    n = []
+    j = J.Jev(key="secret-key", cache=str(tmp_path), study="PXD000001",
+              transport=lambda body: n.append(body) or {"answers": {"q": {"choice": "a"}}})
+    m = lambda tags, kr: {"PRIDE description": "trypsin", J.MEASURED:
+                          f"C-terminal K/R share of {tags} sequence tags {kr} (tryptic Orbitrap DDA 0.84-0.98)"}
+    j.decide(m(1234, 0.873), {"q": {}})
+    j.decide(m(1241, 0.8712), {"q": {}})          # a few tags more: same request, same answer, no second call
+    assert len(n) == 1 and n[0]["state"][J.MEASURED] == ("C-terminal K/R share of 1200 sequence tags 0.87 "
+                                                         "(tryptic Orbitrap DDA 0.84-0.98)")
+    j.decide(m(1700, 0.873), {"q": {}})           # a different profile is a new request
+    j.decide({**m(1234, 0.873), "PRIDE description": "Lys-C"}, {"q": {}})   # and so are other texts
+    assert len(n) == 3
+    files = list(tmp_path.rglob("*.json"))
+    assert len(files) == 3 and {f.parent.name for f in files} == {"PXD000001"}
+    assert all("secret-key" not in f.read_text() for f in files)
 
 
 def test_jev_sees_the_data_features():
@@ -375,19 +394,59 @@ def test_hla_call_needs_several_indicators():
 
 
 def test_mixture_union_needs_spectra_of_its_own():
-    from prose_auto.reconcile import mixture_union
-    st = lambda yeast: {"n_spectra": 2000, "Homo_sapiens": {"psms": 655, "unique_vs_best": 80},
-                        "Saccharomyces_cerevisiae": {"psms": 567, "unique_vs_best": yeast},
-                        "Bos_taurus": {"psms": 60, "unique_vs_best": 30},
-                        "Escherichia_coli": {"psms": 5, "unique_vs_best": 3},
-                        "Mus_musculus": {"psms": 329, "unique_vs_best": 11}}
+    from prose_auto.reconcile import mixture_union, union_candidates
+    st = {"n_spectra": 2000, "Homo_sapiens": {"psms": 655}, "Saccharomyces_cerevisiae": {"psms": 567},
+          "Bos_taurus": {"psms": 60}, "Escherichia_coli": {"psms": 5}, "Mus_musculus": {"psms": 329}}
     mix = {"suspected": True, "indicators": [{"indicator": "stated by the user or the repository record",
            "species": ["Homo sapiens", "Saccharomyces cerevisiae", "Escherichia coli", "Bos taurus"],
            "strength": 0.5}, {"indicator": "named in the texts", "species": ["Mus musculus"], "strength": 0.2}]}
-    ev = lambda yeast: [Evidence("organism", "Homo_sapiens", 0.8, "search", "panel mini-search", "", st(yeast))]
-    # PXD045500: yeast with 511 spectra of its own joins; E. coli (3), the reagent genus Bos and mouse,
-    # named only in the texts, do not
-    assert mixture_union(ev(511), mix, "Homo sapiens (human)") == [("Homo_sapiens", None),
-                                                                    ("Saccharomyces_cerevisiae", 511)]
-    assert mixture_union(ev(0), mix, "Homo sapiens (human)") == []          # its pure human file keeps one database
-    assert mixture_union(ev(511), {**mix, "suspected": False}, "Homo sapiens") == []
+    ev = [Evidence("organism", "Homo_sapiens", 0.8, "search", "panel mini-search", "", st)]
+    # PXD045500: the reagent genus Bos is no candidate; mouse, named only in the texts, gets the higher bar
+    cands = union_candidates(ev, mix, "Homo sapiens (human)")
+    assert [(n, k) for n, k, _ in cands] == [("Saccharomyces cerevisiae", "named"), ("Escherichia coli", "named"),
+                                             ("Mus musculus", "text")]
+    assert union_candidates(ev, {**mix, "suspected": False}, "Homo sapiens") == []
+    human = set(range(600))
+    pick = lambda yeast, ecoli, mouse, kind="named": mixture_union(
+        ("Homo_sapiens", human), [("Saccharomyces_cerevisiae", "named", yeast), ("Escherichia_coli", kind, ecoli),
+                                  ("Mus_musculus", "text", mouse)], 2000)
+    own = lambda a, n: set(range(a, a + n))
+    # yeast with 511 spectra of its own joins, E. coli (3) and mouse (11 < 40) do not
+    assert pick(own(600, 511), own(2000, 3), own(3000, 11)) == [("Homo_sapiens", None),
+                                                               ("Saccharomyces_cerevisiae", 511)]
+    assert pick(own(590, 10), own(2000, 3), own(3000, 11)) == []       # its pure human file keeps one database
+    # a third species joins by the spectra the union so far does not explain: E. coli 30 of its own beside yeast;
+    # spectra yeast already explains do not count again
+    assert pick(own(600, 511), own(1200, 30) | own(600, 200), own(3000, 11)) == [
+        ("Homo_sapiens", None), ("Saccharomyces_cerevisiae", 511), ("Escherichia_coli", 30)]
+    # the file name (HYE) names E. coli: one spectrum of its own suffices (PXD039576: 4)
+    assert pick(own(600, 511), own(2000, 4), set(), "file")[-1] == ("Escherichia_coli", 4)
+
+
+def test_union_candidates_take_the_record_and_the_search_winner():
+    from prose_auto.reconcile import union_candidates
+    record = [["Lactobacillus plantarum", 1590], ["Anaerostipes caccae dsm 14662", 411490],
+              ["Clostridium butyricum dsm 10702", 1316931], ["Bacteroides thetaiotaomicron", 818],
+              ["Sars bat coronavirus", 1431340]]
+    ev = [Evidence("organism", n, 0.6, "repository", "pride", "", {"taxid": t, "record_organisms": record})
+          for n, t in record[:3]]
+    ev.append(Evidence("organism", "Bacteroides_thetaiotaomicron", 0.4, "search", "panel mini-search", "",
+                       {"n_spectra": 2000, "Bacteroides_thetaiotaomicron": {"psms": 770},
+                        "Lactiplantibacillus_plantarum": {"psms": 6}}))
+    mix = {"suspected": True, "indicators": [{"indicator": "stated by the user or the repository record",
+           "species": [n for n, _ in record[:3]], "strength": 0.5}]}
+    c = union_candidates(ev, mix, "Lactobacillus plantarum")
+    # PXD017035: the whole record (8 in PRIDE, 3 decide) and its taxon ids, for proteomes UniProt knows by id only
+    assert [n for n, _, _ in c] == ["Anaerostipes caccae dsm 14662", "Clostridium butyricum dsm 10702",
+                                    "Bacteroides_thetaiotaomicron", "Sars bat coronavirus"]
+    assert c[-1][2] == 1431340 and [k for _, k, _ in c] == ["named", "named", "data", "record"]
+
+
+def test_file_organisms():
+    from prose_auto.text_extract import file_organisms as f
+    assert f("x_Hela60_Ecoli10_Offgel_03.raw") == ["Homo sapiens", "Escherichia coli"]
+    assert f("SNB0050_HYE_8to1to1_30min") == ["Homo sapiens", "Saccharomyces cerevisiae", "Escherichia coli"]
+    assert f("3sppmix_200ng_400-800-05Y_50H_45E_NR0") == ["Saccharomyces cerevisiae", "Homo sapiens",
+                                                         "Escherichia coli"]
+    assert f("Trap1500bar_200ngH_0ngY_iso1") == ["Homo sapiens"]             # 0 ng yeast: a pure human file
+    assert f("LFQ_Orbitrap_DDA_Human_01") == ["Homo sapiens"] and f("Rat_Heart_2_Fraction_8") == []

@@ -107,6 +107,10 @@ labelled state and are read in **one request**:
   indicators contradict / not mentioned). Two requests per run, about $0.01. A TypeSafe console key
   (`TYPESAFE_API_KEY` or `JEV_API_KEY`) uses `api.typesafe.ai/v1/systemone`; a
   `jv_live_` key uses the jevtypesafeai.com proxy. About $0.001 per request.
+  Jev takes no temperature or seed, and two identical requests differ by up to 0.05 in probability, so the
+  answers are cached (`--jev-cache DIR` or `PROSE_AUTO_JEV_CACHE`; `DIR/<accession>/<sha256>.json`). The key
+  is the request: the texts, the questions and the measured profile with its numbers rounded to 2 significant
+  digits (the reference ranges stay as written), so a rerun asks nothing and decides the same.
 
 **Consistency rules** (`schema.RULES`) say which values exclude each other
 (*hard*: TMT/iTRAQ with ion-trap CID MS2, PASEF on a non-timsTOF, ETD on an
@@ -170,8 +174,13 @@ The mass tolerances are measured, not copied. A wide-window search against the t
 
 Every report also carries `agreement` (per setting: the inconsistency of the independent indicators, the
 dissenting detectors and Jev's verdict; overall score and level) and `organism_mix` (suspected, score,
-indicators, scope); a suspected mixture with spectra of a second species of its own is searched against
-the union of the proteomes (`organisms`, `search_database`). An inconsistency of 0.2 or more flags 65 % of the wrong decisions (precision 0.25).
+indicators, scope); a suspected mixture is searched against the union of the proteomes (`organisms`,
+`search_database`). Every organism the user, the record, Jev (>= 0.3) or the file name (`HYE`, `05Y_50H_45E`,
+`Ecoli`) names, and the panel mini-search's own winner, is mini-searched against its proteome (panel, or
+UniProt by name or NCBI taxon id, cached under `<panel>/extra`). Greedily, the candidate with the most spectra
+the union so far does not explain joins while it has at least max(10, 0.5 % of the spectra) of them (1 when the
+file name names it; max(40, 2 %) when only the texts or a record beyond its first three organisms name it), up
+to 6 organisms. An inconsistency of 0.2 or more flags 65 % of the wrong decisions (precision 0.25).
 
 Other sets (0.1.3): non-tryptic Orbitrap DDA enzyme 15/16, DIA/timsTOF non-tryptic 8/11 with 12/12 tryptic
 controls, HLA ligand files 14/14 (unspecific, human); organism mixtures (38 runs) sensitivity 19/19, specificity
@@ -187,5 +196,7 @@ controls, HLA ligand files 14/14 (unspecific, human); organism mixtures (38 runs
 * The non-tryptic sets are small (16 Orbitrap DDA, 11 DIA/timsTOF runs).
 * `organism_mix` from the records and texts alone is study-level: a pure file of a mixed study is flagged unless
   the stated second species was searched and is absent.
-  A flagged run searches the union of the suspected proteomes only when the second species has spectra of its own
-  in the mini-search (>= 10); species outside the panel and minor members of large communities are missed.
+  A flagged run searches a union only when a further species has spectra of its own in the mini-search; a
+  species at a few percent with no such spectra (PXD020394, SARS-CoV-2) is missed.
+* Unions stop at 6 organisms: on PXD017035 (8-species community) PSMs level off at 5-6 and the protein
+  search space keeps growing.

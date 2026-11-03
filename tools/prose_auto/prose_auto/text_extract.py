@@ -126,6 +126,29 @@ def from_file_name(path, conf=0.5) -> list:
     return [Evidence("enzyme", v, conf, "text", "file name", f"the file name {os.path.basename(str(path))} names {v}")]
 
 
+# organisms in file names: words (a token starting with them: EcoliSpikeIn, Hela60) and the letters of mixed-species
+# benchmarks (HYE; 05Y_50H_45E, 100ngH_100ngY with 0 ng meaning absent)
+FILE_ORGANISM_WORDS = {"ecoli": "Escherichia coli", "yeast": "Saccharomyces cerevisiae", "human": "Homo sapiens",
+                       "hela": "Homo sapiens", "hek": "Homo sapiens", "mouse": "Mus musculus",
+                       "murine": "Mus musculus"}
+FILE_ORGANISM_LETTERS = {"h": "Homo sapiens", "y": "Saccharomyces cerevisiae", "e": "Escherichia coli"}
+
+
+def file_organisms(path) -> list:
+    """Organisms the run's file name names, in order (organism_mix counts two or more as a file-level indicator)."""
+    import os
+    name = os.path.basename(str(path).rstrip("/")).lower()
+    out = []
+    if re.search(r"(?:^|[^a-z])hye(?:[^a-z]|$)", name):
+        out += list(FILE_ORGANISM_LETTERS.values())
+    amounts = re.findall(r"(?:^|[_\-.])(\d+)(?:pg|ng|ug)?([hye])(?=[_\-.]|$)", name)
+    if len({l for _, l in amounts}) >= 2:
+        out += [FILE_ORGANISM_LETTERS[l] for a, l in amounts if int(a) > 0]
+    for t in re.split(r"[^a-z]+", name):
+        out += [o for w, o in FILE_ORGANISM_WORDS.items() if t.startswith(w)]
+    return list(dict.fromkeys(out))
+
+
 def extract(text: str, source="text", base_conf=0.55) -> list:
     """Evidence from free text. source is 'user' for the user's own
     description (more trusted) or 'text' for methods/protocols."""

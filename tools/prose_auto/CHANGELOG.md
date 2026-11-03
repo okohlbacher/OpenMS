@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.1.6 (2026-11-04)
+
+Complete mixture unions
+- Every organism that the user, the record, Jev (>= 0.3) or the file name names is mini-searched, together with
+  the panel mini-search's own winner. The file name counts as HYE tokens, amount lists such as `05Y_50H_45E`,
+  or words such as `Ecoli`. An organism outside the panel is fetched from UniProt by name, or by its NCBI taxon id
+  from the PRIDE record (walking up to 3 parents), and cached under `<panel>/extra`.
+- Each candidate's spectra are tested against the union so far, so a third or later species can join. The
+  candidate with the most unexplained spectra joins first. To join it needs at least that many spectra the union
+  does not explain:
+  - 1 when the file name names it;
+  - max(10, 0.5 %) when an indicator or the winner names it;
+  - max(40, 2 %) when only the texts, or a record beyond its first three organisms, name it.
+- The cap rises from 4 to 6 organisms. On PXD017035 (8 species), PSMs level off at 5–6 members while the combined
+  PSM FDP stays at 0.85–1.09 %.
+- Mixset:
+  - PXD017035 goes from 2 species and 639 PSMs to 4 species and 28,391 PSMs; the reference arm has 24,446.
+  - PXD039576 adds E. coli.
+  - Over the 19 union runs: 406,802 PSMs, 104 % of the true-organism search.
+  - Pure files are unchanged.
+- Benchmark: PXD066672 adds its 5 % yeast. No other organism decision changed.
+
+Jev cache
+- Jev accepts no temperature or seed, and identical requests differ by up to 0.05 in probability. Answers are now
+  cached per study (`--jev-cache DIR` or `PROSE_AUTO_JEV_CACHE`, `DIR/<accession>/<sha256>.json`).
+- The cache key is the request: the texts, the questions, and the measured profile with its numbers rounded to
+  2 significant digits. The API key is never part of it.
+- A second pass over valset and borg_ho (180 runs) asked Jev nothing and changed no decision.
+
 ## 0.1.5 (2026-11-03)
 
 Mixture union search

@@ -222,8 +222,12 @@ def pride_evidence(acc, log=print):
         return [], {}
     ev = []
     src = f"PRIDE {acc}"
+    taxid = lambda o: int(t) if (t := str(o.get("accession") or "").rpartition(":")[2]).isdigit() else None
+    # three organisms decide (communities list more); the whole list (8 in PXD017035) goes to the mixture union
+    record = [[o.get("name"), taxid(o)] for o in p.get("organisms", [])]
     for o in p.get("organisms", [])[:3]:
-        ev.append(Evidence("organism", o.get("name"), 0.6, "repository", "pride", f"{src}: organism {o.get('name')}"))
+        ev.append(Evidence("organism", o.get("name"), 0.6, "repository", "pride", f"{src}: organism {o.get('name')}",
+                           {"taxid": taxid(o), **({"record_organisms": record} if len(record) > 3 else {})}))
     for i in p.get("instruments", [])[:2]:
         ev.append(Evidence("instrument", i.get("name"), 0.6, "repository", "pride", f"{src}: instrument {i.get('name')}"))
     for q in p.get("quantificationMethods", [])[:2]:

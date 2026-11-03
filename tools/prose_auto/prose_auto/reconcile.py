@@ -521,9 +521,10 @@ def _short(v):
 
 
 SEARCH_INDICATORS = ("panel mini-search", "ProSE organism search")
+FILE_NAME = "named in the file name"   # file-level like the searches: a pure file of the study does not carry it
 
 
-def organism_mix(evidence: list, jev_report=None):
+def organism_mix(evidence: list, jev_report=None, file_species=()):
     """Suspected mixture of organisms (benchmark mixes, xenografts, host-pathogen, co-culture), from independent
     indicators, each with a strength in 0..1:
     - search: a second database explains many spectra the winner does not (the mini-search or ProSE "A + B" note);
@@ -532,6 +533,7 @@ def organism_mix(evidence: list, jev_report=None):
     - stated: the user or the repository record names organisms of two or more genera (0.5); the texts alone 0.2
       (cell lines, BSA, E. coli expression hosts and antibodies name other species without a mixed sample)
     - Jev: p(organism = mixed species) x 0.7
+    - the file name names two or more organisms (HYE, 05Y_50H_45E, Hela60_Ecoli10; text_extract.file_organisms): 0.5
     FASTag species ranks are left out: on large panels unrelated species score alike (Brachypodium vs Thalassiosira
     2693 vs 2688 tags in a human run). suspected = two kinds of indicator >= 0.3; score = 1 - prod(1 - s)."""
     ind = []
@@ -553,6 +555,8 @@ def organism_mix(evidence: list, jev_report=None):
                 g.setdefault(genus(e.value), e.value)
         if len(g) >= 2:
             ind.append({"indicator": name, "species": sorted(g.values()), "strength": s})
+    if len({_organism_key(x) for x in file_species}) >= 2:
+        ind.append({"indicator": FILE_NAME, "species": list(file_species), "strength": 0.5})
     p = ((jev_report or {}).get("probabilities") or {}).get("organism", {}).get("mixed species", 0.0)
     if p >= 0.2:
         ind.append({"indicator": "Jev (texts and indicators)", "species": [], "strength": round(0.7 * p, 2),
@@ -562,7 +566,7 @@ def organism_mix(evidence: list, jev_report=None):
         score *= 1 - i["strength"]
     suspected = len({i["indicator"] for i in ind if i["strength"] >= 0.3}) >= 2
     out = {"suspected": suspected, "score": round(1 - score, 2), "indicators": ind,
-           "scope": "file" if any(i["indicator"] in SEARCH_INDICATORS for i in ind) else "study"}
+           "scope": "file" if any(i["indicator"] in SEARCH_INDICATORS + (FILE_NAME,) for i in ind) else "study"}
     # records, texts and Jev describe the study; a file of a mixed study can hold one species (the human-only and
     # 0 ng yeast files of benchmarks, uninfected controls): when every stated second species was searched and is
     # absent from this file, the mixture is the study's, not the file's
@@ -575,34 +579,85 @@ def organism_mix(evidence: list, jev_report=None):
     return out
 
 
-MIX_MAX_ORGANISMS = 4   # databases of a mixture union
+MIX_MAX_ORGANISMS = 6   # databases of a mixture union: on the 8-species PXD017035 ProSE's PSMs level off at 5-6
+#                           (28,417 / 28,751 / 28,848 / 28,792 for 4 / 5 / 6 / 8), FDP stays 0.85-1.09 %; more only adds search space
 MIX_OWN_SPECTRA = 10    # spectra of its own (and 0.5 % of the searched spectra) before a named organism joins it
+MIX_TEXT_SPECTRA = 40   # ... and before an organism named only in the texts joins (mouse beside a human-yeast benchmark
+#                         had 11, PXD045500; E. coli in a gut community 83, PXD017035)
 
 
-def mixture_union(evidence, mix, decided):
-    """The databases of a suspected mixture, ordered by evidence: the decided organism, then each organism a mixture
-    indicator of strength >= 0.3 names (the texts name every species they mention: mouse beside a human-yeast
-    benchmark, PXD045500) that the last panel mini-search tested and found with spectra of its own (no cRAP, none the
-    winner explains) >= max(10, 0.5 % of the spectra), most first; at most 4. Reagent genera (trypsin, BSA, keratin
-    hosts) join only when the user or the record names them. On the 0.1.3 mixset decisions the second species of
-    the 19 mixed runs had 12-623 such spectra, those of the pure files of mixture studies 0-3, so a pure file keeps
-    one database. Returns [(database name, own spectra)]; [] when no second organism qualifies."""
+def union_candidates(evidence, mix, decided):
+    """Organisms a suspected mixture's union may take, with the kind of naming that sets their bar
+    (mixture_union): "file" (the file name names it: this file holds it), "named" (an indicator of strength >= 0.3:
+    the user, the repository record, the mini-search pair; or Jev's organism answer at >= 0.3), "data" (the panel
+    mini-search's own winner when the decision went elsewhere), "record" (a long PRIDE record beyond its first three
+    organisms: PXD012636 lists six for a rat heart run, human among them), "text" (only the texts name it). Reagent genera
+    (trypsin, BSA, keratin, expression hosts) only when the user or the record names them. The decided organism leads
+    and is not listed. Returns [(name, kind, taxid or None)], strongest kind first."""
     if not (mix or {}).get("suspected"):
         return []
+    stated, record = {}, []
+    for e in evidence:
+        if e.parameter == "organism" and e.source in ("user", "repository"):
+            stated.setdefault(_organism_key(e.value), (e.stats or {}).get("taxid"))
+            record = record or (e.stats or {}).get("record_organisms") or []
+    for name, tid in record:
+        stated.setdefault(_organism_key(name), tid)
+    out, seen = [], {_organism_key(decided)}
+
+    def add(name, kind):
+        k = _organism_key(name)
+        if k in seen or str(name) in ("not in panel", "unknown", ""):
+            return
+        if taxa.scientific(name).replace("_", " ").split(" ")[0] in REAGENT_GENERA and k not in stated:
+            return
+        seen.add(k)
+        out.append((str(name), kind, stated.get(k)))
+    for i in mix["indicators"]:
+        if i["indicator"] == FILE_NAME:
+            for x in i["species"]:
+                add(x, "file")
+    for i in mix["indicators"]:
+        if i["strength"] >= 0.3 and i["indicator"] != FILE_NAME:
+            for x in i["species"]:
+                add(x, "named")
+    for e in evidence:
+        if e.parameter == "organism" and e.source == "llm" and e.confidence >= 0.3:
+            add(e.value, "named")
     search = [e for e in evidence if e.source == "search" and e.method == "panel mini-search" and e.stats
               and " + " not in str(e.value)]
-    if not search:
-        return []
-    st = search[-1].stats
-    n = st.get("n_spectra") or 0
-    dbs = {_organism_key(k): k for k, v in st.items() if isinstance(v, dict)}
-    named = {_organism_key(x) for i in mix["indicators"] if i["strength"] >= 0.3 for x in i["species"]}
-    stated = {_organism_key(e.value) for e in evidence if e.parameter == "organism" and e.source in ("user", "repository")}
-    first = _organism_key(decided)
-    own = sorted(((st[dbs[k]].get("unique_vs_best") or 0, dbs[k]) for k in named & dbs.keys() - {first}
-                  if taxa.scientific(dbs[k]).replace("_", " ").split(" ")[0] not in REAGENT_GENERA or k in stated),
-                 reverse=True)
-    own = [(k, u) for u, k in own if u >= max(MIX_OWN_SPECTRA, 0.005 * n)]
-    if not own:
-        return []
-    return ([(dbs.get(first, decided), None)] + own)[:MIX_MAX_ORGANISMS]
+    if search:   # PXD017035: the record's L. plantarum decided, B. thetaiotaomicron explained 770 of 2000 spectra
+        st = {k: v for k, v in search[-1].stats.items() if isinstance(v, dict)}
+        if st:
+            add(max(st, key=lambda k: st[k].get("psms") or 0), "data")
+    for name, _ in record:   # a record beyond the three organisms that decide: study-level like the texts
+        add(name, "record")
+    for i in mix["indicators"]:
+        if i["strength"] < 0.3:
+            for x in i["species"]:
+                add(x, "text")
+    return out
+
+
+def mixture_union(first, candidates, n, cap=None):
+    """Greedy union of a suspected mixture. first: (name, scans of its PSMs); candidates: [(name, kind, scans)],
+    scans without contaminant peptides. Each round the candidate with the most spectra the union so far does not
+    explain joins if those reach its bar: 1 when the file name names it, max(10, 0.5 % of n) when an indicator
+    names it or it won the mini-search, max(40, 2 % of n) when only the texts or a long record name it. On the 0.1.3 mixset decisions
+    the second species of the 19 mixed runs had 12-623 such spectra, those of the pure files of mixture studies 0-3,
+    so a pure file keeps one database. Returns [(name, own spectra)] with (first, None) leading, or [] when nothing
+    joins."""
+    bar = {"file": 1, "named": max(MIX_OWN_SPECTRA, 0.005 * n), "data": max(MIX_OWN_SPECTRA, 0.005 * n),
+           "text": max(MIX_TEXT_SPECTRA, 0.02 * n)}
+    bar["record"] = bar["text"]
+    cap = cap or MIX_MAX_ORGANISMS
+    covered, out, left = set(first[1]), [(first[0], None)], list(candidates)
+    while left and len(out) < cap:
+        joinable = [(len(sc - covered), name, sc) for name, kind, sc in left if len(sc - covered) >= bar[kind]]
+        if not joinable:
+            break
+        u, name, sc = max(joinable, key=lambda x: x[0])
+        out.append((name, u))
+        covered |= sc
+        left = [x for x in left if x[0] != name]
+    return out if len(out) > 1 else []

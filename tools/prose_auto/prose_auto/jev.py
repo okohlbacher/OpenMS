@@ -33,8 +33,11 @@ https://jevtypesafeai.com/api/v1/decide. Both take 'Authorization: Bearer <key>'
 
 from __future__ import annotations
 
+import hashlib
 import json
+import math
 import os
+import re
 import urllib.request
 
 from . import schema as S
@@ -44,13 +47,34 @@ URL_OFFICIAL = "https://api.typesafe.ai/v1/systemone"
 URL_HOSTED = "https://jevtypesafeai.com/api/v1/decide"
 USD_PER_INPUT_TOKEN = 0.42e-6      # list price; output tokens are free
 NOT_STATED = S.NOT_STATED
+MEASURED = "measured from the spectra"
+
+
+def _sig2(m):
+    s = m.group(0)
+    v = float(s)
+    if v == 0:
+        return s
+    d = 1 - math.floor(math.log10(abs(v)))
+    r = round(v, d)
+    return f"{r:.{d}f}" if "." in s and d > 0 else str(int(r))
+
+
+def binned(text: str) -> str:
+    """The measured block with every measured number at two significant digits (1234 tags -> 1200, 0.873 -> 0.87);
+    the reference ranges in parentheses stay as written. Jev's answers drift with the request (the probabilities move
+    by up to 0.05 between two identical requests, and a few tags more or less made a new request), so the readers
+    get, and the cache keys on, a form that a few tags do not change."""
+    return "".join(part if part.startswith("(") else
+                   re.sub(r"(?<![\w.])\d+(?:\.\d+)?(?![\dA-Za-wyz_])", _sig2, part)
+                   for part in re.split(r"(\([^()]*\))", text))
 
 READ_INSTRUCTIONS = ("You read the description of a proteomics experiment. The state holds the texts by "
                      "source; the user's own description and the SDRF are the most specific. ")
 
 
 class Jev:
-    def __init__(self, key=None, url=None, model=None, transport=None, timeout=60):
+    def __init__(self, key=None, url=None, model=None, transport=None, timeout=60, cache=None, study=None):
         self.key = (key or os.environ.get("JEV_API_KEY") or os.environ.get("TYPESAFE_API_KEY") or "").strip()
         self.url = url or os.environ.get("JEV_URL") or (URL_HOSTED if self.key.startswith("jv_") else URL_OFFICIAL)
         self.model = model or os.environ.get("JEV_MODEL", "jev-latest")
@@ -59,6 +83,8 @@ class Jev:
         self.name = f"jev:{self.model}"
         self.cost_usd = 0.0
         self.calls = 0
+        self.cache = cache or os.environ.get("PROSE_AUTO_JEV_CACHE")
+        self.study = re.sub(r"[^A-Za-z0-9._-]+", "_", study or "_")
 
     def _http(self, body):
         headers = {"Content-Type": "application/json", "Authorization": f"Bearer {self.key}"}
@@ -70,18 +96,20 @@ class Jev:
             return json.loads(r.read())
 
     def decide(self, state, questions):
-        """PROSE_AUTO_JEV_CACHE=<dir>: answers are stored per request (model, state, questions; never the key), so
-        repeated runs and benchmark arms see the same answers"""
+        """Jev offers no temperature or seed (the API rejects both), so answers are reproducible only through the
+        cache: --jev-cache / PROSE_AUTO_JEV_CACHE=<dir> stores each answer as <dir>/<study>/<sha256 of model, state,
+        questions>.json (never the key), with the measured block binned (binned()) before it is sent and keyed."""
+        state = {k: binned(v) if k == MEASURED else v for k, v in state.items()}
         body = {"model": self.model, "state": state, "questions": questions}
-        cache = os.environ.get("PROSE_AUTO_JEV_CACHE")
-        if cache:
-            import hashlib
-            f = os.path.join(cache, hashlib.sha256(json.dumps(body, sort_keys=True).encode()).hexdigest() + ".json")
+        f = None
+        if self.cache:
+            f = os.path.join(self.cache, self.study,
+                             hashlib.sha256(json.dumps(body, sort_keys=True).encode()).hexdigest() + ".json")
             if os.path.exists(f):
                 return json.load(open(f)).get("answers", {})
         out = self.transport(body)
-        if cache:
-            os.makedirs(cache, exist_ok=True)
+        if f:
+            os.makedirs(os.path.dirname(f), exist_ok=True)
             tmp = f"{f}.{os.getpid()}.tmp"   # parallel analyses may write the same request
             with open(tmp, "w") as fh:
                 json.dump(out, fh)
@@ -151,7 +179,7 @@ def read_study(jev: Jev, texts: dict, user=False, min_p=0.5, priors=False):
         return [], {"error": str(e)}
     # with the measured block in the state Jev's answers are not text-only: they must not count as independent
     # agreement with the measurement they may repeat (reconcile._combine)
-    method = jev.name + ("+data" if "measured from the spectra" in state else "")
+    method = jev.name + ("+data" if MEASURED in state else "")
     mapped = {h.name: _map_answer(h, ans[h.name]) for h in S.HEADS if h.name in ans}
     decoded, changed = S.decode(mapped)
     flags = {k.split(":", 1)[1]: float(a.get("noul", 0)) for k, a in ans.items() if k.startswith(("var:", "scope:"))}

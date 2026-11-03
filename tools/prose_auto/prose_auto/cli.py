@@ -16,6 +16,7 @@ import contextlib
 import csv
 import json
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -52,7 +53,7 @@ from . import text_extract as tx
 from . import topdown as td
 from .hypotheses import HypothesisTester
 from .evidence import Evidence
-from .reconcile import indicator_agreement, mixture_union, organism_mix, reconcile
+from .reconcile import indicator_agreement, mixture_union, organism_mix, reconcile, union_candidates
 from .spectra import load_mzml
 
 LOW_RES = {"IT", "LIT", "PAULIONTRAP", "RADIALEJECTIONLINEARIONTRAP", "AXIALEJECTIONLINEARIONTRAP"}
@@ -473,7 +474,7 @@ def _jev_last(c, study, hint_stats, term_stats):
     """Jev reads last: the texts plus every indicator, the searches included (organism, digest, mass gaps).
     Returns (jev, jev_study, report); its answers join the evidence before reconciling."""
     a = c.a
-    jev = J.Jev() if a.jev else None
+    jev = J.Jev(cache=a.jev_cache, study=a.accession) if a.jev else None
     if not (jev and study):
         return jev, {}, {}
     run_info = (f"data file {os.path.basename(a.mzml.rstrip('/'))}; " + "; ".join(
@@ -709,21 +710,45 @@ def _tier2(c, h, panel):
 
 
 def _union(c, h, panel, mix, decided):
-    """A suspected mixture searches the union of the organisms the data support (reconcile.mixture_union): their
-    FASTA files concatenated once into <panel>/extra/union/, then the mini-search Cys competition and the FASTag
-    mass gaps redone against it (the mass accuracy keeps the winner's PSMs). Returns the search database or None."""
-    pick = mixture_union(c.ev, mix, decided)
-    if not pick or h is None:
+    """A suspected mixture searches the union of the organisms the data support: every organism an indicator names
+    (reconcile.union_candidates) is mini-searched, fetched from UniProt when the panel lacks it, and joins
+    (reconcile.mixture_union) by the spectra it explains that the union so far does not. Their FASTA files are
+    concatenated once into <panel>/extra/union/, then the mini-search Cys competition and the FASTag mass gaps are
+    redone against it (the mass accuracy keeps the winner's PSMs). Returns the search database or None."""
+    cands = union_candidates(c.ev, mix, decided)
+    if not cands or h is None:
         return None
     extra = os.path.join(c.a.panel or c.a.out, "extra")
-    paths = {}
-    for name, _ in pick:
+    by_key = {taxa.key(k): k for k in h.paths}
+
+    def fasta(name, taxid=None):
+        k = by_key.get(taxa.key(name))
+        if k:
+            return k, h.paths[k]
         hit = _panel_match(name, panel) if panel else None
-        p = h.paths.get(name) or (panel[hit] if hit else None) or (fetch_proteome(name, extra, c.log) or (0, None))[1]
-        if p:
-            paths[name] = p
-    if len(paths) < 2:
+        return (hit, panel[hit]) if hit else fetch_proteome(name, extra, c.log, taxid=taxid)
+
+    def scans(name, path):
+        ok, _ = h._search(name, path, h.mods)
+        crap = ts.contaminant_peptides(path)
+        return {p[0] for p in ok if p[3] not in crap}
+
+    first = fasta(decided)
+    if not first:
         return None
+    with _timed(c, "mixture_candidates"):
+        tested = []
+        for name, kind, taxid in cands:
+            db = fasta(name, taxid)
+            if db and db[0] != first[0] and db[0] not in {t[0] for t in tested}:
+                tested.append((db[0], kind, scans(*db), db[1]))
+        paths = {first[0]: first[1], **{t[0]: t[3] for t in tested}}
+        ok, _ = h._search(*first, h.mods)
+        pick = mixture_union((first[0], {p[0] for p in ok}), [t[:3] for t in tested], len(h.scans))
+        c.log("  organism mix: own spectra " + ", ".join(f"{t[0]} ({t[1]}) {len(t[2])}" for t in tested))
+    if not pick:
+        return None
+    paths = {k: paths[k] for k, _ in pick}
     dst = os.path.join(extra, "union", "+".join(paths) + ".fasta")
     if not os.path.exists(dst):
         os.makedirs(os.path.dirname(dst), exist_ok=True)
@@ -849,7 +874,7 @@ def analyze(a, log=print):
 
     log("[7/7] reconciling")
     decisions = reconcile(c.ev)
-    mix = organism_mix(c.ev, jev_report)
+    mix = organism_mix(c.ev, jev_report, tx.file_organisms(a.mzml))
     db = _union(c, h, panel, mix, decisions["organism"].value) if "organism" in decisions else None
     if db:
         c.union = db["union"]
@@ -1014,10 +1039,12 @@ def fetch_panel(out, reviewed=True, log=print):
             log(f"  {name}: giving up; the panel lacks this organism")
 
 
-def fetch_proteome(organism, cache, log=print):
+def fetch_proteome(organism, cache, log=print, taxid=None):
     """UniProt reference proteome of an organism outside the panel (species name, or a genus: then the first
     reference proteome UniProt lists for it), all entries (non-model organisms have few reviewed ones), cached as
-    <cache>/<Genus_species>.fasta. Returns (name, path) or None."""
+    <cache>/<Genus_species>.fasta. A name UniProt does not know (old names, "Sars bat coronavirus") falls back to the
+    record's taxon id and up to three of its parents (NEWT:1431340 -> SARS coronavirus 694009). Returns (name, path)
+    or None."""
     words = str(organism).replace("_", " ").split()
     if not words or not words[0][:1].isupper():
         return None
@@ -1025,25 +1052,44 @@ def fetch_proteome(organism, cache, log=print):
     os.makedirs(cache, exist_ok=True)
     # taxonomy_name matches a genus or a species with all its strains; the proteome_type query field returns nothing,
     # so reference proteomes are picked from the results
-    q = urllib.parse.quote(f'taxonomy_name:"{query}"')
-    url = f"https://rest.uniprot.org/proteomes/search?query={q}&fields=upid,organism&format=json&size=25"
-    try:
-        with urllib.request.urlopen(url, timeout=120) as r:
-            hits = [h for h in json.load(r).get("results", []) if h.get("proteomeType", "").startswith("Reference")]
-    except (OSError, ValueError) as e:
-        log(f"  proteome lookup for {query} failed: {e}")
-        return None
-    if not hits:
-        log(f"  no UniProt reference proteome for {query}")
-        return None
-    up, sci = hits[0]["id"], hits[0]["taxonomy"]["scientificName"]
-    name = "_".join(sci.split()[:2])
+    hits = _reference_proteomes(f'taxonomy_name:"{query}"', log)
+    if hits:
+        up, sci = hits[0]["id"], hits[0]["taxonomy"]["scientificName"]
+        name = "_".join(sci.split()[:2])
+    else:
+        for _ in range(4 if taxid else 0):
+            hits = _reference_proteomes(f"taxonomy_id:{taxid}", log)
+            if hits:
+                break
+            try:
+                with urllib.request.urlopen(f"https://rest.uniprot.org/taxonomy/{taxid}?format=json", timeout=120) as r:
+                    taxid = (json.load(r).get("parent") or {}).get("taxonId")
+            except (OSError, ValueError):
+                taxid = None
+            if not taxid:
+                break
+        if not hits:
+            log(f"  no UniProt reference proteome for {query}")
+            return None
+        up, sci = hits[0]["id"], hits[0]["taxonomy"]["scientificName"]
+        name = re.sub(r"\W+", "_", sci).strip("_")
     dst = os.path.join(cache, f"{name}.fasta")
     if not (os.path.exists(dst) and os.path.getsize(dst)):
         log(f"  fetching {sci} reference proteome {up} for {organism}")
         if not _download(f"https://rest.uniprot.org/uniprotkb/stream?format=fasta&query=(proteome:{up})", dst, log):
             return None
     return name, dst
+
+
+def _reference_proteomes(query, log):
+    url = (f"https://rest.uniprot.org/proteomes/search?query={urllib.parse.quote(query)}"
+           "&fields=upid,organism&format=json&size=500")
+    try:
+        with urllib.request.urlopen(url, timeout=120) as r:
+            return [h for h in json.load(r).get("results", []) if h.get("proteomeType", "").startswith("Reference")]
+    except (OSError, ValueError) as e:
+        log(f"  proteome lookup {query} failed: {e}")
+        return []
 
 
 def main(argv=None):
@@ -1061,6 +1107,9 @@ def main(argv=None):
     an.add_argument("--llm", default="none", help="none | claude | codex | cli:<cmd> | openai:<model>")
     an.add_argument("--jev", action="store_true",
                     help="classify the texts with Jev and cross-check the settings (JEV_API_KEY)")
+    an.add_argument("--jev-cache", default=os.environ.get("PROSE_AUTO_JEV_CACHE"),
+                    help="directory of Jev answers, one folder per study, so reruns get the same answers "
+                         "(env PROSE_AUTO_JEV_CACHE)")
     an.add_argument("--llm-priors", action="store_true", help="ask the LLM for literature tolerance priors")
     an.add_argument("--jev-priors", action="store_true",
                     help="give Jev the value distributions of the annotated PRIDE datasets with each question")
