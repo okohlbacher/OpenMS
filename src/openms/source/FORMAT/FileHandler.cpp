@@ -628,6 +628,8 @@ namespace OpenMS
     }
     else if (bz[0] == 'P' && bz[1] == 'K' && bz[2] == 0x03 && bz[3] == 0x04) // ZIP local file header
     {
+      // an mzPeak archive, whatever its name: a ZIP archive with the mzPeak index among its members
+      if (MzPeakFile::isMzPeak(filename)) { return FileTypes::MZPEAK; }
       ZipIfstream zip_file(filename.c_str());
 
       // read in 8192 bytes (keep last byte for zero to end string)
