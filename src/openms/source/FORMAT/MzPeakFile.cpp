@@ -110,9 +110,6 @@ namespace OpenMS
     }
   } // namespace
 
-  MzPeakFile::MzPeakFile() = default;
-
-  MzPeakFile::~MzPeakFile() = default;
 
   PeakFileOptions& MzPeakFile::getOptions()
   {
@@ -171,6 +168,25 @@ namespace OpenMS
   }
 
   void MzPeakFile::store(const std::string& /*filename*/, const PeakMap& /*exp*/) const
+  {
+    throw Exception::NotImplemented(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION);
+  }
+
+  struct MzPeakFile::OnDisc
+  {
+  };
+
+  void MzPeakFile::openFile(const std::string& /*filename*/)
+  {
+    throw Exception::NotImplemented(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION);
+  }
+
+  Size MzPeakFile::getNrSpectra() const
+  {
+    return 0;
+  }
+
+  MSSpectrum MzPeakFile::getSpectrum(Size /*index*/)
   {
     throw Exception::NotImplemented(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION);
   }
@@ -1141,6 +1157,61 @@ namespace OpenMS
     }
   }
 
+  struct MzPeakFile::OnDisc
+  {
+    std::string filename;
+    MzPeak::Index index;      // (first: the reader below refers to it)
+    MzPeak::Spectra spectra;  // one reader, so getSpectrum() is not thread-safe
+
+    explicit OnDisc(const std::string& f) : filename(f), index(openIndex(f)), spectra(index.spectra()) {}
+  };
+
+  void MzPeakFile::openFile(const std::string& filename)
+  {
+    on_disc_.reset(); // (the run opened before is closed even if this one fails to open)
+    try
+    {
+      on_disc_ = std::make_unique<OnDisc>(filename);
+    }
+    catch (Exception::BaseException&)
+    {
+      throw;
+    }
+    catch (const std::exception& e)
+    {
+      throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, filename, std::string("cannot open mzPeak run: ") + e.what());
+    }
+  }
+
+  Size MzPeakFile::getNrSpectra() const
+  {
+    return on_disc_ ? on_disc_->spectra.size() : 0;
+  }
+
+  MSSpectrum MzPeakFile::getSpectrum(Size index)
+  {
+    if (!on_disc_) { throw Exception::IllegalArgument(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, "no mzPeak run open (call openFile() first)"); }
+    if (index >= on_disc_->spectra.size()) { throw Exception::IndexOverflow(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, static_cast<SignedSize>(index), on_disc_->spectra.size()); }
+    MSSpectrum out;
+    try
+    {
+      toSpectrum(on_disc_->spectra[index], out, PeakFileOptions(), false);
+    }
+    catch (Exception::BaseException&)
+    {
+      throw;
+    }
+    catch (const std::exception& e)
+    {
+      throw Exception::ParseError(__FILE__, __LINE__, OPENMS_PRETTY_FUNCTION, on_disc_->filename, std::string("error reading mzPeak spectrum: ") + e.what());
+    }
+    return out;
+  }
+
 #endif // WITH_MZPEAK
+
+  MzPeakFile::MzPeakFile() = default;
+
+  MzPeakFile::~MzPeakFile() = default;
 
 } // namespace OpenMS

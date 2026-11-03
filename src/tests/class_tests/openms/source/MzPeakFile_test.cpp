@@ -359,6 +359,49 @@ START_SECTION((void transform(const std::string& filename, Interfaces::IMSDataCo
 }
 END_SECTION
 
+START_SECTION((void openFile(const std::string& filename)))
+{
+  MzPeakFile file;
+  file.openFile(OPENMS_GET_TEST_DATA_PATH("MzPeakFile_small.mzpeak"));
+  TEST_EQUAL(file.getNrSpectra(), 48)
+  file.openFile(OPENMS_GET_TEST_DATA_PATH("MzPeakFile_1.mzpeak")); // replaces the run opened before
+  TEST_EQUAL(file.getNrSpectra(), reference.getNrSpectra())
+  TEST_EXCEPTION(Exception::FileNotFound, file.openFile(OPENMS_GET_TEST_DATA_PATH("does_not_exist.mzpeak")))
+  TEST_EQUAL(file.getNrSpectra(), 0) // (a failed open leaves none open)
+  TEST_EXCEPTION(Exception::ParseError, file.openFile(OPENMS_GET_TEST_DATA_PATH("MzMLFile_1.mzML")))
+}
+END_SECTION
+
+START_SECTION((Size getNrSpectra() const))
+{
+  MzPeakFile file;
+  TEST_EQUAL(file.getNrSpectra(), 0)
+  file.openFile(OPENMS_GET_TEST_DATA_PATH("MzPeakFile_small_index.mzpeak"));
+  TEST_EQUAL(file.getNrSpectra(), 48)
+}
+END_SECTION
+
+START_SECTION((MSSpectrum getSpectrum(Size index)))
+{
+  MzPeakFile file;
+  TEST_EXCEPTION(Exception::IllegalArgument, file.getSpectrum(0))
+  PeakMap exp;
+  file.load(OPENMS_GET_TEST_DATA_PATH("MzPeakFile_small.mzpeak"), exp);
+  file.openFile(OPENMS_GET_TEST_DATA_PATH("MzPeakFile_small.mzpeak"));
+  // the options do not apply: every spectrum, with its peaks, as load() gives it without options
+  file.getOptions().addMSLevel(2);
+  file.getOptions().setMetadataOnly(true);
+  Size differing = 0;
+  for (Size i = file.getNrSpectra(); i-- > 0;) // (backwards: no spectrum relies on the one read before)
+  {
+    differing += ! (file.getSpectrum(i) == exp[i]);
+  }
+  TEST_EQUAL(differing, 0)
+  TEST_EQUAL(file.getSpectrum(7).size(), 10329)
+  TEST_EXCEPTION(Exception::IndexOverflow, file.getSpectrum(48))
+}
+END_SECTION
+
 START_SECTION([EXTRA] FileHandler type detection and loading)
 {
   TEST_EQUAL(FileHandler::getTypeByFileName("x.mzpeak"), FileTypes::MZPEAK)

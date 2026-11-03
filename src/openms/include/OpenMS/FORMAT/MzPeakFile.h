@@ -13,6 +13,7 @@
 #include <OpenMS/INTERFACES/IMSDataConsumer.h>
 #include <OpenMS/KERNEL/StandardTypes.h>
 
+#include <memory>
 #include <string>
 
 namespace OpenMS
@@ -23,8 +24,8 @@ namespace OpenMS
     Reads an mzPeak run into an MSExperiment or streams it into an Interfaces::IMSDataConsumer (as MzMLFile::transform()
     does), and writes an MSExperiment as an mzPeak archive. The format is implemented by the vendored mzPeak C++ library
     (src/openms/thirdparty/mzpeak, see its README.OpenMS.md for the library commit and the format version), which is
-    available when OpenMS is built with OPENMS_ENABLE_MZPEAK (the WITH_MZPEAK define); without it, load(), transform()
-    and store() throw Exception::NotImplemented.
+    available when OpenMS is built with OPENMS_ENABLE_MZPEAK (the WITH_MZPEAK define); without it, load(), transform(),
+    store(), openFile() and getSpectrum() throw Exception::NotImplemented.
 
     An mzPeak run is a ZIP archive ('.mzpeak' file) with an index ('mzpeak_index.json') and Parquet members, or a
     directory with the same members; isMzPeak() tells the two from other files and directories.
@@ -43,6 +44,10 @@ namespace OpenMS
     activation methods and energies, and chromatograms; without one: scan windows and instrument metadata. An
     experiment with a per-peak ion mobility array is refused (Exception::IllegalArgument), as storing it without one
     would change what its peaks are.
+
+    Single spectra: openFile() opens a run and reads its spectrum metadata; getSpectrum() then decodes one spectrum
+    at a time, reading only the row groups that hold it. One open run per object; not thread-safe (getSpectrum()
+    advances one reader), so a thread that wants its own reads opens its own MzPeakFile.
 
     @ingroup FileIO
   */
@@ -98,8 +103,33 @@ public:
     /// Whether OpenMS was built with mzPeak support (OPENMS_ENABLE_MZPEAK)
     static bool isSupported();
 
+    /**
+      @brief Opens an mzPeak archive or directory for access to single spectra (getSpectrum()), closing the run opened
+      before. Reads the spectrum metadata of the run, not its peaks.
+
+      @exception Exception::FileNotFound is thrown if the file could not be opened
+      @exception Exception::ParseError is thrown if it is not an mzPeak run
+      @exception Exception::NotImplemented is thrown if OpenMS was built without mzPeak support
+    */
+    void openFile(const std::string& filename);
+
+    /// The number of spectra of the run opened with openFile(); 0 without one
+    Size getNrSpectra() const;
+
+    /**
+      @brief Spectrum @p index (0-based, in file order) of the run opened with openFile(), with its peaks, as load()
+      gives it without options: the PeakFileOptions do not apply
+
+      @exception Exception::IllegalArgument is thrown if no run is open
+      @exception Exception::IndexOverflow is thrown if @p index is not below getNrSpectra()
+      @exception Exception::ParseError is thrown if the spectrum cannot be decoded
+    */
+    MSSpectrum getSpectrum(Size index);
+
 private:
     PeakFileOptions options_;
+    struct OnDisc; ///< the run opened with openFile() (library types, so defined in the .cpp)
+    std::unique_ptr<OnDisc> on_disc_;
   };
 
 } // namespace OpenMS
