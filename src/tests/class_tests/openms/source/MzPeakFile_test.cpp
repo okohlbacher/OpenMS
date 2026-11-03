@@ -24,7 +24,9 @@
 #include <OpenMS/METADATA/SourceFile.h>
 #include <OpenMS/SYSTEM/File.h>
 
+#include <algorithm>
 #include <cmath>
+#include <filesystem>
 #include <limits>
 
 using namespace OpenMS;
@@ -98,7 +100,7 @@ START_SECTION((static bool isSupported()))
 #ifdef WITH_MZPEAK
   TEST_EQUAL(MzPeakFile::isSupported(), true)
 #else
-  TEST_EQUAL(MzPeakFile::isSupported(), false)
+    TEST_EQUAL(MzPeakFile::isSupported(), false)
 #endif
 }
 END_SECTION
@@ -482,33 +484,159 @@ START_SECTION([EXTRA] a file of the reference implementation)
 }
 END_SECTION
 
-START_SECTION([EXTRA] a file of the reference implementation that lists its index columns)
+START_SECTION([EXTRA] the reference run in two other layouts of the reference implementation)
 {
-  // MzPeakFile_small_index.mzpeak: small.mzpeak of https://github.com/HUPO-PSI/mzPeak as of 02f49d9 (26 Oct 2026), the
-  // same run as MzPeakFile_small.mzpeak, written after the specification gave the key columns array index entries of
-  // their own (buffer_format "index", MS:1003870, no unit, sorting rank 0) and renamed the delta model column to
-  // polynomial_delta_coordinate_interpolation. It reads as the older file does.
-  PeakMap now, before;
-  MzPeakFile().load(OPENMS_GET_TEST_DATA_PATH("MzPeakFile_small_index.mzpeak"), now);
+  // The same run as MzPeakFile_small.mzpeak, in the layout before it and in the one after it; both read as it does.
+  // MzPeakFile_small_nested.mzpeak: test/files/small.mzpeak of https://github.com/OpenMS/mzpeak as of 9e97644 (9 Jun
+  // 2026), the nested metadata layout (one spectra_metadata.parquet, no scan, precursor and selected ion tables).
+  // MzPeakFile_small_index.mzpeak: small.mzpeak of https://github.com/HUPO-PSI/mzPeak as of 02f49d9 (26 Oct 2026),
+  // written after the specification gave the key columns array index entries of their own (buffer_format "index",
+  // MS:1003870, no unit, sorting rank 0) and renamed the delta model column to polynomial_delta_coordinate_interpolation.
+  PeakMap before;
   MzPeakFile().load(OPENMS_GET_TEST_DATA_PATH("MzPeakFile_small.mzpeak"), before);
-  TEST_EQUAL(now.getNrSpectra(), 48)
-  ABORT_IF(now.getNrSpectra() != before.getNrSpectra())
-  Size differing = 0;
-  for (Size i = 0; i < now.getNrSpectra(); ++i)
+  for (const char* layout : {"MzPeakFile_small_nested.mzpeak", "MzPeakFile_small_index.mzpeak"})
   {
-    const MSSpectrum& a = now[i];
-    const MSSpectrum& b = before[i];
-    bool same = a.size() == b.size() && a.getMSLevel() == b.getMSLevel() && a.getRT() == b.getRT() && a.getNativeID() == b.getNativeID()
-                && a.getPrecursors().size() == b.getPrecursors().size();
-    for (Size k = 0; same && k < a.size(); ++k)
+    PeakMap now;
+    MzPeakFile().load(OPENMS_GET_TEST_DATA_PATH(layout), now);
+    TEST_EQUAL(now.getNrSpectra(), 48)
+    ABORT_IF(now.getNrSpectra() != before.getNrSpectra())
+    Size differing = 0;
+    for (Size i = 0; i < now.getNrSpectra(); ++i)
     {
-      same = a[k].getMZ() == b[k].getMZ() && a[k].getIntensity() == b[k].getIntensity();
+      const MSSpectrum& a = now[i];
+      const MSSpectrum& b = before[i];
+      bool same = a.size() == b.size() && a.getMSLevel() == b.getMSLevel() && a.getRT() == b.getRT() && a.getNativeID() == b.getNativeID()
+                  && a.getPrecursors().size() == b.getPrecursors().size();
+      for (Size k = 0; same && k < a.size(); ++k)
+      {
+        same = a[k].getMZ() == b[k].getMZ() && a[k].getIntensity() == b[k].getIntensity();
+      }
+      differing += ! same;
     }
-    differing += ! same;
+    TEST_EQUAL(differing, 0)
+    TEST_EQUAL(now[0].size(), 13589)
+    TEST_REAL_SIMILAR(now[0][8].getMZ(), 204.7593349)
   }
-  TEST_EQUAL(differing, 0)
-  TEST_EQUAL(now[0].size(), 13589)
-  TEST_REAL_SIMILAR(now[0][8].getMZ(), 204.7593349)
+  // the first MS2 spectrum (scan=3), centroided: 485 peaks in ascending m/z
+  const MSSpectrum& ms2 = before[2];
+  TEST_EQUAL(ms2.getMSLevel(), 2)
+  TEST_EQUAL(static_cast<int>(ms2.getType()), static_cast<int>(SpectrumSettings::SpectrumType::CENTROID))
+  TEST_EQUAL(ms2.size(), 485)
+  ABORT_IF(ms2.size() != 485)
+  TEST_EQUAL(std::is_sorted(ms2.begin(), ms2.end(), [](const Peak1D& x, const Peak1D& y) { return x.getMZ() < y.getMZ(); }), true)
+  TEST_REAL_SIMILAR(ms2[0].getMZ(), 231.3888397216797)
+  TEST_REAL_SIMILAR(ms2[484].getMZ(), 1560.7198486328125)
+  TEST_REAL_SIMILAR(ms2[0].getIntensity(), 26.54511260986328)
+  TEST_REAL_SIMILAR(ms2[484].getIntensity(), 22.973094940185547)
+}
+END_SECTION
+
+START_SECTION([EXTRA] store() writes the activation)
+{
+  PeakMap exp;
+  MSSpectrum s;
+  s.setMSLevel(2);
+  s.setRT(10.0);
+  s.push_back(Peak1D(100.0, 1.0f));
+  Precursor p;
+  p.setMZ(500.25);
+  p.getActivationMethods().insert(Precursor::ActivationMethod::ETD); // EThcD as two methods
+  p.getActivationMethods().insert(Precursor::ActivationMethod::HCD);
+  p.setActivationEnergy(30.5);
+  p.setMetaValue("collision energy", 27.0);
+  s.getPrecursors().push_back(p);
+  exp.addSpectrum(s);
+  std::string tmp;
+  NEW_TMP_FILE(tmp);
+  MzPeakFile().store(tmp, exp);
+  PeakMap back;
+  MzPeakFile().load(tmp, back);
+  ABORT_IF(back.size() != 1 || back[0].getPrecursors().size() != 1)
+  const Precursor& q = back[0].getPrecursors()[0];
+  TEST_EQUAL(q.getActivationMethods() == p.getActivationMethods(), true)
+  TEST_REAL_SIMILAR(q.getActivationEnergy(), 30.5)
+  TEST_REAL_SIMILAR(double(q.getMetaValue("collision energy")), 27.0)
+  // the reference run's CID at 35 eV, through store() and load()
+  PeakMap ref;
+  MzPeakFile().load(OPENMS_GET_TEST_DATA_PATH("MzPeakFile_small.mzpeak"), ref);
+  MzPeakFile().store(tmp, ref);
+  MzPeakFile().load(tmp, back);
+  ABORT_IF(back.size() != ref.size() || back[2].getPrecursors().empty())
+  TEST_EQUAL(back[2].getPrecursors()[0].getActivationMethods() == ref[2].getPrecursors()[0].getActivationMethods(), true)
+  TEST_EQUAL(back[2].getPrecursors()[0].getActivationMethods().count(Precursor::ActivationMethod::CID), 1)
+  TEST_REAL_SIMILAR(double(back[2].getPrecursors()[0].getMetaValue("collision energy")), 35.0)
+}
+END_SECTION
+
+START_SECTION([EXTRA] the instrument with its software and the sample)
+{
+  // the reference run: an LTQ FT, its first configuration electrospray, a radial ejection linear ion trap and an electron
+  // multiplier; Xcalibur
+  PeakMap ref;
+  MzPeakFile().load(OPENMS_GET_TEST_DATA_PATH("MzPeakFile_small.mzpeak"), ref);
+  const Instrument& ri = ref.getInstrument();
+  TEST_STRING_EQUAL(ri.getName(), "LTQ FT")
+  TEST_STRING_EQUAL(ri.getMetaValue("instrument serial number").toString(), "SN06061F")
+  ABORT_IF(ri.getIonSources().size() != 1 || ri.getMassAnalyzers().size() != 1 || ri.getIonDetectors().size() != 1)
+  TEST_EQUAL(ri.getIonSources()[0].getOrder(), 1)
+  TEST_EQUAL(ri.getIonSources()[0].getIonizationMethod() == IonSource::IonizationMethod::ESI, true)
+  TEST_EQUAL(ri.getIonSources()[0].getInletType() == IonSource::InletType::ELECTROSPRAYINLET, true)
+  TEST_EQUAL(ri.getMassAnalyzers()[0].getOrder(), 2)
+  TEST_EQUAL(ri.getMassAnalyzers()[0].getType() == MassAnalyzer::AnalyzerType::RADIALEJECTIONLINEARIONTRAP, true)
+  TEST_EQUAL(ri.getIonDetectors()[0].getType() == IonDetector::Type::ELECTRONMULTIPLIER, true)
+  TEST_STRING_EQUAL(ri.getSoftware().getName(), "Xcalibur")
+  TEST_STRING_EQUAL(ri.getSoftware().getVersion(), "1.1 Beta 7")
+  TEST_STRING_EQUAL(ref.getSample().getMetaValue("sample name").toString(), "1")
+
+  // mzML's instrument (two sources, two analyzers, members such as the magnetic field strength, ion optics and a
+  // customization), its software and the sample survive store() and load(), meta values (a term without a value
+  // among them) included
+  PeakMap exp = reference;
+  exp.getSample().setMetaValue("a flag term", std::string());
+  std::string tmp;
+  NEW_TMP_FILE(tmp);
+  MzPeakFile().store(tmp, exp);
+  PeakMap back;
+  MzPeakFile().load(tmp, back);
+  TEST_EQUAL(back.getInstrument() == exp.getInstrument(), true)
+  TEST_EQUAL(back.getInstrument().getIonSources() == exp.getInstrument().getIonSources(), true)
+  TEST_EQUAL(back.getInstrument().getMassAnalyzers() == exp.getInstrument().getMassAnalyzers(), true)
+  TEST_EQUAL(back.getInstrument().getIonDetectors() == exp.getInstrument().getIonDetectors(), true)
+  TEST_EQUAL(back.getInstrument().getSoftware() == exp.getInstrument().getSoftware(), true)
+  const Sample& bs = back.getSample();
+  const Sample& es = exp.getSample();
+  TEST_STRING_EQUAL(bs.getName(), es.getName())
+  TEST_STRING_EQUAL(bs.getNumber(), es.getNumber())
+  TEST_REAL_SIMILAR(bs.getMass(), es.getMass())
+  TEST_REAL_SIMILAR(bs.getVolume(), es.getVolume())
+  TEST_REAL_SIMILAR(bs.getConcentration(), es.getConcentration())
+  TEST_EQUAL(bs.getState() == es.getState(), true)
+  std::vector<std::string> bk, ek;
+  bs.getKeys(bk);
+  es.getKeys(ek);
+  // (the meta values by their text: a number MzMLHandler keeps as a string, such as the sample batch, reads as a number)
+  TEST_EQUAL(bk == ek, true)
+  for (const std::string& k : ek)
+  {
+    const DataValue& b = bs.getMetaValue(k);
+    if (b.valueType() == DataValue::DOUBLE_VALUE) { TEST_REAL_SIMILAR(double(b), std::stod(es.getMetaValue(k).toString())) }
+    else
+    {
+      TEST_STRING_EQUAL(k + "=" + b.toString(), k + "=" + es.getMetaValue(k).toString())
+    }
+  }
+  TEST_EQUAL(bs.metaValueExists("a flag term"), true)
+}
+END_SECTION
+
+START_SECTION([EXTRA] FileHandler recognises an mzPeak archive by its content)
+{
+  // an archive without the .mzpeak extension: the ZIP member mzpeak_index.json tells it
+  std::string tmp;
+  NEW_TMP_FILE(tmp);
+  std::filesystem::copy_file(OPENMS_GET_TEST_DATA_PATH("MzPeakFile_small.mzpeak"), tmp, std::filesystem::copy_options::overwrite_existing);
+  TEST_EQUAL(FileHandler::getTypeByContent(tmp), FileTypes::MZPEAK)
+  TEST_EQUAL(FileHandler::getType(tmp), FileTypes::MZPEAK)
 }
 END_SECTION
 

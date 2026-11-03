@@ -17,8 +17,11 @@
 #include <OpenMS/IONMOBILITY/IMDataArrayUtils.h>
 #include <OpenMS/IONMOBILITY/IMTypes.h>
 #include <OpenMS/KERNEL/MSExperiment.h>
+#include <OpenMS/METADATA/Instrument.h>
 #include <OpenMS/METADATA/InstrumentSettings.h>
 #include <OpenMS/METADATA/Precursor.h>
+#include <OpenMS/METADATA/Sample.h>
+#include <OpenMS/METADATA/Software.h>
 #include <OpenMS/SYSTEM/File.h>
 #include <OpenMS/CONCEPT/VersionInfo.h>
 
@@ -26,6 +29,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <map>
 #include <memory>
@@ -214,7 +218,7 @@ namespace OpenMS
     constexpr Size PROGRESS_STEP = 1000;
 
     /// Dissociation method CV accessions -> OpenMS activation methods (as MzMLHandler maps them)
-    bool activationMethod(const std::string& accession, Precursor::ActivationMethod& method)
+    const std::map<std::string, Precursor::ActivationMethod>& activationMethods()
     {
       static const std::map<std::string, Precursor::ActivationMethod> methods = {
         {"MS:1000133", Precursor::ActivationMethod::CID},      {"MS:1000134", Precursor::ActivationMethod::PD},
@@ -229,8 +233,13 @@ namespace OpenMS
         {"MS:1000599", Precursor::ActivationMethod::PQD},      {"MS:1001880", Precursor::ActivationMethod::INSOURCE},
         {"MS:1002000", Precursor::ActivationMethod::LIFT},
       };
-      const auto it = methods.find(accession);
-      if (it == methods.end()) { return false; }
+      return methods;
+    }
+
+    bool activationMethod(const std::string& accession, Precursor::ActivationMethod& method)
+    {
+      const auto it = activationMethods().find(accession);
+      if (it == activationMethods().end()) { return false; }
       method = it->second;
       return true;
     }
@@ -314,11 +323,275 @@ namespace OpenMS
       return DataValue(v);
     }
 
-    /// Store a CV parameter as a meta value named after the term (as MzMLHandler does for terms without a member)
+    /// Store a CV parameter as a meta value named after the term (as MzMLHandler does for terms without a member); a
+    /// term without a name under its accession, a term without a value (a flag) with an empty value
     void setCvMeta(MetaInfoInterface& target, const MzPeak::CvParam& p)
     {
-      if (!p.name || p.name->empty() || !p.value) { return; }
-      target.setMetaValue(*p.name, cvValue(p));
+      const std::optional<std::string>& key = p.name && !p.name->empty() ? p.name : p.accession;
+      if (!key || key->empty()) { return; }
+      target.setMetaValue(*key, p.value ? cvValue(p) : DataValue(std::string()));
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------
+    // Instrument components and sample: the CV terms that set OpenMS members, both ways (the terms MzMLHandler reads, from
+    // its source / analyzer / detector / sample branches; every member value has one term)
+    // ---------------------------------------------------------------------------------------------------------------
+
+    /// A CV term that sets an OpenMS enum member
+    template <class E> struct CvEnum
+    {
+      const char* accession;
+      E value;
+    };
+
+    const CvEnum<IonSource::InletType> inlet_types[] = {
+      {"MS:1000055", IonSource::InletType::CONTINUOUSFLOWFASTATOMBOMBARDMENT}, // continuous flow fast atom bombardment
+      {"MS:1000056", IonSource::InletType::DIRECT}, // direct inlet
+      {"MS:1000057", IonSource::InletType::ELECTROSPRAYINLET}, // electrospray inlet
+      {"MS:1000058", IonSource::InletType::FLOWINJECTIONANALYSIS}, // flow injection analysis
+      {"MS:1000059", IonSource::InletType::INDUCTIVELYCOUPLEDPLASMA}, // inductively coupled plasma
+      {"MS:1000060", IonSource::InletType::INFUSION}, // infusion
+      {"MS:1000061", IonSource::InletType::JETSEPARATOR}, // jet separator
+      {"MS:1000062", IonSource::InletType::MEMBRANESEPARATOR}, // membrane separator
+      {"MS:1000063", IonSource::InletType::MOVINGBELT}, // moving belt
+      {"MS:1000064", IonSource::InletType::MOVINGWIRE}, // moving wire
+      {"MS:1000065", IonSource::InletType::OPENSPLIT}, // open split
+      {"MS:1000066", IonSource::InletType::PARTICLEBEAM}, // particle beam
+      {"MS:1000067", IonSource::InletType::RESERVOIR}, // reservoir
+      {"MS:1000068", IonSource::InletType::SEPTUM}, // septum
+      {"MS:1000069", IonSource::InletType::THERMOSPRAYINLET}, // thermospray inlet
+      {"MS:1000248", IonSource::InletType::BATCH}, // direct insertion probe
+      {"MS:1000249", IonSource::InletType::CHROMATOGRAPHY}, // direct liquid introduction
+      {"MS:1000396", IonSource::InletType::MEMBRANE}, // membrane inlet
+      {"MS:1000485", IonSource::InletType::NANOSPRAY}, // nanospray inlet
+    };
+    const CvEnum<IonSource::IonizationMethod> ionization_methods[] = {
+      {"MS:1000071", IonSource::IonizationMethod::CI}, // chemical ionization
+      {"MS:1000073", IonSource::IonizationMethod::ESI}, // electrospray ionization
+      {"MS:1000074", IonSource::IonizationMethod::FAB}, // fast atom bombardment ionization
+      {"MS:1000227", IonSource::IonizationMethod::MPI}, // multiphoton ionization
+      {"MS:1000240", IonSource::IonizationMethod::API}, // atmospheric pressure ionization
+      {"MS:1000247", IonSource::IonizationMethod::DI}, // desorption ionization
+      {"MS:1000255", IonSource::IonizationMethod::FA}, // flowing afterglow
+      {"MS:1000258", IonSource::IonizationMethod::FII}, // field ionization
+      {"MS:1000259", IonSource::IonizationMethod::GD_MS}, // glow discharge ionization
+      {"MS:1000271", IonSource::IonizationMethod::NICI}, // Negative ion chemical ionization
+      {"MS:1000272", IonSource::IonizationMethod::NRMS}, // neutralization reionization mass spectrometry
+      {"MS:1000273", IonSource::IonizationMethod::PI}, // photoionization
+      {"MS:1000274", IonSource::IonizationMethod::PYMS}, // pyrolysis mass spectrometry
+      {"MS:1000276", IonSource::IonizationMethod::REMPI}, // resonance enhanced multiphoton ionization
+      {"MS:1000380", IonSource::IonizationMethod::AI}, // adiabatic ionization
+      {"MS:1000381", IonSource::IonizationMethod::ASI}, // associative ionization
+      {"MS:1000383", IonSource::IonizationMethod::AD}, // autodetachment
+      {"MS:1000384", IonSource::IonizationMethod::AUI}, // autoionization
+      {"MS:1000385", IonSource::IonizationMethod::CEI}, // charge exchange ionization
+      {"MS:1000386", IonSource::IonizationMethod::CHEMI}, // chemi-ionization
+      {"MS:1000388", IonSource::IonizationMethod::DISSI}, // dissociative ionization
+      {"MS:1000389", IonSource::IonizationMethod::EI}, // electron ionization
+      {"MS:1000395", IonSource::IonizationMethod::LSI}, // liquid secondary ionization
+      {"MS:1000399", IonSource::IonizationMethod::PEI}, // penning ionization
+      {"MS:1000400", IonSource::IonizationMethod::PD}, // plasma desorption ionization
+      {"MS:1000402", IonSource::IonizationMethod::SI}, // secondary ionization
+      {"MS:1000403", IonSource::IonizationMethod::SOI}, // soft ionization
+      {"MS:1000404", IonSource::IonizationMethod::SPI}, // spark ionization
+      {"MS:1000406", IonSource::IonizationMethod::SUI}, // surface ionization
+      {"MS:1000407", IonSource::IonizationMethod::TI}, // thermal ionization
+      {"MS:1000408", IonSource::IonizationMethod::VI}, // vertical ionization
+      {"MS:1000446", IonSource::IonizationMethod::FIB}, // fast ion bombardment
+      {"MS:1000070", IonSource::IonizationMethod::APCI}, // atmospheric pressure chemical ionization
+      {"MS:1000239", IonSource::IonizationMethod::AP_MALDI}, // atmospheric pressure matrix-assisted laser desorption ionization
+      {"MS:1000382", IonSource::IonizationMethod::APPI}, // atmospheric pressure photoionization
+      {"MS:1000075", IonSource::IonizationMethod::MALDI}, // matrix-assisted laser desorption ionization
+      {"MS:1000257", IonSource::IonizationMethod::FD}, // field desorption
+      {"MS:1000387", IonSource::IonizationMethod::SILI}, // desorption/ionization on silicon
+      {"MS:1000393", IonSource::IonizationMethod::LD}, // laser desorption ionization
+      {"MS:1000405", IonSource::IonizationMethod::SALDI}, // surface-assisted laser desorption ionization
+      {"MS:1000397", IonSource::IonizationMethod::MESI}, // microelectrospray
+      {"MS:1000398", IonSource::IonizationMethod::NESI}, // nanoelectrospray
+      {"MS:1000278", IonSource::IonizationMethod::SELDI}, // surface enhanced laser desorption ionization
+      {"MS:1000279", IonSource::IonizationMethod::SEND}, // surface enhanced neat desorption
+      {"MS:1000008", IonSource::IonizationMethod::IONMETHODNULL}, // ionization type (base term)
+    };
+    const CvEnum<MassAnalyzer::AnalyzerType> analyzer_types[] = {
+      {"MS:1000079", MassAnalyzer::AnalyzerType::FOURIERTRANSFORM}, // fourier transform ion cyclotron resonance
+      {"MS:1000080", MassAnalyzer::AnalyzerType::SECTOR}, // magnetic sector
+      {"MS:1000081", MassAnalyzer::AnalyzerType::QUADRUPOLE}, // quadrupole
+      {"MS:1000084", MassAnalyzer::AnalyzerType::TOF}, // time-of-flight
+      {"MS:1000254", MassAnalyzer::AnalyzerType::ESA}, // electrostatic energy analyzer
+      {"MS:1000264", MassAnalyzer::AnalyzerType::IT}, // ion trap
+      {"MS:1000284", MassAnalyzer::AnalyzerType::SWIFT}, // stored waveform inverse fourier transform
+      {"MS:1000288", MassAnalyzer::AnalyzerType::CYCLOTRON}, // cyclotron
+      {"MS:1000484", MassAnalyzer::AnalyzerType::ORBITRAP}, // orbitrap
+      {"MS:1000078", MassAnalyzer::AnalyzerType::AXIALEJECTIONLINEARIONTRAP}, // axial ejection linear ion trap
+      {"MS:1000082", MassAnalyzer::AnalyzerType::PAULIONTRAP}, // quadrupole ion trap
+      {"MS:1000083", MassAnalyzer::AnalyzerType::RADIALEJECTIONLINEARIONTRAP}, // radial ejection linear ion trap
+      {"MS:1000291", MassAnalyzer::AnalyzerType::LIT}, // linear ion trap
+      {"MS:1000443", MassAnalyzer::AnalyzerType::ANALYZERNULL}, // mass analyzer type (base term)
+    };
+    const CvEnum<MassAnalyzer::ReflectronState> reflectron_states[] = {
+      {"MS:1000105", MassAnalyzer::ReflectronState::OFF}, // reflectron off
+      {"MS:1000106", MassAnalyzer::ReflectronState::ON}, // reflectron on
+    };
+    const CvEnum<IonDetector::Type> detector_types[] = {
+      {"MS:1000107", IonDetector::Type::CHANNELTRON}, // channeltron
+      {"MS:1000110", IonDetector::Type::DALYDETECTOR}, // daly detector
+      {"MS:1000112", IonDetector::Type::FARADAYCUP}, // faraday cup
+      {"MS:1000114", IonDetector::Type::MICROCHANNELPLATEDETECTOR}, // microchannel plate detector
+      {"MS:1000115", IonDetector::Type::MULTICOLLECTOR}, // multi-collector
+      {"MS:1000116", IonDetector::Type::PHOTOMULTIPLIER}, // photomultiplier
+      {"MS:1000253", IonDetector::Type::ELECTRONMULTIPLIER}, // electron multiplier
+      {"MS:1000345", IonDetector::Type::ARRAYDETECTOR}, // array detector
+      {"MS:1000346", IonDetector::Type::CONVERSIONDYNODE}, // conversion dynode
+      {"MS:1000347", IonDetector::Type::DYNODE}, // dynode
+      {"MS:1000348", IonDetector::Type::FOCALPLANECOLLECTOR}, // focal plane collector
+      {"MS:1000349", IonDetector::Type::IONTOPHOTONDETECTOR}, // ion-to-photon detector
+      {"MS:1000350", IonDetector::Type::POINTCOLLECTOR}, // point collector
+      {"MS:1000351", IonDetector::Type::POSTACCELERATIONDETECTOR}, // postacceleration detector
+      {"MS:1000621", IonDetector::Type::PHOTODIODEARRAYDETECTOR}, // photodiode array detector
+      {"MS:1000624", IonDetector::Type::INDUCTIVEDETECTOR}, // inductive detector
+      {"MS:1000108", IonDetector::Type::CONVERSIONDYNODEELECTRONMULTIPLIER}, // conversion dynode electron multiplier
+      {"MS:1000109", IonDetector::Type::CONVERSIONDYNODEPHOTOMULTIPLIER}, // conversion dynode photomultiplier
+      {"MS:1000111", IonDetector::Type::ELECTRONMULTIPLIERTUBE}, // electron multiplier tube
+      {"MS:1000113", IonDetector::Type::FOCALPLANEARRAY}, // focal plane array
+      {"MS:1000026", IonDetector::Type::TYPENULL}, // detector type (base term)
+    };
+    const CvEnum<IonDetector::AcquisitionMode> acquisition_modes[] = {
+      {"MS:1000117", IonDetector::AcquisitionMode::ADC}, // analog-digital converter
+      {"MS:1000118", IonDetector::AcquisitionMode::PULSECOUNTING}, // pulse counting
+      {"MS:1000119", IonDetector::AcquisitionMode::TDC}, // time-digital converter
+      {"MS:1000120", IonDetector::AcquisitionMode::TRANSIENTRECORDER}, // transient recorder
+    };
+
+    const CvEnum<Instrument::IonOpticsType> ion_optics[] = {
+      {"MS:1000246", Instrument::IonOpticsType::DELAYED_EXTRACTION}, // delayed extraction
+      {"MS:1000221", Instrument::IonOpticsType::MAGNETIC_DEFLECTION}, // magnetic deflection
+      {"MS:1000275", Instrument::IonOpticsType::COLLISION_QUADRUPOLE}, // collision quadrupole
+      {"MS:1000281", Instrument::IonOpticsType::SELECTED_ION_FLOW_TUBE}, // selected ion flow tube
+      {"MS:1000286", Instrument::IonOpticsType::TIME_LAG_FOCUSING}, // time lag focusing
+      {"MS:1000300", Instrument::IonOpticsType::REFLECTRON}, // reflectron
+      {"MS:1000307", Instrument::IonOpticsType::EINZEL_LENS}, // einzel lens
+      {"MS:1000309", Instrument::IonOpticsType::FIRST_STABILITY_REGION}, // first stability region
+      {"MS:1000310", Instrument::IonOpticsType::FRINGING_FIELD}, // fringing field
+      {"MS:1000311", Instrument::IonOpticsType::KINETIC_ENERGY_ANALYZER}, // kinetic energy analyzer
+      {"MS:1000320", Instrument::IonOpticsType::STATIC_FIELD}, // static field
+    };
+    const CvEnum<Sample::SampleState> sample_states[] = {
+      {"MS:1000047", Sample::SampleState::EMULSION}, {"MS:1000048", Sample::SampleState::GAS},
+      {"MS:1000049", Sample::SampleState::LIQUID},   {"MS:1000050", Sample::SampleState::SOLID},
+      {"MS:1000051", Sample::SampleState::SOLUTION}, {"MS:1000052", Sample::SampleState::SUSPENSION},
+    };
+
+    /// The member value of @p accession in @p table; false if the table has no such term
+    template <class E, size_t N> bool enumOf(const CvEnum<E> (&table)[N], const std::optional<std::string>& accession, E& value)
+    {
+      if (!accession) { return false; }
+      for (const CvEnum<E>& entry : table)
+      {
+        if (*accession == entry.accession)
+        {
+          value = entry.value;
+          return true;
+        }
+      }
+      return false;
+    }
+
+    /// The accession of @p value in @p table; nullptr for a value without a term (the "unknown" one)
+    template <class E, size_t N> const char* accessionOf(const CvEnum<E> (&table)[N], E value)
+    {
+      for (const CvEnum<E>& entry : table)
+      {
+        if (entry.value == value) { return entry.accession; }
+      }
+      return nullptr;
+    }
+
+    /// The number a CV parameter carries, if it has one
+    std::optional<double> numberOf(const MzPeak::CvParam& p)
+    {
+      double d;
+      if (p.value && parseDouble(*p.value, d)) { return d; }
+      return std::nullopt;
+    }
+
+    void toIonSource(const MzPeak::Component& in, IonSource& out)
+    {
+      for (const MzPeak::CvParam& p : in.parameters)
+      {
+        IonSource::InletType inlet;
+        IonSource::IonizationMethod method;
+        if (enumOf(inlet_types, p.accession, inlet)) { out.setInletType(inlet); }
+        else if (enumOf(ionization_methods, p.accession, method)) { out.setIonizationMethod(method); }
+        else { setCvMeta(out, p); }
+      }
+    }
+
+    void toMassAnalyzer(const MzPeak::Component& in, MassAnalyzer& out)
+    {
+      for (const MzPeak::CvParam& p : in.parameters)
+      {
+        MassAnalyzer::AnalyzerType type;
+        MassAnalyzer::ReflectronState reflectron;
+        const std::optional<double> number = numberOf(p);
+        const std::string accession = p.accession.value_or("");
+        if (enumOf(analyzer_types, p.accession, type)) { out.setType(type); }
+        else if (enumOf(reflectron_states, p.accession, reflectron)) { out.setReflectronState(reflectron); }
+        else if (accession == "MS:1000014" && number) { out.setAccuracy(*number); }              // accuracy (ppm)
+        else if (accession == "MS:1000022" && number) { out.setTOFTotalPathLength(*number); }    // TOF total path length (m)
+        else if (accession == "MS:1000024" && number) { out.setFinalMSExponent(static_cast<Int>(*number)); } // final MS exponent
+        else if (accession == "MS:1000025" && number) { out.setMagneticFieldStrength(*number); } // magnetic field strength (T)
+        else { setCvMeta(out, p); }
+      }
+    }
+
+    void toIonDetector(const MzPeak::Component& in, IonDetector& out)
+    {
+      for (const MzPeak::CvParam& p : in.parameters)
+      {
+        IonDetector::Type type;
+        IonDetector::AcquisitionMode mode;
+        const std::optional<double> number = numberOf(p);
+        const std::string accession = p.accession.value_or("");
+        if (enumOf(detector_types, p.accession, type)) { out.setType(type); }
+        else if (enumOf(acquisition_modes, p.accession, mode)) { out.setAcquisitionMode(mode); }
+        else if (accession == "MS:1000028" && number) { out.setResolution(*number); }            // detector resolution
+        else if (accession == "MS:1000029" && number) { out.setADCSamplingFrequency(*number); }  // sampling frequency (Hz)
+        else { setCvMeta(out, p); }
+      }
+    }
+
+    /// A software entry: its name is the PSI-MS term of the software (a child of MS:1000531), or the value of MS:1000799
+    /// custom unreleased software tool, as MzMLHandler reads it; without either the entry's id
+    Software toSoftware(const MzPeak::Software& in)
+    {
+      const ControlledVocabulary& cv = ControlledVocabulary::getPSIMSCV();
+      Software out;
+      out.setName(in.id);
+      if (in.version) { out.setVersion(*in.version); }
+      for (const MzPeak::CvParam& p : in.parameters)
+      {
+        if (p.accession && *p.accession == "MS:1000799" && p.value) { out.setName(*p.value); }
+        else if (p.accession && p.name && cv.exists(*p.accession) && cv.isChildOf(*p.accession, "MS:1000531")) { out.setName(*p.name); }
+        else { setCvMeta(out, p); }
+      }
+      return out;
+    }
+
+    void toSample(const MzPeak::Sample& in, Sample& out)
+    {
+      if (in.name) { out.setName(*in.name); }
+      for (const MzPeak::CvParam& p : in.parameters)
+      {
+        Sample::SampleState state;
+        const std::optional<double> number = numberOf(p);
+        const std::string accession = p.accession.value_or("");
+        if (enumOf(sample_states, p.accession, state)) { out.setState(state); }
+        else if (accession == "MS:1000001" && p.value) { out.setNumber(*p.value); }      // sample number
+        else if (accession == "MS:1000004" && number) { out.setMass(*number); }          // sample mass (g)
+        else if (accession == "MS:1000005" && number) { out.setVolume(*number); }        // sample volume (ml)
+        else if (accession == "MS:1000006" && number) { out.setConcentration(*number); } // sample concentration (g/l)
+        else { setCvMeta(out, p); }
+      }
     }
 
     /// Whether the spectrum passes the scan-level options (MS level, RT range, precursor m/z range), from its metadata
@@ -685,15 +958,53 @@ namespace OpenMS
       if (!md.instrument_configurations().empty())
       {
         const MzPeak::InstrumentConfiguration& ic = md.instrument_configurations().front();
+        const ControlledVocabulary& cv = ControlledVocabulary::getPSIMSCV();
         for (const MzPeak::CvParam& p : ic.parameters)
         {
-          if (!p.accession || !p.name) { continue; }
-          if (*p.accession == "MS:1000529" && p.value) { settings.getInstrument().setMetaValue("instrument serial number", *p.value); }
-          else if (!p.value || p.value->empty()) { settings.getInstrument().setName(*p.name); } // the instrument model term
+          const std::string accession = p.accession.value_or("");
+          Instrument::IonOpticsType optics;
+          if (accession == "MS:1000529" && p.value) { settings.getInstrument().setMetaValue("instrument serial number", *p.value); }
+          else if (accession == "MS:1000032" && p.value) { settings.getInstrument().setCustomizations(*p.value); }
+          else if (enumOf(ion_optics, p.accession, optics)) { settings.getInstrument().setIonOptics(optics); }
+          else if (accession == "MS:1000031" && p.value && !p.value->empty()) { settings.getInstrument().setName(*p.value); } // a model without a term of its own
+          else if (p.name && cv.exists(accession) && cv.isChildOf(accession, "MS:1000031")) { settings.getInstrument().setName(*p.name); } // the instrument model term
           else { setCvMeta(settings.getInstrument(), p); }
         }
+        Instrument& instrument = settings.getInstrument();
+        for (const MzPeak::Component& c : ic.components)
+        {
+          const Int order = c.order ? static_cast<Int>(*c.order) : 0;
+          const std::string type = c.component_type.value_or("");
+          if (type == "ionsource")
+          {
+            instrument.getIonSources().emplace_back();
+            instrument.getIonSources().back().setOrder(order);
+            toIonSource(c, instrument.getIonSources().back());
+          }
+          else if (type == "analyzer")
+          {
+            instrument.getMassAnalyzers().emplace_back();
+            instrument.getMassAnalyzers().back().setOrder(order);
+            toMassAnalyzer(c, instrument.getMassAnalyzers().back());
+          }
+          else if (type == "detector")
+          {
+            instrument.getIonDetectors().emplace_back();
+            instrument.getIonDetectors().back().setOrder(order);
+            toIonDetector(c, instrument.getIonDetectors().back());
+          }
+        }
+        // the instrument's software (as mzML's instrumentConfiguration softwareRef); the rest of the software list has no
+        // place in ExperimentalSettings, and data processing is per spectrum in OpenMS
+        if (ic.software_reference)
+        {
+          for (const MzPeak::Software& s : md.software_list())
+          {
+            if (s.id == *ic.software_reference) { instrument.setSoftware(toSoftware(s)); }
+          }
+        }
       }
-      // (the software list has no place in ExperimentalSettings; data processing is per spectrum in OpenMS)
+      if (!md.samples().empty()) { toSample(md.samples().front(), settings.getSample()); }
       (void)filename;
     }
 
@@ -905,6 +1216,26 @@ namespace OpenMS
     // Writing
     // ---------------------------------------------------------------------------------------------------------------
 
+    /// A CV parameter of the PSI-MS term @p accession, with its name
+    MzPeak::CvParam cvTerm(const std::string& accession)
+    {
+      MzPeak::CvParam p;
+      p.accession = accession;
+      const ControlledVocabulary& cv = ControlledVocabulary::getPSIMSCV();
+      if (cv.exists(accession)) { p.name = cv.getTerm(accession).name; }
+      return p;
+    }
+
+    /// The CV accession of an activation method (the lowest of the terms activationMethods() maps to it); nullptr if none
+    const char* activationAccession(Precursor::ActivationMethod method)
+    {
+      for (const auto& [accession, m] : activationMethods())
+      {
+        if (m == method) { return accession.c_str(); }
+      }
+      return nullptr;
+    }
+
     MzPeak::SpectrumData toSpectrumData(const MSSpectrum& in, Size index)
     {
       MzPeak::SpectrumData out;
@@ -944,6 +1275,27 @@ namespace OpenMS
         if (p.getCharge() != 0) { ion.charge = p.getCharge(); }
         if (p.getIntensity() != 0) { ion.intensity = p.getIntensity(); }
         pd.selected_ions.push_back(ion);
+        // the activation: the first method in the dissociation method column, any further one, and the activation energy
+        // (MS:1000509), as parameters; the meta value "collision energy" (MS:1000045, as MzMLHandler keeps it) in its column
+        for (Precursor::ActivationMethod method : p.getActivationMethods())
+        {
+          const char* accession = activationAccession(method);
+          if (accession == nullptr) { continue; }
+          if (!pd.dissociation_method) { pd.dissociation_method = accession; }
+          else { pd.activation_parameters.push_back(cvTerm(accession)); }
+        }
+        if (p.getActivationEnergy() != 0.0)
+        {
+          MzPeak::CvParam energy = cvTerm("MS:1000509");
+          energy.value = std::format("{}", p.getActivationEnergy());
+          energy.unit = "UO:0000266"; // electronvolt
+          pd.activation_parameters.push_back(energy);
+        }
+        if (p.metaValueExists("collision energy"))
+        {
+          const DataValue& energy = p.getMetaValue("collision energy");
+          if (energy.valueType() == DataValue::DOUBLE_VALUE || energy.valueType() == DataValue::INT_VALUE) { pd.collision_energy = static_cast<float>(static_cast<double>(energy)); }
+        }
         out.precursors.push_back(std::move(pd));
       }
       if (in.getDriftTime() != IMTypes::DRIFTTIME_NOT_SET)
@@ -971,6 +1323,142 @@ namespace OpenMS
     }
 
     /// The run-level metadata of the archive: run id, source files, software
+    /// A JSON CV parameter of the PSI-MS term @p accession (with its name), with @p value and @p unit if given
+    boost::json::object jsonTerm(const std::string& accession, const std::string& value = "", const std::string& unit = "")
+    {
+      boost::json::object p;
+      p["accession"] = accession;
+      const ControlledVocabulary& cv = ControlledVocabulary::getPSIMSCV();
+      if (cv.exists(accession)) { p["name"] = cv.getTerm(accession).name; }
+      if (!value.empty()) { p["value"] = value; }
+      if (!unit.empty()) { p["unit"] = unit; }
+      return p;
+    }
+
+    /// The meta values of @p in as JSON CV parameters (the inverse of setCvMeta()): the PSI-MS term of that name if there
+    /// is one, else the name alone; a value unless it is empty
+    void metaParams(const MetaInfoInterface& in, boost::json::array& out)
+    {
+      const ControlledVocabulary& cv = ControlledVocabulary::getPSIMSCV();
+      std::vector<std::string> keys;
+      in.getKeys(keys);
+      for (const std::string& key : keys)
+      {
+        boost::json::object p;
+        const ControlledVocabulary::CVTerm* term = cv.checkAndGetTermByName(key);
+        if (term == nullptr && cv.exists(key)) { term = &cv.getTerm(key); } // (a term kept under its accession, see setCvMeta())
+        if (term != nullptr) { p["accession"] = term->id; }
+        p["name"] = term != nullptr ? term->name : key;
+        const std::string value = in.getMetaValue(key).toString();
+        if (!value.empty()) { p["value"] = value; }
+        out.push_back(p);
+      }
+    }
+
+    /// A number as the value of a JSON CV parameter: empty for 0, which OpenMS uses for "not set"
+    std::string valueUnlessZero(double v) { return v == 0.0 ? std::string() : std::format("{}", v); }
+
+    /// An instrument component as JSON (component_type, order, its terms)
+    boost::json::object jsonComponent(const char* type, Int order, boost::json::array parameters)
+    {
+      boost::json::object c;
+      c["component_type"] = type;
+      c["order"] = order;
+      c["parameters"] = std::move(parameters);
+      return c;
+    }
+
+    /// The instrument as the configuration of the run: its model, meta values, components and software; nullopt if the
+    /// instrument says nothing
+    std::optional<boost::json::object> jsonInstrument(const Instrument& in, const std::string& software_id)
+    {
+      namespace json = boost::json;
+      const auto add = [](json::array& ps, const char* accession, const std::string& value = "", const std::string& unit = "")
+      {
+        if (accession != nullptr) { ps.push_back(jsonTerm(accession, value, unit)); }
+      };
+      json::array parameters;
+      if (!in.getName().empty())
+      {
+        if (const ControlledVocabulary::CVTerm* model = childWithName("MS:1000031", in.getName())) { parameters.push_back(jsonTerm(model->id)); }
+        else { parameters.push_back(jsonTerm("MS:1000031", in.getName())); } // instrument model, by its name
+      }
+      if (!in.getCustomizations().empty()) { parameters.push_back(jsonTerm("MS:1000032", in.getCustomizations())); }
+      if (const char* optics = accessionOf(ion_optics, in.getIonOptics())) { parameters.push_back(jsonTerm(optics)); }
+      metaParams(in, parameters);
+      json::array components;
+      for (const IonSource& s : in.getIonSources())
+      {
+        json::array ps;
+        add(ps, accessionOf(inlet_types, s.getInletType()));
+        add(ps, accessionOf(ionization_methods, s.getIonizationMethod()));
+        metaParams(s, ps);
+        components.push_back(jsonComponent("ionsource", s.getOrder(), std::move(ps)));
+      }
+      for (const MassAnalyzer& a : in.getMassAnalyzers())
+      {
+        json::array ps;
+        add(ps, accessionOf(analyzer_types, a.getType()));
+        add(ps, accessionOf(reflectron_states, a.getReflectronState()));
+        if (a.getAccuracy() != 0.0) { add(ps, "MS:1000014", valueUnlessZero(a.getAccuracy()), "UO:0000169"); }                   // ppm
+        if (a.getTOFTotalPathLength() != 0.0) { add(ps, "MS:1000022", valueUnlessZero(a.getTOFTotalPathLength()), "UO:0000008"); } // meter
+        if (a.getFinalMSExponent() != 0) { add(ps, "MS:1000024", std::format("{}", a.getFinalMSExponent())); }
+        if (a.getMagneticFieldStrength() != 0.0) { add(ps, "MS:1000025", valueUnlessZero(a.getMagneticFieldStrength()), "UO:0000228"); } // tesla
+        metaParams(a, ps);
+        components.push_back(jsonComponent("analyzer", a.getOrder(), std::move(ps)));
+      }
+      for (const IonDetector& d : in.getIonDetectors())
+      {
+        json::array ps;
+        add(ps, accessionOf(detector_types, d.getType()));
+        add(ps, accessionOf(acquisition_modes, d.getAcquisitionMode()));
+        if (d.getResolution() != 0.0) { add(ps, "MS:1000028", valueUnlessZero(d.getResolution())); }
+        if (d.getADCSamplingFrequency() != 0.0) { add(ps, "MS:1000029", valueUnlessZero(d.getADCSamplingFrequency()), "UO:0000106"); } // hertz
+        metaParams(d, ps);
+        components.push_back(jsonComponent("detector", d.getOrder(), std::move(ps)));
+      }
+      if (parameters.empty() && components.empty() && software_id.empty()) { return std::nullopt; }
+      json::object ic;
+      ic["id"] = 0;
+      ic["parameters"] = std::move(parameters);
+      ic["components"] = std::move(components);
+      if (!software_id.empty()) { ic["software_reference"] = software_id; }
+      return ic;
+    }
+
+    /// A software entry: the PSI-MS term of the software (a child of MS:1000531) if there is one by that name, else
+    /// MS:1000799 custom unreleased software tool with the name as its value (as MzMLHandler writes it)
+    boost::json::object jsonSoftware(const Software& in, const std::string& id)
+    {
+      boost::json::object o;
+      o["id"] = id;
+      if (!in.getVersion().empty()) { o["version"] = in.getVersion(); }
+      boost::json::array ps;
+      if (const ControlledVocabulary::CVTerm* term = childWithName("MS:1000531", in.getName())) { ps.push_back(jsonTerm(term->id)); }
+      else { ps.push_back(jsonTerm("MS:1000799", in.getName())); }
+      metaParams(in, ps);
+      o["parameters"] = std::move(ps);
+      return o;
+    }
+
+    /// The sample as JSON; nullopt if it says nothing
+    std::optional<boost::json::object> jsonSample(const Sample& in)
+    {
+      boost::json::array ps;
+      if (!in.getNumber().empty()) { ps.push_back(jsonTerm("MS:1000001", in.getNumber())); }
+      if (in.getMass() != 0.0) { ps.push_back(jsonTerm("MS:1000004", std::format("{}", in.getMass()), "UO:0000021")); }                   // gram
+      if (in.getVolume() != 0.0) { ps.push_back(jsonTerm("MS:1000005", std::format("{}", in.getVolume()), "UO:0000098")); }               // milliliter
+      if (in.getConcentration() != 0.0) { ps.push_back(jsonTerm("MS:1000006", std::format("{}", in.getConcentration()), "UO:0000175")); } // gram per liter
+      if (const char* state = accessionOf(sample_states, in.getState())) { ps.push_back(jsonTerm(state)); }
+      metaParams(in, ps);
+      if (ps.empty() && in.getName().empty()) { return std::nullopt; }
+      boost::json::object o;
+      o["id"] = "sample_0";
+      o["name"] = in.getName();
+      o["parameters"] = std::move(ps);
+      return o;
+    }
+
     MzPeak::RunMetadata toRunMetadata(const PeakMap& exp)
     {
       namespace json = boost::json;
@@ -1023,6 +1511,10 @@ namespace OpenMS
         root["file_description"] = fd;
       }
       json::array software;
+      // the instrument's software (the instrument configuration refers to it), then OpenMS, which wrote the archive
+      const Software& instrument_software = exp.getInstrument().getSoftware();
+      const std::string software_id = instrument_software.getName().empty() ? std::string() : "instrument_software";
+      if (!software_id.empty()) { software.push_back(jsonSoftware(instrument_software, software_id)); }
       {
         json::object o;
         o["id"] = "OpenMS";
@@ -1030,6 +1522,13 @@ namespace OpenMS
         software.push_back(o);
       }
       root["software_list"] = software;
+      if (std::optional<json::object> ic = jsonInstrument(exp.getInstrument(), software_id))
+      {
+        root["instrument_configuration_list"] = json::array{std::move(*ic)};
+        json::object& run_block = root["run"].is_object() ? root["run"].as_object() : (root["run"] = json::object()).as_object();
+        run_block["default_instrument_id"] = 0;
+      }
+      if (std::optional<json::object> sample = jsonSample(exp.getSample())) { root["sample_list"] = json::array{std::move(*sample)}; }
       return MzPeak::RunMetadata(root);
     }
   } // namespace
@@ -1096,15 +1595,12 @@ namespace OpenMS
   void MzPeakFile::store(const std::string& filename, const PeakMap& exp) const
   {
     // What the writer cannot store yet: an ion mobility per peak would be lost silently, turning a frame into a flat
-    // spectrum of merged peaks, so it is refused; other data arrays and activation are lost with a warning.
-    Size with_im = 0, with_arrays = 0, with_activation = 0;
+    // spectrum of merged peaks, so it is refused; other data arrays are lost with a warning.
+    Size with_im = 0, with_arrays = 0;
     for (const MSSpectrum& s : exp)
     {
       with_im += s.containsIMData();
       with_arrays += !s.getFloatDataArrays().empty() || !s.getIntegerDataArrays().empty() || !s.getStringDataArrays().empty();
-      bool activation = false;
-      for (const Precursor& p : s.getPrecursors()) { activation = activation || !p.getActivationMethods().empty() || p.getActivationEnergy() != 0.0; }
-      with_activation += activation;
     }
     if (with_im > 0)
     {
@@ -1114,10 +1610,6 @@ namespace OpenMS
     if (with_arrays > 0)
     {
       OPENMS_LOG_WARN << "MzPeakFile: the data arrays of " << with_arrays << " spectra are not written to '" << filename << "' (not supported by the writer yet)" << std::endl;
-    }
-    if (with_activation > 0)
-    {
-      OPENMS_LOG_WARN << "MzPeakFile: the activation methods and energies of the precursors of " << with_activation << " spectra are not written to '" << filename << "' (not supported by the writer yet)" << std::endl;
     }
     // Written as a sibling first and moved over the destination when finished: an existing archive survives a failed
     // write (libzip would also add to an existing archive rather than replace it). A finished archive that could not

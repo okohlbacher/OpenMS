@@ -33,15 +33,17 @@ namespace OpenMS
     Reading: spectra (m/z, intensity, per-peak ion mobility arrays), their retention time (in seconds, converted from the
     minutes the format stores), MS level, native ID, polarity, centroid/profile representation, scan windows, ion
     mobility (drift time with its unit), precursors (isolation window, selected ion m/z, charge, intensity, ion mobility,
-    activation methods and energy) and chromatograms; run-level metadata (run start time, source files, instrument
-    model). The scan-level PeakFileOptions (MS levels, RT range, precursor m/z range) are applied before the peaks are
+    activation methods and energy) and chromatograms; run-level metadata (run start time, source files, the instrument
+    with its model, components and software, the sample). CV terms without an OpenMS member become meta values named
+    after the term (or its accession), with an empty value for a term without one. The scan-level PeakFileOptions (MS levels, RT range, precursor m/z range) are applied before the peaks are
     decoded; the peak-level options (m/z, intensity, ion mobility ranges) after. The spectra are decoded in parallel with
     the OpenMP threads of the calling thread (one reader per thread, as the library's thread-safety model requires).
 
     Writing: m/z, intensity, representation, MS level, retention time, polarity, native ID, precursors (isolation window,
-    selected ion, charge, intensity) and the spectrum's ion mobility; run-level metadata (run start time, source files
-    with their checksum, file format and native ID format). Not written (yet), with a warning: other data arrays,
-    activation methods and energies, and chromatograms; without one: scan windows and instrument metadata. An
+    selected ion, charge, intensity, activation methods, activation and collision energy) and the spectrum's ion
+    mobility; run-level metadata (run start time, source files with their checksum, file format and native ID format,
+    the instrument with its model, components and software, the sample). Not written (yet), with a warning: other data
+    arrays and chromatograms; without one: scan windows. An
     experiment with a per-peak ion mobility array is refused (Exception::IllegalArgument), as storing it without one
     would change what its peaks are.
 
