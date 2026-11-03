@@ -18,8 +18,8 @@ directory of this repository.
 #include "mzpeak/io/archive.h"
 #include "mzpeak/metadata/table.h"
 #include "mzpeak/util/manager.h"
-#include "mzpeak/util/sha512.h"
 #include "mzpeak/util/metadata_model.h"
+#include "mzpeak/util/sha512.h"
 
 namespace MzPeak {
 
@@ -130,7 +130,8 @@ Spectra Index::spectra(MetadataDetail detail, SpectraSource source) const
                               : file.data_kind().type() == DataArray;
       if (!data_file || wanted) data_file = &file;
     } else if (file.data_kind().type() == Metadata && meta_file == nullptr) {
-      meta_file = &file; // FIRST match wins, as for chromatograms and wavelength spectra
+      meta_file =
+          &file; // FIRST match wins, as for chromatograms and wavelength spectra
     }
   }
 

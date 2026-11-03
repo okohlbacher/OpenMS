@@ -138,11 +138,6 @@ struct SpectrumMetaRow {
   std::optional<std::string> ion_mobility_type;
 };
 
-/// Seconds to the minutes the format stores, chosen so that the reader's `minutes * 60.0` gives back
-/// the seconds exactly where a double can (OpenMS addition: `s / 60.0 * 60.0` differs from `s` in the
-/// last bit for about one value in four, which breaks byte-identical round trips of retention times).
-double minutes_from_seconds(double seconds);
-
 /**
  * Write the spectra metadata table to a Parquet file.
  *

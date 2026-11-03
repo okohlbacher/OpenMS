@@ -36,7 +36,8 @@ WavelengthSpectra::WavelengthSpectra(
 {
   // See Chromatograms: a declared count of zero is not evidence of an empty
   // run, and the reference writer does emit zero on files that have rows.
-  // (derived only then: it needs the entity count or the row-group statistics, which a file may lack)
+  // (derived only then: it needs the entity count or the row-group statistics, which
+  // a file may lack)
   const std::size_t declared = count.value_or(0);
   resize(declared == 0 ? data_->record_count() : declared);
 
@@ -72,10 +73,10 @@ WavelengthSpectrum WavelengthSpectra::fetch_(uint64_t index) const
   // A plain copy_if rather than views::filter | ranges::to: ranges::to is a
   // C++23 LIBRARY feature Apple's clang 15 libc++ lacks.
   std::vector<Data::ArrayIndex::Dimension> dims;
-  std::ranges::copy_if(data_->array_index()->dimensions(), std::back_inserter(dims),
-                       [](auto& d) {
+  std::ranges::copy_if(
+      data_->array_index()->dimensions(), std::back_inserter(dims), [](auto& d) {
         return d.array_type == ElectromagneticRadiation || d.array_type == Intensity;
-                       });
+      });
 
   std::unique_ptr<Util::Slice> slice = data_->select(dims, data_->index().eq(index));
   return WavelengthSpectrum(index, data_, dims, std::move(slice), md_map_);

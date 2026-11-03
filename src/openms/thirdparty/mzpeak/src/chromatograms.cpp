@@ -37,7 +37,8 @@ Chromatograms::Chromatograms(std::unique_ptr<Data::Signals> data,
   // writer emits zero for several count keys on files that plainly have rows,
   // and taking it at face value reports no chromatograms at all -- silently,
   // with nothing to distinguish it from a run that really has none.
-  // (derived only then: it needs the entity count or the row-group statistics, which a file may lack)
+  // (derived only then: it needs the entity count or the row-group statistics, which
+  // a file may lack)
   const std::size_t declared = count.value_or(0);
   resize(declared == 0 ? data_->record_count() : declared);
 
@@ -72,10 +73,10 @@ Chromatogram Chromatograms::fetch_(uint64_t index) const
   // A plain copy_if rather than views::filter | ranges::to: ranges::to is a
   // C++23 LIBRARY feature Apple's clang 15 libc++ lacks.
   std::vector<Data::ArrayIndex::Dimension> dims;
-  std::ranges::copy_if(data_->array_index()->dimensions(), std::back_inserter(dims),
-                       [](auto& d) {
+  std::ranges::copy_if(
+      data_->array_index()->dimensions(), std::back_inserter(dims), [](auto& d) {
         return d.array_type == RelativeTimeOffset || d.array_type == Intensity;
-                       });
+      });
 
   std::unique_ptr<Util::Slice> slice = data_->select(dims, data_->index().eq(index));
   return Chromatogram(index, data_, dims, std::move(slice), md_map_);

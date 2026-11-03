@@ -73,8 +73,7 @@ unsafe_array_value(const std::shared_ptr<typename type_traits<T>::array_type>& a
  * another type would read the column's buffer with the wrong width (OpenMS
  * local change).  Byte arrays may be string or binary, which share a layout.
  */
-template <Type T>
-void check_array_type(const arrow::Array& ary)
+template <Type T> void check_array_type(const arrow::Array& ary)
 {
   using A = type_traits<T>::array_type;
   const arrow::Type::type id = ary.type_id();
@@ -83,8 +82,8 @@ void check_array_type(const arrow::Array& ary)
     ok = ok || id == arrow::Type::BINARY;
   }
   if (!ok) {
-    throw TypeError("the column holds " + ary.type()->ToString() + " values, but the array index declares " +
-                    type_traits<T>::name);
+    throw TypeError("the column holds " + ary.type()->ToString() +
+                    " values, but the array index declares " + type_traits<T>::name);
   }
 }
 
@@ -216,6 +215,20 @@ public:
 
     if constexpr (requires { null_decoder_.chunk(casted); }) {
       null_decoder_.chunk(casted);
+    }
+
+    // No nulls and a plain value buffer: the loop below would only push every
+    // value in order, so append the buffer in one go. Numpress byte lists and
+    // intensity lists take this path; it was a fifth of a full decode.
+    if constexpr (std::is_same_v<C, std::vector<V>> && std::is_arithmetic_v<V> &&
+                  requires {
+                    { casted->raw_values() } -> std::convertible_to<const V*>;
+                  }) {
+      if (casted->null_count() == 0) {
+        const V* values = casted->raw_values();
+        dst.insert(dst.end(), values, values + casted->length());
+        return;
+      }
     }
 
     for (int64_t i : std::views::iota(0, casted->length())) {

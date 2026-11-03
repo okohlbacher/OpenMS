@@ -6,13 +6,14 @@ directory of this repository.
 
 */
 
+#include "mzpeak/util/numpress.h"
+
 // OpenMS: the MSNumpress copy that libOpenMS compiles (FORMAT/MSNUMPRESS), not the meson subproject
 #include <OpenMS/FORMAT/MSNUMPRESS/MSNumpress.h>
 
 #include "mzpeak/exception.h"
 #include "mzpeak/util/compat.h" // IWYU pragma: keep
 #include "mzpeak/util/decoders.h"
-#include "mzpeak/util/numpress.h"
 
 namespace MzPeak::Util::Numpress {
 
@@ -96,9 +97,12 @@ decode_linear(const std::shared_ptr<arrow::Array>& src)
 /******************************************************************************/
 void decode_slof(const std::vector<uint8_t>& input, std::vector<double>& output)
 {
-  // 8 bytes of fixed point, then 2 bytes per value (OpenMS local change: a corrupt length is an error, not a short read)
+  // 8 bytes of fixed point, then 2 bytes per value (OpenMS local change: a corrupt
+  // length is an error, not a short read)
   if (input.size() < 8 || (input.size() - 8) % 2 != 0) {
-    throw InvalidFormatError("numpress SLOF data of " + std::to_string(input.size()) + " bytes (expected 8 + 2n)");
+    throw InvalidFormatError("numpress SLOF data of " +
+                             std::to_string(input.size()) +
+                             " bytes (expected 8 + 2n)");
   }
   try {
     ms::numpress::MSNumpress::decodeSlof(input, output);
