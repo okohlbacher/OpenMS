@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import csv
 import functools
-import math
 import os
 import subprocess
 import tempfile
@@ -105,22 +104,13 @@ def fastag_species(fastag, mzml, frag_tol=20.0, frag_unit="ppm", fixed=("Carbami
     return [Evidence("organism", call["name"], conf, "data", "FASTag species", detail, {"taxa": table})]
 
 
-H2O = 18.010565
-_AA = {"G": 57.02146, "A": 71.03711, "S": 87.03203, "P": 97.05276, "V": 99.06841, "T": 101.04768, "C": 160.03065,
-       "L": 113.08406, "N": 114.04293, "D": 115.02694, "Q": 128.05858, "K": 128.09496, "E": 129.04259,
-       "M": 131.04049, "H": 137.05891, "F": 147.06841, "R": 156.10111, "Y": 163.06333, "W": 186.07931}
-_RES = dict(_AA, **{"K+TMT": _AA["K"] + 229.162932, "K+TMTpro": _AA["K"] + 304.207146,
-                    "K+iTRAQ4": _AA["K"] + 144.102063, "K+8": _AA["K"] + 8.014199, "R+10": _AA["R"] + 10.008269})
-_NLABEL = {"TMT6/10/11plex": 229.162932, "TMTpro (16/18plex)": 304.207146, "iTRAQ4plex": 144.102063}
+FASTAG_MIN_VERSION = (1, 8, 0)   # -digest_out, -label_out, -massgap_out
+DIGEST_MODELS = os.path.join(os.path.dirname(__file__), "data", "prose_auto_013_digest_models.tsv")
+_NLABEL = {"TMT6/10/11plex": ("TMT", 229.162932), "TMTpro (16/18plex)": ("TMTpro", 304.207146),
+           "iTRAQ4plex": ("iTRAQ4", 144.102063)}
 KR_TRYPTIC = 0.8
-# residue window on the tag termini (high-res MS2 only): 0.02 Da counted N-terminal F (147.068 Da, nterm_mass) as a
-# C-terminal E of a reversed b tag (E + water 147.053 Da)
-TERMINUS_WINDOW_DA = 0.008
 SILAC_MIN_TAGS = 50   # K- and R-terminal tags each before the heavy shares count (chymotrypsin: Lys8 50% of 12% K/R)
-
-
-TAG_MIN = 100            # terminal tags per end for the tag-profile call
-NONSPECIFIC_SHARE = 0.05   # proteome background mixed into every model: non-specific cleavage (stated, not tuned)
+TAG_MIN = 100         # C-terminal tag ends before the termini say anything (FASTag's -digest_tag_min)
 TAG_AAS = "GASPVTCLNDQKEMHFRYW"   # I merged into L
 # model -> enzyme value; HLA-I ligands and proteasome products are class I, HLA-II ligands and unspecific cleavage
 # class II (their ends barely differ from the proteome: "no protease")
@@ -131,126 +121,101 @@ HLA_CLASS = {"HLA-I": "I", "proteasome": "I", "HLA-II": "II", "unspecific": "II"
 
 
 @functools.lru_cache(maxsize=None)
-def _tag_models():
-    """(C-terminal, N-terminal) residue distributions per model from data/protease_models.tsv (MEROPS, MHC Motif
-    Atlas, proteome; sources in its header). Arg-C and Asp-N have 7 and 19 MEROPS sites: the PeptideCutter rules
-    (after R; before D) with the proteome background at the other end."""
-    m = {}
-    with open(os.path.join(os.path.dirname(__file__), "data", "protease_models.tsv")) as fh:
-        for r in csv.DictReader((l for l in fh if not l.startswith("#")), delimiter="\t"):
-            m.setdefault((r["model"], r["end"]), {})[r["residue"]] = float(r["freq"])
-    bg = m[("background", "C")]
-    one = lambda a: {x: float(x == a) for x in TAG_AAS}
-    raw = {k: (m[(f"merops:{k}", "C")], m[(f"merops:{k}", "N")])
-           for k in ("Trypsin", "Lys-C", "Glu-C", "Chymotrypsin", "Lys-N", "proteasome")}
-    raw.update({"Arg-C": (one("R"), bg), "Asp-N": (bg, one("D")), "unspecific": (bg, bg),
-                "HLA-I": (m[("atlas:HLA-I", "C")], m[("atlas:HLA-I", "N")]),
-                "HLA-II": (m[("atlas:HLA-II", "C")], m[("atlas:HLA-II", "N")])})
-    mix = lambda p: {a: (1 - NONSPECIFIC_SHARE) * p.get(a, 0.0) + NONSPECIFIC_SHARE * bg[a] for a in TAG_AAS}
-    return {k: (mix(c), mix(n)) for k, (c, n) in raw.items()}
+def fastag_version(fastag):
+    """(major, minor, patch) from the 'Version:' line of FASTag --help, or None"""
+    r = subprocess.run([str(fastag), "--help"], capture_output=True, text=True, timeout=120)
+    for line in (r.stdout + r.stderr).splitlines():
+        if line.startswith("Version:"):
+            try:
+                return tuple(int(x) for x in line.split()[1].split(".")[:3])
+            except ValueError:
+                return None
+    return None
 
 
-def protease_call(cterm, nterm):
-    """Multinomial log-likelihood of the C- and N-terminal residue counts under each model (the N-terminal end only
-    with >= TAG_MIN tags). Returns (model, runner-up with another enzyme value, margin in log-likelihood per tag) or
-    None below TAG_MIN C-terminal tags. Margins on 44 test runs: trypsin 0.29-1.61, Lys-C 0.09-0.35 and Arg-C 0.01-0.09
-    against trypsin, Glu-C 1.03, HLA-I 0.20-0.47."""
-    n_c, n_n = sum(cterm.values()), sum(nterm.values())
-    if n_c < TAG_MIN:
-        return None
-    use_n = n_n >= TAG_MIN
-
-    def ll(cnt, p):
-        z = sum(p.values())
-        return sum(k * math.log(p[a] / z) for a, k in cnt.items() if k)
-    sc = {k: ll(cterm, c) + (ll(nterm, n) if use_n else 0.0) for k, (c, n) in _tag_models().items()}
-    rk = sorted(sc, key=lambda k: -sc[k])
-    other = next(k for k in rk if TAG_MODELS[k] != TAG_MODELS[rk[0]])
-    return rk[0], other, (sc[rk[0]] - sc[other]) / (n_c + (n_n if use_n else 0))
+def require_fastag(fastag):
+    v = fastag_version(fastag)
+    if not v or v < FASTAG_MIN_VERSION:
+        raise RuntimeError(f"prose-auto needs FASTag >= {'.'.join(map(str, FASTAG_MIN_VERSION))} (-digest_out, "
+                           f"-label_out, -massgap_out); {fastag} reports {'.'.join(map(str, v)) if v else 'no version'}")
 
 
-def _residue_counts(v, near, offset=0.0):
-    """residue counts over TAG_AAS; labelled K (TMT, TMTpro, iTRAQ4, Lys8) count as K; Arg10 is left out (166.109 Da
-    shows at 3-15% in label-free runs)"""
-    cnt = {a: near(v, _RES[a] + offset) for a in TAG_AAS}
-    cnt["K"] += sum(near(v, _RES[k] + offset) for k in ("K+TMT", "K+TMTpro", "K+iTRAQ4", "K+8"))
-    return cnt
+def _report(path):
+    """a FASTag long-form report (section, key, value, n, description) as {(section, key): value}"""
+    return {(r["section"], r["key"]): r["value"] for r in _tsv(path)}
 
 
-Y1_K = 147.1128   # y1 of a C-terminal K; MS2 scans that start above it hide K-ending y tags
+def _num(rep, section, key, default=0.0):
+    v = rep.get((section, key), "-")
+    return default if v in ("-", "") else float(v)
 
 
-def fastag_termini(fastag, mzml, frag_tol=20.0, frag_unit="ppm", subsample=0.25, threads=0, log=print,
-                   ms2_low_mz=None):
+def fastag_termini(fastag, mzml, frag_tol=20.0, frag_unit="ppm", subsample=0.25, threads=0, log=print):
     """Protease and labels from the termini of FASTag k=4 tags (Carbamidomethyl only, so labels are mass gaps).
-    Tags read from y ions keep the C-terminal end in cterm_mass (one residue left: its residue mass); tags read
-    from b ions are written reversed, with the C-terminal end in nterm_mass plus water; the N-terminal label is the
-    bare label mass in either column. On 17 calibration runs: C-terminal K/R share 0.86-0.99 on tryptic HCD runs (threshold 0.80; on 180 benchmark
-    runs tryptic Orbitrap DDA 0.84-0.98, tryptic timsTOF 0.33-0.66),
-    0.27-0.42 on HLA class I and II (class I: hydrophobic anchors L/V/F/Y/M 0.44-0.63, class II about 0.1);
-    N-terminal TMT/TMTpro on 5-10% of the tags of labelled runs (>= 0.1% otherwise); heavy Lys8 and Arg10 shares
-    >= 0.25 only in SILAC runs (label-free <= 0.16, diaPASEF pseudo-spectra show an Arg10 artifact without Lys8).
-    The protease (or HLA class) is the tag-profile call over both ends (protease_call; N-terminal residue: bare
-    residue mass in nterm_mass). High-res MS2 only; 1-16 s on 25%.
+    FASTag counts the tag ends (-digest_out) and the label gaps (-label_out) and scores the tag-profile models of
+    data/prose_auto_013_digest_models.tsv (MEROPS, MHC Motif Atlas, proteome background) by multinomial
+    log-likelihood. On 17 calibration runs: C-terminal K/R share 0.86-0.99 on tryptic HCD runs (threshold 0.80; on
+    180 benchmark runs tryptic Orbitrap DDA 0.84-0.98, tryptic timsTOF 0.33-0.66), 0.27-0.42 on HLA class I and II
+    (class I: hydrophobic anchors L/V/F/Y/M 0.44-0.63, class II about 0.1); N-terminal TMT/TMTpro on 5-10% of the tags
+    of labelled runs (>= 0.1% otherwise); heavy Lys8 and Arg10 shares >= 0.25 only in SILAC runs (label-free <= 0.16,
+    diaPASEF pseudo-spectra show an Arg10 artifact without Lys8). FASTag gives no call on MS2 scans that start above
+    y1 of K (PXD066944, PXD038809: K 0.02-0.13 on tryptic runs). High-res MS2 only; 1-16 s on 25%.
     Returns evidence (enzyme, label) and the stats (C-terminal residue shares, HLA class hint)."""
-    import bisect
     if frag_unit != "ppm":
         return [], {}
     with tempfile.TemporaryDirectory(prefix="fastag_termini_") as tmp:
-        out = os.path.join(tmp, "tags.tsv")
-        cmd = [fastag, "-in", mzml, "-out", out, "-tag_length", 4, "-threads", threads,
-               "-subsample_fraction", subsample] + _frag_args(frag_tol, frag_unit)
-        _run(cmd, log)
-        c, n = [], []
-        for r in _tsv(out):
-            if r.get("gapped") == "0" and float(r.get("evalue") or 9) <= 1:
-                c.append(float(r["cterm_mass"]))
-                n.append(float(r["nterm_mass"]))
-    c.sort(); n.sort()
-    w = TERMINUS_WINDOW_DA
-    near = lambda v, m: bisect.bisect_right(v, m + w) - bisect.bisect_left(v, m - w)
-    res = {a: near(c, m) + near(n, m + H2O) for a, m in _RES.items()}
-    tot, tags = sum(res.values()), len(c)
+        dg, lb = os.path.join(tmp, "digest.tsv"), os.path.join(tmp, "label.tsv")
+        _run([fastag, "-in", mzml, "-out", os.path.join(tmp, "tags.tsv"), "-tag_length", 4, "-threads", threads,
+              "-subsample_fraction", subsample, "-digest_out", dg, "-label_out", lb, "-digest_models", DIGEST_MODELS]
+             + _frag_args(frag_tol, frag_unit), log)
+        return termini_evidence(_report(dg), _report(lb))
+
+
+def termini_evidence(d, lab):
+    """The prose-auto policy on FASTag's -digest_out and -label_out reports (dicts from _report)."""
+    tags, tot = int(_num(d, "count", "tags_filtered")), int(_num(d, "count", "tot"))
     if tot < TAG_MIN:
         return [], {"tags": tags, "cterm_tags": tot}
+    # res: the C-terminal residue keys (labelled K and Arg10 apart), as the K/R share counts them
+    res = {a: int(_num(d, "pos", f"C.P1.{a}")) for a in TAG_AAS if a not in "KR"}
+    res.update({k: int(_num(d, "residue", f"C.{k}")) for k in ("K", "K+TMT", "K+TMTpro", "K+iTRAQ4", "K+8", "R", "R+10")})
     share = {a: v / tot for a, v in res.items()}
-    kr = sum(v for a, v in share.items() if a[0] in "KR")
-    anchors = sum(share[a] for a in "LVFYM")
-    cterm = {a: x + y for (a, x), y in zip(_residue_counts(c, near).items(), _residue_counts(n, near, H2O).values())}
-    nterm = _residue_counts(n, near)
-    # MS2 scans from m/z 150 or 156 (PXD066944, PXD038809) left K 0.02-0.13 on tryptic runs: no tag call there
-    call = None if ms2_low_mz and ms2_low_mz > Y1_K + 0.1 else protease_call(cterm, nterm)
-    stats = {"tags": tags, "cterm_tags": tot, "cterm_KR": round(kr, 3), "cterm_anchors_LVFYM": round(anchors, 3),
+    cterm_k, n_n = _num(d, "pos", "C.P1.K"), int(_num(d, "count", "n_n"))
+    stats = {"tags": tags, "cterm_tags": tot, "cterm_KR": round(_num(d, "share", "kr"), 3),
+             "cterm_anchors_LVFYM": round(_num(d, "share", "anchors_LVFYM"), 3),
              "cterm_top": {a: round(v, 3) for a, v in sorted(share.items(), key=lambda x: -x[1])[:6]},
-             "nterm_tags": sum(nterm.values()), "nterm_D": round(nterm["D"] / max(sum(nterm.values()), 1), 3),
-             "ms2_low_mz": ms2_low_mz}
+             "nterm_tags": n_n, "nterm_D": round(_num(d, "share", "nterm_D"), 3),
+             "ms2_first_peak_mz": _num(d, "meta", "ms2_first_peak_mz", None)}
     ev = []
-    if call:
-        model, other, margin = call
+    if d.get(("call", "status")) == "call":
+        model, other, margin = d[("call", "model")], d[("call", "runner_up")], _num(d, "call", "margin")
         # isobaric labels make K-ending tags easy to read (intense labelled y1): tryptic TMTpro runs show K 0.93,
         # R 0.06 (PXD037434, PXD001670), so the K/R split is no evidence there
-        iso_k = sum(near(c, _RES[k]) + near(n, _RES[k] + H2O) for k in ("K+TMT", "K+TMTpro", "K+iTRAQ4"))
-        if model in ("Lys-C", "Arg-C") and TAG_MODELS[other] == "Trypsin" and iso_k > cterm["K"] / 2:
+        iso_k = res["K+TMT"] + res["K+TMTpro"] + res["K+iTRAQ4"]
+        if model in ("Lys-C", "Arg-C") and TAG_MODELS.get(other) == "Trypsin" and iso_k > cterm_k / 2:
             margin = 0.0
         stats.update({"tag_call": model, "tag_runner_up": other, "tag_margin": round(margin, 3)})
-        why = (f"tag-profile call over {sum(cterm.values())} C- and {sum(nterm.values())} N-terminal residues: {model} "
+        n_c = int(_num(d, "count", "n_c"))
+        why = (f"tag-profile call over {n_c} C- and {n_n} N-terminal residues: {model} "
                f"(next {other}, {margin:.2f} log-likelihood per tag)")
         if model in HLA_CLASS:
             stats["hla_hint"] = f"HLA class {HLA_CLASS[model]}?"
         # the margin is the confidence: a weak call loses to a confident Jev answer (reconcile._enzyme)
         ev.append(Evidence("enzyme", TAG_MODELS[model], round(min(0.8, 0.45 + margin), 3), "data", "FASTag termini",
                            why, stats))
-    for lab, m in _NLABEL.items():
-        x, bg = near(n, m) + near(c, m), near(n, m + 0.5) + near(c, m + 0.5)
+    else:
+        stats["tag_nocall"] = d.get(("call", "reason"))
+    for name, (key, m) in _NLABEL.items():
+        x, bg = _num(lab, "nlabel", f"{key}.count"), _num(lab, "nlabel", f"{key}.background")
         if x >= 0.01 * tags and x >= 20 * max(bg, 1):
-            ev.append(Evidence("label", lab, 0.5, "data", "FASTag termini",
-                               f"{x / tags:.1%} of the sequence tags start after a {m:.3f} Da N-terminal gap ({lab}"
-                               + ("; same mass as iTRAQ8plex, the reporter ions decide" if lab.startswith("TMTpro") else "")
+            ev.append(Evidence("label", name, 0.5, "data", "FASTag termini",
+                               f"{x / tags:.1%} of the sequence tags start after a {m:.3f} Da N-terminal gap ({name}"
+                               + ("; same mass as iTRAQ8plex, the reporter ions decide" if key == "TMTpro" else "")
                                + ")", stats))
-    hk, hr = share["K+8"] / max(share["K+8"] + share["K"], 1e-9), share["R+10"] / max(share["R+10"] + share["R"], 1e-9)
+    hk, hr = _num(lab, "heavy", "K8.share"), _num(lab, "heavy", "R10.share")
     stats.update({"heavy_K8": round(hk, 3), "heavy_R10": round(hr, 3)})
-    nk, nr = res["K"] + res["K+8"], res["R"] + res["R+10"]
-    if hk >= 0.2 and hr >= 0.2 and kr >= KR_TRYPTIC and min(nk, nr) >= SILAC_MIN_TAGS:
+    nk, nr = _num(lab, "heavy", "K.tags"), _num(lab, "heavy", "R.tags")
+    if hk >= 0.2 and hr >= 0.2 and stats["cterm_KR"] >= KR_TRYPTIC and min(nk, nr) >= SILAC_MIN_TAGS:
         # both heavy shares >= 30% occurred only in SILAC runs (5 of 164, three of them annotated label free in the
         # SDRF but SILAC by their text or file name); 20-30% stays a hint
         ev.append(Evidence("label", "SILAC (Lys8/Arg10)", 0.7 if min(hk, hr) >= 0.3 else 0.5, "data", "FASTag termini",
@@ -268,41 +233,96 @@ def fastag_shortlist(evs, n=3):
 
 
 def fastag_alkylation(fastag, mzml, fasta, frag_tol=20.0, frag_unit="ppm", threads=0, log=print, subsample=0.0):
-    """Cys alkylation from the FASTag mass-gap histogram without fixed mods."""
+    """Cys alkylation and modification combinations from FASTag's mass-gap report (-massgap_out: tags placed on
+    fasta without fixed modifications)."""
     with tempfile.TemporaryDirectory(prefix="fastag_") as tmp:
-        out = os.path.join(tmp, "tags.tsv")
-        delta = os.path.join(tmp, "delta.tsv")
-        cmd = [fastag, "-in", mzml, "-out", out, "-tag_length", 4, "-extension", 6, "-threads", threads,
-               "-recon_fasta", fasta, "-recon_out", os.path.join(tmp, "recon.tsv"), "-delta_out", delta,
+        mg = os.path.join(tmp, "massgap.tsv")
+        cmd = [fastag, "-in", mzml, "-out", os.path.join(tmp, "tags.tsv"), "-tag_length", 4, "-extension", 6,
+               "-threads", threads, "-recon_fasta", fasta, "-recon_out", os.path.join(tmp, "recon.tsv"),
+               "-massgap_out", mg,
                "-recon_min_length", 5,   # the size-derived default (6-7 on a proteome) placed 2.5-14x fewer spectra
                "-fixed_modifications"] + _frag_args(frag_tol, frag_unit)
         if subsample:
             cmd += ["-subsample_fraction", subsample]
         _run(cmd, log)
-        rows = _tsv(delta) if os.path.exists(delta) else []
-    hist = []
-    for r in rows:
-        try:
-            hist.append((float(r.get("delta")), int(float(r.get("spectra") or 0)), r.get("top_interps", "")))
-        except (TypeError, ValueError):
-            continue
-    total = sum(c for _, c, _ in hist)
-    tol = 0.02 if frag_unit == "ppm" else 0.5
-    counts = {name: sum(c for d, c, _ in hist if abs(d - m) <= tol) for name, m in DELTA_CANDIDATES.items()}
-    zero = sum(c for d, c, _ in hist if abs(d) <= tol)
-    stats = {"counts": counts, "zero_bin": zero, "spectra": total,
-             "top_bins": sorted(hist, key=lambda x: -x[1])[:15],
-             "hist": [h[:2] for h in hist if h[1] >= 2]}   # for delta_combos; singletons are noise
+        return massgap_evidence(_report(mg) if os.path.exists(mg) else {})
+
+
+# FASTag modification name -> ProSE names (the variable modifications a dominant gap proposes)
+MOD_NAMES = {
+    "Oxidation": ["Oxidation (M)"], "Dioxidation": ["Dioxidation (M)"], "Deamidated": ["Deamidated (N)", "Deamidated (Q)"],
+    "Gln->pyro-Glu": ["Gln->pyro-Glu (N-term Q)"], "Glu->pyro-Glu": ["Glu->pyro-Glu (N-term E)"],
+    "Carbamidomethyl": ["Carbamidomethyl (C)"], "Cation:Na": ["Cation:Na (DE)"], "Cation:K": ["Cation:K (DE)"],
+    "Carbamyl": ["Carbamyl (N-term)"], "Formyl": ["Formyl (N-term)"], "Acetyl": ["Acetyl (K)", "Acetyl (N-term)"],
+    "Methyl": ["Methyl (K)", "Methyl (R)"], "Dimethyl": ["Dimethyl (K)", "Dimethyl (R)"], "Trimethyl": ["Trimethyl (K)"],
+    "Propionyl": ["Propionyl (K)", "Propionyl (N-term)"], "Butyryl": ["Butyryl (K)"], "Crotonyl": ["Crotonyl (K)"],
+    "Succinyl": ["Succinyl (K)"], "Malonyl": ["Malonyl (K)"], "GG": ["GG (K)"],
+    "Phospho": ["Phospho (S)", "Phospho (T)", "Phospho (Y)"], "Sulfo": ["Sulfo (Y)"], "Nitro": ["Nitro (Y)"],
+    "HexNAc": ["HexNAc (S)", "HexNAc (T)"], "Hex": ["Hex (K)"], "Cysteinyl": ["Cysteinyl (C)"],
+    "Methylthio": ["Methylthio (C)"], "Propionamide": ["Propionamide (C)"], "Nethylmaleimide": ["Nethylmaleimide (C)"],
+    "TMT6plex": ["TMT6plex (K)", "TMT6plex (N-term)"], "TMTpro": ["TMTpro (K)", "TMTpro (N-term)"],
+    "iTRAQ4plex": ["iTRAQ4plex (K)", "iTRAQ4plex (N-term)"], "Label:13C(6)15N(2)": ["Label:13C(6)15N(2) (K)"],
+    "Label:13C(6)15N(4)": ["Label:13C(6)15N(4) (R)"], "Label:2H(4)": ["Label:2H(4) (K)"],
+    "Label:13C(6)": ["Label:13C(6) (R)"], "Met-loss": ["Met-loss (Protein N-term M)"],
+    "Met-loss+Acetyl": ["Met-loss+Acetyl (Protein N-term M)"],
+}
+ENRICHMENT = {"Phospho": "Phospho (STY)", "Acetyl": "Acetyl (K)", "GG": "GlyGly (K)", "HexNAc": "Glyco (HexNAc oxonium)"}
+SILAC_GAPS = {"Label:2H(4)": "Lys4", "Label:13C(6)": "Arg6", "Label:13C(6)15N(2)": "Lys8", "Label:13C(6)15N(4)": "Arg10"}
+
+
+def massgap_evidence(rep, max_mods_out=5):
+    """The prose-auto policy on FASTag's -massgap_out report: the Cys alkylation peak; variable_mods (modifications
+    explaining >= 2% of the spectra with a mass gap), enrichment (phospho, acetyl-lysine, GlyGly, HexNAc >= 10%) and
+    SILAC labels from the explained gaps (the MS Andrea idea, Buur, Winkler & Dorfer 2026, on a histogram)."""
+    counts = {n: int(_num(rep, "cys", n)) for n in DELTA_CANDIDATES}
+    total, zero = int(_num(rep, "cys", "spectra")), int(_num(rep, "cys", "zero_bin"))
+    split = lambda v: None if v in ("none", "-", "") else v.split(" + ")
+    peaks, i = [], 1
+    while (("peak", f"{i}.delta")) in rep:
+        alt = rep.get(("peak", f"{i}.alternatives"), "-")
+        ctx = rep.get(("peak", f"{i}.context"), "-")
+        peaks.append({"delta": round(_num(rep, "peak", f"{i}.delta"), 4), "spectra": int(_num(rep, "peak", f"{i}.spectra")),
+                      "explained_by": split(rep.get(("peak", f"{i}.explained_by"), "none")),
+                      "alternatives": [] if alt in ("-", "") else [c.split(" + ") for c in alt.split(";")],
+                      **({"context": ctx} if ctx not in ("-", "") else {})})
+        i += 1
+    share = {k: float(v) for (sec, k), v in rep.items() if sec == "share"}
+    shifted = int(_num(rep, "combo", "shifted_spectra"))
+    gaps = {"placed_spectra": int(_num(rep, "combo", "placed_spectra")), "shifted_spectra": shifted,
+            "peaks": peaks[:25], "share": {k: round(v, 4) for k, v in share.items()}}
+    stats = {"counts": counts, "zero_bin": zero, "spectra": total}
     best = max(counts, key=counts.get)
-    second = sorted(counts.values())[-2] if len(counts) > 1 else 0
+    second = sorted(counts.values())[-2]
     if counts[best] < 10:
-        return [Evidence("cys_alkylation", "unknown", 0.15, "data", "FASTag mass gaps",
-                         f"no Cys alkylation peak in the FASTag gap histogram ({total} spectra placed)", stats)]
-    ratio = (counts[best] + 1) / (second + 1)
-    conf = min(0.85, 0.4 + 0.15 * ratio ** 0.5)
-    return [Evidence("cys_alkylation", best, conf, "data", "FASTag mass gaps",
-                     f"{counts[best]} placed spectra with a {DELTA_CANDIDATES[best]:+.3f} Da gap "
-                     f"(next candidate {second}); searched without fixed modifications", stats)]
+        ev = [Evidence("cys_alkylation", "unknown", 0.15, "data", "FASTag mass gaps",
+                       f"no Cys alkylation peak in the FASTag gap histogram ({total} spectra placed)", stats)]
+    else:
+        ratio = (counts[best] + 1) / (second + 1)
+        ev = [Evidence("cys_alkylation", best, min(0.85, 0.4 + 0.15 * ratio ** 0.5), "data", "FASTag mass gaps",
+                       f"{counts[best]} placed spectra with a {DELTA_CANDIDATES[best]:+.3f} Da gap "
+                       f"(next candidate {second}); searched without fixed modifications", stats)]
+    if not shifted:
+        return ev
+    mods = [n for n, x in sorted(share.items(), key=lambda kv: -kv[1]) if x >= 0.02 and n != "Carbamidomethyl"]
+    if mods:
+        ev.append(Evidence("variable_mods", [x for n in mods[:max_mods_out] for x in MOD_NAMES.get(n, [n])], 0.5, "data",
+                           "delta-mass combinations", "mass gaps explained as modification combinations: "
+                           + ", ".join(f"{n} {share[n]:.0%}" for n in mods[:max_mods_out])
+                           + f" of {shifted} spectra with a mass gap", gaps))
+    # two or more SILAC labels each explaining >= 8 % of >= 500 gapped spectra (triplex PXD016465: Arg6 20 %, Lys4 18 %,
+    # Lys8 8 %); label-free validation runs reach 13 % for one label at most (PXD033741, Arg10)
+    seen = {v for n, v in SILAC_GAPS.items() if share.get(n, 0) >= 0.08}
+    if len(seen) >= 2 and shifted >= 500:
+        med, heavy = seen & {"Lys4", "Arg6"}, seen & {"Lys8", "Arg10"}
+        name = "SILAC triplex (Lys4/Arg6, Lys8/Arg10)" if med and heavy else "SILAC (Lys8/Arg10)" if heavy else "SILAC (Lys4/Arg6)"
+        ev.append(Evidence("label", name, 0.7, "data", "delta-mass combinations", "SILAC labels explain the mass gaps: "
+                           + ", ".join(f"{n} {share[n]:.0%}" for n in SILAC_GAPS if SILAC_GAPS[n] in seen)
+                           + f" of {shifted} spectra", gaps))
+    for n, enr in ENRICHMENT.items():
+        if share.get(n, 0) >= 0.10:
+            ev.append(Evidence("enrichment", enr, min(0.7, 0.4 + share[n]), "data", "delta-mass combinations",
+                               f"{n} explains {share[n]:.0%} of {shifted} spectra with a mass gap", gaps))
+    return ev
 
 
 # DIAspeXtract on a constant-mobility copy: mobility tracing, weighting, charge veto and twin folding off

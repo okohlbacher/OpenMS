@@ -1,0 +1,26 @@
+section	key	value	n	description
+run	version	1.8.0	-	FASTag 1.8.0 wrote this report.
+run	input	20140225_Elite_FrPa_LIPID_SILACexpB_flowthr2.mzML	-	The spectra were read from 20140225_Elite_FrPa_LIPID_SILACexpB_flowthr2.mzML.
+run	fragment_tolerance	20	-	The fragment tolerance is 20 ppm.
+run	fragment_tolerance_unit	ppm	-	The fragment tolerance is in ppm.
+run	tag_length	4	-	Tags were seeded at length 4.
+run	subsample_fraction	0.25	-	A fraction of 0.25 of the spectra was tagged (0 = all).
+run	subsample_spectra	0	-	0 spectra were drawn for tagging (0 = all).
+run	window_da	0.008	-	A tag end counts for a label when its mass is within 0.008 Da of it.
+run	low_resolution	no	-	The fragment tolerance is in ppm.
+run	silac_min	50	-	The heavy shares are gated on 50 K- and R-terminal tag ends each.
+count	tags_filtered	5301	5301	5301 reported tags are ungapped with an E-value of at most 1.
+nlabel	TMT.count	0	5301	0 tag ends are a bare 229.1629 Da gap (TMT), 0 N- and 0 C-terminal.
+nlabel	TMT.background	0	5301	0 tag ends are a gap of 229.6629 Da, 0.5 Da above TMT.
+nlabel	TMT.share	0	5301	A share of 0 of the filtered tags end in the TMT gap.
+nlabel	TMTpro.count	0	5301	0 tag ends are a bare 304.2071 Da gap (TMTpro), 0 N- and 0 C-terminal.
+nlabel	TMTpro.background	0	5301	0 tag ends are a gap of 304.7071 Da, 0.5 Da above TMTpro.
+nlabel	TMTpro.share	0	5301	A share of 0 of the filtered tags end in the TMTpro gap.
+nlabel	iTRAQ4.count	0	5301	0 tag ends are a bare 144.1021 Da gap (iTRAQ4), 0 N- and 0 C-terminal.
+nlabel	iTRAQ4.background	0	5301	0 tag ends are a gap of 144.6021 Da, 0.5 Da above iTRAQ4.
+nlabel	iTRAQ4.share	0	5301	A share of 0 of the filtered tags end in the iTRAQ4 gap.
+heavy	K8.share	0.4539007092198582	141	Lys8 is a share of 0.454 of the C-terminal K and Lys8 ends.
+heavy	R10.share	0.359375	128	Arg10 is a share of 0.359 of the C-terminal R and Arg10 ends.
+heavy	K.tags	141	-	141 C-terminal tag ends are K or Lys8.
+heavy	R.tags	128	-	128 C-terminal tag ends are R or Arg10.
+heavy	gate	yes	-	141 K and 128 R tag ends against a minimum of 50 each.

@@ -277,7 +277,12 @@ def test_reconcile_conflict_and_params():
 
 
 def test_silac_coherent_pairs_and_gaps():
-    from prose_auto.delta_combos import silac_from_gaps
+    from prose_auto.external import massgap_evidence
+
+    def silac_from_gaps(share, shifted):
+        rep = {("share", k): v for k, v in share.items()}
+        rep[("combo", "shifted_spectra")] = shifted
+        return [e for e in massgap_evidence(rep) if e.parameter == "label"]
     E = lambda k8, r10, r6, k4: {"Lys8": k8, "Arg10": r10, "Arg6": r6, "Lys4/dimethyl-d4": k4}
     many = E(400, 400, 400, 400)
     assert chem._coherent_silac_pair(E(3.06, 3.58, 0.55, 0.66), many)[0] == "SILAC (Lys8/Arg10)"   # PXD001739
@@ -694,49 +699,6 @@ def test_enzyme_keywords_and_file_name():
     fn = lambda n: [e.value for e in tx.from_file_name(n)]
     assert fn("/d/HeLa_GluC_HCD_1.mzML") == ["Glu-C"] and fn("Actin_AspN_4h.mzML") == ["Asp-N"]
     assert fn("x_2nd_LysC.mzML") == ["Lys-C"] and fn("HeLa_LysC_trypsin_1.mzML") == [] and fn("run1.mzML") == []
-
-
-def test_fastag_termini_tag_profile_and_silac_gate(monkeypatch):
-    from prose_auto import external as ext
-    m = ext._RES
-    tags = [m["F"]] * 300 + [m["K"]] * 20 + [m["K+8"]] * 20 + [m["R"]] * 5 + [m["R+10"]] * 15
-    monkeypatch.setattr(ext, "_run", lambda cmd, log: None)
-    monkeypatch.setattr(ext, "_tsv", lambda p: [{"gapped": "0", "evalue": "0.1", "cterm_mass": str(x),
-                                                 "nterm_mass": "0"} for x in tags])
-    ev, st = ext.fastag_termini("FASTag", "run.mzML")
-    # a chymotrypsin profile, and heavy shares of 50% on 12% K/R C-termini are no SILAC
-    assert [(e.parameter, e.value) for e in ev] == [("enzyme", "Chymotrypsin")] and st["tag_call"] == "Chymotrypsin"
-    # N-terminal F (147.068 Da in nterm_mass) is no C-terminal E (b tag: E + water 147.053 Da)
-    tags = [(m["K"], m["F"])] * 125 + [(m["R"], m["F"])] * 125
-    monkeypatch.setattr(ext, "_tsv", lambda p: [{"gapped": "0", "evalue": "0.1", "cterm_mass": str(c),
-                                                 "nterm_mass": str(n)} for c, n in tags])
-    ev, st = ext.fastag_termini("FASTag", "run.mzML")
-    assert [e.value for e in ev] == ["Trypsin"]
-    # tryptic TMTpro: labelled K tags dominate; the Lys-C reading gets no margin (Jev and the texts decide)
-    tags = [(m["K+TMTpro"], 0.0)] * 280 + [(m["R"], 0.0)] * 20
-    monkeypatch.setattr(ext, "_tsv", lambda p: [{"gapped": "0", "evalue": "0.1", "cterm_mass": str(c),
-                                                 "nterm_mass": str(n)} for c, n in tags])
-    ev, st = ext.fastag_termini("FASTag", "run.mzML")
-    assert st["tag_call"] == "Lys-C" and st["tag_margin"] == 0.0
-    # an MS2 scan range from m/z 150 hides the y1 of K: no tag call
-    ev, st = ext.fastag_termini("FASTag", "run.mzML", ms2_low_mz=150.0)
-    assert "tag_call" not in st and not [e for e in ev if e.parameter == "enzyme"]
-
-
-def test_protease_call_from_external_models():
-    from prose_auto import external as ext
-    cnt = lambda **k: {a: k.get(a, 0) for a in ext.TAG_AAS}
-    none = cnt()
-    call = lambda c, n=none: ext.protease_call(c, n)[0]
-    assert call(cnt(K=150, R=150)) == "Trypsin"
-    assert call(cnt(K=290, R=10)) == "Lys-C" and call(cnt(R=290, K=10)) == "Arg-C"
-    assert call(cnt(E=280, D=20)) == "Glu-C"
-    bgc = cnt(L=30, A=20, S=20, G=20, E=20, K=15, R=10, V=15)
-    assert call(bgc, cnt(D=120, L=10, A=10, S=10)) == "Asp-N"
-    assert ext.HLA_CLASS[call(cnt(L=60, V=40, F=20, Y=20, K=15, M=10))] == "I"
-    assert ext.protease_call(cnt(K=50, R=40), none) is None                 # below 100 terminal tags
-    model, other, margin = ext.protease_call(cnt(K=150, R=150), none)
-    assert ext.TAG_MODELS[other] != "Trypsin" and margin > 0
 
 
 def test_digest_votes_from_the_tag_profile():

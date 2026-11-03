@@ -50,6 +50,13 @@ can run it as a sidecar.
 FASTag needs high-resolution MS2 to be useful: on the ion-trap BSA example it
 places only a handful of tags, and its evidence stays below the mini-search.
 
+## Runs without a digest
+
+Top-down, middle-down, native and intact-mass runs are recognised right after reading the spectra
+(`topdown.py`): from the MS2 precursor charges and masses, else FLASHDeconv on a few MS1 and MS2 spectra
+(`--flashdeconv`) and charge-state series in MS1. prose-auto then sets no ProSE parameters, writes the verdict with
+its reason and the recommendation "use FLASHTnT (OpenMS)", and exits with status 3.
+
 ## Pipeline
 
 | Step | Module | What it decides | Basis |
@@ -60,7 +67,7 @@ places only a handful of tags, and its evidence stays below the mini-search.
 | 3 mass offset | `detect_tolerance.py` | systematic offset without a database | lock-mass polysiloxane ions (MS1), immonium and y1 ions (HCD MS2) |
 | 4 chemistry | `detect_chemistry.py` | TMT/TMTpro/iTRAQ plex, SILAC, phospho/glyco/acetyl enrichment, Cys alkylation (weak) | reporter and diagnostic ions against control m/z values (Param-Medic 2019 idea); MS1 heavy/light pairs with an intensity check |
 | 5 mini-search | `tagsearch.py`, `hypotheses.py` | organism, Cys alkylation, calibrated offsets and tolerances | binomial b/y scoring with target/reversed-decoy FDR on the top-TIC subset; competing hypotheses compared by PSMs at 1% FDR |
-| 5 protease | `external.py` (FASTag termini) | protease, HLA ligand class | tag termini scored against MEROPS, PeptideCutter, MHC Motif Atlas and proteome models (`data/protease_models.tsv`); not on timsTOF |
+| 5 protease | `external.py` (FASTag >= 1.8.0 `-digest_out`) | protease, HLA ligand class | FASTag scores the tag termini against MEROPS, PeptideCutter, MHC Motif Atlas and proteome models (`data/prose_auto_013_digest_models.tsv`); not on timsTOF |
 | 5 records and text | `repository.py`, `text_extract.py` | what the submitters and the user say | PRIDE API v3, PROXI, bigbio/sdrf-annotated-datasets, Europe PMC methods; keyword rules with verbatim quotes |
 | 6 LLM | `llm.py` | the same from free text, literature priors, a final review | any CLI or OpenAI-compatible endpoint; quotes must occur in the text |
 | 6b Jev (last) | `jev.py`, `schema.py` | every head from the texts and all indicators; afterwards a consistency verdict per setting | typed choice questions over the texts plus the measured and search profiles (`--jev`) |

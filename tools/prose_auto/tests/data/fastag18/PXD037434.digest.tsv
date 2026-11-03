@@ -1,0 +1,685 @@
+section	key	value	n	description
+run	version	1.8.0	-	FASTag 1.8.0 wrote this report.
+run	input	P20210201029_F8.mzML	-	The spectra were read from P20210201029_F8.mzML.
+run	fragment_tolerance	20	-	The fragment tolerance is 20 ppm.
+run	fragment_tolerance_unit	ppm	-	The fragment tolerance is in ppm.
+run	tag_length	4	-	Tags were seeded at length 4.
+run	subsample_fraction	0.25	-	A fraction of 0.25 of the spectra was tagged (0 = all).
+run	subsample_spectra	0	-	0 spectra were drawn for tagging (0 = all).
+run	window_da	0.008	-	A tag end counts for a residue when its mass is within 0.008 Da of it.
+run	tag_min	100	-	The call needs 100 C-terminal tag ends, and uses the N-terminal ends when there are as many.
+run	background_share	0.05	-	Every model is mixed with the background at a share of 0.05.
+run	models	/ceph/ibmi/abi/oliver/prose-auto-20261029/OpenMS-dev/tools/prose_auto/prose_auto/data/prose_auto_013_digest_models.tsv	-	The models are read from /ceph/ibmi/abi/oliver/prose-auto-20261029/OpenMS-dev/tools/prose_auto/prose_auto/data/prose_auto_013_digest_models.tsv.
+run	background	models_table	-	The background is the one in the model table.
+meta	instrument	Q Exactive HF-X	-	The input names the instrument Q Exactive HF-X.
+meta	instrument_model	-	-	The input names no instrument model (metadata absent).
+meta	native_id_format	MS:1000768	-	The native ID format of the input is MS:1000768.
+meta	ion_mobility	no	15441	0 of 15441 MS2 spectra carry an ion mobility.
+meta	ion_mobility_unit	-	0	0 MS2 spectra carry 1/K0, 0 a drift time, 0 a FAIMS compensation voltage and 0 another ion mobility.
+meta	ms2_scan_window_low	100	15441	The median MS2 scan window starts at m/z 100.00 over 15441 spectra.
+meta	ms2_first_peak_mz	100.55109405517578	15441	The median first MS2 peak is at m/z 100.55 over 15441 spectra.
+count	tags_filtered	102029	102029	102029 reported tags are ungapped with an E-value of at most 1.
+count	tot	10227	102029	10227 C-terminal tag ends match a residue key, labelled K and R+10 included.
+count	n_c	10201	102029	10201 C-terminal tag ends match a residue, labelled K counted as K and R+10 left out.
+count	n_n	343	102029	343 N-terminal tag ends match a residue, labelled K counted as K and R+10 left out.
+residue	C.K	0	10227	0 tag ends are a C-terminal K (0 after a y tag, 0 before a reversed b tag).
+residue	C.K+TMT	3	10227	3 tag ends are a C-terminal K+TMT (0 after a y tag, 3 before a reversed b tag).
+residue	C.K+TMTpro	9528	10227	9528 tag ends are a C-terminal K+TMTpro (7218 after a y tag, 2310 before a reversed b tag).
+residue	C.K+iTRAQ4	7	10227	7 tag ends are a C-terminal K+iTRAQ4 (0 after a y tag, 7 before a reversed b tag).
+residue	C.K+8	6	10227	6 tag ends are a C-terminal K+8 (0 after a y tag, 6 before a reversed b tag).
+residue	C.R	574	10227	574 tag ends are a C-terminal R (569 after a y tag, 5 before a reversed b tag).
+residue	C.R+10	26	10227	26 tag ends are a C-terminal R+10 (14 after a y tag, 12 before a reversed b tag).
+residue	N.K	0	-	0 tag ends are an N-terminal K.
+residue	N.K+TMT	2	-	2 tag ends are an N-terminal K+TMT.
+residue	N.K+TMTpro	22	-	22 tag ends are an N-terminal K+TMTpro.
+residue	N.K+iTRAQ4	3	-	3 tag ends are an N-terminal K+iTRAQ4.
+residue	N.K+8	0	-	0 tag ends are an N-terminal K+8.
+residue	N.R	2	-	2 tag ends are an N-terminal R.
+residue	N.R+10	0	-	0 tag ends are an N-terminal R+10.
+pos	C.P4.G	1121	10201	1121 of 10201 C-terminal tag ends have G at P4.
+pos	C.P4.A	1480	10201	1480 of 10201 C-terminal tag ends have A at P4.
+pos	C.P4.S	597	10201	597 of 10201 C-terminal tag ends have S at P4.
+pos	C.P4.P	373	10201	373 of 10201 C-terminal tag ends have P at P4.
+pos	C.P4.V	759	10201	759 of 10201 C-terminal tag ends have V at P4.
+pos	C.P4.T	693	10201	693 of 10201 C-terminal tag ends have T at P4.
+pos	C.P4.C	63	10201	63 of 10201 C-terminal tag ends have C at P4.
+pos	C.P4.L	1048	10201	1048 of 10201 C-terminal tag ends have L at P4.
+pos	C.P4.N	468	10201	468 of 10201 C-terminal tag ends have N at P4.
+pos	C.P4.D	1182	10201	1182 of 10201 C-terminal tag ends have D at P4.
+pos	C.P4.Q	596	10201	596 of 10201 C-terminal tag ends have Q at P4.
+pos	C.P4.K	14	10201	14 of 10201 C-terminal tag ends have K at P4.
+pos	C.P4.E	1013	10201	1013 of 10201 C-terminal tag ends have E at P4.
+pos	C.P4.M	55	10201	55 of 10201 C-terminal tag ends have M at P4.
+pos	C.P4.H	110	10201	110 of 10201 C-terminal tag ends have H at P4.
+pos	C.P4.F	327	10201	327 of 10201 C-terminal tag ends have F at P4.
+pos	C.P4.R	8	10201	8 of 10201 C-terminal tag ends have R at P4.
+pos	C.P4.Y	250	10201	250 of 10201 C-terminal tag ends have Y at P4.
+pos	C.P4.W	44	10201	44 of 10201 C-terminal tag ends have W at P4.
+pos	C.P3.G	1449	10201	1449 of 10201 C-terminal tag ends have G at P3.
+pos	C.P3.A	1458	10201	1458 of 10201 C-terminal tag ends have A at P3.
+pos	C.P3.S	634	10201	634 of 10201 C-terminal tag ends have S at P3.
+pos	C.P3.P	332	10201	332 of 10201 C-terminal tag ends have P at P3.
+pos	C.P3.V	722	10201	722 of 10201 C-terminal tag ends have V at P3.
+pos	C.P3.T	685	10201	685 of 10201 C-terminal tag ends have T at P3.
+pos	C.P3.C	50	10201	50 of 10201 C-terminal tag ends have C at P3.
+pos	C.P3.L	1143	10201	1143 of 10201 C-terminal tag ends have L at P3.
+pos	C.P3.N	486	10201	486 of 10201 C-terminal tag ends have N at P3.
+pos	C.P3.D	944	10201	944 of 10201 C-terminal tag ends have D at P3.
+pos	C.P3.Q	539	10201	539 of 10201 C-terminal tag ends have Q at P3.
+pos	C.P3.K	8	10201	8 of 10201 C-terminal tag ends have K at P3.
+pos	C.P3.E	889	10201	889 of 10201 C-terminal tag ends have E at P3.
+pos	C.P3.M	39	10201	39 of 10201 C-terminal tag ends have M at P3.
+pos	C.P3.H	91	10201	91 of 10201 C-terminal tag ends have H at P3.
+pos	C.P3.F	422	10201	422 of 10201 C-terminal tag ends have F at P3.
+pos	C.P3.R	15	10201	15 of 10201 C-terminal tag ends have R at P3.
+pos	C.P3.Y	252	10201	252 of 10201 C-terminal tag ends have Y at P3.
+pos	C.P3.W	43	10201	43 of 10201 C-terminal tag ends have W at P3.
+pos	C.P2.G	1811	10201	1811 of 10201 C-terminal tag ends have G at P2.
+pos	C.P2.A	1986	10201	1986 of 10201 C-terminal tag ends have A at P2.
+pos	C.P2.S	480	10201	480 of 10201 C-terminal tag ends have S at P2.
+pos	C.P2.P	402	10201	402 of 10201 C-terminal tag ends have P at P2.
+pos	C.P2.V	734	10201	734 of 10201 C-terminal tag ends have V at P2.
+pos	C.P2.T	457	10201	457 of 10201 C-terminal tag ends have T at P2.
+pos	C.P2.C	71	10201	71 of 10201 C-terminal tag ends have C at P2.
+pos	C.P2.L	1443	10201	1443 of 10201 C-terminal tag ends have L at P2.
+pos	C.P2.N	411	10201	411 of 10201 C-terminal tag ends have N at P2.
+pos	C.P2.D	613	10201	613 of 10201 C-terminal tag ends have D at P2.
+pos	C.P2.Q	498	10201	498 of 10201 C-terminal tag ends have Q at P2.
+pos	C.P2.K	2	10201	2 of 10201 C-terminal tag ends have K at P2.
+pos	C.P2.E	762	10201	762 of 10201 C-terminal tag ends have E at P2.
+pos	C.P2.M	22	10201	22 of 10201 C-terminal tag ends have M at P2.
+pos	C.P2.H	79	10201	79 of 10201 C-terminal tag ends have H at P2.
+pos	C.P2.F	224	10201	224 of 10201 C-terminal tag ends have F at P2.
+pos	C.P2.R	11	10201	11 of 10201 C-terminal tag ends have R at P2.
+pos	C.P2.Y	164	10201	164 of 10201 C-terminal tag ends have Y at P2.
+pos	C.P2.W	31	10201	31 of 10201 C-terminal tag ends have W at P2.
+pos	C.P1.G	1	10201	1 of 10201 C-terminal tag ends have G at P1.
+pos	C.P1.A	8	10201	8 of 10201 C-terminal tag ends have A at P1.
+pos	C.P1.S	3	10201	3 of 10201 C-terminal tag ends have S at P1.
+pos	C.P1.P	10	10201	10 of 10201 C-terminal tag ends have P at P1.
+pos	C.P1.V	0	10201	0 of 10201 C-terminal tag ends have V at P1.
+pos	C.P1.T	1	10201	1 of 10201 C-terminal tag ends have T at P1.
+pos	C.P1.C	0	10201	0 of 10201 C-terminal tag ends have C at P1.
+pos	C.P1.L	10	10201	10 of 10201 C-terminal tag ends have L at P1.
+pos	C.P1.N	7	10201	7 of 10201 C-terminal tag ends have N at P1.
+pos	C.P1.D	1	10201	1 of 10201 C-terminal tag ends have D at P1.
+pos	C.P1.Q	9	10201	9 of 10201 C-terminal tag ends have Q at P1.
+pos	C.P1.K	9544	10201	9544 of 10201 C-terminal tag ends have K at P1.
+pos	C.P1.E	2	10201	2 of 10201 C-terminal tag ends have E at P1.
+pos	C.P1.M	1	10201	1 of 10201 C-terminal tag ends have M at P1.
+pos	C.P1.H	9	10201	9 of 10201 C-terminal tag ends have H at P1.
+pos	C.P1.F	4	10201	4 of 10201 C-terminal tag ends have F at P1.
+pos	C.P1.R	574	10201	574 of 10201 C-terminal tag ends have R at P1.
+pos	C.P1.Y	17	10201	17 of 10201 C-terminal tag ends have Y at P1.
+pos	C.P1.W	0	10201	0 of 10201 C-terminal tag ends have W at P1.
+pos	N.P1'.G	0	343	0 of 343 N-terminal tag ends have G at P1'.
+pos	N.P1'.A	31	343	31 of 343 N-terminal tag ends have A at P1'.
+pos	N.P1'.S	5	343	5 of 343 N-terminal tag ends have S at P1'.
+pos	N.P1'.P	33	343	33 of 343 N-terminal tag ends have P at P1'.
+pos	N.P1'.V	62	343	62 of 343 N-terminal tag ends have V at P1'.
+pos	N.P1'.T	16	343	16 of 343 N-terminal tag ends have T at P1'.
+pos	N.P1'.C	0	343	0 of 343 N-terminal tag ends have C at P1'.
+pos	N.P1'.L	70	343	70 of 343 N-terminal tag ends have L at P1'.
+pos	N.P1'.N	17	343	17 of 343 N-terminal tag ends have N at P1'.
+pos	N.P1'.D	6	343	6 of 343 N-terminal tag ends have D at P1'.
+pos	N.P1'.Q	15	343	15 of 343 N-terminal tag ends have Q at P1'.
+pos	N.P1'.K	27	343	27 of 343 N-terminal tag ends have K at P1'.
+pos	N.P1'.E	33	343	33 of 343 N-terminal tag ends have E at P1'.
+pos	N.P1'.M	4	343	4 of 343 N-terminal tag ends have M at P1'.
+pos	N.P1'.H	0	343	0 of 343 N-terminal tag ends have H at P1'.
+pos	N.P1'.F	4	343	4 of 343 N-terminal tag ends have F at P1'.
+pos	N.P1'.R	2	343	2 of 343 N-terminal tag ends have R at P1'.
+pos	N.P1'.Y	15	343	15 of 343 N-terminal tag ends have Y at P1'.
+pos	N.P1'.W	3	343	3 of 343 N-terminal tag ends have W at P1'.
+pos	N.P2'.G	39	343	39 of 343 N-terminal tag ends have G at P2'.
+pos	N.P2'.A	53	343	53 of 343 N-terminal tag ends have A at P2'.
+pos	N.P2'.S	13	343	13 of 343 N-terminal tag ends have S at P2'.
+pos	N.P2'.P	11	343	11 of 343 N-terminal tag ends have P at P2'.
+pos	N.P2'.V	31	343	31 of 343 N-terminal tag ends have V at P2'.
+pos	N.P2'.T	13	343	13 of 343 N-terminal tag ends have T at P2'.
+pos	N.P2'.C	1	343	1 of 343 N-terminal tag ends have C at P2'.
+pos	N.P2'.L	29	343	29 of 343 N-terminal tag ends have L at P2'.
+pos	N.P2'.N	31	343	31 of 343 N-terminal tag ends have N at P2'.
+pos	N.P2'.D	43	343	43 of 343 N-terminal tag ends have D at P2'.
+pos	N.P2'.Q	3	343	3 of 343 N-terminal tag ends have Q at P2'.
+pos	N.P2'.K	3	343	3 of 343 N-terminal tag ends have K at P2'.
+pos	N.P2'.E	38	343	38 of 343 N-terminal tag ends have E at P2'.
+pos	N.P2'.M	9	343	9 of 343 N-terminal tag ends have M at P2'.
+pos	N.P2'.H	0	343	0 of 343 N-terminal tag ends have H at P2'.
+pos	N.P2'.F	18	343	18 of 343 N-terminal tag ends have F at P2'.
+pos	N.P2'.R	1	343	1 of 343 N-terminal tag ends have R at P2'.
+pos	N.P2'.Y	7	343	7 of 343 N-terminal tag ends have Y at P2'.
+pos	N.P2'.W	0	343	0 of 343 N-terminal tag ends have W at P2'.
+pos	N.P3'.G	59	343	59 of 343 N-terminal tag ends have G at P3'.
+pos	N.P3'.A	39	343	39 of 343 N-terminal tag ends have A at P3'.
+pos	N.P3'.S	7	343	7 of 343 N-terminal tag ends have S at P3'.
+pos	N.P3'.P	9	343	9 of 343 N-terminal tag ends have P at P3'.
+pos	N.P3'.V	15	343	15 of 343 N-terminal tag ends have V at P3'.
+pos	N.P3'.T	31	343	31 of 343 N-terminal tag ends have T at P3'.
+pos	N.P3'.C	0	343	0 of 343 N-terminal tag ends have C at P3'.
+pos	N.P3'.L	50	343	50 of 343 N-terminal tag ends have L at P3'.
+pos	N.P3'.N	19	343	19 of 343 N-terminal tag ends have N at P3'.
+pos	N.P3'.D	60	343	60 of 343 N-terminal tag ends have D at P3'.
+pos	N.P3'.Q	15	343	15 of 343 N-terminal tag ends have Q at P3'.
+pos	N.P3'.K	1	343	1 of 343 N-terminal tag ends have K at P3'.
+pos	N.P3'.E	26	343	26 of 343 N-terminal tag ends have E at P3'.
+pos	N.P3'.M	1	343	1 of 343 N-terminal tag ends have M at P3'.
+pos	N.P3'.H	0	343	0 of 343 N-terminal tag ends have H at P3'.
+pos	N.P3'.F	5	343	5 of 343 N-terminal tag ends have F at P3'.
+pos	N.P3'.R	0	343	0 of 343 N-terminal tag ends have R at P3'.
+pos	N.P3'.Y	5	343	5 of 343 N-terminal tag ends have Y at P3'.
+pos	N.P3'.W	1	343	1 of 343 N-terminal tag ends have W at P3'.
+pos	N.P4'.G	55	343	55 of 343 N-terminal tag ends have G at P4'.
+pos	N.P4'.A	52	343	52 of 343 N-terminal tag ends have A at P4'.
+pos	N.P4'.S	21	343	21 of 343 N-terminal tag ends have S at P4'.
+pos	N.P4'.P	5	343	5 of 343 N-terminal tag ends have P at P4'.
+pos	N.P4'.V	20	343	20 of 343 N-terminal tag ends have V at P4'.
+pos	N.P4'.T	28	343	28 of 343 N-terminal tag ends have T at P4'.
+pos	N.P4'.C	1	343	1 of 343 N-terminal tag ends have C at P4'.
+pos	N.P4'.L	44	343	44 of 343 N-terminal tag ends have L at P4'.
+pos	N.P4'.N	12	343	12 of 343 N-terminal tag ends have N at P4'.
+pos	N.P4'.D	34	343	34 of 343 N-terminal tag ends have D at P4'.
+pos	N.P4'.Q	15	343	15 of 343 N-terminal tag ends have Q at P4'.
+pos	N.P4'.K	2	343	2 of 343 N-terminal tag ends have K at P4'.
+pos	N.P4'.E	42	343	42 of 343 N-terminal tag ends have E at P4'.
+pos	N.P4'.M	1	343	1 of 343 N-terminal tag ends have M at P4'.
+pos	N.P4'.H	1	343	1 of 343 N-terminal tag ends have H at P4'.
+pos	N.P4'.F	7	343	7 of 343 N-terminal tag ends have F at P4'.
+pos	N.P4'.R	0	343	0 of 343 N-terminal tag ends have R at P4'.
+pos	N.P4'.Y	3	343	3 of 343 N-terminal tag ends have Y at P4'.
+pos	N.P4'.W	0	343	0 of 343 N-terminal tag ends have W at P4'.
+share	kr	0.9918842280238584	10227	A share of 0.992 of the C-terminal tag ends are K or R, labelled ones included.
+share	anchors_LVFYM	0.003128972328150973	10227	A share of 0.003 of the C-terminal tag ends are L, V, F, Y or M.
+share	nterm_D	0.01749271137026239	343	A share of 0.017 of the N-terminal tag ends are D.
+model	Trypsin.loglik	-7847.313364443253	10544	Trypsin gives the tag ends a log-likelihood of -7847.31.
+model	Trypsin.class	Trypsin	-	Trypsin belongs to the class Trypsin.
+model	Lys-C.loglik	-5335.231377416596	10544	Lys-C gives the tag ends a log-likelihood of -5335.23.
+model	Lys-C.class	Lys-C	-	Lys-C belongs to the class Lys-C.
+model	Glu-C.loglik	-58330.27015806255	10544	Glu-C gives the tag ends a log-likelihood of -58330.3.
+model	Glu-C.class	Glu-C	-	Glu-C belongs to the class Glu-C.
+model	Chymotrypsin.loglik	-55526.92843013451	10544	Chymotrypsin gives the tag ends a log-likelihood of -55526.9.
+model	Chymotrypsin.class	Chymotrypsin	-	Chymotrypsin belongs to the class Chymotrypsin.
+model	Lys-N.loglik	-32127.295367345727	10544	Lys-N gives the tag ends a log-likelihood of -32127.3.
+model	Lys-N.class	Lys-N	-	Lys-N belongs to the class Lys-N.
+model	proteasome.loglik	-37136.783143280976	10544	proteasome gives the tag ends a log-likelihood of -37136.8.
+model	proteasome.class	unspecific cleavage	-	proteasome belongs to the class unspecific cleavage.
+model	Arg-C.loglik	-57339.3934991319	10544	Arg-C gives the tag ends a log-likelihood of -57339.4.
+model	Arg-C.class	Arg-C	-	Arg-C belongs to the class Arg-C.
+model	Asp-N.loglik	-31114.510000580616	10544	Asp-N gives the tag ends a log-likelihood of -31114.5.
+model	Asp-N.class	Asp-N	-	Asp-N belongs to the class Asp-N.
+model	unspecific.loglik	-30122.9597878963	10544	unspecific gives the tag ends a log-likelihood of -30123.
+model	unspecific.class	unspecific cleavage	-	unspecific belongs to the class unspecific cleavage.
+model	HLA-I.loglik	-32681.3884947604	10544	HLA-I gives the tag ends a log-likelihood of -32681.4.
+model	HLA-I.class	unspecific cleavage	-	HLA-I belongs to the class unspecific cleavage.
+model	HLA-II.loglik	-24778.46822468551	10544	HLA-II gives the tag ends a log-likelihood of -24778.5.
+model	HLA-II.class	unspecific cleavage	-	HLA-II belongs to the class unspecific cleavage.
+background	C.G	0.06564934350656494	-	The C-terminal background gives G a share of 0.0656.
+background	C.A	0.07009929900700994	-	The C-terminal background gives A a share of 0.0701.
+background	C.S	0.08348916510834893	-	The C-terminal background gives S a share of 0.0835.
+background	C.P	0.06317936820631795	-	The C-terminal background gives P a share of 0.0632.
+background	C.V	0.05955940440595595	-	The C-terminal background gives V a share of 0.0596.
+background	C.T	0.05377946220537796	-	The C-terminal background gives T a share of 0.0538.
+background	C.C	0.022969770302296983	-	The C-terminal background gives C a share of 0.0230.
+background	C.L	0.14297857021429788	-	The C-terminal background gives L a share of 0.1430.
+background	C.N	0.035839641603583966	-	The C-terminal background gives N a share of 0.0358.
+background	C.D	0.047349526504734965	-	The C-terminal background gives D a share of 0.0473.
+background	C.Q	0.04765952340476596	-	The C-terminal background gives Q a share of 0.0477.
+background	C.K	0.05730942690573095	-	The C-terminal background gives K a share of 0.0573.
+background	C.E	0.07107928920710795	-	The C-terminal background gives E a share of 0.0711.
+background	C.M	0.02130978690213098	-	The C-terminal background gives M a share of 0.0213.
+background	C.H	0.026229737702622977	-	The C-terminal background gives H a share of 0.0262.
+background	C.F	0.03646963530364697	-	The C-terminal background gives F a share of 0.0365.
+background	C.R	0.05632943670563295	-	The C-terminal background gives R a share of 0.0563.
+background	C.Y	0.026599734002659976	-	The C-terminal background gives Y a share of 0.0266.
+background	C.W	0.01211987880121199	-	The C-terminal background gives W a share of 0.0121.
+background	N.G	0.06564934350656494	-	The N-terminal background gives G a share of 0.0656.
+background	N.A	0.07009929900700994	-	The N-terminal background gives A a share of 0.0701.
+background	N.S	0.08348916510834893	-	The N-terminal background gives S a share of 0.0835.
+background	N.P	0.06317936820631795	-	The N-terminal background gives P a share of 0.0632.
+background	N.V	0.05955940440595595	-	The N-terminal background gives V a share of 0.0596.
+background	N.T	0.05377946220537796	-	The N-terminal background gives T a share of 0.0538.
+background	N.C	0.022969770302296983	-	The N-terminal background gives C a share of 0.0230.
+background	N.L	0.14297857021429788	-	The N-terminal background gives L a share of 0.1430.
+background	N.N	0.035839641603583966	-	The N-terminal background gives N a share of 0.0358.
+background	N.D	0.047349526504734965	-	The N-terminal background gives D a share of 0.0473.
+background	N.Q	0.04765952340476596	-	The N-terminal background gives Q a share of 0.0477.
+background	N.K	0.05730942690573095	-	The N-terminal background gives K a share of 0.0573.
+background	N.E	0.07107928920710795	-	The N-terminal background gives E a share of 0.0711.
+background	N.M	0.02130978690213098	-	The N-terminal background gives M a share of 0.0213.
+background	N.H	0.026229737702622977	-	The N-terminal background gives H a share of 0.0262.
+background	N.F	0.03646963530364697	-	The N-terminal background gives F a share of 0.0365.
+background	N.R	0.05632943670563295	-	The N-terminal background gives R a share of 0.0563.
+background	N.Y	0.026599734002659976	-	The N-terminal background gives Y a share of 0.0266.
+background	N.W	0.01211987880121199	-	The N-terminal background gives W a share of 0.0121.
+model	Trypsin.C.G	0.0015299847001529984	-	Trypsin at the C end gives G a share of 0.0015.
+model	Trypsin.C.A	0.0011799882001179989	-	Trypsin at the C end gives A a share of 0.0012.
+model	Trypsin.C.S	0.0003899961000389996	-	Trypsin at the C end gives S a share of 0.0004.
+model	Trypsin.C.P	0.00021999780002199978	-	Trypsin at the C end gives P a share of 0.0002.
+model	Trypsin.C.V	0.00021999780002199978	-	Trypsin at the C end gives V a share of 0.0002.
+model	Trypsin.C.T	0.00012999870001299986	-	Trypsin at the C end gives T a share of 0.0001.
+model	Trypsin.C.C	0.00021999780002199978	-	Trypsin at the C end gives C a share of 0.0002.
+model	Trypsin.C.L	0.0011299887001129988	-	Trypsin at the C end gives L a share of 0.0011.
+model	Trypsin.C.N	0.0003499965000349996	-	Trypsin at the C end gives N a share of 0.0003.
+model	Trypsin.C.D	0	-	Trypsin at the C end gives D a share of 0.0000.
+model	Trypsin.C.Q	0.0003899961000389996	-	Trypsin at the C end gives Q a share of 0.0004.
+model	Trypsin.C.K	0.5650343496565033	-	Trypsin at the C end gives K a share of 0.5650.
+model	Trypsin.C.E	3.999960000399996e-05	-	Trypsin at the C end gives E a share of 0.0000.
+model	Trypsin.C.M	0.00021999780002199978	-	Trypsin at the C end gives M a share of 0.0002.
+model	Trypsin.C.H	0.00016999830001699983	-	Trypsin at the C end gives H a share of 0.0002.
+model	Trypsin.C.F	0.00043999560004399956	-	Trypsin at the C end gives F a share of 0.0004.
+model	Trypsin.C.R	0.42789572104278956	-	Trypsin at the C end gives R a share of 0.4279.
+model	Trypsin.C.Y	0.00043999560004399956	-	Trypsin at the C end gives Y a share of 0.0004.
+model	Trypsin.C.W	0	-	Trypsin at the C end gives W a share of 0.0000.
+model	Trypsin.N.G	0.06928930710692895	-	Trypsin at the N end gives G a share of 0.0693.
+model	Trypsin.N.A	0.09436905630943691	-	Trypsin at the N end gives A a share of 0.0944.
+model	Trypsin.N.S	0.06566934330656696	-	Trypsin at the N end gives S a share of 0.0657.
+model	Trypsin.N.P	0.002529974700252998	-	Trypsin at the N end gives P a share of 0.0025.
+model	Trypsin.N.V	0.08590914090859093	-	Trypsin at the N end gives V a share of 0.0859.
+model	Trypsin.N.T	0.06662933370666294	-	Trypsin at the N end gives T a share of 0.0666.
+model	Trypsin.N.C	0.010069899301006992	-	Trypsin at the N end gives C a share of 0.0101.
+model	Trypsin.N.L	0.17830821691783086	-	Trypsin at the N end gives L a share of 0.1783.
+model	Trypsin.N.N	0.04438955610443896	-	Trypsin at the N end gives N a share of 0.0444.
+model	Trypsin.N.D	0.05563944360556396	-	Trypsin at the N end gives D a share of 0.0556.
+model	Trypsin.N.Q	0.03959960400395997	-	Trypsin at the N end gives Q a share of 0.0396.
+model	Trypsin.N.K	0.052549474505254955	-	Trypsin at the N end gives K a share of 0.0525.
+model	Trypsin.N.E	0.07369926300736994	-	Trypsin at the N end gives E a share of 0.0737.
+model	Trypsin.N.M	0.026639733602663977	-	Trypsin at the N end gives M a share of 0.0266.
+model	Trypsin.N.H	0.02341976580234198	-	Trypsin at the N end gives H a share of 0.0234.
+model	Trypsin.N.F	0.03993960060399397	-	Trypsin at the N end gives F a share of 0.0399.
+model	Trypsin.N.R	0.03043969560304397	-	Trypsin at the N end gives R a share of 0.0304.
+model	Trypsin.N.Y	0.03200967990320097	-	Trypsin at the N end gives Y a share of 0.0320.
+model	Trypsin.N.W	0.008899911000889993	-	Trypsin at the N end gives W a share of 0.0089.
+model	Lys-C.C.G	0	-	Lys-C at the C end gives G a share of 0.0000.
+model	Lys-C.C.A	0	-	Lys-C at the C end gives A a share of 0.0000.
+model	Lys-C.C.S	0	-	Lys-C at the C end gives S a share of 0.0000.
+model	Lys-C.C.P	0	-	Lys-C at the C end gives P a share of 0.0000.
+model	Lys-C.C.V	0	-	Lys-C at the C end gives V a share of 0.0000.
+model	Lys-C.C.T	0	-	Lys-C at the C end gives T a share of 0.0000.
+model	Lys-C.C.C	0	-	Lys-C at the C end gives C a share of 0.0000.
+model	Lys-C.C.L	0	-	Lys-C at the C end gives L a share of 0.0000.
+model	Lys-C.C.N	0	-	Lys-C at the C end gives N a share of 0.0000.
+model	Lys-C.C.D	0	-	Lys-C at the C end gives D a share of 0.0000.
+model	Lys-C.C.Q	0	-	Lys-C at the C end gives Q a share of 0.0000.
+model	Lys-C.C.K	1	-	Lys-C at the C end gives K a share of 1.0000.
+model	Lys-C.C.E	0	-	Lys-C at the C end gives E a share of 0.0000.
+model	Lys-C.C.M	0	-	Lys-C at the C end gives M a share of 0.0000.
+model	Lys-C.C.H	0	-	Lys-C at the C end gives H a share of 0.0000.
+model	Lys-C.C.F	0	-	Lys-C at the C end gives F a share of 0.0000.
+model	Lys-C.C.R	0	-	Lys-C at the C end gives R a share of 0.0000.
+model	Lys-C.C.Y	0	-	Lys-C at the C end gives Y a share of 0.0000.
+model	Lys-C.C.W	0	-	Lys-C at the C end gives W a share of 0.0000.
+model	Lys-C.N.G	0.05445945540544596	-	Lys-C at the N end gives G a share of 0.0545.
+model	Lys-C.N.A	0.08910910890891093	-	Lys-C at the N end gives A a share of 0.0891.
+model	Lys-C.N.S	0.08662913370866293	-	Lys-C at the N end gives S a share of 0.0866.
+model	Lys-C.N.P	0.001239987600123999	-	Lys-C at the N end gives P a share of 0.0012.
+model	Lys-C.N.V	0.05816941830581695	-	Lys-C at the N end gives V a share of 0.0582.
+model	Lys-C.N.T	0.05321946780532196	-	Lys-C at the N end gives T a share of 0.0532.
+model	Lys-C.N.C	0.019799802001979984	-	Lys-C at the N end gives C a share of 0.0198.
+model	Lys-C.N.L	0.1274787252127479	-	Lys-C at the N end gives L a share of 0.1275.
+model	Lys-C.N.N	0.06063939360606395	-	Lys-C at the N end gives N a share of 0.0606.
+model	Lys-C.N.D	0.06435935640643595	-	Lys-C at the N end gives D a share of 0.0644.
+model	Lys-C.N.Q	0.04949950500494996	-	Lys-C at the N end gives Q a share of 0.0495.
+model	Lys-C.N.K	0.07301926980730195	-	Lys-C at the N end gives K a share of 0.0730.
+model	Lys-C.N.E	0.07425925740742595	-	Lys-C at the N end gives E a share of 0.0743.
+model	Lys-C.N.M	0.03341966580334197	-	Lys-C at the N end gives M a share of 0.0334.
+model	Lys-C.N.H	0.018559814401855983	-	Lys-C at the N end gives H a share of 0.0186.
+model	Lys-C.N.F	0.02103978960210398	-	Lys-C at the N end gives F a share of 0.0210.
+model	Lys-C.N.R	0.07920920790792094	-	Lys-C at the N end gives R a share of 0.0792.
+model	Lys-C.N.Y	0.02598974010259898	-	Lys-C at the N end gives Y a share of 0.0260.
+model	Lys-C.N.W	0.009899901000989992	-	Lys-C at the N end gives W a share of 0.0099.
+model	Glu-C.C.G	0.01216	-	Glu-C at the C end gives G a share of 0.0122.
+model	Glu-C.C.A	0.00858	-	Glu-C at the C end gives A a share of 0.0086.
+model	Glu-C.C.S	0.00191	-	Glu-C at the C end gives S a share of 0.0019.
+model	Glu-C.C.P	0	-	Glu-C at the C end gives P a share of 0.0000.
+model	Glu-C.C.V	0.00095	-	Glu-C at the C end gives V a share of 0.0009.
+model	Glu-C.C.T	0.00143	-	Glu-C at the C end gives T a share of 0.0014.
+model	Glu-C.C.C	0.00024	-	Glu-C at the C end gives C a share of 0.0002.
+model	Glu-C.C.L	0.00143	-	Glu-C at the C end gives L a share of 0.0014.
+model	Glu-C.C.N	0.00024	-	Glu-C at the C end gives N a share of 0.0002.
+model	Glu-C.C.D	0.04219	-	Glu-C at the C end gives D a share of 0.0422.
+model	Glu-C.C.Q	0.00405	-	Glu-C at the C end gives Q a share of 0.0040.
+model	Glu-C.C.K	0.00072	-	Glu-C at the C end gives K a share of 0.0007.
+model	Glu-C.C.E	0.92062	-	Glu-C at the C end gives E a share of 0.9206.
+model	Glu-C.C.M	0.00143	-	Glu-C at the C end gives M a share of 0.0014.
+model	Glu-C.C.H	0	-	Glu-C at the C end gives H a share of 0.0000.
+model	Glu-C.C.F	0.00119	-	Glu-C at the C end gives F a share of 0.0012.
+model	Glu-C.C.R	0.00238	-	Glu-C at the C end gives R a share of 0.0024.
+model	Glu-C.C.Y	0.00048	-	Glu-C at the C end gives Y a share of 0.0005.
+model	Glu-C.C.W	0	-	Glu-C at the C end gives W a share of 0.0000.
+model	Glu-C.N.G	0.07773077730777307	-	Glu-C at the N end gives G a share of 0.0777.
+model	Glu-C.N.A	0.11397113971139711	-	Glu-C at the N end gives A a share of 0.1140.
+model	Glu-C.N.S	0.07010070100701006	-	Glu-C at the N end gives S a share of 0.0701.
+model	Glu-C.N.P	0.0019100191001910018	-	Glu-C at the N end gives P a share of 0.0019.
+model	Glu-C.N.V	0.08178081780817809	-	Glu-C at the N end gives V a share of 0.0818.
+model	Glu-C.N.T	0.061520615206152054	-	Glu-C at the N end gives T a share of 0.0615.
+model	Glu-C.N.C	0.009060090600906009	-	Glu-C at the N end gives C a share of 0.0091.
+model	Glu-C.N.L	0.20458204582045822	-	Glu-C at the N end gives L a share of 0.2046.
+model	Glu-C.N.N	0.04316043160431604	-	Glu-C at the N end gives N a share of 0.0432.
+model	Glu-C.N.D	0.032190321903219035	-	Glu-C at the N end gives D a share of 0.0322.
+model	Glu-C.N.Q	0.03600036000360003	-	Glu-C at the N end gives Q a share of 0.0360.
+model	Glu-C.N.K	0.07439074390743906	-	Glu-C at the N end gives K a share of 0.0744.
+model	Glu-C.N.E	0.013110131101311012	-	Glu-C at the N end gives E a share of 0.0131.
+model	Glu-C.N.M	0.03529035290352903	-	Glu-C at the N end gives M a share of 0.0353.
+model	Glu-C.N.H	0.024080240802408025	-	Glu-C at the N end gives H a share of 0.0241.
+model	Glu-C.N.F	0.04101041010410104	-	Glu-C at the N end gives F a share of 0.0410.
+model	Glu-C.N.R	0.05389053890538905	-	Glu-C at the N end gives R a share of 0.0539.
+model	Glu-C.N.Y	0.01931019310193102	-	Glu-C at the N end gives Y a share of 0.0193.
+model	Glu-C.N.W	0.006910069100691007	-	Glu-C at the N end gives W a share of 0.0069.
+model	Chymotrypsin.C.G	0	-	Chymotrypsin at the C end gives G a share of 0.0000.
+model	Chymotrypsin.C.A	0.001980019800198002	-	Chymotrypsin at the C end gives A a share of 0.0020.
+model	Chymotrypsin.C.S	0	-	Chymotrypsin at the C end gives S a share of 0.0000.
+model	Chymotrypsin.C.P	0.000990009900099001	-	Chymotrypsin at the C end gives P a share of 0.0010.
+model	Chymotrypsin.C.V	0.000990009900099001	-	Chymotrypsin at the C end gives V a share of 0.0010.
+model	Chymotrypsin.C.T	0.000990009900099001	-	Chymotrypsin at the C end gives T a share of 0.0010.
+model	Chymotrypsin.C.C	0.000990009900099001	-	Chymotrypsin at the C end gives C a share of 0.0010.
+model	Chymotrypsin.C.L	0.25570255702557027	-	Chymotrypsin at the C end gives L a share of 0.2557.
+model	Chymotrypsin.C.N	0.03568035680356804	-	Chymotrypsin at the C end gives N a share of 0.0357.
+model	Chymotrypsin.C.D	0.000990009900099001	-	Chymotrypsin at the C end gives D a share of 0.0010.
+model	Chymotrypsin.C.Q	0.007930079300793008	-	Chymotrypsin at the C end gives Q a share of 0.0079.
+model	Chymotrypsin.C.K	0.001980019800198002	-	Chymotrypsin at the C end gives K a share of 0.0020.
+model	Chymotrypsin.C.E	0.000990009900099001	-	Chymotrypsin at the C end gives E a share of 0.0010.
+model	Chymotrypsin.C.M	0.04063040630406304	-	Chymotrypsin at the C end gives M a share of 0.0406.
+model	Chymotrypsin.C.H	0.03469034690346903	-	Chymotrypsin at the C end gives H a share of 0.0347.
+model	Chymotrypsin.C.F	0.2705627056270563	-	Chymotrypsin at the C end gives F a share of 0.2706.
+model	Chymotrypsin.C.R	0.000990009900099001	-	Chymotrypsin at the C end gives R a share of 0.0010.
+model	Chymotrypsin.C.Y	0.2834528345283453	-	Chymotrypsin at the C end gives Y a share of 0.2835.
+model	Chymotrypsin.C.W	0.06046060460604606	-	Chymotrypsin at the C end gives W a share of 0.0605.
+model	Chymotrypsin.N.G	0.08656740297791066	-	Chymotrypsin at the N end gives G a share of 0.0866.
+model	Chymotrypsin.N.A	0.09054728358149257	-	Chymotrypsin at the N end gives A a share of 0.0905.
+model	Chymotrypsin.N.S	0.1034768956931292	-	Chymotrypsin at the N end gives S a share of 0.1035.
+model	Chymotrypsin.N.P	0.007959761207163785	-	Chymotrypsin at the N end gives P a share of 0.0080.
+model	Chymotrypsin.N.V	0.08258752237432877	-	Chymotrypsin at the N end gives V a share of 0.0826.
+model	Chymotrypsin.N.T	0.08258752237432877	-	Chymotrypsin at the N end gives T a share of 0.0826.
+model	Chymotrypsin.N.C	0.013929582112536623	-	Chymotrypsin at the N end gives C a share of 0.0139.
+model	Chymotrypsin.N.L	0.1562153135405938	-	Chymotrypsin at the N end gives L a share of 0.1562.
+model	Chymotrypsin.N.N	0.03482895513134606	-	Chymotrypsin at the N end gives N a share of 0.0348.
+model	Chymotrypsin.N.D	0.04477865664030079	-	Chymotrypsin at the N end gives D a share of 0.0448.
+model	Chymotrypsin.N.Q	0.02188934331970041	-	Chymotrypsin at the N end gives Q a share of 0.0219.
+model	Chymotrypsin.N.K	0.13133605991820246	-	Chymotrypsin at the N end gives K a share of 0.1313.
+model	Chymotrypsin.N.E	0.04178874633760987	-	Chymotrypsin at the N end gives E a share of 0.0418.
+model	Chymotrypsin.N.M	0.019899403017909465	-	Chymotrypsin at the N end gives M a share of 0.0199.
+model	Chymotrypsin.N.H	0.008959731208063757	-	Chymotrypsin at the N end gives H a share of 0.0090.
+model	Chymotrypsin.N.F	0.012939611811645652	-	Chymotrypsin at the N end gives F a share of 0.0129.
+model	Chymotrypsin.N.R	0.04576862694119176	-	Chymotrypsin at the N end gives R a share of 0.0458.
+model	Chymotrypsin.N.Y	0.008959731208063757	-	Chymotrypsin at the N end gives Y a share of 0.0090.
+model	Chymotrypsin.N.W	0.004979850604481866	-	Chymotrypsin at the N end gives W a share of 0.0050.
+model	Lys-N.C.G	0.08313916860831391	-	Lys-N at the C end gives G a share of 0.0831.
+model	Lys-N.C.A	0.07552924470755291	-	Lys-N at the C end gives A a share of 0.0755.
+model	Lys-N.C.S	0.07552924470755291	-	Lys-N at the C end gives S a share of 0.0755.
+model	Lys-N.C.P	0.04085959140408596	-	Lys-N at the C end gives P a share of 0.0409.
+model	Lys-N.C.V	0.051309486905130944	-	Lys-N at the C end gives V a share of 0.0513.
+model	Lys-N.C.T	0.043709562904370954	-	Lys-N at the C end gives T a share of 0.0437.
+model	Lys-N.C.C	0.01852981470185298	-	Lys-N at the C end gives C a share of 0.0185.
+model	Lys-N.C.L	0.15391846081539184	-	Lys-N at the C end gives L a share of 0.1539.
+model	Lys-N.C.N	0.047979520204797954	-	Lys-N at the C end gives N a share of 0.0480.
+model	Lys-N.C.D	0.054159458405415944	-	Lys-N at the C end gives D a share of 0.0542.
+model	Lys-N.C.Q	0.04987950120498795	-	Lys-N at the C end gives Q a share of 0.0499.
+model	Lys-N.C.K	0.051309486905130944	-	Lys-N at the C end gives K a share of 0.0513.
+model	Lys-N.C.E	0.0969090309096909	-	Lys-N at the C end gives E a share of 0.0969.
+model	Lys-N.C.M	0.03467965320346796	-	Lys-N at the C end gives M a share of 0.0347.
+model	Lys-N.C.H	0.012349876501234987	-	Lys-N at the C end gives H a share of 0.0123.
+model	Lys-N.C.F	0.028499715002849972	-	Lys-N at the C end gives F a share of 0.0285.
+model	Lys-N.C.R	0.04465955340446595	-	Lys-N at the C end gives R a share of 0.0447.
+model	Lys-N.C.Y	0.024699753002469974	-	Lys-N at the C end gives Y a share of 0.0247.
+model	Lys-N.C.W	0.012349876501234987	-	Lys-N at the C end gives W a share of 0.0123.
+model	Lys-N.N.G	0	-	Lys-N at the N end gives G a share of 0.0000.
+model	Lys-N.N.A	0	-	Lys-N at the N end gives A a share of 0.0000.
+model	Lys-N.N.S	0	-	Lys-N at the N end gives S a share of 0.0000.
+model	Lys-N.N.P	0	-	Lys-N at the N end gives P a share of 0.0000.
+model	Lys-N.N.V	0	-	Lys-N at the N end gives V a share of 0.0000.
+model	Lys-N.N.T	0	-	Lys-N at the N end gives T a share of 0.0000.
+model	Lys-N.N.C	0	-	Lys-N at the N end gives C a share of 0.0000.
+model	Lys-N.N.L	0	-	Lys-N at the N end gives L a share of 0.0000.
+model	Lys-N.N.N	0	-	Lys-N at the N end gives N a share of 0.0000.
+model	Lys-N.N.D	0	-	Lys-N at the N end gives D a share of 0.0000.
+model	Lys-N.N.Q	0	-	Lys-N at the N end gives Q a share of 0.0000.
+model	Lys-N.N.K	1	-	Lys-N at the N end gives K a share of 1.0000.
+model	Lys-N.N.E	0	-	Lys-N at the N end gives E a share of 0.0000.
+model	Lys-N.N.M	0	-	Lys-N at the N end gives M a share of 0.0000.
+model	Lys-N.N.H	0	-	Lys-N at the N end gives H a share of 0.0000.
+model	Lys-N.N.F	0	-	Lys-N at the N end gives F a share of 0.0000.
+model	Lys-N.N.R	0	-	Lys-N at the N end gives R a share of 0.0000.
+model	Lys-N.N.Y	0	-	Lys-N at the N end gives Y a share of 0.0000.
+model	Lys-N.N.W	0	-	Lys-N at the N end gives W a share of 0.0000.
+model	proteasome.C.G	0.052331046620932416	-	proteasome at the C end gives G a share of 0.0523.
+model	proteasome.C.A	0.09101182023640471	-	proteasome at the C end gives A a share of 0.0910.
+model	proteasome.C.S	0.06598131962639252	-	proteasome at the C end gives S a share of 0.0660.
+model	proteasome.C.P	0.0125102502050041	-	proteasome at the C end gives P a share of 0.0125.
+model	proteasome.C.V	0.1001120022400448	-	proteasome at the C end gives V a share of 0.1001.
+model	proteasome.C.T	0.03299065981319626	-	proteasome at the C end gives T a share of 0.0330.
+model	proteasome.C.C	0.004550091001820036	-	proteasome at the C end gives C a share of 0.0046.
+model	proteasome.C.L	0.17179343586871737	-	proteasome at the C end gives L a share of 0.1718.
+model	proteasome.C.N	0.028440568811376226	-	proteasome at the C end gives N a share of 0.0284.
+model	proteasome.C.D	0.06598131962639252	-	proteasome at the C end gives D a share of 0.0660.
+model	proteasome.C.Q	0.03868077361547231	-	proteasome at the C end gives Q a share of 0.0387.
+model	proteasome.C.K	0.026170523410468206	-	proteasome at the C end gives K a share of 0.0262.
+model	proteasome.C.E	0.07167143342866857	-	proteasome at the C end gives E a share of 0.0717.
+model	proteasome.C.M	0.031850637012740254	-	proteasome at the C end gives M a share of 0.0319.
+model	proteasome.C.H	0.030720614412288245	-	proteasome at the C end gives H a share of 0.0307.
+model	proteasome.C.F	0.048920978419568384	-	proteasome at the C end gives F a share of 0.0489.
+model	proteasome.C.R	0.048920978419568384	-	proteasome at the C end gives R a share of 0.0489.
+model	proteasome.C.Y	0.04437088741774835	-	proteasome at the C end gives Y a share of 0.0444.
+model	proteasome.C.W	0.03299065981319626	-	proteasome at the C end gives W a share of 0.0330.
+model	proteasome.N.G	0.07395	-	proteasome at the N end gives G a share of 0.0740.
+model	proteasome.N.A	0.10808	-	proteasome at the N end gives A a share of 0.1081.
+model	proteasome.N.S	0.10694	-	proteasome at the N end gives S a share of 0.1069.
+model	proteasome.N.P	0.06371	-	proteasome at the N end gives P a share of 0.0637.
+model	proteasome.N.V	0.06143	-	proteasome at the N end gives V a share of 0.0614.
+model	proteasome.N.T	0.05233	-	proteasome at the N end gives T a share of 0.0523.
+model	proteasome.N.C	0.00569	-	proteasome at the N end gives C a share of 0.0057.
+model	proteasome.N.L	0.10694	-	proteasome at the N end gives L a share of 0.1069.
+model	proteasome.N.N	0.03527	-	proteasome at the N end gives N a share of 0.0353.
+model	proteasome.N.D	0.03413	-	proteasome at the N end gives D a share of 0.0341.
+model	proteasome.N.Q	0.03641	-	proteasome at the N end gives Q a share of 0.0364.
+model	proteasome.N.K	0.05688	-	proteasome at the N end gives K a share of 0.0569.
+model	proteasome.N.E	0.0694	-	proteasome at the N end gives E a share of 0.0694.
+model	proteasome.N.M	0.0273	-	proteasome at the N end gives M a share of 0.0273.
+model	proteasome.N.H	0.02617	-	proteasome at the N end gives H a share of 0.0262.
+model	proteasome.N.F	0.03185	-	proteasome at the N end gives F a share of 0.0319.
+model	proteasome.N.R	0.04892	-	proteasome at the N end gives R a share of 0.0489.
+model	proteasome.N.Y	0.03754	-	proteasome at the N end gives Y a share of 0.0375.
+model	proteasome.N.W	0.01706	-	proteasome at the N end gives W a share of 0.0171.
+model	Arg-C.C.G	0	-	Arg-C at the C end gives G a share of 0.0000.
+model	Arg-C.C.A	0	-	Arg-C at the C end gives A a share of 0.0000.
+model	Arg-C.C.S	0	-	Arg-C at the C end gives S a share of 0.0000.
+model	Arg-C.C.P	0	-	Arg-C at the C end gives P a share of 0.0000.
+model	Arg-C.C.V	0	-	Arg-C at the C end gives V a share of 0.0000.
+model	Arg-C.C.T	0	-	Arg-C at the C end gives T a share of 0.0000.
+model	Arg-C.C.C	0	-	Arg-C at the C end gives C a share of 0.0000.
+model	Arg-C.C.L	0	-	Arg-C at the C end gives L a share of 0.0000.
+model	Arg-C.C.N	0	-	Arg-C at the C end gives N a share of 0.0000.
+model	Arg-C.C.D	0	-	Arg-C at the C end gives D a share of 0.0000.
+model	Arg-C.C.Q	0	-	Arg-C at the C end gives Q a share of 0.0000.
+model	Arg-C.C.K	0	-	Arg-C at the C end gives K a share of 0.0000.
+model	Arg-C.C.E	0	-	Arg-C at the C end gives E a share of 0.0000.
+model	Arg-C.C.M	0	-	Arg-C at the C end gives M a share of 0.0000.
+model	Arg-C.C.H	0	-	Arg-C at the C end gives H a share of 0.0000.
+model	Arg-C.C.F	0	-	Arg-C at the C end gives F a share of 0.0000.
+model	Arg-C.C.R	1	-	Arg-C at the C end gives R a share of 1.0000.
+model	Arg-C.C.Y	0	-	Arg-C at the C end gives Y a share of 0.0000.
+model	Arg-C.C.W	0	-	Arg-C at the C end gives W a share of 0.0000.
+model	Arg-C.N.G	0.06564934350656494	-	Arg-C at the N end gives G a share of 0.0656.
+model	Arg-C.N.A	0.07009929900700994	-	Arg-C at the N end gives A a share of 0.0701.
+model	Arg-C.N.S	0.08348916510834893	-	Arg-C at the N end gives S a share of 0.0835.
+model	Arg-C.N.P	0.06317936820631795	-	Arg-C at the N end gives P a share of 0.0632.
+model	Arg-C.N.V	0.05955940440595595	-	Arg-C at the N end gives V a share of 0.0596.
+model	Arg-C.N.T	0.05377946220537796	-	Arg-C at the N end gives T a share of 0.0538.
+model	Arg-C.N.C	0.022969770302296983	-	Arg-C at the N end gives C a share of 0.0230.
+model	Arg-C.N.L	0.14297857021429788	-	Arg-C at the N end gives L a share of 0.1430.
+model	Arg-C.N.N	0.035839641603583966	-	Arg-C at the N end gives N a share of 0.0358.
+model	Arg-C.N.D	0.047349526504734965	-	Arg-C at the N end gives D a share of 0.0473.
+model	Arg-C.N.Q	0.04765952340476596	-	Arg-C at the N end gives Q a share of 0.0477.
+model	Arg-C.N.K	0.05730942690573095	-	Arg-C at the N end gives K a share of 0.0573.
+model	Arg-C.N.E	0.07107928920710795	-	Arg-C at the N end gives E a share of 0.0711.
+model	Arg-C.N.M	0.02130978690213098	-	Arg-C at the N end gives M a share of 0.0213.
+model	Arg-C.N.H	0.026229737702622977	-	Arg-C at the N end gives H a share of 0.0262.
+model	Arg-C.N.F	0.03646963530364697	-	Arg-C at the N end gives F a share of 0.0365.
+model	Arg-C.N.R	0.05632943670563295	-	Arg-C at the N end gives R a share of 0.0563.
+model	Arg-C.N.Y	0.026599734002659976	-	Arg-C at the N end gives Y a share of 0.0266.
+model	Arg-C.N.W	0.01211987880121199	-	Arg-C at the N end gives W a share of 0.0121.
+model	Asp-N.C.G	0.06564934350656494	-	Asp-N at the C end gives G a share of 0.0656.
+model	Asp-N.C.A	0.07009929900700994	-	Asp-N at the C end gives A a share of 0.0701.
+model	Asp-N.C.S	0.08348916510834893	-	Asp-N at the C end gives S a share of 0.0835.
+model	Asp-N.C.P	0.06317936820631795	-	Asp-N at the C end gives P a share of 0.0632.
+model	Asp-N.C.V	0.05955940440595595	-	Asp-N at the C end gives V a share of 0.0596.
+model	Asp-N.C.T	0.05377946220537796	-	Asp-N at the C end gives T a share of 0.0538.
+model	Asp-N.C.C	0.022969770302296983	-	Asp-N at the C end gives C a share of 0.0230.
+model	Asp-N.C.L	0.14297857021429788	-	Asp-N at the C end gives L a share of 0.1430.
+model	Asp-N.C.N	0.035839641603583966	-	Asp-N at the C end gives N a share of 0.0358.
+model	Asp-N.C.D	0.047349526504734965	-	Asp-N at the C end gives D a share of 0.0473.
+model	Asp-N.C.Q	0.04765952340476596	-	Asp-N at the C end gives Q a share of 0.0477.
+model	Asp-N.C.K	0.05730942690573095	-	Asp-N at the C end gives K a share of 0.0573.
+model	Asp-N.C.E	0.07107928920710795	-	Asp-N at the C end gives E a share of 0.0711.
+model	Asp-N.C.M	0.02130978690213098	-	Asp-N at the C end gives M a share of 0.0213.
+model	Asp-N.C.H	0.026229737702622977	-	Asp-N at the C end gives H a share of 0.0262.
+model	Asp-N.C.F	0.03646963530364697	-	Asp-N at the C end gives F a share of 0.0365.
+model	Asp-N.C.R	0.05632943670563295	-	Asp-N at the C end gives R a share of 0.0563.
+model	Asp-N.C.Y	0.026599734002659976	-	Asp-N at the C end gives Y a share of 0.0266.
+model	Asp-N.C.W	0.01211987880121199	-	Asp-N at the C end gives W a share of 0.0121.
+model	Asp-N.N.G	0	-	Asp-N at the N end gives G a share of 0.0000.
+model	Asp-N.N.A	0	-	Asp-N at the N end gives A a share of 0.0000.
+model	Asp-N.N.S	0	-	Asp-N at the N end gives S a share of 0.0000.
+model	Asp-N.N.P	0	-	Asp-N at the N end gives P a share of 0.0000.
+model	Asp-N.N.V	0	-	Asp-N at the N end gives V a share of 0.0000.
+model	Asp-N.N.T	0	-	Asp-N at the N end gives T a share of 0.0000.
+model	Asp-N.N.C	0	-	Asp-N at the N end gives C a share of 0.0000.
+model	Asp-N.N.L	0	-	Asp-N at the N end gives L a share of 0.0000.
+model	Asp-N.N.N	0	-	Asp-N at the N end gives N a share of 0.0000.
+model	Asp-N.N.D	1	-	Asp-N at the N end gives D a share of 1.0000.
+model	Asp-N.N.Q	0	-	Asp-N at the N end gives Q a share of 0.0000.
+model	Asp-N.N.K	0	-	Asp-N at the N end gives K a share of 0.0000.
+model	Asp-N.N.E	0	-	Asp-N at the N end gives E a share of 0.0000.
+model	Asp-N.N.M	0	-	Asp-N at the N end gives M a share of 0.0000.
+model	Asp-N.N.H	0	-	Asp-N at the N end gives H a share of 0.0000.
+model	Asp-N.N.F	0	-	Asp-N at the N end gives F a share of 0.0000.
+model	Asp-N.N.R	0	-	Asp-N at the N end gives R a share of 0.0000.
+model	Asp-N.N.Y	0	-	Asp-N at the N end gives Y a share of 0.0000.
+model	Asp-N.N.W	0	-	Asp-N at the N end gives W a share of 0.0000.
+model	unspecific.C.G	0.06564934350656494	-	unspecific at the C end gives G a share of 0.0656.
+model	unspecific.C.A	0.07009929900700994	-	unspecific at the C end gives A a share of 0.0701.
+model	unspecific.C.S	0.08348916510834893	-	unspecific at the C end gives S a share of 0.0835.
+model	unspecific.C.P	0.06317936820631795	-	unspecific at the C end gives P a share of 0.0632.
+model	unspecific.C.V	0.05955940440595595	-	unspecific at the C end gives V a share of 0.0596.
+model	unspecific.C.T	0.05377946220537796	-	unspecific at the C end gives T a share of 0.0538.
+model	unspecific.C.C	0.022969770302296983	-	unspecific at the C end gives C a share of 0.0230.
+model	unspecific.C.L	0.14297857021429788	-	unspecific at the C end gives L a share of 0.1430.
+model	unspecific.C.N	0.035839641603583966	-	unspecific at the C end gives N a share of 0.0358.
+model	unspecific.C.D	0.047349526504734965	-	unspecific at the C end gives D a share of 0.0473.
+model	unspecific.C.Q	0.04765952340476596	-	unspecific at the C end gives Q a share of 0.0477.
+model	unspecific.C.K	0.05730942690573095	-	unspecific at the C end gives K a share of 0.0573.
+model	unspecific.C.E	0.07107928920710795	-	unspecific at the C end gives E a share of 0.0711.
+model	unspecific.C.M	0.02130978690213098	-	unspecific at the C end gives M a share of 0.0213.
+model	unspecific.C.H	0.026229737702622977	-	unspecific at the C end gives H a share of 0.0262.
+model	unspecific.C.F	0.03646963530364697	-	unspecific at the C end gives F a share of 0.0365.
+model	unspecific.C.R	0.05632943670563295	-	unspecific at the C end gives R a share of 0.0563.
+model	unspecific.C.Y	0.026599734002659976	-	unspecific at the C end gives Y a share of 0.0266.
+model	unspecific.C.W	0.01211987880121199	-	unspecific at the C end gives W a share of 0.0121.
+model	unspecific.N.G	0.06564934350656494	-	unspecific at the N end gives G a share of 0.0656.
+model	unspecific.N.A	0.07009929900700994	-	unspecific at the N end gives A a share of 0.0701.
+model	unspecific.N.S	0.08348916510834893	-	unspecific at the N end gives S a share of 0.0835.
+model	unspecific.N.P	0.06317936820631795	-	unspecific at the N end gives P a share of 0.0632.
+model	unspecific.N.V	0.05955940440595595	-	unspecific at the N end gives V a share of 0.0596.
+model	unspecific.N.T	0.05377946220537796	-	unspecific at the N end gives T a share of 0.0538.
+model	unspecific.N.C	0.022969770302296983	-	unspecific at the N end gives C a share of 0.0230.
+model	unspecific.N.L	0.14297857021429788	-	unspecific at the N end gives L a share of 0.1430.
+model	unspecific.N.N	0.035839641603583966	-	unspecific at the N end gives N a share of 0.0358.
+model	unspecific.N.D	0.047349526504734965	-	unspecific at the N end gives D a share of 0.0473.
+model	unspecific.N.Q	0.04765952340476596	-	unspecific at the N end gives Q a share of 0.0477.
+model	unspecific.N.K	0.05730942690573095	-	unspecific at the N end gives K a share of 0.0573.
+model	unspecific.N.E	0.07107928920710795	-	unspecific at the N end gives E a share of 0.0711.
+model	unspecific.N.M	0.02130978690213098	-	unspecific at the N end gives M a share of 0.0213.
+model	unspecific.N.H	0.026229737702622977	-	unspecific at the N end gives H a share of 0.0262.
+model	unspecific.N.F	0.03646963530364697	-	unspecific at the N end gives F a share of 0.0365.
+model	unspecific.N.R	0.05632943670563295	-	unspecific at the N end gives R a share of 0.0563.
+model	unspecific.N.Y	0.026599734002659976	-	unspecific at the N end gives Y a share of 0.0266.
+model	unspecific.N.W	0.01211987880121199	-	unspecific at the N end gives W a share of 0.0121.
+model	HLA-I.C.G	0.0012	-	HLA-I at the C end gives G a share of 0.0012.
+model	HLA-I.C.A	0.06955	-	HLA-I at the C end gives A a share of 0.0696.
+model	HLA-I.C.S	0.00238	-	HLA-I at the C end gives S a share of 0.0024.
+model	HLA-I.C.P	0.01287	-	HLA-I at the C end gives P a share of 0.0129.
+model	HLA-I.C.V	0.09948	-	HLA-I at the C end gives V a share of 0.0995.
+model	HLA-I.C.T	0.00447	-	HLA-I at the C end gives T a share of 0.0045.
+model	HLA-I.C.C	0.00191	-	HLA-I at the C end gives C a share of 0.0019.
+model	HLA-I.C.L	0.38728	-	HLA-I at the C end gives L a share of 0.3873.
+model	HLA-I.C.N	9e-04	-	HLA-I at the C end gives N a share of 0.0009.
+model	HLA-I.C.D	0.00087	-	HLA-I at the C end gives D a share of 0.0009.
+model	HLA-I.C.Q	0.00095	-	HLA-I at the C end gives Q a share of 0.0009.
+model	HLA-I.C.K	0.04378	-	HLA-I at the C end gives K a share of 0.0438.
+model	HLA-I.C.E	0.00098	-	HLA-I at the C end gives E a share of 0.0010.
+model	HLA-I.C.M	0.03526	-	HLA-I at the C end gives M a share of 0.0353.
+model	HLA-I.C.H	0.00539	-	HLA-I at the C end gives H a share of 0.0054.
+model	HLA-I.C.F	0.11801	-	HLA-I at the C end gives F a share of 0.1180.
+model	HLA-I.C.R	0.05538	-	HLA-I at the C end gives R a share of 0.0554.
+model	HLA-I.C.Y	0.12388	-	HLA-I at the C end gives Y a share of 0.1239.
+model	HLA-I.C.W	0.03546	-	HLA-I at the C end gives W a share of 0.0355.
+model	HLA-I.N.G	0.03844999999999999	-	HLA-I at the N end gives G a share of 0.0384.
+model	HLA-I.N.A	0.09366999999999999	-	HLA-I at the N end gives A a share of 0.0937.
+model	HLA-I.N.S	0.09424999999999997	-	HLA-I at the N end gives S a share of 0.0942.
+model	HLA-I.N.P	0.0024399999999999995	-	HLA-I at the N end gives P a share of 0.0024.
+model	HLA-I.N.V	0.059439999999999986	-	HLA-I at the N end gives V a share of 0.0594.
+model	HLA-I.N.T	0.05584999999999998	-	HLA-I at the N end gives T a share of 0.0558.
+model	HLA-I.N.C	0.0025799999999999994	-	HLA-I at the N end gives C a share of 0.0026.
+model	HLA-I.N.L	0.10431999999999997	-	HLA-I at the N end gives L a share of 0.1043.
+model	HLA-I.N.N	0.036259999999999994	-	HLA-I at the N end gives N a share of 0.0363.
+model	HLA-I.N.D	0.04635999999999999	-	HLA-I at the N end gives D a share of 0.0464.
+model	HLA-I.N.Q	0.03531999999999999	-	HLA-I at the N end gives Q a share of 0.0353.
+model	HLA-I.N.K	0.09121999999999998	-	HLA-I at the N end gives K a share of 0.0912.
+model	HLA-I.N.E	0.06949999999999999	-	HLA-I at the N end gives E a share of 0.0695.
+model	HLA-I.N.M	0.023019999999999995	-	HLA-I at the N end gives M a share of 0.0230.
+model	HLA-I.N.H	0.04272999999999999	-	HLA-I at the N end gives H a share of 0.0427.
+model	HLA-I.N.F	0.06016999999999999	-	HLA-I at the N end gives F a share of 0.0602.
+model	HLA-I.N.R	0.08972999999999999	-	HLA-I at the N end gives R a share of 0.0897.
+model	HLA-I.N.Y	0.05175999999999999	-	HLA-I at the N end gives Y a share of 0.0518.
+model	HLA-I.N.W	0.002929999999999999	-	HLA-I at the N end gives W a share of 0.0029.
+model	HLA-II.C.G	0.09174	-	HLA-II at the C end gives G a share of 0.0917.
+model	HLA-II.C.A	0.07451	-	HLA-II at the C end gives A a share of 0.0745.
+model	HLA-II.C.S	0.06718	-	HLA-II at the C end gives S a share of 0.0672.
+model	HLA-II.C.P	0.04184	-	HLA-II at the C end gives P a share of 0.0418.
+model	HLA-II.C.V	0.03233	-	HLA-II at the C end gives V a share of 0.0323.
+model	HLA-II.C.T	0.05344	-	HLA-II at the C end gives T a share of 0.0534.
+model	HLA-II.C.C	0.00195	-	HLA-II at the C end gives C a share of 0.0019.
+model	HLA-II.C.L	0.07872	-	HLA-II at the C end gives L a share of 0.0787.
+model	HLA-II.C.N	0.05789	-	HLA-II at the C end gives N a share of 0.0579.
+model	HLA-II.C.D	0.05803	-	HLA-II at the C end gives D a share of 0.0580.
+model	HLA-II.C.Q	0.06725	-	HLA-II at the C end gives Q a share of 0.0673.
+model	HLA-II.C.K	0.10023	-	HLA-II at the C end gives K a share of 0.1002.
+model	HLA-II.C.E	0.0947	-	HLA-II at the C end gives E a share of 0.0947.
+model	HLA-II.C.M	0.01226	-	HLA-II at the C end gives M a share of 0.0123.
+model	HLA-II.C.H	0.03318	-	HLA-II at the C end gives H a share of 0.0332.
+model	HLA-II.C.F	0.02169	-	HLA-II at the C end gives F a share of 0.0217.
+model	HLA-II.C.R	0.08884	-	HLA-II at the C end gives R a share of 0.0888.
+model	HLA-II.C.Y	0.02001	-	HLA-II at the C end gives Y a share of 0.0200.
+model	HLA-II.C.W	0.00421	-	HLA-II at the C end gives W a share of 0.0042.
+model	HLA-II.N.G	0.09148182963659274	-	HLA-II at the N end gives G a share of 0.0915.
+model	HLA-II.N.A	0.08481169623392468	-	HLA-II at the N end gives A a share of 0.0848.
+model	HLA-II.N.S	0.08102162043240864	-	HLA-II at the N end gives S a share of 0.0810.
+model	HLA-II.N.P	0.011910238204764096	-	HLA-II at the N end gives P a share of 0.0119.
+model	HLA-II.N.V	0.07922158443168864	-	HLA-II at the N end gives V a share of 0.0792.
+model	HLA-II.N.T	0.05599111982239645	-	HLA-II at the N end gives T a share of 0.0560.
+model	HLA-II.N.C	0.0011700234004680095	-	HLA-II at the N end gives C a share of 0.0012.
+model	HLA-II.N.L	0.14338286765735317	-	HLA-II at the N end gives L a share of 0.1434.
+model	HLA-II.N.N	0.04044080881617632	-	HLA-II at the N end gives N a share of 0.0404.
+model	HLA-II.N.D	0.09124182483649673	-	HLA-II at the N end gives D a share of 0.0912.
+model	HLA-II.N.Q	0.01976039520790416	-	HLA-II at the N end gives Q a share of 0.0198.
+model	HLA-II.N.K	0.07241144822896459	-	HLA-II at the N end gives K a share of 0.0724.
+model	HLA-II.N.E	0.08040160803216065	-	HLA-II at the N end gives E a share of 0.0804.
+model	HLA-II.N.M	0.01001020020400408	-	HLA-II at the N end gives M a share of 0.0100.
+model	HLA-II.N.H	0.02019040380807616	-	HLA-II at the N end gives H a share of 0.0202.
+model	HLA-II.N.F	0.027160543210864217	-	HLA-II at the N end gives F a share of 0.0272.
+model	HLA-II.N.R	0.056481129622592455	-	HLA-II at the N end gives R a share of 0.0565.
+model	HLA-II.N.Y	0.02713054261085222	-	HLA-II at the N end gives Y a share of 0.0271.
+model	HLA-II.N.W	0.005780115602312047	-	HLA-II at the N end gives W a share of 0.0058.
+call	status	call	10201	Lys-C fits the 10201 C- and 343 N-terminal tag ends best.
+call	model	Lys-C	10201	The call is Lys-C.
+call	class	Lys-C	-	Lys-C belongs to the class Lys-C.
+call	runner_up	Trypsin	-	The best model of another class is Trypsin.
+call	runner_up_class	Trypsin	-	Trypsin belongs to the class Trypsin.
+call	margin	0.23824753291223985	10544	Lys-C fits 0.238 log-likelihood per tag end better than Trypsin.
+call	uses_nterm	yes	343	The call uses the 343 N-terminal tag ends.
+nocall	low_resolution	no	-	The fragment tolerance is in ppm.
+nocall	timstof	no	-	Neither the instrument, the native ID format nor the ion mobility marks the input as timsTOF data.
+nocall	ms2_scan_window	no	15441	The median MS2 scan window starts at m/z 100.00, not above y1 of K plus 0.1 (147.21).
+nocall	ms2_first_peak	no	15441	The median first MS2 peak is at m/z 100.55, not above y1 of K plus 0.1 (147.21).
+nocall	few_tags	no	10201	10227 residue-key and 10201 C-terminal tag ends against a minimum of 100.
+nocall	nonfinite_score	no	-	The call and the runner-up have finite log-likelihoods, or no call was scored.
+nocall	tie	no	0	No model of another class has the call's log-likelihood, or no call was scored.

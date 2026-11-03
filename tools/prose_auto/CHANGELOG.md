@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.1.4 (2026-11-03)
+
+Runs without a digest
+- Top-down, middle-down, native and intact-mass runs are detected right after reading the spectra
+  (`topdown.py`). Such a run gets no ProSE parameters, no Jev questions and no mini-search. prose-auto writes the
+  verdict, the reason with its numbers and "use FLASHTnT (OpenMS)" to `.auto.json` and `.auto.md`, and exits with
+  status 3.
+- Signals: charged MS2 precursors (median mass and charge, share at 8+); without precursor charges FLASHDeconv
+  (`--flashdeconv`) on 40 MS1 and 40 MS2 spectra, and a charge-state series among the MS1 peaks scored against
+  chance. Native: a charge series above m/z 2000, or precursors of >= 10 kDa at most at 0.078 sqrt(M).
+- On 123 public runs (13 studies) against 268 bottom-up runs: intact mass 13/13, top-down 59/60, native 30/38,
+  middle-down 8/12 aborted; no bottom-up run aborted. Two benchmark runs are top-down and are now aborted
+  (PXD033100 intact EF-Tu, PXD024405 protamines). Thresholds set on these runs.
+
+FASTag 1.8.0
+- Requires FASTag >= 1.8.0. The termini and mass-gap passes read FASTag's own reports (`-digest_out`,
+  `-label_out`, `-massgap_out`) with the 0.1.3 model table (`data/prose_auto_013_digest_models.tsv`); the tag-TSV
+  parsing, the model scoring, the mass-gap histogram code, `delta_combos.py` and the MS2 scan-start gate (now
+  FASTag's `ms2_first_peak` rule) are gone. The policy (confidences, TMTpro margin override, label, SILAC,
+  alkylation and modification rules, HLA mapping, PASEF gate) stays in prose-auto.
+- On 213 rerun runs every FASTag value equals 0.1.3's (terminal tags within 17, margins within 0.006); eight
+  decisions moved because Jev answered differently. The two FASTag passes take 0.70x the time (59.5 s -> 41.5 s
+  on 10 runs).
+
 ## 0.1.3 (2026-11-02)
 
 Proteases and HLA ligands

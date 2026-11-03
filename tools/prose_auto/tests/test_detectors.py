@@ -348,49 +348,6 @@ def test_jev_sees_the_data_features():
     assert state["measured from the spectra"] == txt          # never cut away by long texts
 
 
-def _fake_fastag(monkeypatch, rows):
-    from prose_auto import external as ext
-
-    def run(cmd, log):
-        out = cmd[cmd.index("-out") + 1]
-        with open(out, "w") as fh:
-            fh.write("spectrum\ttag\tlength\tcharge\tnterm_mass\tcterm_mass\textended\tgapped\tevalue\n")
-            for i, (nm, cm) in enumerate(rows):
-                fh.write(f"s{i}\tPEPT\t4\t2\t{nm}\t{cm}\t0\t0\t0.01\n")
-    monkeypatch.setattr(ext, "_run", run)
-    return ext
-
-
-def test_fastag_termini_tryptic_tmt_and_hla(monkeypatch):
-    K, R, TMT, L, H2O = 128.09496, 156.10111, 229.162932, 113.08406, 18.010565
-    # tryptic TMT: TMT-K or R one residue after the tag (y tags) or with water before it (reversed b tags)
-    ext = _fake_fastag(monkeypatch, [(TMT + 300.1, K + TMT)] * 150 + [(R + H2O, 412.2)] * 60 + [(TMT, 500.3)] * 40)
-    ev, st = ext.fastag_termini("FASTag", "x.mzML")
-    got = {(e.parameter, e.value) for e in ev}
-    assert ("enzyme", "Trypsin") in got and ("label", "TMT6/10/11plex") in got and st["cterm_KR"] >= 0.8
-    # HLA class I: hydrophobic C-termini (L), few K/R
-    ext = _fake_fastag(monkeypatch, [(300.1, L)] * 160 + [(250.2, K)] * 60)
-    ev, st = ext.fastag_termini("FASTag", "x.mzML")
-    assert ("enzyme", "unspecific cleavage") in {(e.parameter, e.value) for e in ev} and st["hla_hint"] == "HLA class I?"
-
-
-def test_delta_combinations_histone_and_phospho():
-    from prose_auto import delta_combos as DC
-    # 112.052 Da: two propionyls or acetyl + butyryl (isobaric, C6H8O2); the run's own peaks decide below
-    assert {("Propionyl", "Propionyl"), ("Acetyl", "Butyryl")} <= set(DC.explain(112.05243, 0.02)[:3])
-    assert DC.explain(98.03678, 0.02)[0] == ("Acetyl", "Propionyl")
-    assert DC.explain(42.04695, 0.02)[0] == ("Trimethyl",) and DC.explain(42.0106, 0.02)[0] == ("Acetyl",)
-    hist = [(56.0262, 900), (112.0524, 400), (98.0368, 150), (79.9663, 1200), (15.9949, 200), (0.0, 3000),
-            (137.3, 5)]
-    ev = DC.detect(hist, 0.02)
-    mods = next(e for e in ev if e.parameter == "variable_mods")
-    assert next(p for p in mods.stats["peaks"] if abs(p["delta"] - 112.0524) < 0.01)["explained_by"] == \
-        ["Propionyl", "Propionyl"] and "Butyryl (K)" not in mods.value
-    assert "Propionyl (K)" in mods.value and "Phospho (S)" in mods.value and "Oxidation (M)" in mods.value
-    assert any(e.parameter == "enrichment" and e.value == "Phospho (STY)" for e in ev)
-    assert DC.detect([(0.0, 500)], 0.02) == []                                  # nothing shifted: no call
-
-
 def test_hla_call_needs_several_indicators():
     from prose_auto.cli import _digest_votes
     tryp = {"median_mass": 1650, "q90_mass": 2200, "charge_1": 0.0}

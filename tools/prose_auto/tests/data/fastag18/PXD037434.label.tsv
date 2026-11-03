@@ -1,0 +1,26 @@
+section	key	value	n	description
+run	version	1.8.0	-	FASTag 1.8.0 wrote this report.
+run	input	P20210201029_F8.mzML	-	The spectra were read from P20210201029_F8.mzML.
+run	fragment_tolerance	20	-	The fragment tolerance is 20 ppm.
+run	fragment_tolerance_unit	ppm	-	The fragment tolerance is in ppm.
+run	tag_length	4	-	Tags were seeded at length 4.
+run	subsample_fraction	0.25	-	A fraction of 0.25 of the spectra was tagged (0 = all).
+run	subsample_spectra	0	-	0 spectra were drawn for tagging (0 = all).
+run	window_da	0.008	-	A tag end counts for a label when its mass is within 0.008 Da of it.
+run	low_resolution	no	-	The fragment tolerance is in ppm.
+run	silac_min	50	-	The heavy shares are gated on 50 K- and R-terminal tag ends each.
+count	tags_filtered	102029	102029	102029 reported tags are ungapped with an E-value of at most 1.
+nlabel	TMT.count	13	102029	13 tag ends are a bare 229.1629 Da gap (TMT), 11 N- and 2 C-terminal.
+nlabel	TMT.background	0	102029	0 tag ends are a gap of 229.6629 Da, 0.5 Da above TMT.
+nlabel	TMT.share	0.000127414754628586	102029	A share of 0.000127 of the filtered tags end in the TMT gap.
+nlabel	TMTpro.count	6265	102029	6265 tag ends are a bare 304.2071 Da gap (TMTpro), 1798 N- and 4467 C-terminal.
+nlabel	TMTpro.background	0	102029	0 tag ends are a gap of 304.7071 Da, 0.5 Da above TMTpro.
+nlabel	TMTpro.share	0.06140411059600702	102029	A share of 0.0614 of the filtered tags end in the TMTpro gap.
+nlabel	iTRAQ4.count	0	102029	0 tag ends are a bare 144.1021 Da gap (iTRAQ4), 0 N- and 0 C-terminal.
+nlabel	iTRAQ4.background	0	102029	0 tag ends are a gap of 144.6021 Da, 0.5 Da above iTRAQ4.
+nlabel	iTRAQ4.share	0	102029	A share of 0 of the filtered tags end in the iTRAQ4 gap.
+heavy	K8.share	1	6	Lys8 is a share of 1 of the C-terminal K and Lys8 ends.
+heavy	R10.share	0.043333333333333335	600	Arg10 is a share of 0.0433 of the C-terminal R and Arg10 ends.
+heavy	K.tags	6	-	6 C-terminal tag ends are K or Lys8.
+heavy	R.tags	600	-	600 C-terminal tag ends are R or Arg10.
+heavy	gate	no	-	6 K and 600 R tag ends against a minimum of 50 each.

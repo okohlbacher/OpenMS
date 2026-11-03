@@ -17,7 +17,6 @@ import csv
 import json
 import os
 import shutil
-import statistics
 import sys
 import tempfile
 import time
@@ -39,7 +38,6 @@ def _cap_threads(argv):
 
 _cap_threads(sys.argv[1:])
 
-from . import delta_combos as DC
 from . import detect_chemistry as chem
 from . import detect_instrument as inst
 from . import detect_tolerance as tol
@@ -51,6 +49,7 @@ from . import repository as repo
 from . import tagsearch as ts
 from . import taxa
 from . import text_extract as tx
+from . import topdown as td
 from .hypotheses import HypothesisTester
 from .evidence import Evidence
 from .reconcile import indicator_agreement, organism_mix, reconcile
@@ -389,9 +388,7 @@ def _chemistry(c, raw):
     if a.fastag and hr2:   # protease (C-terminal residues) and labels (N-terminal gaps) from FASTag k=4 tags
         with _timed(c, "termini"):
             try:
-                low = [float(s.mz[0]) for s in run.ms2 if s.mz.size]   # the MS2 scan start
-                term_ev, term_stats = ext.fastag_termini(a.fastag, c.spectra_file, threads=a.threads, log=c.log,
-                                                         ms2_low_mz=round(statistics.median(low), 2) if low else None)
+                term_ev, term_stats = ext.fastag_termini(a.fastag, c.spectra_file, threads=a.threads, log=c.log)
                 # on DIA pseudo-spectra co-eluting fragments put +8/+10 Da gaps behind K/R by chance (32%/50% in the
                 # label-free Orbitrap DIA run PXD066483): heavy termini count only on DDA spectra
                 # timsTOF (ddaPASEF and diaPASEF) barely shows C-terminal R: 3 of 5 tryptic controls read "unspecific",
@@ -656,10 +653,9 @@ def _fastag_gaps(c, db):
     c.ev, c.gap_ev = [e for e in c.ev if id(e) not in gone], []
     try:
         log(f"  FASTag: mass-gap histogram against {os.path.basename(db)} without fixed modifications")
-        alk = ext.fastag_alkylation(a.fastag, c.spectra_file, db, ftol, funit, threads=a.threads, log=log,
-                                    subsample=_fastag_fraction(c))
-        # the same gap histogram, explained as modification combinations (variable mods, enrichment)
-        c.gap_ev = alk + DC.detect(alk[0].stats.get("hist", []) if alk else [], 0.02 if funit == "ppm" else 0.5)
+        # Cys alkylation, and the same gaps explained as modification combinations (variable mods, enrichment)
+        c.gap_ev = ext.fastag_alkylation(a.fastag, c.spectra_file, db, ftol, funit, threads=a.threads, log=log,
+                                         subsample=_fastag_fraction(c))
         c.ev += c.gap_ev
     except Exception as e:
         log(f"  FASTag failed: {e}")
@@ -740,6 +736,13 @@ def analyze(a, log=print):
                           or shutil.which("diaspextract"))
     if not getattr(a, "fileconverter", None):
         a.fileconverter = os.environ.get("PROSE_AUTO_FILECONVERTER") or shutil.which("FileConverter")
+    if not getattr(a, "flashdeconv", None):
+        a.flashdeconv = os.environ.get("PROSE_AUTO_FLASHDECONV") or shutil.which("FLASHDeconv")
+    if a.fastag:
+        try:
+            ext.require_fastag(a.fastag)
+        except (RuntimeError, OSError) as e:
+            raise SystemExit(str(e))
     os.makedirs(a.out, exist_ok=True)
     c = _Run(a, log, os.path.join(a.out, os.path.splitext(os.path.basename(a.mzml.rstrip("/")))[0]), a.mzml)
     if a.mzml.rstrip("/").lower().endswith(".d"):
@@ -748,6 +751,14 @@ def analyze(a, log=print):
     # raw: the run as read; its MS1 serves the SILAC pair test when DIA pseudo-spectra replace it
     c.run = raw = load_mzml(c.spectra_file, max_ms2=a.max_ms2)
     c.timings["read"] = round(time.time() - t0, 1)
+    # intact proteins (top-down, middle-down, native, intact mass): no digest, nothing to set for a peptide search
+    with _timed(c, "topdown_check"):
+        verdict = td.detect(c.run, a.flashdeconv, threads=a.threads, log=log)
+    if verdict:
+        log(f"  {verdict['class']} run: {verdict['reason']}; {td.RECOMMENDATION}")
+        c.timings["total"] = round(time.time() - t0, 1)
+        return {"tool": "prose-auto 0.1 (prototype)", "input": {**c.run.summary(), "given": a.mzml},
+                "no_digest": verdict, "timings_s": c.timings}
 
     log("[2/7] instrument, fragmentation, acquisition mode")
     c.ev += inst.detect_instrument(c.run)
@@ -1018,6 +1029,8 @@ def main(argv=None):
                     "(default: PROSE_AUTO_DIASPEXTRACT, else DIAspeXtract on PATH)")
     an.add_argument("--fileconverter", help="OpenMS FileConverter with timsTOF support, for ddaPASEF .d input "
                     "(default: PROSE_AUTO_FILECONVERTER, else FileConverter on PATH)")
+    an.add_argument("--flashdeconv", help="OpenMS FLASHDeconv, for the top-down check on runs whose MS2 headers carry no "
+                    "precursor charge (default: PROSE_AUTO_FLASHDECONV, else FLASHDeconv on PATH)")
     an.add_argument("--threads", type=int, default=0, help="threads for external tools (0 = their default)")
     an.add_argument("--spectra", type=int, default=2000, help="MS2 spectra for the mini-search")
     an.add_argument("--sample", choices=("random", "top"), default="random",
@@ -1051,6 +1064,16 @@ def main(argv=None):
         rep = analyze(a, log)
         os.makedirs(a.out, exist_ok=True)
         base = os.path.join(a.out, os.path.splitext(os.path.basename(a.mzml))[0])
+        if "no_digest" in rep:   # no ProSE settings: the verdict, the reason and the recommendation only
+            v = rep["no_digest"]
+            with open(base + ".auto.json", "w") as fh:
+                json.dump(rep, fh, indent=1, default=str)
+            with open(base + ".auto.md", "w") as fh:
+                fh.write(f"# prose-auto report: {os.path.basename(a.mzml)}\n\n**{v['class']} run**: {v['reason']}.\n\n"
+                         f"prose-auto sets no ProSE parameters for runs without a digest: {v['recommendation']}.\n")
+            print(json.dumps(rep, default=str) if a.json else
+                  f"{v['class']} run: {v['reason']}. No ProSE settings; {v['recommendation']}.\nwritten: {base}.auto.json, .auto.md")
+            sys.exit(td.EXIT_NO_DIGEST)
         with open(base + ".auto.json", "w") as fh:
             json.dump(rep, fh, indent=1, default=str)
         with open(base + ".auto.md", "w") as fh:

@@ -1,0 +1,471 @@
+# Terminal-residue frequencies of peptides per protease / ligand class, for the FASTag tag-profile call
+# (external.protease_call). Taken from public data; nothing fitted on prose-auto test runs. I and L merged.
+# C = peptide C-terminal residue (protease P1), N = peptide N-terminal residue (P1'); background = proteome composition.
+# merops:* = MEROPS release 12.x Substrate_search.txt (https://ftp.ebi.ac.uk/pub/databases/merops/current_release/,
+#   modified 2022-11-25), protein substrates only (no synthetic or theoretical cleavages): Trypsin S01.151 (22940 sites),
+#   Lys-C S01.280 (809), Glu-C S01.269 (4195), Chymotrypsin S01.001 (1009), Lys-N M35.004 (2105),
+#   proteasome XT01.001 (879). Arg-C C11.001 (7 sites) and Asp-N M72.001 (19) are listed but too thin: their models are
+#   the PeptideCutter rules (after R; before D) with the background at the other end (see external.py).
+# atlas:* = MHC Motif Atlas ligand ends (http://mhcmotifatlas.org/data/classI/MS/Peptides/all_peptides.txt and
+#   .../classII/..., downloaded 2026-11-02), alleles weighted equally: HLA-I 127 human alleles, 447548 ligands
+#   (neutral mass median 1080 Da, q95 1358 Da); HLA-II 82 human DR/DP/DQ alleles, 548858 ligands (median 1817 Da).
+# background = UniProt human reference proteome (the panel Homo_sapiens.fasta).
+# Resolved for FASTag -digest_models: model names are final, class = enzyme value for the runner-up rule;
+# Arg-C/Asp-N/unspecific already expanded; background = mixing component (share 0.05), not a model.
+model	class	end	residue	freq
+background	-	C	G	0.06565
+background	-	N	G	0.06565
+background	-	C	A	0.0701
+background	-	N	A	0.0701
+background	-	C	S	0.08349
+background	-	N	S	0.08349
+background	-	C	P	0.06318
+background	-	N	P	0.06318
+background	-	C	V	0.05956
+background	-	N	V	0.05956
+background	-	C	T	0.05378
+background	-	N	T	0.05378
+background	-	C	C	0.02297
+background	-	N	C	0.02297
+background	-	C	L	0.14298
+background	-	N	L	0.14298
+background	-	C	N	0.03584
+background	-	N	N	0.03584
+background	-	C	D	0.04735
+background	-	N	D	0.04735
+background	-	C	Q	0.04766
+background	-	N	Q	0.04766
+background	-	C	K	0.05731
+background	-	N	K	0.05731
+background	-	C	E	0.07108
+background	-	N	E	0.07108
+background	-	C	M	0.02131
+background	-	N	M	0.02131
+background	-	C	H	0.02623
+background	-	N	H	0.02623
+background	-	C	F	0.03647
+background	-	N	F	0.03647
+background	-	C	R	0.05633
+background	-	N	R	0.05633
+background	-	C	Y	0.0266
+background	-	N	Y	0.0266
+background	-	C	W	0.01212
+background	-	N	W	0.01212
+Trypsin	Trypsin	C	G	0.00153
+Trypsin	Trypsin	C	A	0.00118
+Trypsin	Trypsin	C	S	0.00039
+Trypsin	Trypsin	C	P	0.00022
+Trypsin	Trypsin	C	V	0.00022
+Trypsin	Trypsin	C	T	0.00013
+Trypsin	Trypsin	C	C	0.00022
+Trypsin	Trypsin	C	L	0.00113
+Trypsin	Trypsin	C	N	0.00035
+Trypsin	Trypsin	C	D	0.0
+Trypsin	Trypsin	C	Q	0.00039
+Trypsin	Trypsin	C	K	0.56504
+Trypsin	Trypsin	C	E	4e-05
+Trypsin	Trypsin	C	M	0.00022
+Trypsin	Trypsin	C	H	0.00017
+Trypsin	Trypsin	C	F	0.00044
+Trypsin	Trypsin	C	R	0.4279
+Trypsin	Trypsin	C	Y	0.00044
+Trypsin	Trypsin	C	W	0.0
+Trypsin	Trypsin	N	G	0.06929
+Trypsin	Trypsin	N	A	0.09437
+Trypsin	Trypsin	N	S	0.06567
+Trypsin	Trypsin	N	P	0.00253
+Trypsin	Trypsin	N	V	0.08591
+Trypsin	Trypsin	N	T	0.06663
+Trypsin	Trypsin	N	C	0.01007
+Trypsin	Trypsin	N	L	0.17831
+Trypsin	Trypsin	N	N	0.04439
+Trypsin	Trypsin	N	D	0.05564
+Trypsin	Trypsin	N	Q	0.0396
+Trypsin	Trypsin	N	K	0.05255
+Trypsin	Trypsin	N	E	0.0737
+Trypsin	Trypsin	N	M	0.02664
+Trypsin	Trypsin	N	H	0.02342
+Trypsin	Trypsin	N	F	0.03994
+Trypsin	Trypsin	N	R	0.03044
+Trypsin	Trypsin	N	Y	0.03201
+Trypsin	Trypsin	N	W	0.0089
+Lys-C	Lys-C	C	G	0.0
+Lys-C	Lys-C	C	A	0.0
+Lys-C	Lys-C	C	S	0.0
+Lys-C	Lys-C	C	P	0.0
+Lys-C	Lys-C	C	V	0.0
+Lys-C	Lys-C	C	T	0.0
+Lys-C	Lys-C	C	C	0.0
+Lys-C	Lys-C	C	L	0.0
+Lys-C	Lys-C	C	N	0.0
+Lys-C	Lys-C	C	D	0.0
+Lys-C	Lys-C	C	Q	0.0
+Lys-C	Lys-C	C	K	1.0
+Lys-C	Lys-C	C	E	0.0
+Lys-C	Lys-C	C	M	0.0
+Lys-C	Lys-C	C	H	0.0
+Lys-C	Lys-C	C	F	0.0
+Lys-C	Lys-C	C	R	0.0
+Lys-C	Lys-C	C	Y	0.0
+Lys-C	Lys-C	C	W	0.0
+Lys-C	Lys-C	N	G	0.05446
+Lys-C	Lys-C	N	A	0.08911
+Lys-C	Lys-C	N	S	0.08663
+Lys-C	Lys-C	N	P	0.00124
+Lys-C	Lys-C	N	V	0.05817
+Lys-C	Lys-C	N	T	0.05322
+Lys-C	Lys-C	N	C	0.0198
+Lys-C	Lys-C	N	L	0.12748
+Lys-C	Lys-C	N	N	0.06064
+Lys-C	Lys-C	N	D	0.06436
+Lys-C	Lys-C	N	Q	0.0495
+Lys-C	Lys-C	N	K	0.07302
+Lys-C	Lys-C	N	E	0.07426
+Lys-C	Lys-C	N	M	0.03342
+Lys-C	Lys-C	N	H	0.01856
+Lys-C	Lys-C	N	F	0.02104
+Lys-C	Lys-C	N	R	0.07921
+Lys-C	Lys-C	N	Y	0.02599
+Lys-C	Lys-C	N	W	0.0099
+Glu-C	Glu-C	C	G	0.01216
+Glu-C	Glu-C	C	A	0.00858
+Glu-C	Glu-C	C	S	0.00191
+Glu-C	Glu-C	C	P	0.0
+Glu-C	Glu-C	C	V	0.00095
+Glu-C	Glu-C	C	T	0.00143
+Glu-C	Glu-C	C	C	0.00024
+Glu-C	Glu-C	C	L	0.00143
+Glu-C	Glu-C	C	N	0.00024
+Glu-C	Glu-C	C	D	0.04219
+Glu-C	Glu-C	C	Q	0.00405
+Glu-C	Glu-C	C	K	0.00072
+Glu-C	Glu-C	C	E	0.92062
+Glu-C	Glu-C	C	M	0.00143
+Glu-C	Glu-C	C	H	0.0
+Glu-C	Glu-C	C	F	0.00119
+Glu-C	Glu-C	C	R	0.00238
+Glu-C	Glu-C	C	Y	0.00048
+Glu-C	Glu-C	C	W	0.0
+Glu-C	Glu-C	N	G	0.07773
+Glu-C	Glu-C	N	A	0.11397
+Glu-C	Glu-C	N	S	0.0701
+Glu-C	Glu-C	N	P	0.00191
+Glu-C	Glu-C	N	V	0.08178
+Glu-C	Glu-C	N	T	0.06152
+Glu-C	Glu-C	N	C	0.00906
+Glu-C	Glu-C	N	L	0.20458
+Glu-C	Glu-C	N	N	0.04316
+Glu-C	Glu-C	N	D	0.03219
+Glu-C	Glu-C	N	Q	0.036
+Glu-C	Glu-C	N	K	0.07439
+Glu-C	Glu-C	N	E	0.01311
+Glu-C	Glu-C	N	M	0.03529
+Glu-C	Glu-C	N	H	0.02408
+Glu-C	Glu-C	N	F	0.04101
+Glu-C	Glu-C	N	R	0.05389
+Glu-C	Glu-C	N	Y	0.01931
+Glu-C	Glu-C	N	W	0.00691
+Chymotrypsin	Chymotrypsin	C	G	0.0
+Chymotrypsin	Chymotrypsin	C	A	0.00198
+Chymotrypsin	Chymotrypsin	C	S	0.0
+Chymotrypsin	Chymotrypsin	C	P	0.00099
+Chymotrypsin	Chymotrypsin	C	V	0.00099
+Chymotrypsin	Chymotrypsin	C	T	0.00099
+Chymotrypsin	Chymotrypsin	C	C	0.00099
+Chymotrypsin	Chymotrypsin	C	L	0.2557
+Chymotrypsin	Chymotrypsin	C	N	0.03568
+Chymotrypsin	Chymotrypsin	C	D	0.00099
+Chymotrypsin	Chymotrypsin	C	Q	0.00793
+Chymotrypsin	Chymotrypsin	C	K	0.00198
+Chymotrypsin	Chymotrypsin	C	E	0.00099
+Chymotrypsin	Chymotrypsin	C	M	0.04063
+Chymotrypsin	Chymotrypsin	C	H	0.03469
+Chymotrypsin	Chymotrypsin	C	F	0.27056
+Chymotrypsin	Chymotrypsin	C	R	0.00099
+Chymotrypsin	Chymotrypsin	C	Y	0.28345
+Chymotrypsin	Chymotrypsin	C	W	0.06046
+Chymotrypsin	Chymotrypsin	N	G	0.08657
+Chymotrypsin	Chymotrypsin	N	A	0.09055
+Chymotrypsin	Chymotrypsin	N	S	0.10348
+Chymotrypsin	Chymotrypsin	N	P	0.00796
+Chymotrypsin	Chymotrypsin	N	V	0.08259
+Chymotrypsin	Chymotrypsin	N	T	0.08259
+Chymotrypsin	Chymotrypsin	N	C	0.01393
+Chymotrypsin	Chymotrypsin	N	L	0.15622
+Chymotrypsin	Chymotrypsin	N	N	0.03483
+Chymotrypsin	Chymotrypsin	N	D	0.04478
+Chymotrypsin	Chymotrypsin	N	Q	0.02189
+Chymotrypsin	Chymotrypsin	N	K	0.13134
+Chymotrypsin	Chymotrypsin	N	E	0.04179
+Chymotrypsin	Chymotrypsin	N	M	0.0199
+Chymotrypsin	Chymotrypsin	N	H	0.00896
+Chymotrypsin	Chymotrypsin	N	F	0.01294
+Chymotrypsin	Chymotrypsin	N	R	0.04577
+Chymotrypsin	Chymotrypsin	N	Y	0.00896
+Chymotrypsin	Chymotrypsin	N	W	0.00498
+Lys-N	Lys-N	C	G	0.08314
+Lys-N	Lys-N	C	A	0.07553
+Lys-N	Lys-N	C	S	0.07553
+Lys-N	Lys-N	C	P	0.04086
+Lys-N	Lys-N	C	V	0.05131
+Lys-N	Lys-N	C	T	0.04371
+Lys-N	Lys-N	C	C	0.01853
+Lys-N	Lys-N	C	L	0.15392
+Lys-N	Lys-N	C	N	0.04798
+Lys-N	Lys-N	C	D	0.05416
+Lys-N	Lys-N	C	Q	0.04988
+Lys-N	Lys-N	C	K	0.05131
+Lys-N	Lys-N	C	E	0.09691
+Lys-N	Lys-N	C	M	0.03468
+Lys-N	Lys-N	C	H	0.01235
+Lys-N	Lys-N	C	F	0.0285
+Lys-N	Lys-N	C	R	0.04466
+Lys-N	Lys-N	C	Y	0.0247
+Lys-N	Lys-N	C	W	0.01235
+Lys-N	Lys-N	N	G	0.0
+Lys-N	Lys-N	N	A	0.0
+Lys-N	Lys-N	N	S	0.0
+Lys-N	Lys-N	N	P	0.0
+Lys-N	Lys-N	N	V	0.0
+Lys-N	Lys-N	N	T	0.0
+Lys-N	Lys-N	N	C	0.0
+Lys-N	Lys-N	N	L	0.0
+Lys-N	Lys-N	N	N	0.0
+Lys-N	Lys-N	N	D	0.0
+Lys-N	Lys-N	N	Q	0.0
+Lys-N	Lys-N	N	K	1.0
+Lys-N	Lys-N	N	E	0.0
+Lys-N	Lys-N	N	M	0.0
+Lys-N	Lys-N	N	H	0.0
+Lys-N	Lys-N	N	F	0.0
+Lys-N	Lys-N	N	R	0.0
+Lys-N	Lys-N	N	Y	0.0
+Lys-N	Lys-N	N	W	0.0
+proteasome	unspecific cleavage	C	G	0.05233
+proteasome	unspecific cleavage	C	A	0.09101
+proteasome	unspecific cleavage	C	S	0.06598
+proteasome	unspecific cleavage	C	P	0.01251
+proteasome	unspecific cleavage	C	V	0.10011
+proteasome	unspecific cleavage	C	T	0.03299
+proteasome	unspecific cleavage	C	C	0.00455
+proteasome	unspecific cleavage	C	L	0.17179
+proteasome	unspecific cleavage	C	N	0.02844
+proteasome	unspecific cleavage	C	D	0.06598
+proteasome	unspecific cleavage	C	Q	0.03868
+proteasome	unspecific cleavage	C	K	0.02617
+proteasome	unspecific cleavage	C	E	0.07167
+proteasome	unspecific cleavage	C	M	0.03185
+proteasome	unspecific cleavage	C	H	0.03072
+proteasome	unspecific cleavage	C	F	0.04892
+proteasome	unspecific cleavage	C	R	0.04892
+proteasome	unspecific cleavage	C	Y	0.04437
+proteasome	unspecific cleavage	C	W	0.03299
+proteasome	unspecific cleavage	N	G	0.07395
+proteasome	unspecific cleavage	N	A	0.10808
+proteasome	unspecific cleavage	N	S	0.10694
+proteasome	unspecific cleavage	N	P	0.06371
+proteasome	unspecific cleavage	N	V	0.06143
+proteasome	unspecific cleavage	N	T	0.05233
+proteasome	unspecific cleavage	N	C	0.00569
+proteasome	unspecific cleavage	N	L	0.10694
+proteasome	unspecific cleavage	N	N	0.03527
+proteasome	unspecific cleavage	N	D	0.03413
+proteasome	unspecific cleavage	N	Q	0.03641
+proteasome	unspecific cleavage	N	K	0.05688
+proteasome	unspecific cleavage	N	E	0.0694
+proteasome	unspecific cleavage	N	M	0.0273
+proteasome	unspecific cleavage	N	H	0.02617
+proteasome	unspecific cleavage	N	F	0.03185
+proteasome	unspecific cleavage	N	R	0.04892
+proteasome	unspecific cleavage	N	Y	0.03754
+proteasome	unspecific cleavage	N	W	0.01706
+Arg-C	Arg-C	C	G	0.0
+Arg-C	Arg-C	C	A	0.0
+Arg-C	Arg-C	C	S	0.0
+Arg-C	Arg-C	C	P	0.0
+Arg-C	Arg-C	C	V	0.0
+Arg-C	Arg-C	C	T	0.0
+Arg-C	Arg-C	C	C	0.0
+Arg-C	Arg-C	C	L	0.0
+Arg-C	Arg-C	C	N	0.0
+Arg-C	Arg-C	C	D	0.0
+Arg-C	Arg-C	C	Q	0.0
+Arg-C	Arg-C	C	K	0.0
+Arg-C	Arg-C	C	E	0.0
+Arg-C	Arg-C	C	M	0.0
+Arg-C	Arg-C	C	H	0.0
+Arg-C	Arg-C	C	F	0.0
+Arg-C	Arg-C	C	R	1.0
+Arg-C	Arg-C	C	Y	0.0
+Arg-C	Arg-C	C	W	0.0
+Arg-C	Arg-C	N	G	0.06565
+Arg-C	Arg-C	N	A	0.0701
+Arg-C	Arg-C	N	S	0.08349
+Arg-C	Arg-C	N	P	0.06318
+Arg-C	Arg-C	N	V	0.05956
+Arg-C	Arg-C	N	T	0.05378
+Arg-C	Arg-C	N	C	0.02297
+Arg-C	Arg-C	N	L	0.14298
+Arg-C	Arg-C	N	N	0.03584
+Arg-C	Arg-C	N	D	0.04735
+Arg-C	Arg-C	N	Q	0.04766
+Arg-C	Arg-C	N	K	0.05731
+Arg-C	Arg-C	N	E	0.07108
+Arg-C	Arg-C	N	M	0.02131
+Arg-C	Arg-C	N	H	0.02623
+Arg-C	Arg-C	N	F	0.03647
+Arg-C	Arg-C	N	R	0.05633
+Arg-C	Arg-C	N	Y	0.0266
+Arg-C	Arg-C	N	W	0.01212
+Asp-N	Asp-N	C	G	0.06565
+Asp-N	Asp-N	C	A	0.0701
+Asp-N	Asp-N	C	S	0.08349
+Asp-N	Asp-N	C	P	0.06318
+Asp-N	Asp-N	C	V	0.05956
+Asp-N	Asp-N	C	T	0.05378
+Asp-N	Asp-N	C	C	0.02297
+Asp-N	Asp-N	C	L	0.14298
+Asp-N	Asp-N	C	N	0.03584
+Asp-N	Asp-N	C	D	0.04735
+Asp-N	Asp-N	C	Q	0.04766
+Asp-N	Asp-N	C	K	0.05731
+Asp-N	Asp-N	C	E	0.07108
+Asp-N	Asp-N	C	M	0.02131
+Asp-N	Asp-N	C	H	0.02623
+Asp-N	Asp-N	C	F	0.03647
+Asp-N	Asp-N	C	R	0.05633
+Asp-N	Asp-N	C	Y	0.0266
+Asp-N	Asp-N	C	W	0.01212
+Asp-N	Asp-N	N	G	0.0
+Asp-N	Asp-N	N	A	0.0
+Asp-N	Asp-N	N	S	0.0
+Asp-N	Asp-N	N	P	0.0
+Asp-N	Asp-N	N	V	0.0
+Asp-N	Asp-N	N	T	0.0
+Asp-N	Asp-N	N	C	0.0
+Asp-N	Asp-N	N	L	0.0
+Asp-N	Asp-N	N	N	0.0
+Asp-N	Asp-N	N	D	1.0
+Asp-N	Asp-N	N	Q	0.0
+Asp-N	Asp-N	N	K	0.0
+Asp-N	Asp-N	N	E	0.0
+Asp-N	Asp-N	N	M	0.0
+Asp-N	Asp-N	N	H	0.0
+Asp-N	Asp-N	N	F	0.0
+Asp-N	Asp-N	N	R	0.0
+Asp-N	Asp-N	N	Y	0.0
+Asp-N	Asp-N	N	W	0.0
+unspecific	unspecific cleavage	C	G	0.06565
+unspecific	unspecific cleavage	C	A	0.0701
+unspecific	unspecific cleavage	C	S	0.08349
+unspecific	unspecific cleavage	C	P	0.06318
+unspecific	unspecific cleavage	C	V	0.05956
+unspecific	unspecific cleavage	C	T	0.05378
+unspecific	unspecific cleavage	C	C	0.02297
+unspecific	unspecific cleavage	C	L	0.14298
+unspecific	unspecific cleavage	C	N	0.03584
+unspecific	unspecific cleavage	C	D	0.04735
+unspecific	unspecific cleavage	C	Q	0.04766
+unspecific	unspecific cleavage	C	K	0.05731
+unspecific	unspecific cleavage	C	E	0.07108
+unspecific	unspecific cleavage	C	M	0.02131
+unspecific	unspecific cleavage	C	H	0.02623
+unspecific	unspecific cleavage	C	F	0.03647
+unspecific	unspecific cleavage	C	R	0.05633
+unspecific	unspecific cleavage	C	Y	0.0266
+unspecific	unspecific cleavage	C	W	0.01212
+unspecific	unspecific cleavage	N	G	0.06565
+unspecific	unspecific cleavage	N	A	0.0701
+unspecific	unspecific cleavage	N	S	0.08349
+unspecific	unspecific cleavage	N	P	0.06318
+unspecific	unspecific cleavage	N	V	0.05956
+unspecific	unspecific cleavage	N	T	0.05378
+unspecific	unspecific cleavage	N	C	0.02297
+unspecific	unspecific cleavage	N	L	0.14298
+unspecific	unspecific cleavage	N	N	0.03584
+unspecific	unspecific cleavage	N	D	0.04735
+unspecific	unspecific cleavage	N	Q	0.04766
+unspecific	unspecific cleavage	N	K	0.05731
+unspecific	unspecific cleavage	N	E	0.07108
+unspecific	unspecific cleavage	N	M	0.02131
+unspecific	unspecific cleavage	N	H	0.02623
+unspecific	unspecific cleavage	N	F	0.03647
+unspecific	unspecific cleavage	N	R	0.05633
+unspecific	unspecific cleavage	N	Y	0.0266
+unspecific	unspecific cleavage	N	W	0.01212
+HLA-I	unspecific cleavage	C	G	0.0012
+HLA-I	unspecific cleavage	C	A	0.06955
+HLA-I	unspecific cleavage	C	S	0.00238
+HLA-I	unspecific cleavage	C	P	0.01287
+HLA-I	unspecific cleavage	C	V	0.09948
+HLA-I	unspecific cleavage	C	T	0.00447
+HLA-I	unspecific cleavage	C	C	0.00191
+HLA-I	unspecific cleavage	C	L	0.38728
+HLA-I	unspecific cleavage	C	N	0.0009
+HLA-I	unspecific cleavage	C	D	0.00087
+HLA-I	unspecific cleavage	C	Q	0.00095
+HLA-I	unspecific cleavage	C	K	0.04378
+HLA-I	unspecific cleavage	C	E	0.00098
+HLA-I	unspecific cleavage	C	M	0.03526
+HLA-I	unspecific cleavage	C	H	0.00539
+HLA-I	unspecific cleavage	C	F	0.11801
+HLA-I	unspecific cleavage	C	R	0.05538
+HLA-I	unspecific cleavage	C	Y	0.12388
+HLA-I	unspecific cleavage	C	W	0.03546
+HLA-I	unspecific cleavage	N	G	0.03845
+HLA-I	unspecific cleavage	N	A	0.09367
+HLA-I	unspecific cleavage	N	S	0.09425
+HLA-I	unspecific cleavage	N	P	0.00244
+HLA-I	unspecific cleavage	N	V	0.05944
+HLA-I	unspecific cleavage	N	T	0.05585
+HLA-I	unspecific cleavage	N	C	0.00258
+HLA-I	unspecific cleavage	N	L	0.10432
+HLA-I	unspecific cleavage	N	N	0.03626
+HLA-I	unspecific cleavage	N	D	0.04636
+HLA-I	unspecific cleavage	N	Q	0.03532
+HLA-I	unspecific cleavage	N	K	0.09122
+HLA-I	unspecific cleavage	N	E	0.0695
+HLA-I	unspecific cleavage	N	M	0.02302
+HLA-I	unspecific cleavage	N	H	0.04273
+HLA-I	unspecific cleavage	N	F	0.06017
+HLA-I	unspecific cleavage	N	R	0.08973
+HLA-I	unspecific cleavage	N	Y	0.05176
+HLA-I	unspecific cleavage	N	W	0.00293
+HLA-II	unspecific cleavage	C	G	0.09174
+HLA-II	unspecific cleavage	C	A	0.07451
+HLA-II	unspecific cleavage	C	S	0.06718
+HLA-II	unspecific cleavage	C	P	0.04184
+HLA-II	unspecific cleavage	C	V	0.03233
+HLA-II	unspecific cleavage	C	T	0.05344
+HLA-II	unspecific cleavage	C	C	0.00195
+HLA-II	unspecific cleavage	C	L	0.07872
+HLA-II	unspecific cleavage	C	N	0.05789
+HLA-II	unspecific cleavage	C	D	0.05803
+HLA-II	unspecific cleavage	C	Q	0.06725
+HLA-II	unspecific cleavage	C	K	0.10023
+HLA-II	unspecific cleavage	C	E	0.0947
+HLA-II	unspecific cleavage	C	M	0.01226
+HLA-II	unspecific cleavage	C	H	0.03318
+HLA-II	unspecific cleavage	C	F	0.02169
+HLA-II	unspecific cleavage	C	R	0.08884
+HLA-II	unspecific cleavage	C	Y	0.02001
+HLA-II	unspecific cleavage	C	W	0.00421
+HLA-II	unspecific cleavage	N	G	0.09148
+HLA-II	unspecific cleavage	N	A	0.08481
+HLA-II	unspecific cleavage	N	S	0.08102
+HLA-II	unspecific cleavage	N	P	0.01191
+HLA-II	unspecific cleavage	N	V	0.07922
+HLA-II	unspecific cleavage	N	T	0.05599
+HLA-II	unspecific cleavage	N	C	0.00117
+HLA-II	unspecific cleavage	N	L	0.14338
+HLA-II	unspecific cleavage	N	N	0.04044
+HLA-II	unspecific cleavage	N	D	0.09124
+HLA-II	unspecific cleavage	N	Q	0.01976
+HLA-II	unspecific cleavage	N	K	0.07241
+HLA-II	unspecific cleavage	N	E	0.0804
+HLA-II	unspecific cleavage	N	M	0.01001
+HLA-II	unspecific cleavage	N	H	0.02019
+HLA-II	unspecific cleavage	N	F	0.02716
+HLA-II	unspecific cleavage	N	R	0.05648
+HLA-II	unspecific cleavage	N	Y	0.02713
+HLA-II	unspecific cleavage	N	W	0.00578
