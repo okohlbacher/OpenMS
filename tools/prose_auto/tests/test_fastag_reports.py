@@ -1,6 +1,7 @@
 """The prose-auto policy on recorded FASTag 1.8.0 reports (-digest_out, -label_out, -massgap_out) of three public
 runs; the expected values are the stored 0.1.3 decisions (v9d) of the same runs."""
 import os
+import subprocess
 
 import pytest
 
@@ -47,13 +48,14 @@ def test_no_call_and_few_tags():
     assert ext.termini_evidence(d, {}) == ([], {"tags": 102029, "cterm_tags": 40})
 
 
-def test_fastag_version_gate(tmp_path):
+def test_fastag_version_gate(monkeypatch):
+    # --help output is faked: a shell-script stand-in does not run on Windows
     for v, ok in (("1.7.2", False), ("1.8.0", True), ("1.10.1", True)):
-        exe = tmp_path / f"FASTag{v}"
-        exe.write_text(f"#!/bin/sh\necho 'Version: {v} (OpenMS 3.7.0)'\n")
-        exe.chmod(0o755)
+        out = f"FASTag\nVersion: {v} (OpenMS 3.7.0)\n"
+        monkeypatch.setattr(ext.subprocess, "run", lambda *a, **k: subprocess.CompletedProcess(a, 0, out, ""))
+        exe = f"FASTag{v}"   # distinct names: fastag_version is cached per path
         if ok:
-            ext.require_fastag(str(exe))
+            ext.require_fastag(exe)
         else:
             with pytest.raises(RuntimeError, match="FASTag >= 1.8.0"):
-                ext.require_fastag(str(exe))
+                ext.require_fastag(exe)
