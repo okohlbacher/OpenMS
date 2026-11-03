@@ -52,7 +52,7 @@ from . import text_extract as tx
 from . import topdown as td
 from .hypotheses import HypothesisTester
 from .evidence import Evidence
-from .reconcile import indicator_agreement, organism_mix, reconcile
+from .reconcile import indicator_agreement, mixture_union, organism_mix, reconcile
 from .spectra import load_mzml
 
 LOW_RES = {"IT", "LIT", "PAULIONTRAP", "RADIALEJECTIONLINEARIONTRAP", "AXIALEJECTIONLINEARIONTRAP"}
@@ -263,6 +263,7 @@ class _Run:
     hr2: bool = True
     fastag_sp: object = None  # the FASTag species call (list, or the exception it raised): it runs once
     gap_ev: list = field(default_factory=list)   # mass-gap evidence, redone when tier 2 changes the database
+    union: str = None         # the concatenated FASTA of a suspected mixture (_union)
 
     @property
     def ftol(self):           # FASTag fragment tolerance
@@ -707,6 +708,42 @@ def _tier2(c, h, panel):
                 c.ev = [e for e in c.ev if not (e.source == "search" and e.parameter == "organism")] + new
 
 
+def _union(c, h, panel, mix, decided):
+    """A suspected mixture searches the union of the organisms the data support (reconcile.mixture_union): their
+    FASTA files concatenated once into <panel>/extra/union/, then the mini-search Cys competition and the FASTag
+    mass gaps redone against it (the mass accuracy keeps the winner's PSMs). Returns the search database or None."""
+    pick = mixture_union(c.ev, mix, decided)
+    if not pick or h is None:
+        return None
+    extra = os.path.join(c.a.panel or c.a.out, "extra")
+    paths = {}
+    for name, _ in pick:
+        hit = _panel_match(name, panel) if panel else None
+        p = h.paths.get(name) or (panel[hit] if hit else None) or (fetch_proteome(name, extra, c.log) or (0, None))[1]
+        if p:
+            paths[name] = p
+    if len(paths) < 2:
+        return None
+    dst = os.path.join(extra, "union", "+".join(paths) + ".fasta")
+    if not os.path.exists(dst):
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        with open(f"{dst}.{os.getpid()}.part", "wb") as out:
+            for p in paths.values():
+                with open(p, "rb") as fh:
+                    b = fh.read()
+                out.write(b if b.endswith(b"\n") else b + b"\n")
+        os.replace(f"{dst}.{os.getpid()}.part", dst)
+    own = dict(pick)
+    c.log(f"  organism mix: searching the union of {', '.join(paths)}")
+    with _timed(c, "mixture_union"):
+        h.best_db = ("+".join(paths), dst)
+        c.ev = [e for e in c.ev if not (e.source == "search" and e.parameter == "cys_alkylation")] + h.alkylation()
+        if c.a.fastag:
+            _fastag_gaps(c, dst)
+    return {"organisms": list(paths), "fasta": list(paths.values()), "union": dst,
+            "own_spectra": {k: own.get(k) for k in paths}}
+
+
 def _confirm_with_prose(c, decisions, prose, panel, h):
     """A ProSE subset search on the proposed settings, on the spectra the settings came from (converted or
     pseudo-spectra) and the decided database (a tier-2 winner is not in the panel); on failure the data-only
@@ -715,7 +752,7 @@ def _confirm_with_prose(c, decisions, prose, panel, h):
     a = c.a
     exe = find_prose(a.prose)
     org = decisions["organism"].value
-    db = a.fasta or (h.best_db[1] if h is not None and h.best_db and h.best_db[0] == org else None) \
+    db = a.fasta or c.union or (h.best_db[1] if h is not None and h.best_db and h.best_db[0] == org else None) \
         or (panel.get(org) if panel else None)
     if exe and db:
         c.log(f"  confirming with ProSE ({exe})")
@@ -812,6 +849,13 @@ def analyze(a, log=print):
 
     log("[7/7] reconciling")
     decisions = reconcile(c.ev)
+    mix = organism_mix(c.ev, jev_report)
+    db = _union(c, h, panel, mix, decisions["organism"].value) if "organism" in decisions else None
+    if db:
+        c.union = db["union"]
+        decisions = reconcile(c.ev)
+    org = decisions.get("organism")
+    organisms = db["organisms"] if db else [org.value] if org and org.value not in ("unknown", "not in panel") else []
     prose = pp.to_prose(decisions)
     if a.prose is not None:   # a bare --prose means ProSE from PATH
         decisions, prose = _confirm_with_prose(c, decisions, prose, panel, h)
@@ -821,7 +865,6 @@ def analyze(a, log=print):
     jev_issues, jev_verdicts = J.cross_check(jev, jev_study, decisions) if jev and jev_study else ([], {})
     consistency = J.consistency(decisions)
     agreement = indicator_agreement(decisions, jev_verdicts)
-    mix = organism_mix(c.ev, jev_report)
     c.timings["total"] = round(time.time() - t0, 1)
     return {
         "tool": "prose-auto 0.1 (prototype)",
@@ -829,7 +872,9 @@ def analyze(a, log=print):
         "decisions": {k: d.to_dict() for k, d in decisions.items()},
         "prose": prose,
         "prose_cli": pp.to_cli(prose["params"]),
-        "sdrf": pp.to_sdrf_technical(decisions),
+        "organisms": organisms,
+        "search_database": db,
+        "sdrf": pp.to_sdrf_technical(decisions, organisms),
         "llm": {"backend": backend.name if backend else None, "rejected": llm_rejected, "review": review},
         "jev": {"model": jev.name if jev else None, "cross_check": jev_issues, "study": jev_report,
                 "calls": jev.calls if jev else 0, "cost_usd": round(jev.cost_usd, 5) if jev else 0},
@@ -901,6 +946,11 @@ def markdown(rep):
         L_ += ["", f"**Organism mix suspected: {'yes' if mix['suspected'] else 'no'}** (score {mix['score']:.2f})"]
         L_ += [f"- {i['indicator']}: {', '.join(i['species'])} ({i['strength']:.2f})"
                + (f" — {i['detail']}" if i.get("detail") else "") for i in mix["indicators"]]
+    db = rep.get("search_database")
+    if db:
+        L_ += ["", f"**Search database: the union of {', '.join(db['organisms'])}** (spectra of their own in the "
+               "mini-search: " + ", ".join(f"{k} {v}" for k, v in db["own_spectra"].items() if v is not None)
+               + f"): {', '.join(db['fasta'])}"]
     L_ += ["", "## ProSE parameters", "", "```", "ProSE -in <mzML> -database <fasta> -out <idXML> \\",
            "  " + " ".join(f'"{x}"' if " " in x or not x else x for x in rep["prose_cli"]), "```", "",
            "## Evidence", ""]

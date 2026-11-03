@@ -57,6 +57,7 @@ class HypothesisTester:
         self.log = log
         self.best_db = None       # (name, path)
         self.best_psms = []
+        self.paths = {}           # name -> FASTA of every database searched for the organism
         self._done = {}           # (FASTA, enzyme, mods) -> (passing PSMs, peptides): each search runs once
 
     def _search(self, name, path, mods, enzyme="Trypsin"):
@@ -73,6 +74,7 @@ class HypothesisTester:
     # -- organism -------------------------------------------------------------
     def organism(self, panel: dict) -> list:
         res = {}
+        self.paths = {**getattr(self, "paths", {}), **panel}   # tests build testers without __init__
         for name, path in panel.items():
             t = time.time()
             ok, n_pep = self._search(name, path, self.mods)

@@ -110,7 +110,7 @@ def to_prose(decisions: dict) -> dict:
                  f"({ION_TRAP_FRAGMENT_DA} Da on ion-trap MS2)")
     cr = v("charge_range")
     if cr:
-        P["Search:precursor:min_charge"], P["Search:precursor:max_charge"] = int(cr[0]), int(cr[1])
+        P["Search:precursor:min_charge"], P["Search:precursor:max_charge"] = (min(max(int(z), 1), 20) for z in cr)
     fixed, var = [], ["Oxidation (M)"]
     alk = v("cys_alkylation")
     if alk and not str(alk).startswith(("none", "unknown")):
@@ -209,8 +209,9 @@ def to_ini_snippet(params: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
-def to_sdrf_technical(decisions: dict) -> dict:
-    """The SDRF comment[] columns that describe the search (like techSDRF)."""
+def to_sdrf_technical(decisions: dict, organisms=None) -> dict:
+    """The SDRF comment[] columns that describe the search (like techSDRF); the organisms of a mixture union are
+    joined by ';'."""
     v = lambda p: decisions[p].value if p in decisions else None
     out = {}
     if v("instrument"):
@@ -234,6 +235,7 @@ def to_sdrf_technical(decisions: dict) -> dict:
     if alk and not str(alk).startswith(("none", "unknown")):
         name = alk.split(" (")[0]
         out["comment[modification parameters]"] = f"NT={name};TA=C;MT=Fixed"
-    if v("organism") and v("organism") not in ("unknown", "not in panel"):
-        out["characteristics[organism]"] = str(v("organism")).replace("_", " ")
+    orgs = organisms if organisms else [v("organism")] if v("organism") not in (None, "unknown", "not in panel") else []
+    if orgs:
+        out["characteristics[organism]"] = ";".join(str(o).replace("_", " ") for o in orgs)
     return out

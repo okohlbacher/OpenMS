@@ -209,6 +209,17 @@ def test_dia_placeholder_charges_are_no_charge_range():
     assert cr and cr[0].value == [2, 4] and cr[0].source == "default"
 
 
+def test_charge_range_ignores_non_peptide_precursors():
+    from prose_auto import detect_instrument as inst
+    ms2 = [Scan(f"p{i}", 2, float(i), np.array([200.0]), np.array([1.0]), precursor_mz=600.0, charge=2 + i % 2)
+           for i in range(900)]
+    ms2 += [Scan(f"h{i}", 2, float(i), np.array([200.0]), np.array([1.0]), precursor_mz=900.0, charge=26 + i % 35)
+            for i in range(100)]   # 23-54 kDa ions at 26+ to 60+ (PXD062749)
+    assert inst.charge_range(ms2)[0].value == [2, 3]
+    ev = [Evidence("charge_range", [2, 56], 0.85, "data", "precursor charges")]
+    assert pp.to_prose(reconcile(ev))["params"]["Search:precursor:max_charge"] == 20
+
+
 def test_not_in_panel_does_not_outrank_a_species_call():
     ev = [Evidence("organism", "not in panel", 0.5, "search", "panel mini-search"),
           Evidence("organism", "Homo sapiens", 0.65, "data", "FASTag species")]
@@ -361,3 +372,22 @@ def test_hla_call_needs_several_indicators():
     # class II only from the tag-profile call (a low K/R share alone is also Glu-C, Asp-N, chymotrypsin)
     assert _digest_votes(hla2, {"cterm_KR": 0.30, "cterm_anchors_LVFYM": 0.10}, False, False)[1] is None
     assert _digest_votes(hla2, {"cterm_KR": 0.30, "tag_call": "unspecific"}, False, False)[1] == "II"
+
+
+def test_mixture_union_needs_spectra_of_its_own():
+    from prose_auto.reconcile import mixture_union
+    st = lambda yeast: {"n_spectra": 2000, "Homo_sapiens": {"psms": 655, "unique_vs_best": 80},
+                        "Saccharomyces_cerevisiae": {"psms": 567, "unique_vs_best": yeast},
+                        "Bos_taurus": {"psms": 60, "unique_vs_best": 30},
+                        "Escherichia_coli": {"psms": 5, "unique_vs_best": 3},
+                        "Mus_musculus": {"psms": 329, "unique_vs_best": 11}}
+    mix = {"suspected": True, "indicators": [{"indicator": "stated by the user or the repository record",
+           "species": ["Homo sapiens", "Saccharomyces cerevisiae", "Escherichia coli", "Bos taurus"],
+           "strength": 0.5}, {"indicator": "named in the texts", "species": ["Mus musculus"], "strength": 0.2}]}
+    ev = lambda yeast: [Evidence("organism", "Homo_sapiens", 0.8, "search", "panel mini-search", "", st(yeast))]
+    # PXD045500: yeast with 511 spectra of its own joins; E. coli (3), the reagent genus Bos and mouse,
+    # named only in the texts, do not
+    assert mixture_union(ev(511), mix, "Homo sapiens (human)") == [("Homo_sapiens", None),
+                                                                    ("Saccharomyces_cerevisiae", 511)]
+    assert mixture_union(ev(0), mix, "Homo sapiens (human)") == []          # its pure human file keeps one database
+    assert mixture_union(ev(511), {**mix, "suspected": False}, "Homo sapiens") == []

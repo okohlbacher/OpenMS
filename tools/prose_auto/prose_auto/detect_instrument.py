@@ -13,6 +13,7 @@ from collections import Counter
 import numpy as np
 
 from .evidence import Evidence
+from .spectra import PROTON
 
 # Instrument model -> (instrument family, PeptDeep instrument class,
 #                      default precursor ppm, default fragment tol, unit)
@@ -190,12 +191,22 @@ def detect_acquisition(run) -> list:
     return ev
 
 
+PEPTIDE_MAX_MASS = 9000.0   # Da, ProSE's peptide:max_mass default: heavier precursors cannot match a peptide
+PROSE_MAX_CHARGE = 20       # ProSE accepts precursor charges 1..20
+
+
 def charge_range(ms2) -> list:
-    """precursor charge range covering 99% of the assigned charges (DDA or pseudo-MS/MS spectra)"""
-    charges = np.array([s.charge for s in ms2 if s.charge > 0])
+    """precursor charge range covering 99% of the assigned charges of peptide-sized precursors (DDA or pseudo-MS/MS
+    spectra). Heavier precursors are left out: PXD062749 (Q Exactive HF-X) has 2,800 precursors at 8+ to 60+ and
+    9-60 kDa, whose 99.5th percentile gave 56+, which ProSE rejects."""
+    mz = lambda s: getattr(s, "precursor_mz", 0) or 0
+    charges = np.array([s.charge for s in ms2 if s.charge > 0 and
+                        (mz(s) <= 0 or (mz(s) - PROTON) * s.charge <= PEPTIDE_MAX_MASS)])
     if charges.size < 20:
         return []
     lo, hi = int(np.percentile(charges, 0.5)), int(np.percentile(charges, 99.5))
-    return [Evidence("charge_range", [max(1, lo), max(lo, hi)], 0.85, "data",
-                     "precursor charges", f"99% of assigned precursor charges lie in {lo}..{hi}",
+    lo, hi = max(1, min(lo, PROSE_MAX_CHARGE)), min(max(lo, hi), PROSE_MAX_CHARGE)
+    return [Evidence("charge_range", [lo, hi], 0.85, "data",
+                     "precursor charges", f"99% of assigned precursor charges (precursors up to "
+                     f"{PEPTIDE_MAX_MASS:g} Da) lie in {lo}..{hi}",
                      {"histogram": {int(k): int(v) for k, v in Counter(charges.tolist()).items()}})]

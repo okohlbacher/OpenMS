@@ -25,6 +25,7 @@ import re
 import math
 
 from .detect_instrument import classify_instrument
+from .external import REAGENT_GENERA
 from . import taxa
 from .evidence import Decision, Evidence
 
@@ -572,3 +573,36 @@ def organism_mix(evidence: list, jev_report=None):
         if named and all(_absent(psms, n, k) for k in named):
             out.update(suspected=False, note="study describes a mixture; this file looks single-species")
     return out
+
+
+MIX_MAX_ORGANISMS = 4   # databases of a mixture union
+MIX_OWN_SPECTRA = 10    # spectra of its own (and 0.5 % of the searched spectra) before a named organism joins it
+
+
+def mixture_union(evidence, mix, decided):
+    """The databases of a suspected mixture, ordered by evidence: the decided organism, then each organism a mixture
+    indicator of strength >= 0.3 names (the texts name every species they mention: mouse beside a human-yeast
+    benchmark, PXD045500) that the last panel mini-search tested and found with spectra of its own (no cRAP, none the
+    winner explains) >= max(10, 0.5 % of the spectra), most first; at most 4. Reagent genera (trypsin, BSA, keratin
+    hosts) join only when the user or the record names them. On the 0.1.3 mixset decisions the second species of
+    the 19 mixed runs had 12-623 such spectra, those of the pure files of mixture studies 0-3, so a pure file keeps
+    one database. Returns [(database name, own spectra)]; [] when no second organism qualifies."""
+    if not (mix or {}).get("suspected"):
+        return []
+    search = [e for e in evidence if e.source == "search" and e.method == "panel mini-search" and e.stats
+              and " + " not in str(e.value)]
+    if not search:
+        return []
+    st = search[-1].stats
+    n = st.get("n_spectra") or 0
+    dbs = {_organism_key(k): k for k, v in st.items() if isinstance(v, dict)}
+    named = {_organism_key(x) for i in mix["indicators"] if i["strength"] >= 0.3 for x in i["species"]}
+    stated = {_organism_key(e.value) for e in evidence if e.parameter == "organism" and e.source in ("user", "repository")}
+    first = _organism_key(decided)
+    own = sorted(((st[dbs[k]].get("unique_vs_best") or 0, dbs[k]) for k in named & dbs.keys() - {first}
+                  if taxa.scientific(dbs[k]).replace("_", " ").split(" ")[0] not in REAGENT_GENERA or k in stated),
+                 reverse=True)
+    own = [(k, u) for u, k in own if u >= max(MIX_OWN_SPECTRA, 0.005 * n)]
+    if not own:
+        return []
+    return ([(dbs.get(first, decided), None)] + own)[:MIX_MAX_ORGANISMS]

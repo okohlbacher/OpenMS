@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.1.5 (2026-11-03)
+
+Mixture union search
+- When organism_mix is suspected, ProSE, the alkylation probe and the FASTag mass-gap pass search the union of the
+  suspected proteomes (`<panel>/extra/union/A+B.fasta`). An organism joins if an indicator of strength >= 0.3 names
+  it and the panel mini-search gives it at least max(10, 0.5 % of the spectra) spectra the winner does not explain;
+  winner first, then by those spectra, at most 4. Reagent genera join only when the user or the record names them.
+- `.auto.json` carries `organisms` and `search_database`; `.auto.md` names the union; the SDRF organism column
+  lists them separated by ";".
+- Mixset (38 runs): 19/19 mixtures get a union, no pure file does. On the union runs PSMs +24 %, peptides +27 %,
+  protein groups +47 % over 0.1.3 (97 %, 94 %, 97 % of the true-organism search), combined PSM FDP <= 1.5 %.
+  Benchmark (180): 3 unions (PXD012636, PXD053406, PXD066672), PSMs +32 %.
+
+Charge range
+- The charge range counts only precursors up to 9,000 Da (ProSE's peptide:max_mass) and is clamped to 1..20,
+  ProSE's limit. PXD062749 (heavy non-peptide ions at 8+ to 60+) went from 2..56 to 2..20; five other runs narrow.
+
 ## 0.1.4 (2026-11-03)
 
 Runs without a digest
