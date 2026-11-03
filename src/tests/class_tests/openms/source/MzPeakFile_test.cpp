@@ -439,6 +439,36 @@ START_SECTION([EXTRA] a file of the reference implementation)
 }
 END_SECTION
 
+START_SECTION([EXTRA] a file of the reference implementation that lists its index columns)
+{
+  // MzPeakFile_small_index.mzpeak: small.mzpeak of https://github.com/HUPO-PSI/mzPeak as of 02f49d9 (26 Oct 2026), the
+  // same run as MzPeakFile_small.mzpeak, written after the specification gave the key columns array index entries of
+  // their own (buffer_format "index", MS:1003870, no unit, sorting rank 0) and renamed the delta model column to
+  // polynomial_delta_coordinate_interpolation. It reads as the older file does.
+  PeakMap now, before;
+  MzPeakFile().load(OPENMS_GET_TEST_DATA_PATH("MzPeakFile_small_index.mzpeak"), now);
+  MzPeakFile().load(OPENMS_GET_TEST_DATA_PATH("MzPeakFile_small.mzpeak"), before);
+  TEST_EQUAL(now.getNrSpectra(), 48)
+  ABORT_IF(now.getNrSpectra() != before.getNrSpectra())
+  Size differing = 0;
+  for (Size i = 0; i < now.getNrSpectra(); ++i)
+  {
+    const MSSpectrum& a = now[i];
+    const MSSpectrum& b = before[i];
+    bool same = a.size() == b.size() && a.getMSLevel() == b.getMSLevel() && a.getRT() == b.getRT() && a.getNativeID() == b.getNativeID()
+                && a.getPrecursors().size() == b.getPrecursors().size();
+    for (Size k = 0; same && k < a.size(); ++k)
+    {
+      same = a[k].getMZ() == b[k].getMZ() && a[k].getIntensity() == b[k].getIntensity();
+    }
+    differing += ! same;
+  }
+  TEST_EQUAL(differing, 0)
+  TEST_EQUAL(now[0].size(), 13589)
+  TEST_REAL_SIMILAR(now[0][8].getMZ(), 204.7593349)
+}
+END_SECTION
+
 #endif // WITH_MZPEAK
 
 /////////////////////////////////////////////////////////////
