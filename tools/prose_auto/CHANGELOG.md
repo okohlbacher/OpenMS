@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.1.7 (2026-11-05)
+
+FASTag 1.9.0
+- Requires FASTag >= 1.9.0. 1.9.0 keeps reversed (b-ion) placements and changes its default tags; options and
+  report formats are unchanged.
+- TAG_MIN 100 -> 175 C-terminal tags. 1.9.0 reads a median 1.75x the C-terminal tags of 1.8.0, so 175 keeps
+  1.8.0's operating point. At 100, PXD031090 (TiO2) called HLA-II against trypsin.
+- Against 0.1.6 (218 runs, Jev cache on), 63 runs change a decision:
+  - 58 modification lists from the new mass-gap peaks (4 of them together with a new Jev answer);
+  - 3 organism labels of the same species;
+  - one tolerance, one Cys and one enzyme decision (the last two from new Jev answers).
+  No organism or union decision changes.
+- ProSE IDs on the 71 runs whose command changed: PSMs -0.23 %, protein groups -0.08 %.
+- FASTag time -40 to -43 %, whole run -16 to -29 %.
+
 ## 0.1.6 (2026-11-04)
 
 Complete mixture unions

@@ -104,13 +104,14 @@ def fastag_species(fastag, mzml, frag_tol=20.0, frag_unit="ppm", fixed=("Carbami
     return [Evidence("organism", call["name"], conf, "data", "FASTag species", detail, {"taxa": table})]
 
 
-FASTAG_MIN_VERSION = (1, 8, 0)   # -digest_out, -label_out, -massgap_out
+FASTAG_MIN_VERSION = (1, 9, 0)   # -digest_out, -label_out, -massgap_out; 1.9.0 keeps reversed (b-ion) placements
 DIGEST_MODELS = os.path.join(os.path.dirname(__file__), "data", "prose_auto_013_digest_models.tsv")
 _NLABEL = {"TMT6/10/11plex": ("TMT", 229.162932), "TMTpro (16/18plex)": ("TMTpro", 304.207146),
            "iTRAQ4plex": ("iTRAQ4", 144.102063)}
 KR_TRYPTIC = 0.8
 SILAC_MIN_TAGS = 50   # K- and R-terminal tags each before the heavy shares count (chymotrypsin: Lys8 50% of 12% K/R)
-TAG_MIN = 100         # C-terminal tag ends before the termini say anything (FASTag's -digest_tag_min)
+TAG_MIN = 175         # C-terminal tag ends before the termini say anything: FASTag 1.9.0 reads 1.75x (median, 111
+                      # runs) the C-terminal tags of 1.8.0, so 175 keeps 1.8.0's 100; at 100 a TiO2 run read HLA-II
 TAG_AAS = "GASPVTCLNDQKEMHFRYW"   # I merged into L
 # model -> enzyme value; HLA-I ligands and proteasome products are class I, HLA-II ligands and unspecific cleavage
 # class II (their ends barely differ from the proteome: "no protease")
