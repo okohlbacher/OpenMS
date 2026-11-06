@@ -245,25 +245,74 @@ namespace OpenMS
     spectrum.getPrecursors().push_back(prec);
   }
 
+  namespace
+  {
+    // per peak of getIonSeriesSpectrum_(): the peak, its series (0 prefix, 1 suffix), its ordinal (the number of its ion
+    // name) and charge
+    struct IonSeriesIon
+    {
+      Peak1D first;
+      uint8_t second;
+      UInt ordinal;
+      Int charge;
+    };
+    // The scratch of this thread in one object: each thread_local of a shared library costs a __tls_get_addr call and
+    // an initialisation check per access, and getIonSeriesSpectrum_() runs once per candidate (26 of 1727 busy stack
+    // samples of a 27-run search were in __tls_get_addr).
+    struct IonSeriesScratch
+    {
+      std::vector<double> residue_masses;
+      std::vector<IonSeriesIon> merged, chunk, scratch;
+    };
+    IonSeriesScratch& ionSeriesScratch()
+    {
+      thread_local IonSeriesScratch tls;
+      return tls;
+    }
+    // what getIonSeriesSpectrum_() reads from an AASequence, into the scratch of this thread
+    const std::vector<double>& residueMassesOf(const AASequence& peptide)
+    {
+      std::vector<double>& masses = ionSeriesScratch().residue_masses;
+      masses.resize(peptide.size());
+      for (Size i = 0; i < masses.size(); ++i) masses[i] = peptide[i].getMonoWeight(Residue::Internal);
+      return masses;
+    }
+  }
+
   bool TheoreticalSpectrumGenerator::getIonSeriesSpectrum(PeakSpectrum& spectrum, std::vector<uint8_t>& ion_series,
                                                           const AASequence& peptide, Int min_charge, Int max_charge) const
   {
-    return getIonSeriesSpectrum_(spectrum, ion_series, nullptr, nullptr, peptide, min_charge, max_charge);
+    const std::vector<double>& masses = residueMassesOf(peptide);
+    return getIonSeriesSpectrum_(spectrum, ion_series, nullptr, nullptr, masses.data(), masses.size(),
+                                 peptide.getNTerminalModification(), peptide.getCTerminalModification(), min_charge, max_charge);
   }
 
   bool TheoreticalSpectrumGenerator::getIonSeriesSpectrum(PeakSpectrum& spectrum, std::vector<uint8_t>& ion_series,
                                                           std::vector<UInt>& ion_ordinals, std::vector<Int>& ion_charges,
                                                           const AASequence& peptide, Int min_charge, Int max_charge) const
   {
-    return getIonSeriesSpectrum_(spectrum, ion_series, &ion_ordinals, &ion_charges, peptide, min_charge, max_charge);
+    const std::vector<double>& masses = residueMassesOf(peptide);
+    return getIonSeriesSpectrum_(spectrum, ion_series, &ion_ordinals, &ion_charges, masses.data(), masses.size(),
+                                 peptide.getNTerminalModification(), peptide.getCTerminalModification(), min_charge, max_charge);
+  }
+
+  bool TheoreticalSpectrumGenerator::getIonSeriesSpectrum(PeakSpectrum& spectrum, std::vector<uint8_t>& ion_series,
+                                                          const double* residue_masses, Size n_residues,
+                                                          const ResidueModification* n_term_mod, const ResidueModification* c_term_mod,
+                                                          Int min_charge, Int max_charge) const
+  {
+    return getIonSeriesSpectrum_(spectrum, ion_series, nullptr, nullptr, residue_masses, n_residues, n_term_mod, c_term_mod,
+                                 min_charge, max_charge);
   }
 
   bool TheoreticalSpectrumGenerator::getIonSeriesSpectrum_(PeakSpectrum& spectrum, std::vector<uint8_t>& ion_series,
                                                            std::vector<UInt>* ion_ordinals, std::vector<Int>* ion_charges,
-                                                           const AASequence& peptide, Int min_charge, Int max_charge) const
+                                                           const double* residue_masses, Size n_residues,
+                                                           const ResidueModification* n_term_mod, const ResidueModification* c_term_mod,
+                                                           Int min_charge, Int max_charge) const
   {
     if (add_isotopes_ || add_losses_ || add_internal_fragments_ || add_precursor_peaks_ || add_abundant_immonium_ions_
-        || !sort_by_position_ || peptide.size() < 2)
+        || !sort_by_position_ || n_residues < 2)
     {
       return false;
     }
@@ -289,29 +338,12 @@ namespace OpenMS
       {add_x_ions_, false, stat_x, x_intensity_},    {add_z_ions_, false, stat_z, z_intensity_},
       {add_zp1_ions_, false, stat_zp1, z_intensity_}, {add_zp2_ions_, false, stat_zp2, z_intensity_}};
 
-    const Size n = peptide.size();
-    // per peak: the peak, its series (0 prefix, 1 suffix), its ordinal (the number of its ion name) and charge
-    struct Ion
-    {
-      Peak1D first;
-      uint8_t second;
-      UInt ordinal;
-      Int charge;
-    };
-    // The scratch of this thread in one object: each thread_local of a shared library costs a __tls_get_addr call and
-    // an initialisation check per access, and this function runs once per candidate (26 of 1727 busy stack samples of
-    // a 27-run search were in __tls_get_addr).
-    struct Scratch
-    {
-      std::vector<double> residue_weights;
-      std::vector<Ion> merged, chunk, scratch;
-    };
-    thread_local Scratch tls;
-    std::vector<double>& residue_weights = tls.residue_weights;
-    residue_weights.resize(n);
-    for (Size i = 0; i < n; ++i) residue_weights[i] = peptide[i].getMonoWeight(Residue::Internal);
-    const double n_term_diff = peptide.hasNTerminalModification() ? peptide.getNTerminalModification()->getDiffMonoMass() : 0.0;
-    const double c_term_diff = peptide.hasCTerminalModification() ? peptide.getCTerminalModification()->getDiffMonoMass() : 0.0;
+    const Size n = n_residues;
+    using Ion = IonSeriesIon;
+    IonSeriesScratch& tls = ionSeriesScratch();
+    const double* const residue_weights = residue_masses;
+    const double n_term_diff = n_term_mod != nullptr ? n_term_mod->getDiffMonoMass() : 0.0;
+    const double c_term_diff = c_term_mod != nullptr ? c_term_mod->getDiffMonoMass() : 0.0;
 
     // The peaks of each series are appended as addPeaks_() computes them (same operations in the same order), then
     // the ascending chunks are merged stably, which is the order sortByPositionPresorted() gives them.

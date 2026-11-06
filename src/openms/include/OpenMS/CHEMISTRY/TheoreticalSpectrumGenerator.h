@@ -17,6 +17,7 @@
 namespace OpenMS
 {
   class AASequence;
+  class ResidueModification;
 
   /**
       @brief Generates theoretical spectra for peptides with various options
@@ -118,15 +119,35 @@ namespace OpenMS
     bool getIonSeriesSpectrum(PeakSpectrum& spectrum, std::vector<uint8_t>& ion_series, std::vector<UInt>& ion_ordinals,
                               std::vector<Int>& ion_charges, const AASequence& peptide, Int min_charge, Int max_charge) const;
 
+    /**
+      @brief getIonSeriesSpectrum() for a peptide given as what the generator reads from an AASequence: the residues'
+      Residue::Internal mono weights and the terminal modifications. The same output, without building the AASequence.
+
+      @param[out] spectrum Its peaks and data arrays are replaced (the meta data is kept)
+      @param[out] ion_series One entry per peak of @p spectrum
+      @param[in] residue_masses Residue::getMonoWeight(Residue::Internal) of the residues (modified ones included), N- to C-terminal
+      @param[in] n_residues Their number
+      @param[in] n_term_mod The N-terminal modification, nullptr for none
+      @param[in] c_term_mod The C-terminal modification, nullptr for none
+      @param[in] min_charge Lowest fragment charge
+      @param[in] max_charge Highest fragment charge
+      @return as getIonSeriesSpectrum()
+    */
+    bool getIonSeriesSpectrum(PeakSpectrum& spectrum, std::vector<uint8_t>& ion_series, const double* residue_masses,
+                              Size n_residues, const ResidueModification* n_term_mod, const ResidueModification* c_term_mod,
+                              Int min_charge, Int max_charge) const;
+
 
     /// overwrite
     void updateMembers_() override;
     //@}
 
     protected:
-    /// getIonSeriesSpectrum(), the ordinals and charges optional (nullptr: not written)
+    /// getIonSeriesSpectrum() on the residue masses, the ordinals and charges optional (nullptr: not written)
     bool getIonSeriesSpectrum_(PeakSpectrum& spectrum, std::vector<uint8_t>& ion_series, std::vector<UInt>* ion_ordinals,
-                               std::vector<Int>* ion_charges, const AASequence& peptide, Int min_charge, Int max_charge) const;
+                               std::vector<Int>* ion_charges, const double* residue_masses, Size n_residues,
+                               const ResidueModification* n_term_mod, const ResidueModification* c_term_mod,
+                               Int min_charge, Int max_charge) const;
 
 
     /// adds peaks to a spectrum of the given ion-type, peptide, charge, and intensity, also adds charges and ion names to the DataArrays, if the add_metainfo parameter is set to true

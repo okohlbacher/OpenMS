@@ -363,6 +363,7 @@ namespace OpenMS
     checkFixedModifications(modifications_fixed_);
 
     fixed_mod_deltas_.fill(0.0);
+    fixed_mod_internal_weights_.fill(0.0);
     fixed_mod_ptrs_.fill(nullptr);
     fixed_mod_residues_.fill(nullptr);
     for (auto& v : variable_mod_table_) v.clear();
@@ -422,6 +423,11 @@ namespace OpenMS
             fixed_mod_deltas_[static_cast<unsigned char>(origin)] = delta;
             fixed_mod_ptrs_[static_cast<unsigned char>(origin)] = mod_ptr;
             fixed_mod_residues_[static_cast<unsigned char>(origin)] = modified_residue(origin, mod_ptr);
+            if (fixed_mod_residues_[static_cast<unsigned char>(origin)] != nullptr)
+            {
+              fixed_mod_internal_weights_[static_cast<unsigned char>(origin)] =
+                fixed_mod_residues_[static_cast<unsigned char>(origin)]->getMonoWeight(Residue::Internal);
+            }
           }
           else if (term_spec == ResidueModification::N_TERM || term_spec == ResidueModification::PROTEIN_N_TERM)
           {
@@ -1142,6 +1148,86 @@ namespace OpenMS
     return seq;
   }
 
+
+  namespace
+  {
+    // what a generator reads from an AASequence (TheoreticalSpectrumGenerator::getIonSeriesSpectrum())
+    void massesOfSequence(const AASequence& seq, FragmentIndex::CandidateMasses& out)
+    {
+      out.residue_masses.resize(seq.size());
+      for (Size i = 0; i < seq.size(); ++i) out.residue_masses[i] = seq[i].getMonoWeight(Residue::Internal);
+      out.n_term_mod = seq.getNTerminalModification();
+      out.c_term_mod = seq.getCTerminalModification();
+    }
+  }
+
+  void FragmentIndex::candidateMasses(const Peptide& peptide, const std::vector<FASTAFile::FASTAEntry>& fasta_entries,
+                                      CandidateMasses& out) const
+  {
+    if (fastCandidateMasses_(fasta_entries[peptide.protein_idx].sequence, peptide.sequence_.first, peptide.sequence_.second,
+                             peptide.mod_bitmask_, out)) return;
+    massesOfSequence(reconstructModifiedSequence(peptide, fasta_entries), out);
+  }
+
+  void FragmentIndex::realizedCandidateMasses(const Peptide& mother, const std::vector<FASTAFile::FASTAEntry>& fasta_entries,
+                                              size_t realized_length, uint32_t subset_bitmask, CandidateMasses& out) const
+  {
+    if (fastCandidateMasses_(fasta_entries[mother.protein_idx].sequence, mother.sequence_.first, realized_length, subset_bitmask, out)) return;
+    massesOfSequence(reconstructRealizedSubSequence(mother, fasta_entries, realized_length, subset_bitmask), out);
+  }
+
+  bool FragmentIndex::fastCandidateMasses_(const std::string& protein_seq, size_t first, size_t length, uint32_t slot_bits,
+                                           CandidateMasses& out) const
+  {
+    // The residues of unmodifiedSequence() (ResidueDB's residue per upper-case letter) as their Internal mono weights:
+    // residue_mass_table_ holds Residue::getMonoWeight(Residue::Internal) of exactly those residues. Any other letter
+    // (parsed by AASequence::fromString() there) is left to the caller.
+    static const ResidueDB* rdb = ResidueDB::getInstance();
+    std::vector<double>& masses = out.residue_masses;
+    masses.clear();
+    out.n_term_mod = nullptr;
+    out.c_term_mod = nullptr;
+    if (first >= protein_seq.size()) return false;
+    const size_t n = std::min(length, protein_seq.size() - first);
+    if (n == 0) return false;
+    for (size_t i = 0; i < n; ++i)
+    {
+      const char c = protein_seq[first + i];
+      if (c < 'A' || c > 'Z' || rdb->getResidue(static_cast<unsigned char>(c)) == nullptr) return false;
+      masses.push_back(residue_mass_table_[static_cast<unsigned char>(c)]);
+    }
+    if (modifications_fixed_.empty() && modifications_variable_.empty()) return true;
+
+    // the fixed modifications: the modified residue's weight (fixed_mod_residues_), as AASequence::setModification(i,
+    // residue) puts it there; where only the modification is known (setModification(i, mod)) the caller's path
+    for (size_t i = 0; i < n; ++i)
+    {
+      const unsigned char aa = static_cast<unsigned char>(protein_seq[first + i]);
+      if (fixed_mod_residues_[aa] != nullptr) masses[i] = fixed_mod_internal_weights_[aa];
+      else if (fixed_mod_ptrs_[aa] != nullptr) return false;
+    }
+    if (fixed_nterm_mod_ptr_ != nullptr) out.n_term_mod = fixed_nterm_mod_ptr_;
+    if (fixed_cterm_mod_ptr_ != nullptr) out.c_term_mod = fixed_cterm_mod_ptr_;
+
+    // the variable modifications of the active slots
+    if (slot_bits != 0)
+    {
+      const char* seq_ptr = protein_seq.c_str() + first;
+      const bool is_prot_nterm = isProteinNTerminal_(protein_seq, first);
+      const bool is_prot_cterm = (first + length == protein_seq.size());
+      ModSlot slots[MAX_MOD_SLOTS];
+      const size_t n_slots = buildModSlots_(seq_ptr, length, slots, is_prot_nterm, is_prot_cterm);
+      for (size_t s = 0; s < n_slots; ++s)
+      {
+        if (!(slot_bits & (1u << s))) continue;
+        if (slots[s].position == ModSlot::NTERM_SLOT) out.n_term_mod = slots[s].mod_ptr;
+        else if (slots[s].position == ModSlot::CTERM_SLOT) out.c_term_mod = slots[s].mod_ptr;
+        else if (slots[s].residue != nullptr && slots[s].position < n) masses[slots[s].position] = slots[s].residue->getMonoWeight(Residue::Internal);
+        else return false;
+      }
+    }
+    return true;
+  }
 
   /// Compute precursor m/z at charge 1 (M+H)+ directly from amino acid chars.
   /// Formula: (sum_of_internal_masses + H2O + proton) / 1

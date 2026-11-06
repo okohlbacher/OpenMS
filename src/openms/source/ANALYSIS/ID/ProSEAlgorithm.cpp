@@ -3818,6 +3818,8 @@ namespace OpenMS
       FragmentIndex::SpectrumMatchesTopN top_sms;
       PeakSpectrum theo_spectrum;
       std::vector<uint8_t> theo_ion_series;
+      FragmentIndex::CandidateMasses candidate; ///< the residue masses of the candidate being scored (no AASequence per candidate)
+      std::vector<double> scores;               ///< the scores of a spectrum's hits, sorted: the tie check before the pruning
     };
     ScoringScratch_& scoringScratch_()
     {
@@ -3825,6 +3827,14 @@ namespace OpenMS
       return scratch;
     }
   } // namespace
+
+  AASequence ProSEAlgorithm::candidateSequence_(const FragmentIndex& fi, const std::vector<FASTAFile::FASTAEntry>& db,
+                                                const AnnotatedHit_& hit, bool peptide_mass_mode)
+  {
+    const FragmentIndex::Peptide& peptide = fi.getPeptides()[hit.index_peptide];
+    return peptide_mass_mode ? fi.reconstructRealizedSubSequence(peptide, db, hit.realized_length, hit.subset_bitmask)
+                             : fi.reconstructModifiedSequence(peptide, db);
+  }
 
   void ProSEAlgorithm::scoreSpectraAgainstIndex_(
       const PeakMap& spectra,
@@ -3924,6 +3934,13 @@ namespace OpenMS
       // clearing the spectrum, so what the previous candidate or spectrum left in it does not matter.
       PeakSpectrum& theo_spectrum = scratch.theo_spectrum;
       std::vector<uint8_t>& theo_ion_series = scratch.theo_ion_series;
+      // The candidate's residue masses and terminal modifications in a buffer of this thread: what the generator reads
+      // from its AASequence, from the index's tables, without the AASequence (a heap vector) per candidate, of which
+      // most are pruned below. Its AASequence is built for the hits kept after the pruning (candidateSequence_()) and,
+      // here, only for the dedup key of chunked searches and for the generator's string path.
+      FragmentIndex::CandidateMasses& candidate = scratch.candidate;
+      // the hits of this spectrum: one buffer for all its candidates instead of one per doubling
+      annotated_hits[scan_index].reserve(annotated_hits[scan_index].size() + top_sms.hits_.size());
 
       for (const auto& sms : top_sms.hits_)
       {
@@ -3931,16 +3948,20 @@ namespace OpenMS
 
         // Peptide-mass mode: the candidate is the prefix of the mother, with the variable modifications, that the index
         // matched to the precursor
-        AASequence mod_candidate = peptide_mass_mode
-          ? fi.reconstructRealizedSubSequence(sms_pep, db, sms.realized_length_, sms.subset_bitmask_)
-          : fi.reconstructModifiedSequence(sms_pep, db);
+        if (peptide_mass_mode) fi.realizedCandidateMasses(sms_pep, db, sms.realized_length_, sms.subset_bitmask_, candidate);
+        else fi.candidateMasses(sms_pep, db, candidate);
+        const auto candidate_sequence = [&]()
+        {
+          return peptide_mass_mode ? fi.reconstructRealizedSubSequence(sms_pep, db, sms.realized_length_, sms.subset_bitmask_)
+                                   : fi.reconstructModifiedSequence(sms_pep, db);
+        };
 
         // Index construction already removes repeated occurrences within a
         // chunk. Across chunks, skip the same hypothesis before updating either
         // scores or pool statistics. Charge and isotope hypotheses stay distinct.
         if (deduplicate_chunks)
         {
-          std::string key = mod_candidate.toString();
+          std::string key = candidate_sequence().toString();
           key += "\t" + std::to_string(sms.precursor_charge_) + "\t" + std::to_string(sms.isotope_error_);
           if (! pool_stats[scan_index].seen_candidates.insert(std::move(key)).second) { continue; }
         }
@@ -3949,7 +3970,8 @@ namespace OpenMS
         double score;
         // The peaks of getSpectrum() with the ion series per peak instead of the ion names (no strings, no data arrays):
         // the same scores
-        if (spectrum_generator.getIonSeriesSpectrum(theo_spectrum, theo_ion_series, mod_candidate, 1, scoringMaxCharge_(sms.precursor_charge_)))
+        if (spectrum_generator.getIonSeriesSpectrum(theo_spectrum, theo_ion_series, candidate.residue_masses.data(), candidate.residue_masses.size(),
+                                                    candidate.n_term_mod, candidate.c_term_mod, 1, scoringMaxCharge_(sms.precursor_charge_)))
         {
           score = mass_accuracy_score_
             ? HyperScore::computeMassAccuracy(effective_fragment_tol, fragment_mass_tolerance_unit_ppm, exp_spectrum, theo_spectrum,
@@ -3964,7 +3986,7 @@ namespace OpenMS
           // peak vector (clear(true) would shrink it); the data arrays are emptied either way.
           theo_spectrum.clear(false);
           theo_spectrum.getPrecursors().clear(); // (clear(false) keeps the meta data; getSpectrum() appends a precursor per call)
-          spectrum_generator.getSpectrum(theo_spectrum, mod_candidate, 1, scoringMaxCharge_(sms.precursor_charge_));
+          spectrum_generator.getSpectrum(theo_spectrum, candidate_sequence(), 1, scoringMaxCharge_(sms.precursor_charge_));
           // Note: TSG emits sorted output when add_metainfo=true (see the
           // sortByPositionPresorted() call at the tail of getSpectrum_); the extra
           // sortByPosition() pass here was a redundant O(N) scan per candidate.
@@ -3983,11 +4005,10 @@ namespace OpenMS
 
         if (score == 0) continue;
 
-        AnnotatedHit_ ah;
-        ah.sequence = std::move(mod_candidate);
+        AnnotatedHit_ ah; // (its sequence, and in open searches its mass delta, after the pruning below)
         ah.score = score;
         // Account for the additional charge hypotheses in the ion-count fractions.
-        double seq_length = static_cast<double>(ah.sequence.size()) * scoringMaxCharge_(sms.precursor_charge_);
+        double seq_length = static_cast<double>(candidate.residue_masses.size()) * scoringMaxCharge_(sms.precursor_charge_);
         ah.prefix_fraction = static_cast<float>(detail.matched_prefix_ions / seq_length);
         ah.suffix_fraction = static_cast<float>(detail.matched_suffix_ions / seq_length);
         ah.mean_error = static_cast<float>(detail.mean_error);
@@ -3996,14 +4017,9 @@ namespace OpenMS
         ah.isotope_error = sms.isotope_error_;
         ah.applied_charge = sms.precursor_charge_;
         ah.index_peptide = static_cast<UInt32>(sms.peptide_idx_);
+        ah.subset_bitmask = sms.subset_bitmask_;
+        ah.realized_length = peptide_mass_mode ? sms.realized_length_ : uint16_t(0);
         ah.delta_mass = 0.0;
-        if (open_search_mode)
-        {
-          double theo_mh_plus = ah.sequence.getMZ(1);
-          double exp_mz = exp_spectrum.getPrecursors()[0].getMZ();
-          double exp_mh_plus = exp_mz * sms.precursor_charge_ - ((sms.precursor_charge_ - 1) * proton_mass_u);
-          ah.delta_mass = exp_mh_plus - theo_mh_plus;
-        }
 
         annotated_hits[scan_index].push_back(std::move(ah));
       }
@@ -4020,9 +4036,44 @@ namespace OpenMS
 #endif
       if (hits.size() > keep)
       {
+        // hasBetterScore() orders equal scores by the sequence: the new hits whose score another hit of the spectrum
+        // has get theirs before the sort (every hit if a score is not finite); the others only if they survive it
+        std::vector<double>& scores = scratch.scores;
+        scores.clear();
+        bool finite = true;
+        for (const AnnotatedHit_& h : hits)
+        {
+          scores.push_back(h.score);
+          finite = finite && std::isfinite(h.score);
+        }
+        if (finite) std::sort(scores.begin(), scores.end());
+        for (AnnotatedHit_& h : hits)
+        {
+          if (!h.sequence.empty()) continue;
+          bool tied = !finite;
+          if (finite)
+          {
+            const auto range = std::equal_range(scores.begin(), scores.end(), h.score);
+            tied = range.second - range.first > 1;
+          }
+          if (tied) h.sequence = candidateSequence_(fi, db, h, peptide_mass_mode);
+        }
         std::partial_sort(hits.begin(), hits.begin() + keep, hits.end(), AnnotatedHit_::hasBetterScore);
         hits.resize(keep);
-        hits.shrink_to_fit();
+      }
+      hits.shrink_to_fit(); // (the reserve above: the capacity of all candidates)
+      // the sequences (and, in open searches, the mass deltas) of the hits kept
+      for (AnnotatedHit_& h : hits)
+      {
+        if (!h.sequence.empty()) continue;
+        h.sequence = candidateSequence_(fi, db, h, peptide_mass_mode);
+        if (open_search_mode)
+        {
+          const double theo_mh_plus = h.sequence.getMZ(1);
+          const double exp_mz = exp_spectrum.getPrecursors()[0].getMZ();
+          const double exp_mh_plus = exp_mz * h.applied_charge - ((h.applied_charge - 1) * proton_mass_u);
+          h.delta_mass = exp_mh_plus - theo_mh_plus;
+        }
       }
       }
       catch (...)
@@ -11327,19 +11378,25 @@ namespace OpenMS
 
       // Find the best-scoring hit for this spectrum
       double best_score = 0;
-      AASequence best_seq;
-      int best_isotope_error = 0;
-      uint16_t best_charge = 0;
+      const FragmentIndex::SpectrumMatch* best = nullptr;
 
       PeakSpectrum& theo = scratch.theo_spectrum;
       std::vector<uint8_t>& theo_ion_series = scratch.theo_ion_series;
+      // the candidate's residue masses as in the main loop: its AASequence only for the best hit
+      FragmentIndex::CandidateMasses& candidate = scratch.candidate;
+      const bool peptide_mass_mode = fragment_index.isPeptideMassMode();
+      const auto sequence_of = [&](const FragmentIndex::SpectrumMatch& sms)
+      {
+        const FragmentIndex::Peptide& peptide = fragment_index.getPeptides()[sms.peptide_idx_];
+        return peptide_mass_mode ? fragment_index.reconstructRealizedSubSequence(peptide, db, sms.realized_length_, sms.subset_bitmask_)
+                                 : fragment_index.reconstructModifiedSequence(peptide, db);
+      };
 
       for (const auto& sms : top_sms.hits_)
       {
         const FragmentIndex::Peptide& peptide = fragment_index.getPeptides()[sms.peptide_idx_];
-        AASequence seq = fragment_index.isPeptideMassMode()
-          ? fragment_index.reconstructRealizedSubSequence(peptide, db, sms.realized_length_, sms.subset_bitmask_)
-          : fragment_index.reconstructModifiedSequence(peptide, db);
+        if (peptide_mass_mode) fragment_index.realizedCandidateMasses(peptide, db, sms.realized_length_, sms.subset_bitmask_, candidate);
+        else fragment_index.candidateMasses(peptide, db, candidate);
 
         // The calibration PSMs are selected with the search's own score (upstream 825c33bb). The mass-accuracy score
         // favours PSMs with small fragment errors, so it narrows the fragment tolerance estimated from them below
@@ -11349,7 +11406,8 @@ namespace OpenMS
         // arrays), as the main loop: the same scores. The string path only when the generator cannot (losses, ...).
         HyperScore::PSMDetail detail;
         double score;
-        if (tsg.getIonSeriesSpectrum(theo, theo_ion_series, seq, 1, scoringMaxCharge_(sms.precursor_charge_)))
+        if (tsg.getIonSeriesSpectrum(theo, theo_ion_series, candidate.residue_masses.data(), candidate.residue_masses.size(),
+                                     candidate.n_term_mod, candidate.c_term_mod, 1, scoringMaxCharge_(sms.precursor_charge_)))
         {
           score = mass_accuracy_score_
             ? HyperScore::computeMassAccuracy(pass_fragment, fragment_mass_tolerance_unit_ppm, spec, theo, theo_ion_series, mass_error_sd_ppm_, detail)
@@ -11359,7 +11417,7 @@ namespace OpenMS
         {
           theo.clear(false); // peaks and data arrays; getSpectrum appends, its output is sorted with add_metainfo=true
           theo.getPrecursors().clear(); // (clear(false) keeps the meta data; getSpectrum() appends a precursor per call)
-          tsg.getSpectrum(theo, seq, 1, scoringMaxCharge_(sms.precursor_charge_));
+          tsg.getSpectrum(theo, sequence_of(sms), 1, scoringMaxCharge_(sms.precursor_charge_));
           score = mass_accuracy_score_
             ? HyperScore::computeMassAccuracy(pass_fragment, fragment_mass_tolerance_unit_ppm, spec, theo, mass_error_sd_ppm_, detail)
             : HyperScore::computeWithDetail(pass_fragment, fragment_mass_tolerance_unit_ppm, spec, theo, detail);
@@ -11368,13 +11426,13 @@ namespace OpenMS
         if (score > best_score)
         {
           best_score = score;
-          best_seq = std::move(seq);
-          best_isotope_error = sms.isotope_error_;
-          best_charge = sms.precursor_charge_;
+          best = &sms;
         }
       }
 
-      if (best_score == 0 || best_seq.empty()) continue;
+      if (best_score == 0 || best == nullptr) continue;
+      const int best_isotope_error = best->isotope_error_;
+      const uint16_t best_charge = best->precursor_charge_;
 
       // Skip PSMs matched at a non-zero isotope offset. Their precursor m/z carries
       // an extra source of uncertainty (the +1/+2 isotope peak can be ambiguous in
@@ -11382,6 +11440,9 @@ namespace OpenMS
       // quantile estimate. iso_err=0 PSMs are the gold-standard "true monoisotopic
       // peak picked" subset — the right population for estimating instrument bias.
       if (best_isotope_error != 0) continue;
+
+      const AASequence best_seq = sequence_of(*best);
+      if (best_seq.empty()) continue;
 
       // Compute precursor error (signed), isotope-corrected. FragmentIndex searches
       // shifted_mass = precursor_mass + isotope_error * C13C12, so M_theo ≈ N_obs +

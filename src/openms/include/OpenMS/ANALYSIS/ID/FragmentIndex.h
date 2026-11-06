@@ -580,7 +580,37 @@ namespace OpenMS
                                               size_t realized_length,
                                               uint32_t subset_bitmask = 0) const;
 
+    /**
+     * @brief What a theoretical-spectrum generator reads from the AASequence of reconstructModifiedSequence() /
+     * reconstructRealizedSubSequence(): the residues' Residue::Internal mono weights and the terminal modifications
+     *
+     * The same values (Residue::getMonoWeight(Residue::Internal) of the same residues, modified ones included) in a
+     * buffer the caller keeps: a scoring loop fills it once per candidate instead of building an AASequence (a heap
+     * vector) per candidate.
+     */
+    struct CandidateMasses
+    {
+      std::vector<double> residue_masses;              ///< N- to C-terminal
+      const ResidueModification* n_term_mod = nullptr; ///< nullptr: none
+      const ResidueModification* c_term_mod = nullptr; ///< nullptr: none
+    };
+
+    /// The CandidateMasses of reconstructModifiedSequence(@p peptide, @p fasta_entries) into @p out
+    void candidateMasses(const Peptide& peptide, const std::vector<FASTAFile::FASTAEntry>& fasta_entries,
+                         CandidateMasses& out) const;
+
+    /// The CandidateMasses of reconstructRealizedSubSequence(@p mother, @p fasta_entries, @p realized_length,
+    /// @p subset_bitmask) into @p out
+    void realizedCandidateMasses(const Peptide& mother, const std::vector<FASTAFile::FASTAEntry>& fasta_entries,
+                                 size_t realized_length, uint32_t subset_bitmask, CandidateMasses& out) const;
+
 protected:
+    /// candidateMasses() from the tables, for the residues [@p first, @p first + @p length) of @p protein_seq with the
+    /// fixed modifications and the variable modifications of @p slot_bits; false (and @p out unspecified) where a table
+    /// does not cover a step: the caller then takes the masses from the reconstructed AASequence
+    bool fastCandidateMasses_(const std::string& protein_seq, size_t first, size_t length, uint32_t slot_bits,
+                              CandidateMasses& out) const;
+
 
 
   /**@brief One entry in the fragment index
@@ -798,6 +828,7 @@ protected:
 
     /// Per-AA fixed modification delta mass (0.0 if no fixed mod applies)
     std::array<double, 128> fixed_mod_deltas_{};
+    std::array<double, 128> fixed_mod_internal_weights_{}; ///< Residue::getMonoWeight(Residue::Internal) of fixed_mod_residues_
     /// Per-AA fixed modification pointer (nullptr if none)
     std::array<const ResidueModification*, 128> fixed_mod_ptrs_{};
     /// Per-AA residue with its fixed modification, as AASequence::setModification() resolves it in ResidueDB (nullptr if

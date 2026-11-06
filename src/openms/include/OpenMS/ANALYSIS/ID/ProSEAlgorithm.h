@@ -982,6 +982,8 @@ class OPENMS_DLLAPI ProSEAlgorithm :
     /// Slimmer structure as storing all scored candidates in PeptideHit objects takes too much space
     struct AnnotatedHit_
     {
+      /// The candidate. scoreSpectraAgainstIndex_() builds it (candidateSequence_()) for the hits it keeps after the
+      /// pruning of a spectrum's candidates only, so a hit of a scored spectrum always has it; before, it is empty.
       AASequence sequence;
       /*
       std::string_view sequence;
@@ -998,6 +1000,8 @@ class OPENMS_DLLAPI ProSEAlgorithm :
       uint16_t matched_prefix_ions = 0; ///< number of matched prefix ions (a/b/c)
       uint16_t matched_suffix_ions = 0; ///< number of matched suffix ions (x/y/z)
       UInt32 index_peptide = 0; ///< the candidate: its index in FragmentIndex::getPeptides() of the searched index (protein mapping)
+      UInt32 subset_bitmask = 0; ///< peptide-mass mode: the active modification slots of the realized prefix (SpectrumMatch::subset_bitmask_)
+      uint16_t realized_length = 0; ///< peptide-mass mode: the length of the realized prefix (SpectrumMatch::realized_length_); 0 otherwise
 
       static bool hasBetterScore(const AnnotatedHit_& a, const AnnotatedHit_& b)
       {
@@ -1005,6 +1009,11 @@ class OPENMS_DLLAPI ProSEAlgorithm :
         return a.sequence < b.sequence;
       }
     };
+
+    /// The sequence of @p hit's candidate (AnnotatedHit_::sequence): FragmentIndex::reconstructModifiedSequence(), in
+    /// peptide-mass mode reconstructRealizedSubSequence() of its realized prefix
+    static AASequence candidateSequence_(const FragmentIndex& fi, const std::vector<FASTAFile::FASTAEntry>& db,
+                                         const AnnotatedHit_& hit, bool peptide_mass_mode);
 
     /**
      * @brief Running summary of the *complete* candidate pool of one spectrum.
