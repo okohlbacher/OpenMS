@@ -30,9 +30,16 @@ function(openms_link_mimalloc target)
   if(NOT _active)
     return()
   endif()
-  target_link_libraries(${target} mimalloc) # build order
-  ## Link options precede the libraries on the link line, so mimalloc.dll becomes the first import of
-  ## the executable, as the override requires (check with mimalloc's minject -l <exe>).
+  ## mimalloc's import library must be the first library the linker sees: mimalloc.dll is then import 0 of the
+  ## executable and mimalloc-redirect.dll initialises before ucrtbase.dll (check with mimalloc's minject -l <exe>).
+  ## Prepended to the target's direct link libraries: with Ninja the link option below already precedes the
+  ## libraries, but the Visual Studio generator emits AdditionalOptions after AdditionalDependencies, so there
+  ## the order of the libraries decides.
+  get_target_property(_libs ${target} LINK_LIBRARIES)
+  if(NOT _libs)
+    set(_libs "")
+  endif()
+  set_target_properties(${target} PROPERTIES LINK_LIBRARIES "mimalloc;${_libs}")
   target_link_options(${target} PRIVATE /INCLUDE:mi_version $<TARGET_LINKER_FILE:mimalloc>)
 endfunction()
 
